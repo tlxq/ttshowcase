@@ -68,6 +68,9 @@
   --look-tail: 45svh;
   --look-mark: 32px;
   --look-label: 12px;
+  /* The mail form in Questions: its width and its key column (Tom OK'd 11-15) */
+  --look-form: 64ch;
+  --look-form-key: 8ch;
   --look-small: 11px;
   --look-reading: clamp(13px, 1vw, 15px);
   /* The one line through the page: how thick, and its spray haze */

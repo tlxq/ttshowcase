@@ -1,7 +1,6 @@
 /** The new look's words (/look, Tom OK'd the still 11-13). */
 
 /** The address Tom picked (11-15). It is in the code, so local runs, walks and Vercel all show the same link. */
-export const lookMail = "hello@ttdevs.com";
 
 export const lookWho = ["Tom Larsson", "Fullstack engineer", "Sweden"];
 
@@ -45,7 +44,6 @@ export const lookTom = {
 export const lookAsk = {
   lines: ["Hiring?", "A project?", "A question?"],
   links: [
-    { label: "Email me", href: `mailto:${lookMail}`, external: false },
     { label: "GitHub ↗", href: "https://github.com/tlxq", external: true },
     { label: "LinkedIn ↗", href: "https://linkedin.com/in/tlxq", external: true },
     { label: "Code for this site ↗", href: "https://github.com/tlxq/ttshowcase", external: true },
