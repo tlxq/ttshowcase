@@ -12,6 +12,8 @@ const UNDER_GAP = 22;
 /** A loop round one of Tom's tools: how far out it goes and how tall it is, in pixels. */
 const LOOP_OUT = 120;
 const LOOP_HALF = 30;
+/** How far above Tom's note over his tools the line crosses, in pixels. */
+const NOTE_GAP = 24;
 
 const f = (n: number) => n.toFixed(1);
 
@@ -123,7 +125,10 @@ export function LookLine() {
         // Each loop takes four of its half heights; close tools get smaller loops, never touching.
         const apart = Math.min(...loops.slice(1).map((y, i) => y - loops[i]!), Infinity);
         const r = Math.max(10, Math.min(LOOP_HALF, apart / 4 - 3));
-        const across = (loops[0] ?? box.top - area.top) - 3 * r - ROUND * 2;
+        // It crosses above Tom's note over the tools, never through it.
+        const note = stack.parentElement?.querySelector<SVGSVGElement>(":scope > .lk-hand");
+        const overNote = note ? note.getBoundingClientRect().top - area.top - NOTE_GAP : Infinity;
+        const across = Math.min((loops[0] ?? box.top - area.top) - 3 * r - ROUND * 2, overNote);
         const dir = lx < right ? -1 : 1;
         path.V(across - ROUND);
         path.Q(right, across, right + dir * ROUND, across);
