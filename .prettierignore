@@ -7,3 +7,4 @@ package-lock.json
 *.md
 src/design/tokens.css
 tools/walk/
+tools/pictures/

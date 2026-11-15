@@ -53,6 +53,11 @@ description = "Build, serve on localhost and walk the page in a headless browser
 depends = ["build"]
 run = "tools/walk/run.sh"
 
+[tasks.pictures]
+description = "Pictures of every part of the page and the 404 at 1440x900 and 390x844, at rest. On master they become the baseline (in .cache, never in git); on a branch they are compared with it and a before/after page is written. Options after --: --baseline saves this run as the baseline, --compare-only writes the page again from the last run"
+depends = ["build"]
+run = "tools/pictures/run.sh"
+
 [tasks.check]
 description = "Everything pre-push runs: typecheck, lint, build, no high/critical holes in shipped packages"
 depends = ["install"]
