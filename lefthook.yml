@@ -1,0 +1,21 @@
+# Repo kit (~/.1dot/kit, applied by `dot kit`). No GitHub CI: these hooks are the checks.
+pre-commit:
+  parallel: true
+  jobs:
+    - name: secrets
+      run: gitleaks git --pre-commit --staged --redact --no-banner
+    - name: public
+      run: tools/public-guard staged
+    - name: format
+      run: mise run format {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  jobs:
+    - name: public
+      run: tools/public-guard msg {1}
+
+pre-push:
+  jobs:
+    - name: check
+      run: mise run check

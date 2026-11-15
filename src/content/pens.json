@@ -1,0 +1,32 @@
+{
+  "angle": -38,
+  "steady": 0.06,
+  "pens": {
+    "graffiti": { "label": "Fat cap", "length": 0.14, "depth": 0.33 },
+    "chisel": { "label": "Chisel marker", "length": 0.2, "depth": 0.14 },
+    "mop": { "label": "Mop", "length": 0.12, "depth": 0.85 },
+    "broad": { "label": "Broad marker", "length": 0.1, "depth": 0.5 },
+    "fine": { "label": "Fine marker", "length": 0.07, "depth": 0.33 },
+    "paintpen": { "label": "Paint pen", "length": 0.045, "depth": 0.6 }
+  },
+  "paint": {
+    "pool": 0.62,
+    "spillAfter": 90,
+    "spillMost": 0.75,
+    "drips": 3,
+    "dripOdds": 0.45,
+    "dripLongest": 0.55,
+    "dripGrows": 2600
+  },
+  "levels": {
+    "spill": {
+      "less": { "pool": 0.45, "spillAfter": 160, "spillMost": 0.4 },
+      "more": { "pool": 0.8, "spillAfter": 55, "spillMost": 1.1 }
+    },
+    "drips": {
+      "none": { "drips": 0 },
+      "less": { "drips": 1, "dripOdds": 0.3, "dripLongest": 0.35 },
+      "more": { "drips": 5, "dripOdds": 0.75, "dripLongest": 0.8 }
+    }
+  }
+}

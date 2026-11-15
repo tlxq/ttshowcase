@@ -1,0 +1,8 @@
+# Only the source goes up to Vercel: never local settings, builds or test output.
+.env*
+.next/
+out/
+node_modules/
+.claude/
+.cache/
+.playwright-cli/

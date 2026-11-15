@@ -1,0 +1,37 @@
+import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
+import { lookFonts } from "@/look/fonts";
+import { TabAway } from "@/look/TabAway";
+import "./globals.css";
+
+/** The site's own address, so a shared link's picture is found: Vercel's production address
+ * (ttdevs.com once it is the site's domain), this PC while building here. */
+const address = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:8123";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(address),
+  // Tom's icon tag (app/icon.svg/route.ts), made at build time.
+  icons: {
+    icon: { url: "/icon.svg", type: "image/svg+xml" },
+    apple: { url: "/apple-icon.png", type: "image/png" },
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en" className={lookFonts}>
+      <body>
+        {children}
+        <TabAway />
+      </body>
+    </html>
+  );
+}

@@ -1,0 +1,9 @@
+.next/
+out/
+node_modules/
+.claude/
+src/scene/logo-outlines.json
+package-lock.json
+*.md
+src/design/tokens.css
+tools/walk/

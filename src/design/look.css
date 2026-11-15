@@ -1,0 +1,1277 @@
+/* The new look, /look (Tom OK'd the still 11-13). Everything here is under .lk, so the old page is
+   untouched. */
+html:has(.lk),
+html:has(.lk) body {
+  background: var(--look-ground);
+}
+.lk {
+  --lk-side: var(--gutter);
+  min-height: 100svh;
+  background: var(--look-ground);
+  color: var(--look-text);
+  font: 400 var(--look-reading) / 1.65 var(--look-mono);
+  font-variation-settings: normal;
+}
+.lk a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The header */
+.lk-head {
+  position: absolute;
+  inset-inline: var(--lk-side);
+  top: var(--s4);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lk-name {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.lk-mark {
+  font: 900 var(--look-mark) / 1 var(--look-words);
+  letter-spacing: -0.06em;
+}
+.lk-who,
+.lk-who-phone {
+  margin: 0;
+  font-size: var(--look-small);
+  line-height: 1.55;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--look-quiet);
+}
+.lk-who span {
+  display: block;
+}
+.lk-who-phone {
+  display: none;
+}
+.lk-nav,
+.lk-menu nav {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  font-size: var(--look-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.lk-nav a,
+.lk-menu nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+}
+.lk-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding-inline: var(--s3);
+  border: 1px solid var(--look-rule);
+  border-radius: 999px;
+  font-size: var(--look-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.lk-menu {
+  display: none;
+  position: relative;
+}
+.lk-menu summary {
+  list-style: none;
+}
+.lk-menu summary:focus-visible {
+  outline: 2px solid var(--look-spray);
+  outline-offset: 2px;
+}
+.lk-menu summary::-webkit-details-marker {
+  display: none;
+}
+.lk-menu nav {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--s1));
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  padding: var(--s1) var(--s3);
+  background: var(--look-ground);
+  border: 1px solid var(--look-rule);
+  border-radius: var(--s3);
+}
+
+/* The first screen */
+.lk-hero {
+  position: relative;
+  min-height: 100svh;
+  box-sizing: border-box;
+  padding: calc(var(--s7) + var(--s5)) var(--lk-side) 0;
+  overflow-x: clip;
+}
+.lk-words {
+  position: relative;
+  display: inline-block;
+}
+.lk-hero h1 {
+  margin: 0 0 0 -0.03em;
+  font: 900 var(--look-hero) / 0.84 var(--look-words);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+}
+.lk-hero h1 span {
+  display: block;
+}
+.lk-tag {
+  position: absolute;
+  left: 92%;
+  top: 14%;
+  z-index: 2;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 0 var(--look-haze) color-mix(in srgb, var(--look-spray) 45%, transparent));
+}
+.lk-paint,
+.lk-drip {
+  fill: var(--look-spray);
+}
+.lk-reveal {
+  fill: none;
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+  animation: lk-write var(--runs) var(--pen) calc(var(--look-tag-at) + var(--from)) both;
+}
+/* A drip runs down from where the pen passed, at the writing page's pace (pens.json) */
+.lk-drip {
+  transform-box: fill-box;
+  transform-origin: top;
+  animation: lk-drip var(--grows) var(--ease) calc(var(--look-tag-at) + var(--at)) both;
+}
+.lk-line {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.lk-ink,
+.lk-haze {
+  fill: none;
+  stroke: var(--look-spray);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 1;
+}
+.lk-ink {
+  stroke-width: var(--look-line);
+}
+.lk-haze {
+  stroke-width: var(--look-haze);
+  stroke-opacity: 0.22;
+}
+.lk-lead {
+  position: absolute;
+  left: var(--lk-side);
+  bottom: var(--s5);
+  max-width: 38em;
+  margin: 0;
+  color: var(--look-soft);
+}
+.lk-cue {
+  position: absolute;
+  right: calc(var(--lk-side) + var(--s5));
+  bottom: var(--s5);
+  margin: 0;
+  font-size: var(--look-small);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--look-soft);
+}
+.lk-cue span {
+  margin-left: var(--s2);
+  color: var(--look-spray);
+}
+
+@keyframes lk-write {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes lk-drip {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+/* One column: a phone, or a tablet standing up. The words are sized by the screen's width there
+   (--look-hero), and the two-column parts (Tom, Live) only fit them when the height sets the size. */
+@media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
+  .lk-nav,
+  .lk-who,
+  .lk-cue {
+    display: none;
+  }
+  .lk-menu,
+  .lk-who-phone {
+    display: block;
+  }
+  .lk-head {
+    top: var(--s2);
+  }
+  .lk-hero {
+    padding-top: var(--s7);
+  }
+  .lk-who-phone {
+    margin-bottom: var(--s3);
+  }
+  .lk-tag {
+    left: 6%;
+    top: 94%;
+    width: 96%;
+  }
+  .lk-lead {
+    right: var(--s6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-reveal,
+  .lk-ink,
+  .lk-haze,
+  .lk-drip {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The page under the header, and the one line drawn over it */
+/* Nothing on the page may make it scroll sideways (clip keeps the sticky stage working) */
+.lk-main {
+  position: relative;
+  overflow-x: clip;
+}
+
+/* What tlxq means, and the moment the four letters fly out into one word (Letters.tsx) */
+.lk-letters {
+  position: relative;
+  z-index: 2;
+  height: var(--look-letters-hold);
+}
+.lk-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  box-sizing: border-box;
+  padding: var(--s7) calc(var(--lk-side) + var(--s6)) var(--s6) var(--lk-side);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: clip;
+  perspective: 1100px;
+}
+.lk-letters:not(.lk-still) .lk-key {
+  color: transparent;
+}
+.lk-big {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+.lk-big-letter {
+  position: relative;
+  display: block;
+  transform-style: preserve-3d;
+  font: 900 var(--look-big) / 0.9 var(--look-words);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  pointer-events: auto;
+  will-change: transform;
+}
+.lk-big-paint {
+  display: block;
+  color: var(--look-spray);
+}
+.lk-big-photo {
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  /* The picture in the spray colour: its light and dark, the spray's hue */
+  background-image: var(--photo), linear-gradient(var(--look-spray), var(--look-spray));
+  background-size: cover;
+  background-position: center var(--drift, 50%);
+  background-blend-mode: luminosity, normal;
+  -webkit-background-clip: text;
+  background-clip: text;
+  opacity: var(--window, 0);
+}
+.lk-still {
+  height: auto;
+}
+.lk-still .lk-stage {
+  position: static;
+  height: auto;
+  min-height: 100svh;
+}
+.lk-still .lk-big {
+  display: none;
+}
+.lk-index {
+  position: relative;
+  width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid var(--look-rule);
+}
+.lk-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-block: var(--s2) var(--s1);
+  border-top: 1px solid var(--look-rule);
+}
+.lk-word {
+  font: 900 var(--look-index) / 0.9 var(--look-words);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: transform var(--toggle) var(--ease);
+}
+.lk-key {
+  display: inline-block;
+  color: var(--look-spray);
+}
+.lk-what {
+  color: var(--look-soft);
+  text-align: right;
+  transition: color var(--toggle) var(--ease);
+}
+.lk-row:hover .lk-word,
+.lk-row:focus-visible .lk-word {
+  transform: translateX(var(--s2));
+}
+.lk-row:hover .lk-what,
+.lk-row:focus-visible .lk-what {
+  color: var(--look-text);
+}
+
+@media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
+  .lk-stage {
+    padding-right: calc(var(--lk-side) + var(--s5));
+  }
+  .lk-row {
+    flex-direction: column;
+    gap: var(--s1);
+    padding-block: var(--s2);
+  }
+  .lk-what {
+    text-align: left;
+  }
+}
+
+/* Flying through the T: the screen turns cream, the Tom part's ground */
+.lk-flood {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: var(--look-cream);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Handwriting written as it passes the pen's tip (Motion.tsx sets --t, ms into the writing) */
+.lk-hand {
+  display: block;
+  height: auto;
+  overflow: visible;
+}
+.lk-hand-scroll .lk-reveal {
+  animation-delay: calc(var(--from) - var(--t, 0ms));
+  animation-play-state: paused;
+}
+.lk-hand-scroll .lk-drip {
+  animation-delay: calc(var(--at) - var(--t, 0ms));
+  animation-play-state: paused;
+}
+
+/* Words rising in from under a cut (Motion.tsx sets --rise, 0 to 1) */
+.lk-rise {
+  display: block;
+  overflow: clip;
+  overflow-clip-margin: 0.2em;
+}
+.lk-rise > span {
+  display: inline-block;
+  transform: translateY(calc((1 - var(--rise, 1)) * 105%)) rotate(calc((1 - var(--rise, 1)) * 6deg));
+  transform-origin: 0 100%;
+}
+.lk-rise-soft {
+  opacity: var(--rise, 1);
+  transform: translateY(calc((1 - var(--rise, 1)) * var(--s5)));
+}
+
+/* The Tom part */
+.lk-tom {
+  position: relative;
+  box-sizing: border-box;
+  min-height: 150svh;
+  padding: var(--s7) var(--lk-side);
+  background: var(--look-cream);
+  color: var(--look-dark);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 34%);
+  grid-template-rows: auto auto 1fr;
+  column-gap: var(--s5);
+  align-content: start;
+}
+.lk-eyebrow {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0 0 var(--s6);
+  font-size: var(--look-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--look-dark-quiet);
+  font-weight: 400;
+}
+.lk-rule {
+  width: var(--s5);
+  height: 1px;
+  background: currentColor;
+}
+.lk-tom-head {
+  position: relative;
+  padding-top: calc(var(--look-hero) * 0.55);
+}
+.lk-tom-hi {
+  position: absolute;
+  left: 2%;
+  top: 0;
+  z-index: 2;
+  width: min(62%, 720px);
+  transform: rotate(-5deg);
+  filter: drop-shadow(0 0 var(--look-haze) color-mix(in srgb, var(--look-spray) 30%, transparent));
+}
+.lk-tom h2 {
+  margin: 0;
+  font: 900 var(--look-hero) / 0.86 var(--look-words);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+}
+.lk-circled {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+/* The circle round the live count, at the same size as the other notes, so its pen is as thin. */
+.lk-tom-circle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--box-w) * var(--look-note));
+  translate: -50% -50%;
+  pointer-events: none;
+}
+.lk-tom-circle .lk-paint {
+  transform-box: fill-box;
+}
+.lk-tom-stack {
+  grid-column: 2;
+  grid-row: 2 / 4;
+  position: relative;
+  padding-top: calc(var(--look-hero) * 0.55);
+}
+.lk-tom-tools {
+  width: min(100%, 300px);
+  margin: 0 0 var(--s4) var(--s2);
+  transform: rotate(-4deg);
+}
+.lk-tom-stack ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 calc(120px + var(--s3));
+}
+.lk-tom-stack li {
+  padding-block: var(--s4);
+  font-size: var(--look-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.lk-tom-about {
+  grid-column: 1;
+  margin-top: var(--s6);
+  max-width: 34em;
+  color: var(--look-dark-soft);
+}
+.lk-tom-about p {
+  margin: 0;
+}
+/* "5 projects ·" and the circled "2 live now" each stay on one line */
+.lk-live-all,
+.lk-live .lk-circled {
+  flex: none;
+  white-space: nowrap;
+}
+.lk-live {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s4) !important;
+  font-size: var(--look-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--look-dark);
+}
+.lk-dot {
+  width: var(--s1);
+  height: var(--s1);
+  border-radius: 50%;
+  background: var(--look-spray);
+  animation: lk-pulse var(--look-pulse) var(--ease) infinite;
+}
+.lk-tom-running {
+  width: min(52vw, 340px);
+  margin-left: var(--s2);
+  transform: translateY(-20%) rotate(-3deg);
+}
+@keyframes lk-pulse {
+  50% {
+    box-shadow: 0 0 0 var(--s1) color-mix(in srgb, var(--look-spray) 0%, transparent);
+  }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--look-spray) 55%, transparent);
+  }
+}
+
+@media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
+  .lk-tom {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+  .lk-tom-stack {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: var(--s6);
+    padding-top: 0;
+  }
+  .lk-tom-tools {
+    width: 70%;
+  }
+  /* The line runs down the left side here: the words keep clear of it */
+  .lk-tom-about {
+    margin-left: var(--s5);
+  }
+  .lk-tom-hi {
+    width: 92%;
+  }
+  /* Room for the circle round the live count, clear of the words above and the note below */
+  .lk-live {
+    flex-wrap: wrap;
+    margin-top: var(--s5) !important;
+    padding-left: var(--s3);
+  }
+  .lk-tom-running {
+    width: 70%;
+    margin-left: 0;
+    margin-top: var(--s4);
+  }
+}
+
+/* The Live part (Live.tsx): back on the dark ground. Each project rises in on its own --rise
+   (Motion.tsx): the name tips up and comes out from under its cut, then its letters open onto its
+   picture, then its words follow. */
+.lk-run {
+  position: relative;
+  padding: var(--s7) var(--lk-side);
+  background: var(--look-ground);
+  color: var(--look-text);
+}
+.lk-run .lk-eyebrow {
+  color: var(--look-quiet);
+}
+.lk-run-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s7);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lk-run-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0 0 var(--s3);
+  font-size: var(--look-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--look-soft);
+  opacity: var(--rise, 1);
+}
+/* Above the one line, so it runs on behind the names */
+.lk-run-name {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  font: 900 var(--look-name) / 0.9 var(--look-words);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+}
+.lk-run-cut {
+  display: block;
+  overflow: clip;
+  overflow-clip-margin: 0.12em;
+  perspective: 1100px;
+}
+.lk-run-word {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  transform-origin: 50% 100%;
+  transform: translateY(calc((1 - var(--rise, 1)) * 90%))
+    rotateX(calc((1 - var(--rise, 1)) * var(--look-tip-back)));
+}
+/* The plain letters give way as the picture comes in, so no edge of them peeks out */
+.lk-run-paint {
+  display: block;
+  opacity: calc(1 - clamp(0, calc((var(--rise, 1) - 0.55) * 2.5), 1));
+}
+/* The picture in the spray colour, through the letters, drifting as the name rises */
+.lk-run-photo {
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  background-image: var(--photo), linear-gradient(var(--look-spray), var(--look-spray));
+  background-size: cover;
+  background-position: center calc(20% + var(--rise, 1) * 40%);
+  background-blend-mode: luminosity, normal;
+  -webkit-background-clip: text;
+  background-clip: text;
+  opacity: clamp(0, calc((var(--rise, 1) - 0.55) * 2.5), 1);
+}
+.lk-run-words {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: var(--s2);
+  max-width: 34em;
+  margin-top: var(--s4);
+  color: var(--look-soft);
+  opacity: clamp(0, calc((var(--rise, 1) - 0.4) * 2), 1);
+  transform: translateY(calc((1 - var(--rise, 1)) * var(--s5)));
+}
+.lk-run-words p {
+  margin: 0;
+}
+.lk-run-line {
+  color: var(--look-text);
+}
+/* Tom's notes in the Live part, at the notes' size (--look-note), so the pen is as thin as his
+   others */
+.lk-note {
+  flex: none;
+  width: calc(var(--box-w) * var(--look-note));
+  max-width: 100%;
+}
+.lk-run-act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  margin-top: var(--s2) !important;
+}
+.lk-run-try {
+  transform: rotate(-6deg);
+}
+.lk-run-server {
+  margin-bottom: var(--s2);
+  transform: rotate(-4deg);
+}
+.lk-run-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--look-rule);
+  border-radius: 999px;
+  color: var(--look-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.lk-run-open:hover {
+  border-color: var(--look-spray);
+}
+.lk-run-open:focus-visible {
+  outline: 2px solid var(--look-spray);
+  outline-offset: 2px;
+}
+.lk-run-note {
+  color: var(--look-quiet);
+}
+/* A project as a case study (Live.tsx): its screens on the left, its words beside them */
+/* The line runs down between them (LookLine.tsx sets --lk-line-x): the screens end a gap before
+   it, the words start the same gap after it */
+.lk-case {
+  display: grid;
+  grid-template-columns: calc(var(--lk-line-x, 60vw) - var(--lk-side) - var(--s5)) minmax(0, 1fr);
+  column-gap: calc(var(--s5) * 2);
+  row-gap: var(--s5);
+  align-items: center;
+  margin-top: var(--s5);
+}
+.lk-case .lk-run-words {
+  margin-top: 0;
+}
+.lk-case-did {
+  display: grid;
+  gap: var(--s1);
+  margin: var(--s1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lk-case-did li {
+  padding-top: var(--s1);
+  border-top: 1px solid var(--look-rule);
+}
+.lk-case-stack {
+  font: var(--look-label) / 1.6 var(--look-mono);
+  letter-spacing: 0.04em;
+  color: var(--look-quiet);
+}
+/* The screens, above the one line like the names. On their own --rise: the lid opens and the
+   screen comes on, the phone slides out from behind the laptop and turns towards you. */
+.lk-case-stage {
+  position: relative;
+  z-index: 2;
+  aspect-ratio: 16 / 11;
+  perspective: var(--look-stage-depth);
+}
+.lk-case-laptop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 84%;
+  transform-style: preserve-3d;
+}
+.lk-case-lid {
+  padding: 2.2% 2.2% 2.8%;
+  border: 1px solid var(--look-rule);
+  border-bottom: 0;
+  border-radius: var(--look-device-round) var(--look-device-round) 0 0;
+  background: var(--look-dark);
+  transform-origin: 50% 100%;
+  transform: rotateX(calc((1 - var(--rise, 1)) * var(--look-lid-open)));
+}
+.lk-case-screen {
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--look-ground);
+  /* The screen comes on as the lid opens */
+  filter: brightness(calc(0.1 + 0.9 * var(--rise, 1)));
+}
+.lk-case-screen img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+/* A film of the site scrolling fills its screen (Live.tsx Film) */
+.lk-case-screen video,
+.lk-case-phone-screen video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+.lk-case-phone-screen video {
+  position: absolute;
+  inset: 0;
+}
+/* The live site, at a laptop's width and shrunk to the screen; shown once it has loaded. It can't
+   be clicked into, so the page's scroll is never caught by it. */
+.lk-case-screen iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(var(--look-frame-scale) * 100%);
+  height: calc(var(--look-frame-scale) * 100%);
+  border: 0;
+  background: var(--look-ground);
+  transform: scale(calc(1 / var(--look-frame-scale)));
+  transform-origin: 0 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--panel) var(--ease);
+}
+.lk-case-screen iframe[data-loaded] {
+  opacity: 1;
+}
+.lk-case-base {
+  height: clamp(8px, 1.3vw, 16px);
+  margin: 0 -5%;
+  border: 1px solid var(--look-rule);
+  border-radius: 0 0 var(--look-device-round) var(--look-device-round);
+  background: linear-gradient(var(--look-dark-soft), var(--look-dark));
+}
+.lk-case-phone {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 25%;
+  aspect-ratio: 390 / 844;
+  padding: 4%;
+  border: 1px solid var(--look-rule);
+  border-radius: calc(var(--look-device-round) * 2);
+  background: var(--look-dark);
+  box-shadow: 0 var(--s3) var(--s5) var(--look-shade);
+  transform: translateX(calc((1 - var(--rise, 1)) * -110%))
+    rotateY(calc(var(--look-phone-turn) - (1 - var(--rise, 1)) * var(--look-phone-swing)));
+  opacity: clamp(0, calc(var(--rise, 1) * 3 - 0.4), 1);
+}
+.lk-case-phone-screen {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--look-device-round) * 2 - 6px);
+  background: var(--look-ground);
+  container-type: size;
+}
+/* A tall shot scrolls through the site as the page passes the screens */
+.lk-case-phone-screen img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: translateY(calc(var(--pass, 0) * (100cqh - 100%)));
+}
+/* A terminal on a screen (Term.tsx): sized to its screen, each line in after the one before on
+   the stage's --rise, as if typed while the screen comes up */
+.lk-term {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  font: 2.1cqw / 1.6 var(--look-mono);
+  color: var(--look-soft);
+  background: var(--look-ground);
+}
+.lk-case-phone-screen .lk-term {
+  font-size: 4.6cqw;
+}
+/* On the laptop the words keep clear of the phone in front of its right quarter */
+.lk-case-laptop .lk-term-lines {
+  padding-right: 24cqw;
+}
+.lk-term-title {
+  margin: 0;
+  padding: 0.5em 1em;
+  border-bottom: 1px solid var(--look-rule);
+  color: var(--look-quiet);
+}
+.lk-term-lines {
+  display: grid;
+  align-content: start;
+  gap: 0.35em;
+  margin: 0;
+  padding: 1em;
+  list-style: none;
+}
+.lk-term-lines li {
+  overflow-wrap: anywhere;
+  opacity: clamp(0, calc(var(--rise, 1) * (var(--n) + 1) - var(--i)), 1);
+}
+.lk-term-cmd {
+  margin-top: 0.6em;
+  color: var(--look-text);
+}
+.lk-term-cmd:first-child {
+  margin-top: 0;
+}
+.lk-term-cmd::before {
+  content: "$ ";
+  color: var(--look-spray);
+}
+.lk-term-ok {
+  color: var(--look-text);
+}
+.lk-term-quiet {
+  color: var(--look-quiet);
+}
+/* tthome drawn on the laptop's screen (HomeMap.tsx): edges and ties draw on as the lid opens */
+.lk-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--look-ground);
+}
+.lk-map-box rect,
+.lk-map-tie {
+  fill: none;
+  stroke: var(--look-rule);
+  stroke-width: 3;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--rise, 1));
+}
+.lk-map-lead rect,
+.lk-map-tie.lk-map-lead {
+  stroke: var(--look-spray);
+}
+.lk-map-group rect {
+  stroke-dasharray: 0.01 0.012;
+  stroke-dashoffset: 0;
+  opacity: var(--rise, 1);
+}
+.lk-map-name,
+.lk-map-note,
+.lk-map-label {
+  font-family: var(--look-mono);
+  text-anchor: middle;
+  opacity: clamp(0, calc(var(--rise, 1) * 2 - 1), 1);
+}
+.lk-map-name {
+  font-size: 30px;
+  fill: var(--look-text);
+}
+.lk-map-note {
+  font-size: 22px;
+  fill: var(--look-quiet);
+}
+.lk-map-label {
+  font-size: 26px;
+  text-anchor: start;
+  fill: var(--look-quiet);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+@media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
+  .lk-case {
+    grid-template-columns: minmax(0, 1fr);
+    margin-left: var(--s5);
+  }
+  .lk-case .lk-run-words {
+    margin-left: 0;
+  }
+}
+@media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
+  /* The line runs down the left side here: the words keep clear of it */
+  .lk-run .lk-eyebrow,
+  .lk-run-head,
+  .lk-run-words {
+    margin-left: var(--s5);
+  }
+}
+
+/* The Experiments part (Lab.tsx): a cream wall with posters pasted on it. Each poster slaps on
+   with its own --rise (Motion.tsx): tipped and too big, it lands flat at its --turn, its shadow
+   pulls in, then its words come in. */
+.lk-lab {
+  position: relative;
+  padding: var(--s7) var(--lk-side);
+  background: var(--look-cream);
+  color: var(--look-dark);
+}
+.lk-lab-wall {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s6);
+  max-width: 30%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  perspective: 1100px;
+}
+.lk-lab-poster {
+  --land: clamp(0, calc(var(--rise, 1) * 1.6), 1);
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: start;
+  gap: var(--s2);
+  min-height: 36svh;
+  padding: var(--s5) var(--s4);
+  container-type: inline-size;
+  background: var(--look-dark);
+  color: var(--look-text);
+  transform-origin: 50% 0;
+  transform: rotate(var(--turn)) rotateX(calc((1 - var(--land)) * var(--look-slap-tip)))
+    scale(calc(1 + (1 - var(--land)) * var(--look-slap-grow)));
+  opacity: clamp(0, calc(var(--rise, 1) * 4), 1);
+  box-shadow: 0 calc((1 - var(--land)) * var(--s6) + var(--s1))
+    calc((1 - var(--land)) * var(--s7) + var(--s2))
+    color-mix(in srgb, var(--look-dark) 35%, transparent);
+}
+.lk-lab-poster > * {
+  margin: 0;
+  opacity: clamp(0, calc((var(--rise, 1) - 0.6) * 2.5), 1);
+  transform: translateY(calc((1 - clamp(0, calc((var(--rise, 1) - 0.6) * 2.5), 1)) * var(--s4)));
+}
+.lk-lab-num {
+  font-size: var(--look-label);
+  letter-spacing: 0.14em;
+  color: var(--look-spray);
+}
+/* As big as fits its longest word (--chars) across the poster */
+.lk-lab-name {
+  font: 900 min(var(--look-index), calc(100cqi / (var(--chars) * var(--look-glyph)))) / 0.9
+    var(--look-words);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+}
+.lk-lab-line {
+  color: var(--look-soft);
+}
+.lk-lab-built {
+  padding: 0;
+  list-style: none;
+  color: var(--look-quiet);
+}
+@media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
+  .lk-lab-wall {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: none;
+    margin-left: var(--s5);
+  }
+  .lk-lab .lk-eyebrow {
+    margin-left: var(--s5);
+  }
+  .lk-lab-poster {
+    min-height: 0;
+  }
+}
+
+/* Tom's "work in progress", once, over the wall's top corner */
+.lk-lab-wip {
+  position: absolute;
+  z-index: 3;
+  top: calc(var(--s7) + var(--s5));
+  left: calc(var(--lk-side) + 30%);
+  transform: rotate(-7deg);
+}
+
+/* The Questions part (Ask.tsx), the end: back on the dark ground. Each question slides in slanted
+   from its own side (--side) on its --rise; the line comes down and turns into Tom's signature. */
+.lk-ask {
+  position: relative;
+  container-type: inline-size;
+  padding: var(--s7) var(--lk-side) var(--look-tail);
+  background: var(--look-ground);
+  color: var(--look-text);
+}
+.lk-ask .lk-eyebrow {
+  color: var(--look-quiet);
+}
+/* As big as the first screen's words, or smaller so its longest word (--chars) fits the width */
+.lk-ask-title {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  font: 900
+    min(
+      var(--look-hero),
+      calc((100cqi - var(--ask-in, 0px)) / (var(--chars) * var(--look-glyph)))
+    ) /
+    0.9 var(--look-words);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  overflow-x: clip;
+}
+.lk-ask-line {
+  display: block;
+  transform: translateX(calc((1 - var(--rise, 1)) * var(--side) * var(--look-slide)))
+    skewX(calc((1 - var(--rise, 1)) * var(--side) * var(--look-slant)));
+  opacity: clamp(0, calc(var(--rise, 1) * 2), 1);
+}
+.lk-ask-line:last-child {
+  color: var(--look-spray);
+}
+.lk-ask-reach {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s4);
+  margin-top: var(--s6);
+  opacity: clamp(0, calc((var(--rise, 1) - 0.3) * 2), 1);
+}
+.lk-ask-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lk-ask-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--look-rule);
+  border-radius: 999px;
+  color: var(--look-text);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.lk-ask-links a:hover {
+  border-color: var(--look-spray);
+}
+.lk-ask-links a:focus-visible {
+  outline: 2px solid var(--look-spray);
+  outline-offset: 2px;
+}
+.lk-ask-me {
+  transform: rotate(-6deg);
+}
+.lk-ask-end {
+  display: grid;
+  justify-items: end;
+  gap: var(--s2);
+  margin-top: var(--s7);
+}
+.lk-ask-who {
+  margin: 0;
+  font-size: var(--look-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--look-quiet);
+}
+@media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
+  .lk-lab-wip {
+    left: auto;
+    right: var(--lk-side);
+  }
+  .lk-ask {
+    --ask-in: var(--s5);
+  }
+  .lk-ask .lk-eyebrow,
+  .lk-ask-title,
+  .lk-ask-reach {
+    margin-left: var(--s5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lk-dot {
+    animation: none;
+  }
+}
+
+/* The pen as the pointer, only where there is a mouse; a finger stays a finger, text fields keep the
+   text cursor, and forced system colours get the normal pointer. */
+@media (hover: hover) and (pointer: fine) and (forced-colors: none) {
+  .lk {
+    cursor: var(--look-pen);
+  }
+  .lk :is(a, button, summary, label, [role="button"], .lk-pill) {
+    cursor: var(--look-pen-link);
+  }
+  .lk :is(input, textarea, [contenteditable="true"]) {
+    cursor: text;
+  }
+}
+
+/* Selected text is painted over with the chisel marker (PaintSelect.tsx). Until that script runs,
+   and in text fields, it is a flat spray. Forced system colours keep their own. */
+.lk ::selection {
+  background: var(--look-spray);
+  color: var(--look-ground);
+}
+.lk.lk-painting ::selection {
+  background: transparent;
+}
+.lk.lk-painting :is(input, textarea)::selection {
+  background: var(--look-spray);
+}
+.lk-sel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  z-index: -1;
+  pointer-events: none;
+}
+.lk-sel-mark {
+  fill: var(--look-spray);
+}
+.lk-sel-pool {
+  fill: color-mix(in srgb, var(--look-spray) 80%, var(--look-ground));
+  opacity: 0.5;
+}
+@media (forced-colors: active) {
+  .lk-sel {
+    display: none;
+  }
+}
+
+/* An address that isn't a page: Tom's 404 tag, the address struck through, one line, the parts. */
+.lk-missing {
+  display: grid;
+  place-content: center;
+  justify-items: start;
+  gap: var(--s3);
+  padding: var(--s6) var(--gutter);
+}
+.lk-missing-tag {
+  margin: 0;
+}
+.lk-missing-mark {
+  width: min(70vw, 560px);
+}
+.lk-missing-path {
+  margin: 0;
+  font: 400 var(--t-lead) / 1.4 var(--look-mono);
+  color: var(--look-soft);
+  overflow-wrap: anywhere;
+}
+/* The marker's strike: a slanted bar of the spray colour through the middle of the letters */
+.lk-missing-path span {
+  position: relative;
+}
+.lk-missing-path span::after {
+  content: "";
+  position: absolute;
+  inset: 46% -4% 32%;
+  background: var(--look-spray);
+  clip-path: polygon(0 20%, 100% 0, 99% 100%, 1% 85%);
+}
+.lk-missing-say {
+  margin: 0;
+  font: 900 var(--t-head) / 1.1 var(--look-words);
+  color: var(--look-text);
+}
+.lk-missing-ways {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}

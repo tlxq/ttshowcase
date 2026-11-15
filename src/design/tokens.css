@@ -1,0 +1,115 @@
+/* The one source for colours, type, spacing and speeds. Rules for using them: docs/design.md. */
+:root {
+  color-scheme: dark;
+
+  /* Spacing */
+  --s1: 8px;
+  --s2: 16px;
+  --s3: 24px;
+  --s4: 32px;
+  --s5: 48px;
+  --s6: 72px;
+  --s7: 112px;
+  --gutter: max(16px, 4vw);
+  --tap: 48px;
+
+  /* Speeds */
+  --toggle: 200ms;
+  --panel: 300ms;
+  --ease: cubic-bezier(.2, 0, 0, 1);
+
+  /* The new look, /look (Tom OK'd the still 11-13: daksh + grubo + graffiti). One spray colour,
+     black and cream grounds, tight grotesk words, mono labels. */
+  --look-ground: #0a0a0a;
+  --look-text: #f0ece2;
+  --look-soft: #cfcabf;
+  --look-quiet: #a9a59c;
+  --look-rule: #6e6a63;
+  --look-cream: #efebe1;
+  --look-dark: #111111;
+  --look-dark-soft: #2b2925;
+  --look-dark-quiet: #4a4740;
+  --look-spray: #ff4f1a;
+  /* The first screen's words: as big as fits four lines on the screen and "MYSELF." across it */
+  --look-hero: min(19.5vw, 17.5svh, 158px);
+  /* The four parts' names, as big as fits EXPERIMENTS across the screen, up to this */
+  --look-index: min(calc((100vw - 2 * var(--gutter)) / 7.6), 14svh, 128px);
+  /* The four letters put together into one word: as big as fits TLXQ across the screen */
+  --look-big: min(calc((100vw - 2 * var(--gutter)) / 2.75), 60svh);
+  /* How far the page scrolls while the letters fly out, lock together and tip away */
+  --look-letters-hold: 420svh;
+  /* How far a project's name is tipped back before it rises into place */
+  --look-tip-back: 55deg;
+  /* How wide one capital of the big words is at most, as a share of their size: for sizing a word to
+     fit its room. The widest name measures 0.688 (11-15), so every name fits with a little to
+     spare (Tom 11-15: "do what will be best") */
+  --look-glyph: 0.7;
+  /* A project's screens (Live, launch plan A1; Tom 11-14: "feels ok for now"): how far the laptop's
+     lid lies back before it opens, how far the phone stays turned and how much more it is turned
+     while it slides out from behind the laptop, and how round the devices' corners are */
+  --look-lid-open: 78deg;
+  --look-phone-turn: -12deg;
+  --look-phone-swing: 38deg;
+  --look-device-round: 14px;
+  /* How deep the screens' 3D space is (lower = stronger perspective), how many times wider than the
+     laptop's screen the live site is laid out before it is shrunk into it (2.25: a laptop's width),
+     and the phone's shadow */
+  --look-stage-depth: 1600px;
+  --look-frame-scale: 2.25;
+  --look-shade: rgb(0 0 0 / 0.55);
+  /* An experiment's poster: how far it is tipped and how much bigger it is as it falls onto the
+     wall, before it lands flat */
+  --look-slap-tip: 28deg;
+  --look-slap-grow: 0.25;
+  /* The questions at the end: how far each line starts off to its side, and how slanted */
+  --look-slide: 40vw;
+  --look-slant: 14deg;
+  /* Room after the last part, so what is at its foot can still reach the pen's tip */
+  --look-tail: 45svh;
+  --look-mark: 32px;
+  --look-label: 12px;
+  --look-small: 11px;
+  --look-reading: clamp(13px, 1vw, 15px);
+  /* The one line through the page: how thick, and its spray haze */
+  --look-line: 3.5px;
+  --look-haze: 11px;
+  /* How big Tom's hand-written notes show: pixels per unit of writing (cap height 1000), the size
+     "still running" has next to the live dot, so every note keeps the same pen width. */
+  --look-note: 0.066px;
+  /* How long the live dot takes to breathe once */
+  --look-pulse: 1.6s;
+  /* The tag writes itself this long after the page opens (its drips' pace is in pens.json) */
+  --look-tag-at: 400ms;
+  /* The pointer on a laptop: a chisel marker, tip down to the left where you click, in the page's
+     own colours (dark body, cream outline, spray tip and cap); over a link a spray ring round the tip
+     (Tom picked A 11-14, pitch https://claude.ai/artifact/3UQBAFSiKCCNVRKSbqV3Cx) */
+  --look-pen: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cg transform='translate(5 26) rotate(-45)'%3E%3Crect x='7.5' y='-3.5' width='25' height='7' rx='1.5' fill='%23111111' stroke='%23f0ece2' stroke-width='1'/%3E%3Crect x='27' y='-3.5' width='5.5' height='7' rx='1.5' fill='%23ff4f1a' stroke='%23f0ece2' stroke-width='1'/%3E%3Crect x='4.5' y='-3' width='3' height='6' fill='%236e6a63'/%3E%3Cpolygon points='0,-1.5 4.5,-2.6 4.5,2.6 1.6,1.6' fill='%23ff4f1a' stroke='%230a0a0a' stroke-width='.6'/%3E%3C/g%3E%3C/svg%3E") 5 26, auto;
+  /* The wall (/wall): a night street (Tom picked A 11-14, pitch
+     https://claude.ai/artifact/5ztgoAepRuSp766oBHfmdj). NEW, needs Tom's OK. */
+  --wall-night: #07080a;
+  --wall-lamp: #ffc07a;
+  --wall-moon: #2a3550;
+  --wall-brick: #8a4c40;
+  --wall-mortar: #5c5650;
+  --wall-pavement: #1a1a1b;
+  --wall-iron: #1b1c1e;
+  --wall-bone: #d6cfbf;
+  /* The camera pulling back off the page until it is a poster on the wall */
+  --wall-pullback: 2600ms;
+  /* A lamp coming on as you near it */
+  --wall-lamp-on: 700ms;
+  --look-pen-link: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cg transform='translate(5 26) rotate(-45)'%3E%3Crect x='7.5' y='-3.5' width='25' height='7' rx='1.5' fill='%23111111' stroke='%23f0ece2' stroke-width='1'/%3E%3Crect x='27' y='-3.5' width='5.5' height='7' rx='1.5' fill='%23ff4f1a' stroke='%23f0ece2' stroke-width='1'/%3E%3Crect x='4.5' y='-3' width='3' height='6' fill='%236e6a63'/%3E%3Cpolygon points='0,-1.5 4.5,-2.6 4.5,2.6 1.6,1.6' fill='%23ff4f1a' stroke='%230a0a0a' stroke-width='.6'/%3E%3C/g%3E%3Ccircle cx='5' cy='26' r='3.8' fill='none' stroke='%23ff4f1a' stroke-width='1.5'/%3E%3C/svg%3E") 5 26, pointer;
+}
+
+/* A live project's name: as big as fits it across the screen (--chars letters, each about this
+   share of the size wide), never taller than a fifth of the screen. Worked out on each project,
+   where its --chars is. */
+.lk-run-item {
+  --look-name: min(calc((100vw - 2 * var(--gutter)) / (var(--chars) * var(--look-glyph))), 22svh, 220px);
+}
+
+/* The new look's faces are loaded only on /look (app/look/layout.tsx), so they are named there. */
+.lk {
+  --look-words: var(--font-inter-tight), "Arial Black", Impact, sans-serif;
+  --look-mono: var(--font-jetbrains-mono), ui-monospace, Menlo, Consolas, monospace;
+}

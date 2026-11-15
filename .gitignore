@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.cache/
+.venv/
+.claude/
+.playwright-cli/
+__pycache__/
+# Settings that stay out of the code, like the contact address.
+.env*
+.vercel

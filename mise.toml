@@ -1,0 +1,64 @@
+# Repo kit (~/.1dot/kit): `mise run check` is what pre-push runs, `mise run format` what pre-commit runs.
+[tools]
+node = "26.7.0"
+"npm:@playwright/cli" = "0.1.22"
+"npm:vercel" = "58.4.4"
+# tools/osv-gate needs it
+"aqua:google/osv-scanner" = "2.7.1"
+
+[tasks.install]
+description = "Install the npm packages if they are missing"
+hide = true
+run = "[ -d node_modules ] || npm ci"
+
+[tasks.build]
+description = "Build the static site into out/"
+depends = ["install"]
+run = "npm run build"
+
+[tasks.open]
+description = "Build, serve on this PC and open it in the browser"
+depends = ["build"]
+run = "tools/serve.sh localhost --open"
+
+[tasks.serve]
+description = "Serve the build on this PC's Tailscale address (port from PORT, default 8123)"
+depends = ["build"]
+run = "tools/serve.sh tailscale"
+
+[tasks.dev]
+description = "Live editing: serve on this PC's Tailscale address, changes show within seconds (port from PORT, default 3000)"
+depends = ["install"]
+run = "tools/dev.sh"
+
+[tasks.write]
+description = "The writing page: Tom writes the site's words with the S Pen on the phone; each is saved into src/content/hand (port from PORT, default 3011)"
+run = "tools/write/write.sh"
+
+[tasks.tags]
+description = "Make the site's words as graffiti tags (tools/write/tag.mjs) into src/content/hand; name words to make only those, e.g. mise run tags Lab"
+run = "node tools/write/tag.mjs"
+
+[tasks.share]
+description = "Make the share card (public/share.jpg) from the first screen of /look; run it when the first screen changes"
+depends = ["build"]
+run = "tools/share.sh"
+
+[tasks.previews]
+description = "Film the sites in src/content/recordings.json scrolling, for the Live part's screens (the walk fails once a film is 30 days old); name one site to film only that"
+run = "tools/previews.sh"
+
+[tasks.walk]
+description = "Build, serve on localhost and walk the page in a headless browser; name one walk to run only that, e.g. mise run walk fill-phone"
+depends = ["build"]
+run = "tools/walk/run.sh"
+
+[tasks.check]
+description = "Everything pre-push runs: typecheck, lint, build, no high/critical holes in shipped packages"
+depends = ["install"]
+run = ["npm run typecheck", "npm run lint", "npm run build", "tools/osv-gate"]
+
+[tasks.format]
+description = "Format the files given (pre-commit passes the staged ones and restages them), or all"
+depends = ["install"]
+run = "bash -c 'npx prettier --write --ignore-unknown \"${@:-.}\"' --"

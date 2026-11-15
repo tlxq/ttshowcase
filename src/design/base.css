@@ -1,0 +1,21 @@
+/* The page under everything: the look's dark ground to the very edges (also past the ends when a
+   phone overscrolls), no margin, buttons that take the words' own type, one focus ring. */
+html,
+body {
+  background: var(--look-ground);
+}
+body {
+  margin: 0;
+  color: var(--look-text);
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 2px solid var(--look-spray);
+  outline-offset: 3px;
+}

@@ -1,0 +1,172 @@
+#!/usr/bin/env bash
+# Repo kit (~/.1dot/kit, copied by `dot kit`; change it there). Keeps a repo safe to make public at any time:
+# no private words, no AI attribution, no stray or tagged images, no private author or committer.
+#   public-guard staged            pre-commit: staged lines, file names, new images, author and committer
+#   public-guard msg <file>        commit-msg: the message, author and committer (sees git commit --author)
+#   public-guard range <base>      CI: every commit after <base>, plus PR_TITLE and PR_BODY from the environment
+# Words come from $NEVER_PUBLIC_WORDS (CI secret) or $NEVER_PUBLIC_FILE (default ~/.1dot/kit/never-public.txt):
+# one per line, whole word, any case. Without a list only the word check is skipped; the other checks still run.
+# A public repo has a committed .public-repo file holding the one email allowed as author and committer.
+# Lines "allow <word>" in it let that list word through in this repo only (a name the repo is public about);
+# the line numbers of the other words stay the same.
+set -euo pipefail
+export LC_ALL=C.UTF-8
+
+AI_RE='Co-Authored-By:.*(Claude|Anthropic)|Claude-Session:|claude\.ai/code/session|Generated with \[?Claude'
+IMG_RE='\.(png|jpe?g|webp|gif|heic|avif|tiff?)$'
+IMG_OK_RE='(^|/)(assets|public)/'
+TAG_RE='$GPSLatitude or $GPSPosition or $Make or $Model or $SerialNumber or $DateTimeOriginal or $OwnerName or $Artist'
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+fail=0
+skip_words=0
+public_email=
+
+say() { printf 'public-guard: %s\n' "$*" >&2; }
+bad() { say "$*"; fail=1; }
+
+load_words() {
+  local file="${NEVER_PUBLIC_FILE:-$HOME/.1dot/kit/never-public.txt}"
+  if [ -z "${NEVER_PUBLIC_WORDS:-}" ] && [ ! -e "$file" ]; then
+    say "note: no word list at $file, so the word check is skipped; the other checks still run"
+    skip_words=1; return 0
+  fi
+  if [ -n "${NEVER_PUBLIC_WORDS:-}" ]; then printf '%s\n' "$NEVER_PUBLIC_WORDS"
+  elif [ -r "$file" ]; then cat "$file"
+  else say "the word list $file can't be read"; exit 2
+  fi | sed 's/\r$//; s/^[[:space:]]*//; s/[[:space:]]*$//' | grep -vE '^(#|$)' >"$tmp/words" || true
+  [ -s "$tmp/words" ] || { say "the word list is empty"; exit 2; }
+  allow_words
+}
+
+# words this repo's .public-repo allows ("allow <word>", any case) become an empty line, so numbering holds
+allow_words() {
+  local top
+  top=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
+  [ -e "$top/.public-repo" ] || return 0
+  sed 's/\r$//' "$top/.public-repo" | sed -nE 's/^[[:space:]]*allow[[:space:]]+(.*[^[:space:]])[[:space:]]*$/\1/Ip' >"$tmp/allow"
+  [ -s "$tmp/allow" ] || return 0
+  awk 'NR==FNR{a[tolower($0)]=1;next} {print (tolower($0) in a) ? "" : $0}' "$tmp/allow" "$tmp/words" >"$tmp/words2"
+  mv "$tmp/words2" "$tmp/words"
+}
+
+check_words() {
+  local where="$1" n=0 w
+  [ "$skip_words" = 0 ] || return 0
+  while IFS= read -r w; do
+    n=$((n + 1))
+    [ -n "$w" ] || continue
+    if grep -aiwF -- "$w" "$tmp/text" >"$tmp/hits"; then
+      while IFS= read -r line; do
+        if [ -n "${NEVER_PUBLIC_WORDS:-}" ]; then bad "$where: list word $n in: ${line%%$'\t'*}"
+        else bad "$where: \"$w\" in: ${line%%$'\t'*}"; fi
+      done <"$tmp/hits"
+    fi
+  done <"$tmp/words"
+}
+
+# the email a public repo allows (first line of .public-repo); empty: not a public repo
+load_public() {
+  local top
+  top=$(git rev-parse --show-toplevel 2>/dev/null) || return 0
+  [ -e "$top/.public-repo" ] || return 0
+  public_email=$(sed 's/\r$//; s/^[[:space:]]*//; s/[[:space:]]*$//' "$top/.public-repo" | grep -viE '^(#|$|allow[[:space:]])' | head -n1) || true
+  [ -n "$public_email" ] || { say ".public-repo has no email in it"; exit 2; }
+}
+
+# $1 = who (author, committer, commit abc author ...), $2 = "Name <email>". Words are named by list line only.
+check_ident() {
+  local who="$1" ident="$2" email n=0 w
+  [ -n "$ident" ] || return 0
+  email=${ident##*<}; email=${email%%>*}
+  if [ "$skip_words" = 0 ]; then
+    while IFS= read -r w; do
+      n=$((n + 1))
+      [ -n "$w" ] || continue
+      printf '%s\n' "$ident" | grep -qaiwF -- "$w" && bad "$who: the name or email is list word $n; use a public one: git config user.email <address>"
+    done <"$tmp/words"
+  fi
+  if [ -n "$public_email" ] && [ "${email,,}" != "${public_email,,}" ]; then
+    bad "$who: this repo is public, so the email must be the one in .public-repo: git config user.email $public_email"
+  fi
+}
+
+# who is making this commit: env (GIT_AUTHOR_EMAIL, git commit --author) and config, as git sees it now
+check_own_ident() {
+  local who id
+  load_public
+  for who in author committer; do
+    id=$(git var "GIT_${who^^}_IDENT" 2>/dev/null) || continue
+    check_ident "$who" "${id% * *}"
+  done
+}
+
+check_ai() {
+  local where="$1"
+  if grep -aiE -- "$AI_RE" "$tmp/text" >"$tmp/hits"; then
+    while IFS= read -r line; do bad "$where: AI attribution in ${line%%$'\t'*}"; done <"$tmp/hits"
+  fi
+}
+
+check_image() {
+  local path="$1" file="$2"
+  [[ $path =~ $IMG_RE ]] || return 0
+  [[ $path =~ $IMG_OK_RE ]] || bad "$path: images live in an assets/ or public/ folder (screenshots: docs/assets/)"
+  if command -v exiftool >/dev/null; then
+    if [ -n "$(exiftool -q -q -if "$TAG_RE" -p '$FileName' "$file" 2>/dev/null)" ]; then
+      bad "$path: has camera, place or owner tags; strip them: exiftool -all= $path"
+    fi
+  else
+    bad "$path: exiftool isn't installed, so its tags can't be checked"
+  fi
+}
+
+added_lines() { LC_ALL=C awk '/^\+\+\+ b\//{f=substr($0,7);next} /^@@/{split($3,a,/[,+]/);n=a[2];next} /^\+/{print f":"n"\t"substr($0,2);n++}'; }
+
+case "${1:-}" in
+  staged)
+    load_words
+    { git diff --cached -U0 --no-color --src-prefix=a/ --dst-prefix=b/ --diff-filter=ACMR | added_lines | { grep -av '^tools/public-guard:' || true; }
+      git diff --cached --name-only --diff-filter=AR | sed 's/^/file name\t/'; } >"$tmp/text"
+    check_words staged
+    check_ai staged
+    while IFS= read -r path; do
+      git show ":$path" >"$tmp/img" 2>/dev/null && check_image "$path" "$tmp/img"
+    done < <(git diff --cached --name-only --diff-filter=AR)
+    check_own_ident
+    ;;
+  msg)
+    [ -r "${2:-}" ] || { say "usage: public-guard msg <file>"; exit 2; }
+    load_words
+    grep -av '^#' "$2" | nl -ba -w1 -s$'\t' | sed 's/^/message line /' >"$tmp/text"
+    check_words message
+    check_ai message
+    check_own_ident
+    ;;
+  range)
+    base="${2:-}"
+    [ -n "$base" ] || { say "usage: public-guard range <base>"; exit 2; }
+    load_words
+    git log -p --no-color -U0 --src-prefix=a/ --dst-prefix=b/ --format='COMMIT %h' "$base..HEAD" | added_lines | grep -av '^tools/public-guard:' >"$tmp/text" || true
+    git log --format='%h' "$base..HEAD" | while IFS= read -r c; do
+      git log -1 --format=%B "$c" | sed "s/^/commit $c message\t/"
+      git diff-tree -r --no-commit-id --name-only --diff-filter=AR "$c" | sed 's/^/file name\t/'
+    done >>"$tmp/text"
+    { [ -n "${PR_TITLE:-}" ] && printf '%s\n' "$PR_TITLE" | sed 's/^/PR title\t/'
+      [ -n "${PR_BODY:-}" ] && printf '%s\n' "$PR_BODY" | sed 's/^/PR body\t/'; } >>"$tmp/text" || true
+    check_words "$base..HEAD"
+    check_ai "$base..HEAD"
+    while IFS= read -r path; do
+      [ -f "$path" ] && check_image "$path" "$path"
+    done < <(git diff --name-only --diff-filter=AR "$base...HEAD")
+    load_public
+    while IFS=$'\t' read -r c a cm; do
+      check_ident "commit $c author" "$a"
+      check_ident "commit $c committer" "$cm"
+    done < <(git log --format=$'%h\t%an <%ae>\t%cn <%ce>' "$base..HEAD")
+    ;;
+  *) say "usage: public-guard staged | msg <file> | range <base>"; exit 2 ;;
+esac
+
+[ "$fail" = 0 ] || { say "stopped: this would not be safe in a public repo"; exit 1; }

@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Repo kit (~/.1dot/kit, copied by `dot kit`; change it there). Stops `mise run check` (so a push) when a
+# package this repo ships has a known HIGH or CRITICAL hole (CVSS >= 7), using osv-scanner.
+#   tools/osv-gate [--ships <pkg>]...   scan the lockfiles git tracks (worktrees and node_modules are skipped)
+# Shipped = not a dev-only package, plus each --ships name (a dev package that still ends up in the
+# product, e.g. a library inlined into the app). Dev-only holes are listed, never fatal.
+# Accept a known hole for a while in osv-scanner.toml at the repo root:
+#   [[IgnoredVulns]]
+#   id = "GHSA-..."
+#   ignoreUntil = 2026-12-31
+#   reason = "fix needs Expo SDK 58 (board)"
+set -euo pipefail
+
+ships=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --ships) ships+=("${2:?--ships needs a package name}"); shift 2 ;;
+    *) echo "usage: tools/osv-gate [--ships <pkg>]..." >&2; exit 2 ;;
+  esac
+done
+
+top=$(git rev-parse --show-toplevel)
+cd "$top"
+command -v osv-scanner >/dev/null || { echo "osv-gate: osv-scanner missing (mise install)" >&2; exit 2; }
+
+mapfile -t locks < <(git ls-files -- '*package-lock.json' '*pnpm-lock.yaml' '*yarn.lock' '*uv.lock' '*poetry.lock' \
+  '*requirements*.txt' '*Cargo.lock' '*go.sum' '*composer.lock' '*Gemfile.lock')
+[ "${#locks[@]}" -gt 0 ] || { echo "osv-gate: no lockfiles, nothing to scan"; exit 0; }
+
+args=()
+for f in "${locks[@]}"; do args+=(-L "$f"); done
+[ -f osv-scanner.toml ] && args+=(--config osv-scanner.toml)
+
+out=$(mktemp)
+trap 'rm -f "$out"' EXIT
+set +e
+osv-scanner scan source --format json "${args[@]}" >"$out" 2>/dev/null
+rc=$?
+set -e
+# 0 = nothing found, 1 = holes found; anything else is the scanner failing (network, bad lockfile)
+[ "$rc" -le 1 ] || { echo "osv-gate: osv-scanner failed (exit $rc)" >&2; exit 2; }
+
+ships_json=$(printf '%s\n' "${ships[@]+"${ships[@]}"}" | jq -Rsc 'split("\n") | map(select(length > 0))')
+jq -r --argjson ships "$ships_json" '
+  [.results[]? | .source.path as $f | .packages[]? as $p | $p.groups[]?
+   | {file: ($f | sub("^.*?/(?=[^/]+$)"; "")), name: $p.package.name, version: $p.package.version,
+      sev: ((.max_severity // "0") | tonumber? // 0), id: (.ids[0]),
+      dev: ((($p.dependency_groups // []) | index("dev")) != null and (($ships | index($p.package.name)) == null))}
+   | select(.sev >= 7)] | unique_by(.name, .version, .id) | sort_by(.dev, -.sev)
+  | .[] | "\(if .dev then "dev " else "SHIP" end)\t\(.sev)\t\(.name)@\(.version)\t\(.id)"' "$out" | column -t -s $'\t' || true
+
+bad=$(jq --argjson ships "$ships_json" '[.results[]? | .packages[]? as $p | $p.groups[]?
+  | select(((.max_severity // "0") | tonumber? // 0) >= 7)
+  | select((($p.dependency_groups // []) | index("dev")) == null or (($ships | index($p.package.name)) != null))] | length' "$out")
+if [ "$bad" -gt 0 ]; then
+  echo "osv-gate: $bad high/critical hole(s) in shipped packages. Update them, or accept one for a while in osv-scanner.toml (IgnoredVulns with ignoreUntil + reason)" >&2
+  exit 1
+fi
+echo "osv-gate: no high/critical holes in shipped packages"

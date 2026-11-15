@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <title>Graffiti studio</title>
+    <style>
+      /* The site's own colours (src/design/tokens.css): the page, the paint, the quiet words. */
+      :root {
+        --bg: #05060a;
+        --surface: #24252a;
+        --line: #3a3c44;
+        --text: #f2f0ea;
+        --quiet: #a9a8a2;
+        --paint: #d6cfbf;
+        --accent: #8fb0ff;
+        --on-accent: #05060a;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          500 15px/1.3 system-ui,
+          sans-serif;
+        overscroll-behavior: none;
+      }
+      body {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        height: 100dvh;
+        padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right))
+          env(safe-area-inset-bottom) max(12px, env(safe-area-inset-left));
+      }
+      /* One row: the words, then what to do with the one picked. It scrolls sideways if the phone is narrow. */
+      nav {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        padding-block: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      nav > * {
+        flex: none;
+      }
+      .gap {
+        flex: 1 0 8px;
+      }
+      button {
+        font: inherit;
+        color: var(--text);
+        background: transparent;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        min-height: 44px;
+        padding: 0 12px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      #word,
+      #pens {
+        font: inherit;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        min-height: 44px;
+        padding: 0 12px;
+        max-width: 8em;
+      }
+      #new {
+        flex: none;
+        width: 5em;
+        font: inherit;
+        color: var(--text);
+        background: transparent;
+        border: 1px dashed var(--line);
+        border-radius: 999px;
+        min-height: 44px;
+        padding: 0 12px;
+      }
+      button[aria-pressed="true"] {
+        background: var(--text);
+        color: var(--bg);
+        border-color: var(--text);
+      }
+      button.go {
+        background: var(--accent);
+        color: var(--on-accent);
+        border-color: var(--accent);
+      }
+      button:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+      button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      /* Take back and bring back, on the left where the writing hand's palm never rests. */
+      #rail {
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        display: grid;
+        gap: 8px;
+        z-index: 1;
+      }
+      #rail button {
+        padding: 0 12px;
+        background: var(--bg);
+      }
+      /* The writing lines' handles, on the right edge: the baseline's moves them, the capital line's sizes them. */
+      .grip {
+        position: absolute;
+        right: 0;
+        width: 60px;
+        height: 36px;
+        margin-top: -18px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-right: 0;
+        border-radius: 999px 0 0 999px;
+        background: var(--surface);
+        color: var(--quiet);
+        font-size: 13px;
+        touch-action: none;
+        cursor: ns-resize;
+        user-select: none;
+        z-index: 1;
+      }
+      .grip.held {
+        color: var(--bg);
+        background: var(--text);
+      }
+      /* Over the paper, so a new message never moves the paper (that made writing lag). */
+      #status {
+        position: absolute;
+        left: 96px;
+        right: 72px;
+        top: 34px;
+        color: var(--quiet);
+        pointer-events: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #status a {
+        color: var(--accent);
+        pointer-events: auto;
+      }
+      main {
+        position: relative;
+        min-height: 0;
+        border-top: 1px solid var(--line);
+        overflow: hidden;
+        margin-inline: calc(-1 * max(12px, env(safe-area-inset-left)));
+      }
+      canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+      #hint {
+        position: absolute;
+        left: 96px;
+        top: 12px;
+        color: var(--quiet);
+        pointer-events: none;
+      }
+      #turn {
+        display: none;
+        position: absolute;
+        inset: auto 16px 12px;
+        color: var(--quiet);
+        pointer-events: none;
+      }
+      @media (orientation: portrait) and (max-width: 700px) {
+        #turn {
+          display: block;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav id="bar">
+      <select id="word" aria-label="Word"></select>
+      <form id="add" style="display: contents">
+        <input id="new" maxlength="40" placeholder="Add…" aria-label="New word" />
+      </form>
+      <select id="pens" aria-label="Pen"></select>
+      <button id="spill" type="button">Spill: normal</button>
+      <button id="drips" type="button">Drips: normal</button>
+      <span class="gap"></span>
+      <button id="save" class="go" type="button">Save</button>
+      <button id="full" type="button" aria-label="Full screen" title="Full screen">⛶</button>
+    </nav>
+    <main>
+      <canvas id="paper"></canvas>
+      <div id="rail">
+        <button id="undo" type="button" disabled>Undo</button>
+        <button id="redo" type="button" disabled>Redo</button>
+        <button id="clear" type="button">Clear</button>
+        <button id="play" type="button">Play</button>
+      </div>
+      <div class="grip" id="sizeGrip" title="Drag with the pen to size the letters">size</div>
+      <div class="grip" id="moveGrip" title="Drag with the pen to move the lines">move</div>
+      <div id="hint"></div>
+      <div id="status" role="status"></div>
+      <div id="turn">Turn the phone sideways for the long words.</div>
+    </main>
+    <script>
+      (() => {
+        // Where the pen rests, the paint spills: it starts after this long (ms) and grows to this share of
+        // the nib's length.
+        // From src/content/pens.json ("paint"), the file the site reads too.
+        let SPILL_AFTER = 90;
+        let SPILL_MOST = 0.75;
+        // A hand on glass wobbles; a tag is fast, sure curves. The line is smoothed over this share of the
+        // capital height (like a drawing app's stabiliser), with its two ends kept where the pen was.
+        // Only the look: the saved line is what the pen did, so the site smooths it the same way.
+        // A word made by tools/write/tag.mjs is smooth already and keeps its sharp corners.
+        // The smoothing and the pens come from src/content/pens.json, the file the site reads too.
+        let STEADY = 0.06;
+        // The writing lines, as shares of the paper's height: where the letters stand and how tall the
+        // capitals are. Low by default, where Tom writes in full screen (11-14); the handles on the right
+        // move and size them, and this phone remembers where. Saved words don't change: they are kept
+        // in capital heights from the baseline, wherever the lines were.
+        const LINES_KEY = "studio:lines";
+        const LINES_FIRST = { base: 0.8, cap: 0.4 };
+        let lines = { ...LINES_FIRST };
+        try {
+          const kept = JSON.parse(localStorage.getItem(LINES_KEY));
+          if (kept && kept.base > 0 && kept.cap > 0) lines = kept;
+        } catch {}
+        // The jumbo paint marker in Tom's photo: a felt block about three times as wide as it is deep,
+        // held at the site's angle (src/scene/pen.ts). It leaves a bold mark both ways with square ends;
+        // pressing harder only squashes the felt a little. Length as a share of the capital height.
+        // The pens (Tom 11-13, more 11-14) are in src/content/pens.json: a word is saved with its pen and the
+        // site draws it with the same one.
+        let PENS = {};
+        let pen = "graffiti";
+        let BLOCK = { angle: -38, length: 0.14, depth: 0.33 };
+        // A word is saved in units where the capital height is this much (the site scales it).
+        const UNITS = 1000;
+        /** Where the writing starts, right of Undo, Redo and Clear (paper pixels). */
+        const LEFT = 104;
+
+        const paper = document.getElementById("paper");
+        const g = paper.getContext("2d");
+        // The paint is drawn on its own layer first, so the dry streaks can take paint away without
+        // taking the guides with it.
+        const ink = document.createElement("canvas");
+        const k = ink.getContext("2d");
+        const status = document.getElementById("status");
+        const moveGrip = document.getElementById("moveGrip");
+        const sizeGrip = document.getElementById("sizeGrip");
+        const wordList = document.getElementById("word");
+        const hint = document.getElementById("hint");
+        const css = (name) =>
+          getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        const PAINT = css("--paint");
+
+        let words = [];
+        let saved = new Set();
+        let word = "";
+        /** The strokes of the current word: [x, y, t, pressure] per point, in paper pixels and ms. */
+        let strokes = [];
+        // Undo and Redo: the strokes as they were before each change, and as they were before each undo.
+        let back = [];
+        let ahead = [];
+        /** When the pen last left the paper (event time), so the next line starts after a short lift. */
+        let lifted = 0;
+        /** How much this word spills and drips: a level from pens.json's "levels", or normal. */
+        let level = { spill: "normal", drips: "normal" };
+        const LEVELS = {
+          spill: ["less", "normal", "more"],
+          drips: ["none", "less", "normal", "more"],
+        };
+        let stroke = null;
+        let started = 0;
+        let size = { w: 0, h: 0, cap: 0, base: 0, capAt: 0 };
+        let playing = 0;
+        /** Written here and not saved yet. */
+        let dirty = false;
+        /** The word on the paper was made by tools/write/tag.mjs, not written here. */
+        let made = false;
+
+        const say = (text) => {
+          status.textContent = text;
+        };
+
+        function layout() {
+          const box = paper.getBoundingClientRect();
+          const ratio = Math.min(3, window.devicePixelRatio || 1);
+          paper.width = Math.round(box.width * ratio);
+          paper.height = Math.round(box.height * ratio);
+          g.setTransform(ratio, 0, 0, ratio, 0, 0);
+          ink.width = paper.width;
+          ink.height = paper.height;
+          k.setTransform(ratio, 0, 0, ratio, 0, 0);
+          const was = size;
+          size = {
+            w: box.width,
+            h: box.height,
+            base: box.height * lines.base,
+            cap: box.height * lines.cap,
+          };
+          size.capAt = size.base - size.cap;
+          if (was.cap) refit(was, size);
+          for (const [grip, y] of [
+            [moveGrip, size.base],
+            [sizeGrip, size.capAt],
+          ])
+            grip.style.top = `${y}px`;
+          redraw(Infinity);
+        }
+
+        /** Moves every stroke (on the paper, behind Undo and ahead of it) with the lines, so the writing
+         * keeps standing on the baseline at the same size against the capitals. */
+        function refit(from, to) {
+          const scale = to.cap / from.cap;
+          const all = new Set([strokes, ...back, ...ahead].flat());
+          for (const s of all)
+            for (const pt of s) {
+              pt[0] = LEFT + (pt[0] - LEFT) * scale;
+              pt[1] = to.base + (pt[1] - from.base) * scale;
+            }
+        }
+
+        function guides() {
+          g.save();
+          g.strokeStyle = css("--line");
+          g.lineWidth = 1;
+          g.setLineDash([6, 8]);
+          for (const y of [size.capAt, size.base - size.cap * 0.5]) {
+            g.beginPath();
+            g.moveTo(0, y);
+            g.lineTo(size.w, y);
+            g.stroke();
+          }
+          g.setLineDash([]);
+          g.beginPath();
+          g.moveTo(0, size.base);
+          g.lineTo(size.w, size.base);
+          g.stroke();
+          // What each line is for, at the right end.
+          g.fillStyle = css("--quiet");
+          g.font = "12px system-ui, sans-serif";
+          g.textAlign = "right";
+          const at = size.w - 72;
+          g.fillText("tall letters and capitals", at, size.capAt - 6);
+          g.fillText("small letters", at, size.base - size.cap * 0.5 - 6);
+          g.fillText("letters stand here", at, size.base - 6);
+          g.fillText("tails and the end stroke go below", at, size.base + 18);
+          g.restore();
+        }
+
+        /** The felt block's paint from a to b: the block stamped every pixel along the way, always turned
+         * the same way, so the pieces add up to one shape with square ends. */
+        function blockSweep(a, b, area) {
+          const { angle, length, depth } = BLOCK;
+          const rad = (angle * Math.PI) / 180;
+          const [ux, uy] = [Math.cos(rad), Math.sin(rad)];
+          const [vx, vy] = [-uy, ux];
+          const dist = Math.hypot(b[0] - a[0], b[1] - a[1]);
+          const n = Math.max(1, Math.ceil(dist));
+          for (let k = a === b ? 0 : 1; k <= n; k++) {
+            const t = k / n;
+            const x = a[0] + (b[0] - a[0]) * t;
+            const y = a[1] + (b[1] - a[1]) * t;
+            const p = a[3] + (b[3] - a[3]) * t;
+            const half = (size.cap * length * (0.9 + 0.2 * p)) / 2;
+            const deep = half * depth;
+            area.moveTo(x - ux * half - vx * deep, y - uy * half - vy * deep);
+            area.lineTo(x + ux * half - vx * deep, y + uy * half - vy * deep);
+            area.lineTo(x + ux * half + vx * deep, y + uy * half + vy * deep);
+            area.lineTo(x - ux * half + vx * deep, y - uy * half + vy * deep);
+            area.closePath();
+          }
+        }
+
+        function spill(a, b, area) {
+          const rest = b[2] - a[2];
+          if (rest < SPILL_AFTER) return;
+          const most = size.cap * BLOCK.length * SPILL_MOST;
+          const r = Math.min(most, most * Math.sqrt((rest - SPILL_AFTER) / 900));
+          area.moveTo(b[0] + r, b[1]);
+          area.arc(b[0], b[1], r, 0, Math.PI * 2);
+        }
+
+        /** The stroke with the hand's wobble taken out: each point moved to the weighted middle of the
+         * points around it along the line. Times and pressures stay. */
+        function steady(s) {
+          const reach = size.cap * STEADY;
+          const along = [0];
+          for (let i = 1; i < s.length; i++)
+            along.push(along[i - 1] + Math.hypot(s[i][0] - s[i - 1][0], s[i][1] - s[i - 1][1]));
+          const total = along[along.length - 1];
+          return s.map((pt, i) => {
+            // Narrower near the ends, so the line starts and stops where the pen did.
+            const r = Math.min(reach, along[i], total - along[i]);
+            if (r < 0.5) return pt;
+            let x = 0,
+              y = 0,
+              w = 0;
+            for (let j = i; j >= 0 && along[i] - along[j] <= r; j--) {
+              const k = Math.exp(-(((along[i] - along[j]) / r) ** 2) * 2);
+              x += s[j][0] * k;
+              y += s[j][1] * k;
+              w += k;
+            }
+            for (let j = i + 1; j < s.length && along[j] - along[i] <= r; j++) {
+              const k = Math.exp(-(((along[j] - along[i]) / r) ** 2) * 2);
+              x += s[j][0] * k;
+              y += s[j][1] * k;
+              w += k;
+            }
+            return [x / w, y / w, pt[2], pt[3]];
+          });
+        }
+
+        /** Draws the word as far as `upTo` ms into the writing. */
+        // A real paint marker, not a flat fill (Tom 11-12): where the hand is fast the felt runs dry and
+        // leaves streaks; where it starts, stops or turns slowly the paint pools; under the slowest spots
+        // it drips. Speeds are in capital heights per second.
+        const DRY_FROM = 2.8;
+        const DRY_FULL = 7;
+        const STREAKS = 3;
+        let POOL = 0.62;
+        // Each stroke may drip at its start, its end and its slow spots: each such place drips or not by
+        // its own fixed chance, so a drip that started never goes away as the writing goes on.
+        let DRIPS = 3;
+        let DRIP_ODDS = 0.45;
+        let DRIP_LONGEST = 0.55;
+        let DRIP_GROWS = 2600;
+        // Paint over paint is denser: each pass between two slow turns is laid down on its own, so where
+        // the line crosses or goes back over itself it shows, like a real marker.
+        const PASS = 0.92;
+        /** The same "random" every time for the same place, so a replay looks like the first draw. */
+        const chance = (n) => {
+          const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+          return x - Math.floor(x);
+        };
+
+        function redraw(upTo) {
+          g.clearRect(0, 0, size.w, size.h);
+          guides();
+          k.clearRect(0, 0, size.w, size.h);
+          k.fillStyle = PAINT;
+          k.strokeStyle = PAINT;
+          const rad = (BLOCK.angle * Math.PI) / 180;
+          const [ux, uy] = [Math.cos(rad), Math.sin(rad)];
+          const half = (size.cap * BLOCK.length) / 2;
+          const drySpots = [];
+          strokes.forEach((raw, si) => {
+            const s = made ? raw : steady(raw);
+            let n = 0;
+            while (n < s.length && s[n][2] <= upTo) n++;
+            if (!n) return;
+            // How fast the hand went at each point, over a short window.
+            const speed = s.map((_, i) => {
+              const a = s[Math.max(0, i - 3)],
+                b = s[Math.min(s.length - 1, i + 3)];
+              const dt = Math.max(1, b[2] - a[2]);
+              return Math.hypot(b[0] - a[0], b[1] - a[1]) / size.cap / (dt / 1000);
+            });
+            k.globalAlpha = PASS;
+            let area = new Path2D();
+            for (let i = 0; i < n; i++) {
+              if (i === 0) {
+                blockSweep(s[0], s[0], area);
+                continue;
+              }
+              blockSweep(s[i - 1], s[i], area);
+              spill(s[i - 1], s[i], area);
+              // A slow turn ends a pass.
+              if (
+                i > 3 &&
+                i < n - 3 &&
+                speed[i] < 1.6 &&
+                speed[i] <= speed[i - 1] &&
+                speed[i] < speed[i + 1]
+              ) {
+                k.fill(area, "nonzero");
+                area = new Path2D();
+                blockSweep(s[i], s[i], area);
+              }
+            }
+            // Pools where the pen landed and where it is now or left the wall.
+            for (const i of [0, n - 1]) {
+              const r = half * POOL * (i === 0 ? 1 : 0.85);
+              area.moveTo(s[i][0] + r, s[i][1]);
+              area.arc(s[i][0], s[i][1], r, 0, Math.PI * 2);
+            }
+            k.fill(area, "nonzero");
+            k.globalAlpha = 1;
+            // Where this stroke drips: its start, its slow spots once the pen is well past them, and its
+            // end once the pen has left the wall. Always the same places for the same line.
+            const spots = [0];
+            for (let i = 8; i < n - 8; i += 4) {
+              if (speed[i] < 1.2 && speed[i] <= speed[i - 4] && speed[i] <= speed[i + 4])
+                spots.push(i);
+            }
+            if (n === s.length && raw !== stroke) spots.push(n - 1);
+            let dripped = 0;
+            for (const i of spots) {
+              const key = si * 1e4 + (i === s.length - 1 ? 9999 : i);
+              if (dripped >= DRIPS || chance(key + 3) > DRIP_ODDS) continue;
+              dripped++;
+              drySpots.push({ at: s[i], key });
+            }
+            // Dry streaks: thin tracks across the felt where it ran out of paint, the faster the more.
+            k.save();
+            k.globalCompositeOperation = "destination-out";
+            k.lineCap = "round";
+            for (let tr = 0; tr < STREAKS; tr++) {
+              const off = (chance(tr + 1) * 2 - 1) * half * 0.85;
+              const width = 0.5 + chance(tr + 9) * 1;
+              const levels = [new Path2D(), new Path2D(), new Path2D()];
+              for (let i = 1; i < n; i++) {
+                const dry =
+                  (speed[i] - DRY_FROM) / (DRY_FULL - DRY_FROM) +
+                  (chance(tr * 977 + Math.floor(i / 9)) - 0.5) * 0.5;
+                if (dry <= 0.25) continue;
+                const lv = levels[Math.min(2, Math.floor(dry * 3))];
+                lv.moveTo(s[i - 1][0] + ux * off, s[i - 1][1] + uy * off);
+                lv.lineTo(s[i][0] + ux * off, s[i][1] + uy * off);
+              }
+              levels.forEach((lv, j) => {
+                k.globalAlpha = 0.25 + j * 0.25;
+                k.lineWidth = width;
+                k.stroke(lv);
+              });
+            }
+            k.restore();
+          });
+          // Drips run down slowly after the pen passed, and stay. While writing they run on the clock;
+          // a replay runs them on the replay's clock; a saved word shows them run.
+          const now = upTo !== Infinity ? upTo : dirty ? performance.now() - started : Infinity;
+          let running = false;
+          for (const { at, key } of drySpots) {
+            const ran = Math.min(1, Math.max(0, (now - at[2]) / DRIP_GROWS));
+            if (ran < 1) running = true;
+            const grow = 1 - (1 - ran) ** 2;
+            const long = size.cap * DRIP_LONGEST * (0.35 + 0.65 * chance(key + 5)) * grow;
+            if (long < 1) continue;
+            const w = half * 0.5;
+            const x = at[0] + (chance(key + 7) - 0.5) * half * 0.8;
+            // Wide where it leaves the line, thin as it runs, a small bead at the end.
+            k.beginPath();
+            k.moveTo(x - w, at[1] - w * 0.4);
+            k.quadraticCurveTo(x - w * 0.34, at[1] + w * 0.6, x - w * 0.3, at[1] + long);
+            k.lineTo(x + w * 0.3, at[1] + long);
+            k.quadraticCurveTo(x + w * 0.34, at[1] + w * 0.6, x + w, at[1] - w * 0.4);
+            k.fill();
+            k.beginPath();
+            k.ellipse(x, at[1] + long, w * 0.42, w * 0.5, 0, 0, Math.PI * 2);
+            k.fill();
+          }
+          g.save();
+          g.setTransform(1, 0, 0, 1, 0, 0);
+          g.drawImage(ink, 0, 0);
+          g.restore();
+          // Keep the drips running while the hand rests.
+          if (running && upTo === Infinity && dirty) redrawSoon();
+        }
+        let queued = 0;
+        const redrawSoon = () => {
+          if (!queued)
+            queued = requestAnimationFrame(() => {
+              queued = 0;
+              redraw(Infinity);
+            });
+        };
+
+        // Each word's writing is kept on this phone as it grows (a draft), so switching words, a reload
+        // or a flat battery never loses it. Saving clears the draft; the saved word is the one the site uses.
+        const draftKey = (w) => `studio:word:${w}`;
+        /** The strokes in capital heights from the baseline and the paper's left margin. */
+        function inUnits() {
+          const left = LEFT;
+          return strokes.map((s) =>
+            s.map(([x, y, t, p]) => [(x - left) / size.cap, (y - size.base) / size.cap, t, p]),
+          );
+        }
+        function keepDraft() {
+          try {
+            if (!strokes.length) localStorage.removeItem(draftKey(word));
+            else
+              localStorage.setItem(
+                draftKey(word),
+                JSON.stringify({ pen, level, made, strokes: inUnits() }),
+              );
+          } catch {}
+        }
+        function readDraft(w) {
+          try {
+            return JSON.parse(localStorage.getItem(draftKey(w)));
+          } catch {
+            return null;
+          }
+        }
+
+        function pick(next) {
+          word = next;
+          wordList.value = word;
+          strokes = [];
+          back = [];
+          ahead = [];
+          lifted = 0;
+          dirty = false;
+          made = false;
+          hint.textContent =
+            word === "circle"
+              ? "Draw a quick circle, like circling a word on a poster."
+              : word === "signature"
+                ? "Sign your name, the way you sign."
+                : `Write ${word}.`;
+          say("");
+          const draft = readDraft(word);
+          if (draft?.strokes?.length) {
+            usePaint(draft.level);
+            choosePen(PENS.pens?.[draft.pen] ? draft.pen : "graffiti");
+            made = Boolean(draft.made);
+            const left = LEFT;
+            strokes = draft.strokes.map((s) =>
+              s.map(([x, y, t, p]) => [left + x * size.cap, size.base + y * size.cap, t, p]),
+            );
+            dirty = true;
+            say(`Your unsaved ${word} is back. Write on, Undo, or Save.`);
+          } else usePaint();
+          showButtons();
+          redraw(Infinity);
+          if (!draft && saved.has(word)) loadSaved(word);
+        }
+
+        /** Shows a saved word where it was written, so Play can replay it and the pen can add to it. */
+        async function loadSaved(w) {
+          try {
+            const res = await fetch(`/word/${encodeURIComponent(w)}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (w !== word || strokes.length) return;
+            made = Boolean(data.made);
+            usePaint(data.paint);
+            choosePen(PENS.pens?.[data.pen] ? data.pen : "graffiti");
+            const scale = size.cap / data.units;
+            const left = LEFT;
+            strokes = data.strokes.map((s) => {
+              const out = [];
+              for (let i = 0; i < s.length; i += 4)
+                out.push([left + s[i] * scale, size.base + s[i + 1] * scale, s[i + 2], s[i + 3]]);
+              return out;
+            });
+            redraw(Infinity);
+            say(
+              `${w} is saved. Write to add to it, Undo to take lines back, Clear to start again.`,
+            );
+          } catch {
+            say(`Couldn't load the saved ${w}.`);
+          }
+        }
+
+        /** A change to the strokes that Undo can take back. */
+        function change(next) {
+          back.push(strokes);
+          ahead = [];
+          strokes = next;
+          changed();
+        }
+        function changed() {
+          dirty = true;
+          keepDraft();
+          showButtons();
+          redraw(Infinity);
+        }
+        function showButtons() {
+          document.getElementById("undo").disabled = !back.length;
+          document.getElementById("redo").disabled = !ahead.length;
+          document.getElementById("clear").disabled = !strokes.length;
+        }
+        function undo() {
+          if (!back.length) return;
+          ahead.push(strokes);
+          strokes = back.pop();
+          changed();
+          say("Undone. Redo does it again.");
+        }
+        function redo() {
+          if (!ahead.length) return;
+          back.push(strokes);
+          strokes = ahead.pop();
+          changed();
+          say("");
+        }
+
+        /** How much the word spills and drips, from pens.json: the normal paint with the levels on top. */
+        function usePaint(next = {}) {
+          level = { spill: "normal", drips: "normal", ...next };
+          const look = { ...PENS.paint };
+          for (const kind of ["spill", "drips"])
+            Object.assign(look, PENS.levels?.[kind]?.[level[kind]]);
+          ({
+            pool: POOL,
+            spillAfter: SPILL_AFTER,
+            spillMost: SPILL_MOST,
+            drips: DRIPS,
+            dripOdds: DRIP_ODDS,
+            dripLongest: DRIP_LONGEST,
+            dripGrows: DRIP_GROWS,
+          } = look);
+          document.getElementById("spill").textContent = `Spill: ${level.spill}`;
+          document.getElementById("drips").textContent = `Drips: ${level.drips}`;
+        }
+        for (const kind of ["spill", "drips"])
+          document.getElementById(kind).addEventListener("click", () => {
+            const all = LEVELS[kind];
+            usePaint({ ...level, [kind]: all[(all.indexOf(level[kind]) + 1) % all.length] });
+            if (strokes.length) changed();
+            else redraw(Infinity);
+          });
+
+        function point(e) {
+          const box = paper.getBoundingClientRect();
+          // A mouse has no pressure: half.
+          const p = e.pointerType === "pen" ? e.pressure || 0.5 : 0.5;
+          return [e.clientX - box.left, e.clientY - box.top, e.timeStamp - started, p];
+        }
+
+        paper.addEventListener("pointerdown", (e) => {
+          if (e.pointerType === "touch") {
+            say("Use the S Pen: fingers and palms don't write.");
+            return;
+          }
+          if (!word) return;
+          if (playing) (cancelAnimationFrame(playing), (playing = 0), redraw(Infinity));
+          paper.setPointerCapture(e.pointerId);
+          // The new line starts a short lift after the last one ended, however long the pen was away,
+          // so a word written over many sittings still replays as one go.
+          const end = strokes.length ? Math.max(...strokes.map((s) => s.at(-1)[2])) : 0;
+          const away = lifted ? Math.min(600, e.timeStamp - lifted) : 300;
+          started = strokes.length ? e.timeStamp - end - away : e.timeStamp;
+          stroke = [point(e)];
+          change([...strokes, stroke]);
+        });
+        paper.addEventListener("pointermove", (e) => {
+          if (!stroke) return;
+          for (const c of e.getCoalescedEvents ? e.getCoalescedEvents() : [e]) {
+            const p = point(c);
+            const last = stroke[stroke.length - 1];
+            if (Math.hypot(p[0] - last[0], p[1] - last[1]) < 0.4) {
+              last[2] = p[2];
+              continue;
+            }
+            stroke.push(p);
+          }
+          redrawSoon();
+        });
+        const lift = () => {
+          if (!stroke) return;
+          stroke = null;
+          lifted = performance.now();
+          keepDraft();
+          const n = strokes.length;
+          say(`${n === 1 ? "One line" : n + " lines"}. Undo takes the last one back.`);
+        };
+        paper.addEventListener("pointerup", lift);
+        paper.addEventListener("pointercancel", lift);
+
+        document.getElementById("undo").addEventListener("click", undo);
+        document.getElementById("redo").addEventListener("click", redo);
+        document.getElementById("clear").addEventListener("click", () => {
+          if (!strokes.length) return;
+          change([]);
+          say("Cleared. Undo brings it all back.");
+        });
+        addEventListener("keydown", (e) => {
+          if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "z" || e.target.id === "new")
+            return;
+          e.preventDefault();
+          e.shiftKey ? redo() : undo();
+        });
+
+        // The handles: drag the baseline's to move the lines up or down, the capital line's to make the
+        // letters bigger or smaller. With the pen or a mouse; a resting palm can't move them.
+        for (const [grip, moves] of [
+          [moveGrip, true],
+          [sizeGrip, false],
+        ]) {
+          let from = null;
+          grip.addEventListener("pointerdown", (e) => {
+            if (e.pointerType === "touch") {
+              say("Drag the handles with the S Pen.");
+              return;
+            }
+            grip.setPointerCapture(e.pointerId);
+            grip.classList.add("held");
+            from = { y: e.clientY, ...lines };
+          });
+          grip.addEventListener("pointermove", (e) => {
+            if (!from) return;
+            const dy = (e.clientY - from.y) / size.h;
+            if (moves) lines.base = Math.min(0.92, Math.max(from.cap + 0.1, from.base + dy));
+            else lines.cap = Math.min(lines.base - 0.1, Math.max(0.15, from.cap - dy));
+            layout();
+          });
+          const drop = () => {
+            if (!from) return;
+            from = null;
+            grip.classList.remove("held");
+            try {
+              localStorage.setItem(LINES_KEY, JSON.stringify(lines));
+            } catch {}
+            if (strokes.length) keepDraft();
+          };
+          grip.addEventListener("pointerup", drop);
+          grip.addEventListener("pointercancel", drop);
+          // Two taps puts the lines back where they start.
+          grip.addEventListener("dblclick", () => {
+            lines = { ...LINES_FIRST };
+            try {
+              localStorage.removeItem(LINES_KEY);
+            } catch {}
+            layout();
+          });
+        }
+
+        document.getElementById("play").addEventListener("click", () => {
+          if (!strokes.length) {
+            say("Write the word first.");
+            return;
+          }
+          const end = strokes[strokes.length - 1].at(-1)[2];
+          const from = performance.now();
+          cancelAnimationFrame(playing);
+          const frame = () => {
+            const t = performance.now() - from;
+            redraw(t);
+            playing = t < end ? requestAnimationFrame(frame) : 0;
+          };
+          frame();
+        });
+
+        document.getElementById("save").addEventListener("click", async () => {
+          if (!word || !strokes.length) {
+            say("Write the word first.");
+            return;
+          }
+          // In units: the capital height is UNITS, x from where the writing starts, y from the baseline.
+          const scale = UNITS / size.cap;
+          const left = Math.min(...strokes.flat().map((p) => p[0]));
+          const data = {
+            word,
+            written: new Date().toISOString().slice(0, 10),
+            units: UNITS,
+            lifts: strokes.length - 1,
+            // The pen it was written with; the site draws it with the same pen.
+            pen,
+            // How much it spills and drips, when not the normal.
+            ...(Object.values(level).some((l) => l !== "normal") && {
+              paint: Object.fromEntries(Object.entries(level).filter(([, l]) => l !== "normal")),
+            }),
+            // Each stroke flat: x, y, ms, pressure per point.
+            strokes: strokes.map((s) =>
+              s.flatMap(([x, y, t, p]) => [
+                Math.round((x - left) * scale),
+                Math.round((y - size.base) * scale),
+                Math.round(t),
+                Math.round(p * 100) / 100,
+              ]),
+            ),
+          };
+          say("Saving…");
+          try {
+            const res = await fetch("/save", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(data),
+            });
+            const out = await res.json();
+            if (!res.ok) throw new Error(out.error || "Couldn't save");
+            saved.add(word);
+            dirty = false;
+            try {
+              localStorage.removeItem(draftKey(word));
+            } catch {}
+            markSaved();
+            // The site's live preview on this PC (mise run dev) picks the saved word up within seconds.
+            say(`Saved ${word}. `);
+            const see = document.createElement("a");
+            see.href = `${location.protocol}//${location.hostname}:3000/look`;
+            see.target = "site";
+            see.textContent = "See it on the site ↗";
+            status.append(see);
+          } catch (err) {
+            say(`${err.message}. Try again.`);
+          }
+        });
+
+        function markSaved() {
+          for (const o of wordList.options)
+            o.textContent = saved.has(o.value) ? `${o.value} ✓` : o.value;
+        }
+
+        // Full screen, sideways where the phone allows it: the most room to write. The first tap on any
+        // button goes there (not the pen's first touch, so the paper never moves under a stroke); the
+        // ⛶ button shows whenever the page is not full screen, to get back after leaving it.
+        const full = document.getElementById("full");
+        const canFull = !!document.documentElement.requestFullscreen;
+        const showFull = () => {
+          full.hidden = !canFull || !!document.fullscreenElement;
+        };
+        const goFull = async () => {
+          if (!canFull || document.fullscreenElement) return;
+          try {
+            await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+            await screen.orientation?.lock?.("landscape").catch(() => {});
+          } catch {
+            say("This browser won't go full screen. Use Chrome.");
+          }
+        };
+        document.getElementById("bar").addEventListener("click", goFull);
+        document.getElementById("rail").addEventListener("click", goFull);
+        document.addEventListener("fullscreenchange", showFull);
+        showFull();
+
+        /** Writes with this pen from now on; what is on the paper is redrawn with it. */
+        function choosePen(name) {
+          pen = name;
+          BLOCK = { angle: PENS.angle, ...PENS.pens[name] };
+          document.getElementById("pens").value = name;
+          redraw(Infinity);
+        }
+        document.getElementById("pens").addEventListener("change", (e) => {
+          choosePen(e.target.value);
+          if (strokes.length) changed();
+        });
+
+        function addButton(w) {
+          const o = document.createElement("option");
+          o.value = w;
+          o.textContent = w;
+          wordList.appendChild(o);
+        }
+        wordList.addEventListener("change", () => pick(wordList.value));
+
+        async function start() {
+          try {
+            const res = await fetch("/saved");
+            const out = await res.json();
+            words = out.words;
+            saved = new Set(out.saved);
+            PENS = await (await fetch("/pens")).json();
+            STEADY = PENS.steady;
+            usePaint();
+          } catch {
+            say("Couldn't reach the desk. Check that the writing page runs there, then reload.");
+            return;
+          }
+          // New words written here but not saved yet come back with their drafts.
+          try {
+            for (const key of Object.keys(localStorage))
+              if (key.startsWith("studio:word:") && !words.includes(key.slice(12)))
+                words.push(key.slice(12));
+          } catch {}
+          for (const w of words) addButton(w);
+          for (const [name, p] of Object.entries(PENS.pens)) {
+            const o = document.createElement("option");
+            o.value = name;
+            o.textContent = p.label;
+            document.getElementById("pens").appendChild(o);
+          }
+          // A new word: type it, press Enter, then write it.
+          document.getElementById("add").addEventListener("submit", (event) => {
+            event.preventDefault();
+            const input = document.getElementById("new");
+            const w = input.value.trim();
+            if (!w) return;
+            input.value = "";
+            input.blur();
+            if (!words.includes(w)) {
+              words.push(w);
+              addButton(w);
+            }
+            pick(w);
+          });
+          markSaved();
+          layout();
+          choosePen(pen);
+          pick(words.find((w) => !saved.has(w)) ?? words[0]);
+        }
+
+        new ResizeObserver(layout).observe(paper);
+        start();
+      })();
+    </script>
+  </body>
+</html>
