@@ -59,10 +59,9 @@ async page=>{ const errs=[], res={errs};
  }
  if(res.sideways.length) errs.push('scrolls sideways at '+res.sideways.slice(0,5).join(', '));
  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight)); await page.waitForTimeout(6000);
- // Every hand piece written in scroll mode has reached its own end (its --t is its data-write ms).
  // Each piece's strokes are animations moved by the scroll: there must be some, and every one at its end.
  res.unwritten=await page.evaluate(()=>[...document.querySelectorAll('svg[data-write]')].filter(s=>{const a=s.getAnimations({subtree:true});
-  return parseFloat(s.style.getPropertyValue('--t'))<Number(s.dataset.write)-5||!a.length||a.some(x=>{const c=x.effect.getComputedTiming();return Number(x.currentTime)<c.delay+c.activeDuration-5})}).map(s=>s.getAttribute('aria-label')||s.getAttribute('class')));
+  return !a.length||a.some(x=>{const c=x.effect.getComputedTiming();return Number(x.currentTime)<c.delay+c.activeDuration-5})}).map(s=>s.getAttribute('aria-label')||s.getAttribute('class')));
  if(res.unwritten.length) errs.push('not written after scrolling past: '+res.unwritten.join(', '));
  res.names=await page.evaluate(()=>[...document.querySelectorAll('.lk-run-photo')].map(e=>Number(getComputedStyle(e).opacity)));
  if(res.names.some(o=>o<0.99)) errs.push('a name did not open onto its picture: '+res.names.join(' '));

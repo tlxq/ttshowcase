@@ -404,7 +404,7 @@ html:has(.lk) body {
 }
 
 /* Handwriting written as it passes the pen's tip: Motion.tsx moves each stroke's paused animation
-   to the ms into the writing (and sets --t to it) */
+   to the ms into the writing */
 .lk-hand {
   display: block;
   height: auto;

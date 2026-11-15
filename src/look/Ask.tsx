@@ -7,7 +7,7 @@ import { Hand } from "./Tag";
  * The Questions part, the end of the page, back on the dark ground. Who it is for comes in line by
  * line, each sliding in slanted from its own side; Tom's "ask me" points at where to reach him;
  * and the one line through the page comes down and turns into his signature, written as it
- * passes the pen's tip. All on the scroll, both ways (Motion.tsx sets --rise and --t).
+ * passes the pen's tip. All on the scroll, both ways (Motion.tsx sets --rise and moves the strokes).
  */
 export function Ask() {
   return (

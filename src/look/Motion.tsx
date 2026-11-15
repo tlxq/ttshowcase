@@ -115,7 +115,6 @@ export function Motion() {
       });
       for (const w of writes) {
         const t = Math.round(w.now * w.ms);
-        set(w, "--t", `${t}ms`);
         // The browser makes new animations when a piece's style is worked out again (or when a
         // piece had none yet); then the list is read again, so no stroke is left unmoved.
         if (!still && (!w.strokes.length || w.strokes.some((s) => s.anim.playState === "idle")))
