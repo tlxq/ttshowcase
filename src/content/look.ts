@@ -209,7 +209,6 @@ export const lookLive: {
           },
           { text: "[pass] framed from another site: refused (frame-ancestors)", kind: "ok" },
           { text: "[pass] framed from the portfolio's address: the site loads", kind: "ok" },
-          { text: "not tested: ttdevs.com itself", kind: "quiet" },
         ],
       },
       phoneTerm: {
