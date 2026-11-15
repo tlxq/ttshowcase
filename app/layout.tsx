@@ -4,11 +4,14 @@ import { lookFonts } from "@/look/fonts";
 import { TabAway } from "@/look/TabAway";
 import "./globals.css";
 
-/** The site's own address, so a shared link's picture is found: Vercel's production address
- * (ttdevs.com once it is the site's domain), this PC while building here. */
-const address = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : "http://localhost:8123";
+/** The site's own address, so a shared link's picture is found: ttdevs.com in production, the
+ * preview's own address on a Vercel preview, this PC while building here. */
+const address =
+  process.env.VERCEL_ENV === "production"
+    ? "https://ttdevs.com"
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:8123";
 
 export const metadata: Metadata = {
   metadataBase: new URL(address),

@@ -19,11 +19,13 @@ const description =
 export const metadata: Metadata = {
   title,
   description,
-  robots: { index: false },
+  // One address for search and shared links, whichever host served the page.
+  alternates: { canonical: "https://ttdevs.com/" },
   // What a link to the page shows on LinkedIn, in chats and mail: the first screen
   // (public/share.jpg, made with mise run share; Tom picked C 11-14).
   openGraph: {
     type: "website",
+    url: "https://ttdevs.com/",
     title,
     description,
     images: [
