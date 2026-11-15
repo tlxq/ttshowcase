@@ -24,10 +24,18 @@ const clamp = (v: number) => Math.min(1, Math.max(0, v));
  */
 export function Motion() {
   useEffect(() => {
+    // Each pen stroke and drip of a piece of handwriting is its own paused animation; a frame moves
+    // only those whose picture changes, so a finished stroke is never drawn again.
     const writes = [...document.querySelectorAll<SVGSVGElement>("[data-write]")].map((el) => ({
       el,
       ms: Number(el.dataset.write) || 1,
       now: 0,
+      strokes: el.getAnimations({ subtree: true }).map((anim) => {
+        const timing = anim.effect?.getComputedTiming();
+        const from = Number(timing?.delay ?? 0);
+        const runs = Math.max(1, Number(timing?.activeDuration ?? 1));
+        return { anim, from, runs, share: -1 };
+      }),
     }));
     const rises = [...document.querySelectorAll<HTMLElement>("[data-rise]")].map((el) => ({
       el,
@@ -102,7 +110,16 @@ export function Motion() {
         if (!box) return;
         follow(p, still ? 0 : clamp((vh - box.top) / (vh + box.height)));
       });
-      for (const w of writes) set(w, "--t", `${(w.now * w.ms).toFixed(0)}ms`);
+      for (const w of writes) {
+        const t = Math.round(w.now * w.ms);
+        set(w, "--t", `${t}ms`);
+        for (const stroke of w.strokes) {
+          const share = clamp((t - stroke.from) / stroke.runs);
+          if (share === stroke.share) continue;
+          stroke.share = share;
+          stroke.anim.currentTime = t;
+        }
+      }
       for (const r of rises) set(r, "--rise", r.now.toFixed(4));
       for (const p of passes) set(p, "--pass", p.now.toFixed(4));
       frame = moving ? requestAnimationFrame(tick) : 0;

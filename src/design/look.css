@@ -164,6 +164,11 @@ html:has(.lk) body {
   overflow: visible;
   pointer-events: none;
 }
+/* The whole route, only to measure along; the pieces are what is seen (LookLine.tsx) */
+.lk-path {
+  fill: none;
+  stroke: none;
+}
 .lk-ink,
 .lk-haze {
   fill: none;
@@ -178,7 +183,9 @@ html:has(.lk) body {
 }
 .lk-haze {
   stroke-width: var(--look-haze);
-  stroke-opacity: 0.22;
+}
+.lk-hazes {
+  opacity: 0.22;
 }
 .lk-lead {
   position: absolute;
@@ -396,18 +403,19 @@ html:has(.lk) body {
   pointer-events: none;
 }
 
-/* Handwriting written as it passes the pen's tip (Motion.tsx sets --t, ms into the writing) */
+/* Handwriting written as it passes the pen's tip: Motion.tsx moves each stroke's paused animation
+   to the ms into the writing (and sets --t to it) */
 .lk-hand {
   display: block;
   height: auto;
   overflow: visible;
 }
 .lk-hand-scroll .lk-reveal {
-  animation-delay: calc(var(--from) - var(--t, 0ms));
+  animation-delay: var(--from);
   animation-play-state: paused;
 }
 .lk-hand-scroll .lk-drip {
-  animation-delay: calc(var(--at) - var(--t, 0ms));
+  animation-delay: var(--at);
   animation-play-state: paused;
 }
 

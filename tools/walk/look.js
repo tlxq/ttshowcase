@@ -65,17 +65,17 @@ async page=>{ const errs=[], res={errs};
  res.names=await page.evaluate(()=>[...document.querySelectorAll('.lk-run-photo')].map(e=>Number(getComputedStyle(e).opacity)));
  if(res.names.some(o=>o<0.99)) errs.push('a name did not open onto its picture: '+res.names.join(' '));
  // The line is drawn to its end, and its end is where the signature starts.
- res.line=await page.evaluate(()=>{const p=document.querySelector('.lk-ink');const s=document.querySelector('[data-line-end]');if(!p||!s) return null;
+ res.line=await page.evaluate(()=>{const p=document.querySelector('.lk-path');const s=document.querySelector('[data-line-end]');if(!p||!s) return null;
   const end=p.getPointAtLength(p.getTotalLength());const host=p.ownerSVGElement.getBoundingClientRect();const b=s.getBoundingClientRect();
   const sx=b.left+Number(s.dataset.startX)*b.width-host.left, sy=b.top+Number(s.dataset.startY)*b.height-host.top;
-  return {offset:Number(p.style.strokeDashoffset||1),gap:Math.round(Math.hypot(end.x-sx,end.y-sy))}});
+  return {offset:1-Number(p.ownerSVGElement.dataset.drawn||0),gap:Math.round(Math.hypot(end.x-sx,end.y-sy))}});
  if(!res.line) errs.push('no line or no signature');
  else { if(res.line.offset>0.01) errs.push('the line is not drawn to its end ('+res.line.offset+')'); if(res.line.gap>3) errs.push('the line ends '+res.line.gap+' px from the signature'); }
  await page.screenshot({path:'__SHOTS__look-end.png'});
  // Reduced motion: everything is there at once, nothing waits on the scroll.
  await page.emulateMedia({reducedMotion:'reduce'}); await go(); await page.waitForTimeout(800);
  res.still=await page.evaluate(()=>({rise:[...document.querySelectorAll('[data-rise]')].filter(e=>Number(e.style.getPropertyValue('--rise'))<0.99).length,
-  line:Number(document.querySelector('.lk-ink')?.style.strokeDashoffset||1)}));
+  line:1-Number(document.querySelector('.lk-line')?.dataset.drawn||0)}));
  if(res.still.rise) errs.push(res.still.rise+' pieces still hidden with reduced motion');
  if(res.still.line>0.01) errs.push('the line is not whole with reduced motion');
  // With reduced motion the drip is one still picture, at once.

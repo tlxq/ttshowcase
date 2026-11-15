@@ -16,6 +16,44 @@ const LOOP_HALF = 30;
 const f = (n: number) => n.toFixed(1);
 
 /**
+ * The line's route, kept both as one path (to measure along) and as its pieces, each its own path
+ * starting where the last ended. Drawn as pieces, only the piece at the pen's tip changes while the
+ * page scrolls, so a phone repaints that small piece instead of the whole page-tall line.
+ */
+class Route {
+  d = "";
+  pieces: string[] = [];
+  private x = 0;
+  private y = 0;
+  M(x: number, y: number) {
+    this.d += `M${f(x)} ${f(y)}`;
+    this.x = x;
+    this.y = y;
+  }
+  private piece(cmd: string, x: number, y: number) {
+    this.d += cmd;
+    this.pieces.push(`M${f(this.x)} ${f(this.y)}${cmd}`);
+    this.x = x;
+    this.y = y;
+  }
+  C(x1: number, y1: number, x2: number, y2: number, x: number, y: number) {
+    this.piece(`C${f(x1)} ${f(y1)} ${f(x2)} ${f(y2)} ${f(x)} ${f(y)}`, x, y);
+  }
+  Q(cx: number, cy: number, x: number, y: number) {
+    this.piece(`Q${f(cx)} ${f(cy)} ${f(x)} ${f(y)}`, x, y);
+  }
+  L(x: number, y: number) {
+    this.piece(`L${f(x)} ${f(y)}`, x, y);
+  }
+  V(y: number) {
+    this.piece(`V${f(y)}`, this.x, y);
+  }
+  H(x: number) {
+    this.piece(`H${f(x)}`, x, this.y);
+  }
+}
+
+/**
  * The one line through the page. It carries on from the end of the tag's swash, bends round and
  * runs down the right side, then under the tlxq letters to the left side and down on. It draws
  * itself as the page scrolls, never further than the pen's tip, once the tag has been written.
@@ -23,7 +61,7 @@ const f = (n: number) => n.toFixed(1);
  */
 export function LookLine() {
   const svg = useRef<SVGSVGElement>(null);
-  const [d, setD] = useState("");
+  const [route, setRoute] = useState<Route | null>(null);
 
   useEffect(() => {
     const host = svg.current?.parentElement;
@@ -42,10 +80,16 @@ export function LookLine() {
       const right = area.width - side;
       const reach = Math.max(12, (right - x) * 0.6);
       const turn = Math.max(24, Math.min(80, right - x));
-      let path =
-        `M${f(x)} ${f(y)}` +
-        `C${f(x + Math.cos(angle) * reach)} ${f(y + Math.sin(angle) * reach)}` +
-        ` ${f(right)} ${f(y - turn * 0.2)} ${f(right)} ${f(y + turn)}`;
+      const path = new Route();
+      path.M(x, y);
+      path.C(
+        x + Math.cos(angle) * reach,
+        y + Math.sin(angle) * reach,
+        right,
+        y - turn * 0.2,
+        right,
+        y + turn,
+      );
       if (under) {
         // Under the letters: round into a run to the left side, then round down again.
         const u =
@@ -53,9 +97,10 @@ export function LookLine() {
           parseFloat(getComputedStyle(under).paddingBottom) -
           area.top +
           UNDER_GAP;
-        path +=
-          `V${f(u - ROUND)}Q${f(right)} ${f(u)} ${f(right - ROUND)} ${f(u)}` +
-          `H${f(side + ROUND)}Q${f(side)} ${f(u)} ${f(side)} ${f(u + ROUND)}`;
+        path.V(u - ROUND);
+        path.Q(right, u, right - ROUND, u);
+        path.H(side + ROUND);
+        path.Q(side, u, side, u + ROUND);
       }
       // Where the line is across the page as it goes on down.
       let atX = right;
@@ -74,15 +119,18 @@ export function LookLine() {
         const r = Math.max(10, Math.min(LOOP_HALF, apart / 4 - 3));
         const across = (loops[0] ?? box.top - area.top) - 3 * r - ROUND * 2;
         const dir = lx < right ? -1 : 1;
-        path +=
-          `V${f(across - ROUND)}Q${f(right)} ${f(across)} ${f(right + dir * ROUND)} ${f(across)}` +
-          `H${f(lx - dir * ROUND)}Q${f(lx)} ${f(across)} ${f(lx)} ${f(across + ROUND)}`;
+        path.V(across - ROUND);
+        path.Q(right, across, right + dir * ROUND, across);
+        path.H(lx - dir * ROUND);
+        path.Q(lx, across, lx, across + ROUND);
         for (const y of loops) {
-          path +=
-            `V${f(y - 2 * r)}Q${f(lx)} ${f(y - r)} ${f(lx + r)} ${f(y - r)}` +
-            `H${f(lx + LOOP_OUT - r)}Q${f(lx + LOOP_OUT)} ${f(y - r)} ${f(lx + LOOP_OUT)} ${f(y)}` +
-            `Q${f(lx + LOOP_OUT)} ${f(y + r)} ${f(lx + LOOP_OUT - r)} ${f(y + r)}` +
-            `H${f(lx + r)}Q${f(lx)} ${f(y + r)} ${f(lx)} ${f(y + 2 * r)}`;
+          path.V(y - 2 * r);
+          path.Q(lx, y - r, lx + r, y - r);
+          path.H(lx + LOOP_OUT - r);
+          path.Q(lx + LOOP_OUT, y - r, lx + LOOP_OUT, y);
+          path.Q(lx + LOOP_OUT, y + r, lx + LOOP_OUT - r, y + r);
+          path.H(lx + r);
+          path.Q(lx, y + r, lx, y + 2 * r);
         }
       }
       // The Live part's projects keep their screens left of where the line runs down, their words right of it.
@@ -94,15 +142,19 @@ export function LookLine() {
         const sx = b.left - area.left + Number(sign.dataset.startX) * b.width;
         const sy = b.top - area.top + Number(sign.dataset.startY) * b.height;
         const ty = b.top - area.top - ROUND;
-        if (Math.abs(sx - atX) < ROUND * 2) path += `V${f(ty)}L${f(sx)} ${f(sy)}`;
-        else {
+        if (Math.abs(sx - atX) < ROUND * 2) {
+          path.V(ty);
+          path.L(sx, sy);
+        } else {
           const dir = sx < atX ? -1 : 1;
-          path +=
-            `V${f(ty - ROUND)}Q${f(atX)} ${f(ty)} ${f(atX + dir * ROUND)} ${f(ty)}` +
-            `H${f(sx - dir * ROUND)}Q${f(sx)} ${f(ty)} ${f(sx)} ${f(ty + ROUND)}V${f(sy)}`;
+          path.V(ty - ROUND);
+          path.Q(atX, ty, atX + dir * ROUND, ty);
+          path.H(sx - dir * ROUND);
+          path.Q(sx, ty, sx, ty + ROUND);
+          path.V(sy);
         }
-        setD(path);
-      } else setD(`${path}V${f(area.height)}`);
+      } else path.V(area.height);
+      setRoute(path);
     };
     place();
     const watch = new ResizeObserver(place);
@@ -111,16 +163,27 @@ export function LookLine() {
     return () => watch.disconnect();
   }, []);
 
-  // Draw it down to the pen's tip, easing after the scroll.
+  // Draw it down to the pen's tip, easing after the scroll. Each piece shows how much of it is
+  // drawn; only a piece whose share changes is touched, so finished pieces are never repainted.
   useEffect(() => {
-    const paths = [...(svg.current?.querySelectorAll<SVGPathElement>("path") ?? [])];
-    const ink = paths[0];
-    if (!ink || !d) return;
-    const total = ink.getTotalLength();
+    const root = svg.current;
+    const whole = root?.querySelector<SVGPathElement>(".lk-path");
+    if (!root || !whole || !route) return;
+    const total = whole.getTotalLength();
     // How far along the line each 8 px reaches, and how low it is there.
     const table: { at: number; y: number }[] = [];
-    for (let at = 0; at <= total; at += 8) table.push({ at, y: ink.getPointAtLength(at).y });
-    const host = svg.current!.parentElement!;
+    for (let at = 0; at <= total; at += 8) table.push({ at, y: whole.getPointAtLength(at).y });
+    // Each piece: where along the line it starts, how long it is, its ink and haze, what it shows.
+    let from = 0;
+    const hazes = [...root.querySelectorAll<SVGPathElement>(".lk-haze")];
+    const pieces = [...root.querySelectorAll<SVGPathElement>(".lk-ink")].map((ink, i) => {
+      const paths = [ink, hazes[i]].filter((p): p is SVGPathElement => !!p);
+      const long = ink.getTotalLength();
+      const piece = { from, long, paths, shown: "" };
+      from += long;
+      return piece;
+    });
+    const host = root.parentElement!;
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
     // It starts once the tag is written.
     const startsAt = still
@@ -131,6 +194,7 @@ export function LookLine() {
     let drawn = still ? total : 0;
     let last = performance.now();
     let frame = 0;
+    let told = "";
     const tick = (now: number) => {
       const tip = window.scrollY + window.innerHeight * TIP - host.offsetTop;
       const reached = table.find((p) => p.y > tip)?.at ?? total;
@@ -139,21 +203,37 @@ export function LookLine() {
       const step = Math.min(0.1, (now - last) / 1000);
       last = now;
       drawn = still ? target : drawn + (target - drawn) * (1 - Math.exp(-FOLLOW * step));
-      const offset = (1 - drawn / total).toFixed(5);
-      if (ink.style.strokeDashoffset !== offset)
-        for (const p of paths) p.style.strokeDashoffset = offset;
+      if (total - drawn < 0.5) drawn = total;
+      for (const p of pieces) {
+        const share = p.long ? Math.min(1, Math.max(0, (drawn - p.from) / p.long)) : 1;
+        const offset = (1 - share).toFixed(4);
+        if (offset === p.shown) continue;
+        p.shown = offset;
+        for (const path of p.paths) path.style.strokeDashoffset = offset;
+      }
+      // For the walks: how much of the whole line is drawn.
+      const share = (drawn / total).toFixed(3);
+      if (share !== told) root.dataset.drawn = told = share;
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [d]);
+  }, [route]);
 
   return (
     <svg ref={svg} className="lk-line" aria-hidden="true">
-      {d && (
+      {route && (
         <>
-          <path className="lk-ink" d={d} pathLength={1} />
-          <path className="lk-haze" d={d} pathLength={1} />
+          <path className="lk-path" d={route.d} />
+          {/* The haze's see-through is on its group, so where two pieces meet it isn't doubled */}
+          <g className="lk-hazes">
+            {route.pieces.map((piece, i) => (
+              <path key={i} className="lk-haze" d={piece} pathLength={1} />
+            ))}
+          </g>
+          {route.pieces.map((piece, i) => (
+            <path key={i} className="lk-ink" d={piece} pathLength={1} />
+          ))}
         </>
       )}
     </svg>
