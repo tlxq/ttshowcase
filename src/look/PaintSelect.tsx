@@ -59,8 +59,8 @@ function boxOf(node: Node): HTMLElement | null {
 }
 
 /**
- * Selected text on /look is painted over with Tom's chisel marker (Tom picked D 11-14, pitch
- * https://claude.ai/artifact/SoWM1R8BDksT5c7NVYjWcd): each selected line gets one stroke, drawn
+ * Selected text on /look is painted over with Tom's chisel marker (Tom picked D 11-14): each
+ * selected line gets one stroke, drawn
  * under the words in the box that holds them. Until this runs, and in text fields, the selection is
  * a flat spray (look.css).
  */

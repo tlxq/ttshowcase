@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Repo kit (~/.1dot/kit, copied by `dot kit`; change it there). Keeps a repo safe to make public at any time:
-# no private words, no AI attribution, no stray or tagged images, no private author or committer.
+# no private words, no AI attribution, no stray or tagged images, no private author or committer,
+# and in a public repo no links to private claude.ai pages.
 #   public-guard staged            pre-commit: staged lines, file names, new images, author and committer
 #   public-guard msg <file>        commit-msg: the message, author and committer (sees git commit --author)
 #   public-guard range <base>      CI: every commit after <base>, plus PR_TITLE and PR_BODY from the environment
@@ -13,6 +14,7 @@ set -euo pipefail
 export LC_ALL=C.UTF-8
 
 AI_RE='Co-Authored-By:.*(Claude|Anthropic)|Claude-Session:|claude\.ai/code/session|Generated with \[?Claude'
+LINK_RE='claude\.ai/(artifact|chat|project)/'
 IMG_RE='\.(png|jpe?g|webp|gif|heic|avif|tiff?)$'
 IMG_OK_RE='(^|/)(assets|public)/'
 TAG_RE='$GPSLatitude or $GPSPosition or $Make or $Model or $SerialNumber or $DateTimeOriginal or $OwnerName or $Artist'
@@ -106,6 +108,11 @@ check_ai() {
   local where="$1"
   if grep -aiE -- "$AI_RE" "$tmp/text" >"$tmp/hits"; then
     while IFS= read -r line; do bad "$where: AI attribution in ${line%%$'\t'*}"; done <"$tmp/hits"
+  fi
+  # a public repo also keeps out links to private claude.ai pages (pitches, chats)
+  load_public
+  if [ -n "$public_email" ] && grep -aiE -- "$LINK_RE" "$tmp/text" >"$tmp/hits"; then
+    while IFS= read -r line; do bad "$where: private claude.ai link in ${line%%$'\t'*}"; done <"$tmp/hits"
   fi
 }
 

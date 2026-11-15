@@ -82,10 +82,9 @@
   --look-tag-at: 400ms;
   /* The pointer on a laptop: a chisel marker, tip down to the left where you click, in the page's
      own colours (dark body, cream outline, spray tip and cap); over a link a spray ring round the tip
-     (Tom picked A 11-14, pitch https://claude.ai/artifact/3UQBAFSiKCCNVRKSbqV3Cx) */
+     (Tom picked A 11-14) */
   --look-pen: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Cg transform='translate(5 26) rotate(-45)'%3E%3Crect x='7.5' y='-3.5' width='25' height='7' rx='1.5' fill='%23111111' stroke='%23f0ece2' stroke-width='1'/%3E%3Crect x='27' y='-3.5' width='5.5' height='7' rx='1.5' fill='%23ff4f1a' stroke='%23f0ece2' stroke-width='1'/%3E%3Crect x='4.5' y='-3' width='3' height='6' fill='%236e6a63'/%3E%3Cpolygon points='0,-1.5 4.5,-2.6 4.5,2.6 1.6,1.6' fill='%23ff4f1a' stroke='%230a0a0a' stroke-width='.6'/%3E%3C/g%3E%3C/svg%3E") 5 26, auto;
-  /* The wall (/wall): a night street (Tom picked A 11-14, pitch
-     https://claude.ai/artifact/5ztgoAepRuSp766oBHfmdj). NEW, needs Tom's OK. */
+  /* The wall (/wall): a night street (Tom picked A 11-14). NEW, needs Tom's OK. */
   --wall-night: #07080a;
   --wall-lamp: #ffc07a;
   --wall-moon: #2a3550;
