@@ -48,6 +48,7 @@ export const lookAsk = {
     { label: "Email me", href: `mailto:${lookMail}`, external: false },
     { label: "GitHub ↗", href: "https://github.com/tlxq", external: true },
     { label: "LinkedIn ↗", href: "https://linkedin.com/in/tlxq", external: true },
+    { label: "Code for this site ↗", href: "https://github.com/tlxq/ttshowcase", external: true },
   ],
   sign: "Tom Larsson, 2026",
 };
