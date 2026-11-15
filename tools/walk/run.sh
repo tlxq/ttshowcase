@@ -64,10 +64,11 @@ fi
 walk look-desktop look.js desktop
 walk look-phone look.js phone
 walk look-widths widths.js desktop
+walk clearance clearance.js desktop
 walk wall-desktop wall.js desktop
 walk wall-phone wall.js phone
 walk a11y-desktop a11y.js desktop
 walk a11y-phone a11y.js phone
 walk speed-look speed.js desktop
-[ "$ran" = 1 ] || { echo "Couldn't find a walk named $only. Names: recordings opening-desktop opening-phone route-desktop route-phone lines-desktop lines-phone back-desktop back-phone fallback-phone look-desktop look-phone look-widths a11y-desktop a11y-phone speed-look" >&2; exit 2; }
+[ "$ran" = 1 ] || { echo "Couldn't find a walk named $only. Names: recordings opening-desktop opening-phone route-desktop route-phone lines-desktop lines-phone back-desktop back-phone fallback-phone look-desktop look-phone look-widths clearance a11y-desktop a11y-phone speed-look" >&2; exit 2; }
 exit "$failed"
