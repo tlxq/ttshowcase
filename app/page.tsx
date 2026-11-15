@@ -9,7 +9,6 @@ import { Motion } from "@/look/Motion";
 import { PaintSelect } from "@/look/PaintSelect";
 import { Tom } from "@/look/Tom";
 import { tagWritten } from "@/look/handPaint";
-import { lookHero } from "@/content/look";
 
 const title = "Tom Larsson, fullstack engineer";
 /** What a shared link says under the title (Tom's words 11-14; LinkedIn wants 100 characters or more). */
