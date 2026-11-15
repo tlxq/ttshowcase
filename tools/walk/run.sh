@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Walks the built page with playwright-cli and prints one JSON result per walk. Screenshots: .cache/shots.
 # The build (out/) is served on localhost, because a static export does not work from file://.
-# Runs on the NVIDIA card where there is one (timing readings then repeat), otherwise on software rendering.
-# Either way this proves behaviour, never speed or feel.
+# Runs on the graphics card (tools/walk/graphics.sh stops it otherwise): look and laptop frame speed.
+# Touch and phone speed are proven on the S23.
 # Usage: run.sh [walk-name]. With a name, only that walk runs, e.g. route-phone.
 set -u
 only="${1:-}"
@@ -10,16 +10,7 @@ cd "$(dirname "$0")/../.."
 root="$PWD"
 [ -f out/index.html ] || { echo "Couldn't find the build in out/. Run: mise run build" >&2; exit 1; }
 mkdir -p .cache/shots .cache/walk
-export PLAYWRIGHT_MCP_CONFIG="${PLAYWRIGHT_MCP_CONFIG:-$HOME/.claude/playwright-cli.config.json}"
-# Without a config of its own (as in CI), the walk uses headless Chromium.
-if [ ! -f "$PLAYWRIGHT_MCP_CONFIG" ]; then
-  printf '{"browser":{"browserName":"chromium","launchOptions":{"headless":true}}}\n' > .cache/walk/cli.json
-  export PLAYWRIGHT_MCP_CONFIG="$root/.cache/walk/cli.json"
-fi
-if nvidia-smi -L >/dev/null 2>&1; then
-  python3 -I tools/walk/gpu_config.py "$PLAYWRIGHT_MCP_CONFIG" > .cache/walk/gpu.json
-  export PLAYWRIGHT_MCP_CONFIG="$root/.cache/walk/gpu.json"
-fi
+. tools/walk/graphics.sh || exit 1
 
 port=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
 python3 -I -m http.server "$port" --bind 127.0.0.1 --directory out >/dev/null 2>&1 &

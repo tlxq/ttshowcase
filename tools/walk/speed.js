@@ -1,6 +1,6 @@
 async page=>{ const errs=[], res={errs};
  // Speed budget for /look: bytes by kind, requests, largest contentful paint and blocking time, each against tools/walk/budget.json.
- // Weight is exact. The timings come from a browser with no graphics card, so they prove weight and script cost, never smoothness.
+ // Weight is exact. The timings come from the desk's graphics card (tools/walk/graphics.sh): laptop speed, not phone speed.
  // The limits are in tools/walk/budget.json (run.sh puts them in here); without limits the walk only prints the numbers.
  await page.addInitScript(()=>{ window.__lcp=0; window.__long=[]; window.__fcp=0;
   new PerformanceObserver(l=>{for(const e of l.getEntries()) window.__lcp=e.startTime}).observe({type:'largest-contentful-paint',buffered:true});

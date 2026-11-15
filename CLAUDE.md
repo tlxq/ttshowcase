@@ -15,7 +15,7 @@ Read `brief.md` for what it is and `docs/design.md` for how it looks and moves.
 ## Working on feel
 - One moment at a time: name the cause, change one thing, Tom judges. No rounds of options.
 - A visual step ends when Tom says it feels right on laptop and phone.
-- The test browser has no graphics card: it proves behaviour, never feel or speed.
+- Browser checks run on the desk's graphics card: they prove look and frame speed on a laptop. Touch and phone speed are proven on the S23.
 
 ## Pointers
 - Run it: `mise run open`. Browser checks: `mise run walk`.

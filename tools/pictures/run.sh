@@ -29,15 +29,7 @@ if [ "$compare_only" = 0 ]; then
   mkdir -p .cache/walk
   rm -rf "$run"
   mkdir -p "$run/desktop" "$run/phone"
-  export PLAYWRIGHT_MCP_CONFIG="${PLAYWRIGHT_MCP_CONFIG:-$HOME/.claude/playwright-cli.config.json}"
-  if [ ! -f "$PLAYWRIGHT_MCP_CONFIG" ]; then
-    printf '{"browser":{"browserName":"chromium","launchOptions":{"headless":true}}}\n' > .cache/walk/cli.json
-    export PLAYWRIGHT_MCP_CONFIG="$root/.cache/walk/cli.json"
-  fi
-  if nvidia-smi -L >/dev/null 2>&1; then
-    python3 -I tools/walk/gpu_config.py "$PLAYWRIGHT_MCP_CONFIG" > .cache/walk/gpu.json
-    export PLAYWRIGHT_MCP_CONFIG="$root/.cache/walk/gpu.json"
-  fi
+  . tools/walk/graphics.sh || exit 1
   port=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
   python3 -I -m http.server "$port" --bind 127.0.0.1 --directory out >/dev/null 2>&1 &
   server=$!
