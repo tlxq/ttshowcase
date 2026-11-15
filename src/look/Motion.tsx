@@ -26,16 +26,18 @@ export function Motion() {
   useEffect(() => {
     // Each pen stroke and drip of a piece of handwriting is its own paused animation; a frame moves
     // only those whose picture changes, so a finished stroke is never drawn again.
-    const writes = [...document.querySelectorAll<SVGSVGElement>("[data-write]")].map((el) => ({
-      el,
-      ms: Number(el.dataset.write) || 1,
-      now: 0,
-      strokes: el.getAnimations({ subtree: true }).map((anim) => {
+    const strokesOf = (el: SVGSVGElement) =>
+      el.getAnimations({ subtree: true }).map((anim) => {
         const timing = anim.effect?.getComputedTiming();
         const from = Number(timing?.delay ?? 0);
         const runs = Math.max(1, Number(timing?.activeDuration ?? 1));
         return { anim, from, runs, share: -1 };
-      }),
+      });
+    const writes = [...document.querySelectorAll<SVGSVGElement>("[data-write]")].map((el) => ({
+      el,
+      ms: Number(el.dataset.write) || 1,
+      now: 0,
+      strokes: strokesOf(el),
     }));
     const rises = [...document.querySelectorAll<HTMLElement>("[data-rise]")].map((el) => ({
       el,
@@ -81,7 +83,8 @@ export function Motion() {
     // and layout once per frame instead of once per piece. A value is only written when it changes,
     // and the loop stops once everything has caught up; a scroll or resize starts it again.
     const tick = (now: number) => {
-      const step = Math.min(0.1, (now - last) / 1000);
+      // A wake from a scroll handler can stamp a time just after this frame's: never a step back.
+      const step = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
       const k = still ? 1 : 1 - Math.exp(-FOLLOW * step);
       const vh = window.innerHeight;
@@ -113,6 +116,10 @@ export function Motion() {
       for (const w of writes) {
         const t = Math.round(w.now * w.ms);
         set(w, "--t", `${t}ms`);
+        // The browser makes new animations when a piece's style is worked out again (or when a
+        // piece had none yet); then the list is read again, so no stroke is left unmoved.
+        if (!still && (!w.strokes.length || w.strokes.some((s) => s.anim.playState === "idle")))
+          w.strokes = strokesOf(w.el);
         for (const stroke of w.strokes) {
           const share = clamp((t - stroke.from) / stroke.runs);
           if (share === stroke.share) continue;

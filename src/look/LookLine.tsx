@@ -31,6 +31,8 @@ class Route {
     this.y = y;
   }
   private piece(cmd: string, x: number, y: number) {
+    // A straight piece that goes nowhere is left out: its round cap would paint a dot.
+    if (!/^[CQ]/.test(cmd) && f(x) === f(this.x) && f(y) === f(this.y)) return;
     this.d += cmd;
     this.pieces.push(`M${f(this.x)} ${f(this.y)}${cmd}`);
     this.x = x;
@@ -62,6 +64,10 @@ class Route {
 export function LookLine() {
   const svg = useRef<SVGSVGElement>(null);
   const [route, setRoute] = useState<Route | null>(null);
+  // How far the line is drawn and when it may start, kept when the route is worked out again, so
+  // a resize carries on from where the line was instead of drawing it from the top.
+  const drawnSoFar = useRef(0);
+  const startsAt = useRef(0);
 
   useEffect(() => {
     const host = svg.current?.parentElement;
@@ -154,7 +160,7 @@ export function LookLine() {
           path.V(sy);
         }
       } else path.V(area.height);
-      setRoute(path);
+      setRoute((was) => (was?.d === path.d ? was : path));
     };
     place();
     const watch = new ResizeObserver(place);
@@ -178,7 +184,7 @@ export function LookLine() {
     const hazes = [...root.querySelectorAll<SVGPathElement>(".lk-haze")];
     const pieces = [...root.querySelectorAll<SVGPathElement>(".lk-ink")].map((ink, i) => {
       const paths = [ink, hazes[i]].filter((p): p is SVGPathElement => !!p);
-      const long = ink.getTotalLength();
+      const long = Math.max(0.01, ink.getTotalLength());
       const piece = { from, long, paths, shown: "" };
       from += long;
       return piece;
@@ -186,26 +192,30 @@ export function LookLine() {
     const host = root.parentElement!;
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
     // It starts once the tag is written.
-    const startsAt = still
-      ? 0
-      : performance.now() +
-        (parseFloat(getComputedStyle(host).getPropertyValue("--look-tag-at")) || 0) +
-        Number(host.dataset.written ?? 0);
-    let drawn = still ? total : 0;
+    if (!startsAt.current)
+      startsAt.current = still
+        ? 1
+        : performance.now() +
+          (parseFloat(getComputedStyle(host).getPropertyValue("--look-tag-at")) || 0) +
+          Number(host.dataset.written ?? 0);
+    let drawn = still ? total : Math.min(total, drawnSoFar.current);
     let last = performance.now();
     let frame = 0;
     let told = "";
+    // The loop rests once the line has caught up with the tip; a scroll or resize starts it again.
     const tick = (now: number) => {
       const tip = window.scrollY + window.innerHeight * TIP - host.offsetTop;
       const reached = table.find((p) => p.y > tip)?.at ?? total;
       // Without motion the line is simply there, whole.
-      const target = still ? total : now < startsAt ? 0 : reached;
-      const step = Math.min(0.1, (now - last) / 1000);
+      const waiting = now < startsAt.current;
+      const target = still ? total : waiting ? 0 : reached;
+      const step = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
       drawn = still ? target : drawn + (target - drawn) * (1 - Math.exp(-FOLLOW * step));
-      if (total - drawn < 0.5) drawn = total;
+      if (Math.abs(target - drawn) < 0.5) drawn = target;
+      drawnSoFar.current = drawn;
       for (const p of pieces) {
-        const share = p.long ? Math.min(1, Math.max(0, (drawn - p.from) / p.long)) : 1;
+        const share = Math.min(1, Math.max(0, (drawn - p.from) / p.long));
         const offset = (1 - share).toFixed(4);
         if (offset === p.shown) continue;
         p.shown = offset;
@@ -214,10 +224,21 @@ export function LookLine() {
       // For the walks: how much of the whole line is drawn.
       const share = (drawn / total).toFixed(3);
       if (share !== told) root.dataset.drawn = told = share;
+      frame = waiting || drawn !== target ? requestAnimationFrame(tick) : 0;
+    };
+    const wake = () => {
+      if (frame) return;
+      last = performance.now();
       frame = requestAnimationFrame(tick);
     };
+    addEventListener("scroll", wake, { passive: true });
+    addEventListener("resize", wake);
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      removeEventListener("scroll", wake);
+      removeEventListener("resize", wake);
+    };
   }, [route]);
 
   return (
