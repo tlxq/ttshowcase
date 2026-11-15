@@ -59,23 +59,31 @@ async page=>{ const errs=[], res={errs};
  }
  if(res.sideways.length) errs.push('scrolls sideways at '+res.sideways.slice(0,5).join(', '));
  await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight)); await page.waitForTimeout(6000);
- // Every hand piece written in scroll mode has reached its own end (its --t is its data-write ms).
- res.unwritten=await page.evaluate(()=>[...document.querySelectorAll('svg[data-write]')].filter(s=>parseFloat(s.style.getPropertyValue('--t'))<Number(s.dataset.write)-5).map(s=>s.getAttribute('aria-label')||s.getAttribute('class')));
+ // Each piece's strokes are animations moved by the scroll: there must be some, and every one at its end.
+ res.unwritten=await page.evaluate(()=>[...document.querySelectorAll('svg[data-write]')].filter(s=>{const a=s.getAnimations({subtree:true});
+  return !a.length||a.some(x=>{const c=x.effect.getComputedTiming();return Number(x.currentTime)<c.delay+c.activeDuration-5})}).map(s=>s.getAttribute('aria-label')||s.getAttribute('class')));
  if(res.unwritten.length) errs.push('not written after scrolling past: '+res.unwritten.join(', '));
  res.names=await page.evaluate(()=>[...document.querySelectorAll('.lk-run-photo')].map(e=>Number(getComputedStyle(e).opacity)));
  if(res.names.some(o=>o<0.99)) errs.push('a name did not open onto its picture: '+res.names.join(' '));
  // The line is drawn to its end, and its end is where the signature starts.
- res.line=await page.evaluate(()=>{const p=document.querySelector('.lk-ink');const s=document.querySelector('[data-line-end]');if(!p||!s) return null;
+ res.line=await page.evaluate(()=>{const p=document.querySelector('.lk-path');const s=document.querySelector('[data-line-end]');if(!p||!s) return null;
   const end=p.getPointAtLength(p.getTotalLength());const host=p.ownerSVGElement.getBoundingClientRect();const b=s.getBoundingClientRect();
   const sx=b.left+Number(s.dataset.startX)*b.width-host.left, sy=b.top+Number(s.dataset.startY)*b.height-host.top;
-  return {offset:Number(p.style.strokeDashoffset||1),gap:Math.round(Math.hypot(end.x-sx,end.y-sy))}});
+  // What is painted, not only the loop's own number: every piece at offset 0, the pieces as long as the whole.
+  const parts=[...p.ownerSVGElement.querySelectorAll('.lk-ink,.lk-haze')];const inks=[...p.ownerSVGElement.querySelectorAll('.lk-ink')];
+  const undrawn=parts.filter(e=>Number(e.style.strokeDashoffset||1)>0.01).length;
+  const apart=Math.round(Math.abs(inks.reduce((a,e)=>a+e.getTotalLength(),0)-p.getTotalLength())*10)/10;
+  return {offset:1-Number(p.ownerSVGElement.dataset.drawn||0),gap:Math.round(Math.hypot(end.x-sx,end.y-sy)),undrawn,apart}});
  if(!res.line) errs.push('no line or no signature');
- else { if(res.line.offset>0.01) errs.push('the line is not drawn to its end ('+res.line.offset+')'); if(res.line.gap>3) errs.push('the line ends '+res.line.gap+' px from the signature'); }
+ else { if(res.line.offset>0.01) errs.push('the line is not drawn to its end ('+res.line.offset+')'); if(res.line.gap>3) errs.push('the line ends '+res.line.gap+' px from the signature');
+  if(res.line.undrawn) errs.push(res.line.undrawn+' line pieces not painted at the end'); if(res.line.apart>1) errs.push('the line pieces are '+res.line.apart+' px off the whole line'); }
  await page.screenshot({path:'__SHOTS__look-end.png'});
  // Reduced motion: everything is there at once, nothing waits on the scroll.
  await page.emulateMedia({reducedMotion:'reduce'}); await go(); await page.waitForTimeout(800);
  res.still=await page.evaluate(()=>({rise:[...document.querySelectorAll('[data-rise]')].filter(e=>Number(e.style.getPropertyValue('--rise'))<0.99).length,
-  line:Number(document.querySelector('.lk-ink')?.style.strokeDashoffset||1)}));
+  line:1-Number(document.querySelector('.lk-line')?.dataset.drawn||0),
+  undrawn:[...document.querySelectorAll('.lk-ink,.lk-haze')].filter(e=>Number(e.style.strokeDashoffset||1)>0.01).length}));
+ if(res.still.undrawn) errs.push(res.still.undrawn+' line pieces not painted with reduced motion');
  if(res.still.rise) errs.push(res.still.rise+' pieces still hidden with reduced motion');
  if(res.still.line>0.01) errs.push('the line is not whole with reduced motion');
  // With reduced motion the drip is one still picture, at once.

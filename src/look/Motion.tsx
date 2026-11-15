@@ -24,10 +24,20 @@ const clamp = (v: number) => Math.min(1, Math.max(0, v));
  */
 export function Motion() {
   useEffect(() => {
+    // Each pen stroke and drip of a piece of handwriting is its own paused animation; a frame moves
+    // only those whose picture changes, so a finished stroke is never drawn again.
+    const strokesOf = (el: SVGSVGElement) =>
+      el.getAnimations({ subtree: true }).map((anim) => {
+        const timing = anim.effect?.getComputedTiming();
+        const from = Number(timing?.delay ?? 0);
+        const runs = Math.max(1, Number(timing?.activeDuration ?? 1));
+        return { anim, from, runs, share: -1 };
+      });
     const writes = [...document.querySelectorAll<SVGSVGElement>("[data-write]")].map((el) => ({
       el,
       ms: Number(el.dataset.write) || 1,
       now: 0,
+      strokes: strokesOf(el),
     }));
     const rises = [...document.querySelectorAll<HTMLElement>("[data-rise]")].map((el) => ({
       el,
@@ -69,38 +79,82 @@ export function Motion() {
     if (!still) for (const v of document.querySelectorAll("[data-film]")) films.observe(v);
     let last = performance.now();
     let frame = 0;
+    // One frame: read every position first, then write, so the browser works out the page's style
+    // and layout once per frame instead of once per piece. A value is only written when it changes,
+    // and the loop stops once everything has caught up; a scroll or resize starts it again.
     const tick = (now: number) => {
-      const step = Math.min(0.1, (now - last) / 1000);
+      // A wake from a scroll handler can stamp a time just after this frame's: never a step back.
+      const step = Math.max(0, Math.min(0.1, (now - last) / 1000));
       last = now;
       const k = still ? 1 : 1 - Math.exp(-FOLLOW * step);
       const vh = window.innerHeight;
       // How far the page can still scroll: a piece near the end is written over what is left, so
       // it is finished by the time the page stops.
       const left = document.documentElement.scrollHeight - vh - window.scrollY;
-      for (const w of writes) {
-        const top = w.el.getBoundingClientRect().top;
+      const writeTops = writes.map((w) => w.el.getBoundingClientRect().top);
+      const riseTops = rises.map((r) => r.el.getBoundingClientRect().top);
+      const passBoxes = passes.map((p) => p.el.getBoundingClientRect());
+      let moving = false;
+      const follow = (piece: { now: number }, target: number) => {
+        const next = piece.now + (target - piece.now) * k;
+        piece.now = Math.abs(target - next) < 0.0005 ? target : next;
+        if (piece.now !== target) moving = true;
+      };
+      writes.forEach((w, i) => {
+        const top = writeTops[i] ?? 0;
         const over = Math.max(1, Math.min(vh * WRITE_OVER, vh * TIP - (top - left)));
-        const target = still ? 1 : clamp((vh * TIP - top) / over);
-        w.now += (target - w.now) * k;
-        w.el.style.setProperty("--t", `${(w.now * w.ms).toFixed(0)}ms`);
+        follow(w, still ? 1 : clamp((vh * TIP - top) / over));
+      });
+      rises.forEach((r, i) =>
+        follow(r, still ? 1 : clamp((vh - (riseTops[i] ?? 0)) / (vh * RISE_OVER))),
+      );
+      passes.forEach((p, i) => {
+        const box = passBoxes[i];
+        if (!box) return;
+        follow(p, still ? 0 : clamp((vh - box.top) / (vh + box.height)));
+      });
+      for (const w of writes) {
+        const t = Math.round(w.now * w.ms);
+        // The browser makes new animations when a piece's style is worked out again (or when a
+        // piece had none yet); then the list is read again, so no stroke is left unmoved.
+        if (!still && (!w.strokes.length || w.strokes.some((s) => s.anim.playState === "idle")))
+          w.strokes = strokesOf(w.el);
+        for (const stroke of w.strokes) {
+          const share = clamp((t - stroke.from) / stroke.runs);
+          if (share === stroke.share) continue;
+          stroke.share = share;
+          stroke.anim.currentTime = t;
+        }
       }
-      for (const r of rises) {
-        const top = r.el.getBoundingClientRect().top;
-        const target = still ? 1 : clamp((vh - top) / (vh * RISE_OVER));
-        r.now += (target - r.now) * k;
-        r.el.style.setProperty("--rise", r.now.toFixed(4));
-      }
-      for (const p of passes) {
-        const box = p.el.getBoundingClientRect();
-        const target = still ? 0 : clamp((vh - box.top) / (vh + box.height));
-        p.now += (target - p.now) * k;
-        p.el.style.setProperty("--pass", p.now.toFixed(4));
-      }
+      for (const r of rises) set(r, "--rise", r.now.toFixed(4));
+      for (const p of passes) set(p, "--pass", p.now.toFixed(4));
+      frame = moving ? requestAnimationFrame(tick) : 0;
+    };
+    const set = (
+      piece: { el: HTMLElement | SVGElement; shown?: string },
+      name: string,
+      value: string,
+    ) => {
+      if (piece.shown === value) return;
+      piece.shown = value;
+      piece.el.style.setProperty(name, value);
+    };
+    const wake = () => {
+      if (frame) return;
+      last = performance.now();
       frame = requestAnimationFrame(tick);
     };
+    addEventListener("scroll", wake, { passive: true });
+    addEventListener("resize", wake);
+    // The page can also change height without a scroll (fonts, pictures, the mail form): wake then too.
+    const grown = new ResizeObserver(wake);
+    grown.observe(document.body);
     frame = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(frame);
+      removeEventListener("scroll", wake);
+      removeEventListener("resize", wake);
+      grown.disconnect();
       near.disconnect();
       films.disconnect();
     };
