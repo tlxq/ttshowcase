@@ -84,11 +84,11 @@ function Film({ path }: { path: string }) {
  * The Live part, back on the dark ground: the main projects, each a small case study. Its name,
  * as big as fits the screen, tips up from lying back and rises from under a cut, its letters
  * opening into windows onto its screens; then its screens come up on a laptop and a phone, and its
- * words follow in beside them. The one line runs on behind the names. All on the scroll, both ways.
+ * words follow in beside them. The one line runs down the right side, clear of them. All on the scroll, both ways.
  */
 export function Live() {
   return (
-    <section className="lk-run" id="live" aria-labelledby="lk-run-title">
+    <section className="lk-run" id="live" aria-labelledby="lk-run-title" data-line-right="">
       <h2 className="lk-eyebrow">
         <span>02 / 04</span>
         <span className="lk-rule" aria-hidden="true" />
