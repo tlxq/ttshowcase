@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { lookAsk } from "@/content/look";
+import { MailForm } from "./MailForm";
 import { Hand } from "./Tag";
 
 /**
@@ -36,6 +37,9 @@ export function Ask() {
           </span>
         ))}
       </h2>
+      <div className="lk-ask-write" data-rise="">
+        <MailForm />
+      </div>
       <div className="lk-ask-reach" data-rise="">
         <ul className="lk-ask-links">
           {lookAsk.links.map((link) => (

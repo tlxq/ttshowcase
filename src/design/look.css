@@ -1152,6 +1152,82 @@ html:has(.lk) body {
 .lk-ask-me {
   transform: rotate(-6deg);
 }
+/* The mail form (MailForm.tsx): Tom's Rows pick 11-11. Mono rows, a key on the left, a rule
+   under each field that turns spray while you write in it; send ↵ like the links. */
+.lk-ask-write {
+  margin-top: var(--s6);
+  max-width: 64ch; /* PITCH: new size, needs Tom's OK */
+  opacity: clamp(0, calc((var(--rise, 1) - 0.3) * 2), 1);
+}
+.lk-mail {
+  display: grid;
+  gap: var(--s1);
+  font: 400 var(--look-reading) / 1.6 var(--look-mono);
+}
+.lk-mail-row {
+  display: grid;
+  grid-template-columns: 8ch 1fr;
+  align-items: baseline;
+  gap: var(--s2);
+  border-bottom: 1px solid var(--look-rule);
+}
+.lk-mail-row:focus-within {
+  border-bottom-color: var(--look-spray);
+}
+.lk-mail-key {
+  color: var(--look-quiet);
+}
+.lk-mail input,
+.lk-mail textarea {
+  min-height: 44px;
+  padding: var(--s1) 0;
+  border: 0;
+  background: transparent;
+  color: var(--look-text);
+  font: inherit;
+  resize: vertical;
+}
+.lk-mail input:focus,
+.lk-mail textarea:focus {
+  outline: none;
+}
+.lk-mail-left,
+.lk-mail-error {
+  margin: 0;
+  color: var(--look-quiet);
+}
+.lk-mail-error {
+  color: var(--look-spray);
+}
+.lk-mail-trap {
+  position: absolute;
+  left: -9999px;
+}
+.lk-mail-send {
+  justify-self: start;
+  margin-top: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--look-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--look-text);
+  font: inherit;
+  cursor: inherit;
+}
+.lk-mail-send:hover {
+  border-color: var(--look-spray);
+}
+.lk-mail-send:focus-visible {
+  outline: 2px solid var(--look-spray);
+  outline-offset: 2px;
+}
+.lk-mail-send:disabled {
+  color: var(--look-quiet);
+}
+.lk-mail-sent p {
+  margin: 0 0 var(--s2);
+}
 .lk-ask-end {
   display: grid;
   justify-items: end;
@@ -1175,6 +1251,7 @@ html:has(.lk) body {
   }
   .lk-ask .lk-eyebrow,
   .lk-ask-title,
+  .lk-ask-write,
   .lk-ask-reach {
     margin-left: var(--s5);
   }
