@@ -1156,7 +1156,8 @@ html:has(.lk) body {
    under each field that turns spray while you write in it; send ↵ like the links. */
 .lk-ask-write {
   margin-top: var(--s6);
-  max-width: 64ch; /* PITCH: new size, needs Tom's OK */
+  max-width: var(--look-form);
+  scroll-margin-top: var(--s7);
   opacity: clamp(0, calc((var(--rise, 1) - 0.3) * 2), 1);
 }
 .lk-mail {
@@ -1166,7 +1167,7 @@ html:has(.lk) body {
 }
 .lk-mail-row {
   display: grid;
-  grid-template-columns: 8ch 1fr;
+  grid-template-columns: var(--look-form-key) 1fr;
   align-items: baseline;
   gap: var(--s2);
   border-bottom: 1px solid var(--look-rule);

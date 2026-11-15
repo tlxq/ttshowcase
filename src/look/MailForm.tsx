@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
 type State = "writing" | "sending" | "sent" | "failed";
 
@@ -16,9 +16,10 @@ const WHY: Record<string, string> = {
 };
 
 /**
- * The mail form in Questions (Tom 11-11 picked Rows: mono rows, send ↵): a message to Tom, sent by
- * the server (api/contact.ts) so his address and the key are never in the page. What was written
- * stays in the fields until it has gone (W6).
+ * The mail form in Questions (Tom 11-11 picked Rows: mono rows, send ↵; 11-15: the only way to
+ * write, the header's Email me comes here): a message to Tom, sent by the server (api/contact.ts)
+ * so his address and the key are never in the page. What was written stays in the fields until it
+ * has gone (W6).
  */
 export function MailForm() {
   const [state, setState] = useState<State>("writing");
@@ -27,9 +28,13 @@ export function MailForm() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [website, setWebsite] = useState("");
+  // The sent note keeps the form's height, so the page doesn't jump when the form goes.
+  const form = useRef<HTMLFormElement>(null);
+  const [height, setHeight] = useState(0);
 
   async function send(event: FormEvent) {
     event.preventDefault();
+    setHeight(form.current?.offsetHeight ?? 0);
     setState("sending");
     try {
       const answer = await fetch("/api/contact", {
@@ -53,7 +58,7 @@ export function MailForm() {
 
   if (state === "sent") {
     return (
-      <div className="lk-mail lk-mail-sent" role="status">
+      <div className="lk-mail lk-mail-sent" role="status" style={{ minHeight: height }}>
         <p>sent. I&apos;ll write back to {email}.</p>
         <button
           type="button"
@@ -70,7 +75,7 @@ export function MailForm() {
   }
 
   return (
-    <form className="lk-mail" onSubmit={send}>
+    <form className="lk-mail" onSubmit={send} ref={form} style={{ minHeight: height }}>
       <label className="lk-mail-row">
         <span className="lk-mail-key">name</span>
         <input

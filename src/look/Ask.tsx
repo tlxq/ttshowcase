@@ -37,7 +37,7 @@ export function Ask() {
           </span>
         ))}
       </h2>
-      <div className="lk-ask-write" data-rise="">
+      <div className="lk-ask-write" id="write" data-rise="">
         <MailForm />
       </div>
       <div className="lk-ask-reach" data-rise="">

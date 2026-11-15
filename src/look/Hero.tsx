@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { lookHero, lookMail, lookParts, lookWho } from "@/content/look";
+import { lookHero, lookParts, lookWho } from "@/content/look";
 import { PhoneMenu } from "./PhoneMenu";
 import { Tag } from "./Tag";
 import { tagWritten } from "./handPaint";
@@ -13,7 +13,7 @@ export function LookHeader() {
           {part.label}
         </a>
       ))}
-      <a className="lk-pill" href={`mailto:${lookMail}`}>
+      <a className="lk-pill" href="#write">
         Email me
       </a>
     </>

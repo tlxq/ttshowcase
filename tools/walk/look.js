@@ -3,7 +3,8 @@ async page=>{ const errs=[], res={errs};
  // the names open onto their pictures, and the one line ends in Tom's signature. Then the same page
  // with reduced motion shows everything at once.
  page.on('pageerror',e=>errs.push('page error: '+e.message));
- page.on('console',m=>{ if(m.type()==='error') errs.push('console: '+m.text()); });
+ let standIn=false; // the mail form's stood-in server answers 502 on purpose once
+ page.on('console',m=>{ if(m.type()==='error'&&!(standIn&&/502/.test(m.text()))) errs.push('console: '+m.text()); });
  const go=async()=>{ await page.goto('__WALK_URL__/'); await page.waitForTimeout(1500); };
  await go();
  // A shared link shows the share card: the page names it, and it is there.
@@ -27,9 +28,23 @@ async page=>{ const errs=[], res={errs};
  if(res.parts.length) errs.push('parts missing: '+res.parts.join(', '));
 
 
- // Tom's contact address is on the page, in the header and at the end, as a mail link.
- res.mail=await page.evaluate(()=>[...document.querySelectorAll('a[href^="mailto:"]')].map(a=>a.getAttribute('href')));
- if(res.mail.length<2||res.mail.some(h=>h!=='mailto:hello@ttdevs.com')) errs.push('the contact link is wrong or missing: '+res.mail.join(', '));
+ // Writing to Tom: the header's Email me goes to the mail form, the only way to write (Tom 11-15).
+ // The form is sent with the server stood in for: a failure keeps what was written, then it sends.
+ res.mail=await page.evaluate(()=>({pill:document.querySelector('.lk-head a.lk-pill')?.getAttribute('href'),mailto:document.querySelectorAll('a[href^="mailto:"]').length,rows:document.querySelectorAll('#write .lk-mail-row').length}));
+ if(res.mail.pill!=='#write'||res.mail.mailto||res.mail.rows!==3) errs.push('the way to write is wrong: '+JSON.stringify(res.mail));
+ let answer={status:502,body:'{"error":"mail-service"}'};standIn=true;
+ await page.route('**/api/contact',r=>r.fulfill({status:answer.status,contentType:'application/json',body:answer.body}));
+ await page.fill('#write input[name=name]','Walk');await page.fill('#write input[name=email]','walk@example.com');await page.fill('#write textarea[name=message]','A message from the walk.');
+ await page.click('#write .lk-mail-send');await page.waitForSelector('#write .lk-mail-error',{timeout:5000}).catch(()=>{});
+ res.mail.failed=await page.evaluate(()=>({error:!!document.querySelector('#write .lk-mail-error'),kept:document.querySelector('#write textarea')?.value,button:document.querySelector('#write .lk-mail-send')?.textContent}));
+ if(!res.mail.failed.error||res.mail.failed.kept!=='A message from the walk.'||!/try again/.test(res.mail.failed.button||'')) errs.push('a failed send does not say so or loses the message: '+JSON.stringify(res.mail.failed));
+ const before=await page.evaluate(()=>document.querySelector('#write').offsetHeight);
+ answer={status:200,body:'{"sent":true}'};standIn=false;
+ await page.click('#write .lk-mail-send');await page.waitForSelector('#write .lk-mail-sent',{timeout:5000}).catch(()=>{});
+ res.mail.sent=await page.evaluate(()=>({text:document.querySelector('#write .lk-mail-sent p')?.textContent,height:document.querySelector('#write').offsetHeight}));
+ if(!/write back to walk@example\.com/.test(res.mail.sent.text||'')) errs.push('the sent note is missing: '+res.mail.sent.text);
+ if(res.mail.sent.height<before) errs.push('the page jumps when the form is sent: '+before+' -> '+res.mail.sent.height);
+ await page.unroute('**/api/contact');
  res.codeLinks=await page.evaluate(()=>['tlxq/eparadar','tlxq/tthermal'].filter(r=>!document.querySelector('a[href="https://github.com/'+r+'"]')));
  if(res.codeLinks.length) errs.push('no code link for: '+res.codeLinks.join(', '));
  res.deadLinks=await page.evaluate(()=>[...document.querySelectorAll('a[href^="#"]')].map(a=>a.getAttribute('href')).filter(h=>h.length>1&&!document.querySelector(h)));

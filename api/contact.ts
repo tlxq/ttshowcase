@@ -1,8 +1,7 @@
 /**
  * The mail form (Questions): sends a visitor's message to Tom through Resend. Tom's address and the
  * key stay here, on the server (CONTACT_TO and RESEND_API_KEY in Vercel's settings), never in the
- * page. CONTACT_FROM is the sender; until ttdevs.com is set up at Resend it is Resend's test sender,
- * which can only write to the account's own address.
+ * page. CONTACT_FROM is the sender, an address on ttdevs.com (a domain set up at Resend).
  */
 const LONGEST = 4000;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
