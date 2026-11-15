@@ -9,6 +9,17 @@ async (page) => {
   await page.evaluate(() => document.fonts.ready);
   const shot = async (name, target) => {
     await target.scrollIntoViewIfNeeded().catch(() => {});
+    // Every picture in the part loaded and decoded (they load lazily), so two runs see the same.
+    await target
+      .evaluate((el) =>
+        Promise.all(
+          [...el.querySelectorAll("img")].map((img) => {
+            img.loading = "eager";
+            return img.decode().catch(() => {});
+          }),
+        ),
+      )
+      .catch(() => {});
     await page.waitForTimeout(700);
     await target.screenshot({
       path: "__OUT__/" + name + ".png",
@@ -35,4 +46,4 @@ async (page) => {
   await page.screenshot({ path: "__OUT__/8-404.png", animations: "disabled", scale: "css" });
   names.push("8-404");
   return JSON.stringify({ errs, names });
-};
+}

@@ -1,5 +1,5 @@
 """Compares the pictures of a run with the baseline and writes a before/after page.
-Usage: compare.py <baseline dir> <run dir> <page.html> <branch>. Prints which pictures changed."""
+Usage: compare.py <baseline dir> <run dir> <page.html> <branch> [note]. Prints which pictures changed."""
 
 import base64
 import html
@@ -7,22 +7,29 @@ import io
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageDraw
 
-# A picture counts as changed when more than SHARE of its pixels differ by more than STEP (of 255).
-STEP = 12
-SHARE = 0.0005
+# A picture counts as changed when more than SHARE of its pixels differ by more than STEP (of 255)
+# in any one colour, so a new hue at the same brightness counts too.
+STEP = 6
+SHARE = 0.0001
 
 
 def share(a, b):
+    """How much of the picture changed, and the box round the change (None when nothing did)."""
     if a.size != b.size:
-        return 1.0
-    diff = ImageChops.difference(a.convert("RGB"), b.convert("RGB")).convert("L")
-    return sum(diff.histogram()[STEP + 1 :]) / (a.size[0] * a.size[1])
+        return 1.0, None
+    r, g, bl = ImageChops.difference(a.convert("RGB"), b.convert("RGB")).split()
+    most = ImageChops.lighter(ImageChops.lighter(r, g), bl)
+    over = most.point(lambda v: 255 if v > STEP else 0)
+    return sum(over.histogram()[STEP + 1 :]) / (a.size[0] * a.size[1]), over.getbbox()
 
 
-def thumb(img):
+def thumb(img, box=None):
     img = img.convert("RGB")
+    if box:
+        # The change, outlined, so a small one can be found on the small picture.
+        ImageDraw.Draw(img).rectangle(box, outline=(217, 164, 0), width=max(4, img.size[0] // 200))
     img.thumbnail((640, 1400))
     buf = io.BytesIO()
     img.save(buf, "JPEG", quality=70)
@@ -30,16 +37,18 @@ def thumb(img):
 
 
 base, run, page, branch = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4]
+note = sys.argv[5] if len(sys.argv) > 5 else ""
 names = sorted({p.name for p in base.glob("*.png")} | {p.name for p in run.glob("*.png")})
 rows = []
 for name in names:
     b, r = base / name, run / name
     if b.exists() and r.exists():
         ia, ib = Image.open(b), Image.open(r)
-        s = share(ia, ib)
+        s, box = share(ia, ib)
         changed = s > SHARE
         status = f"changed, {s * 100:.2f} % of the picture" if changed else "same"
-        left, right = f'<img src="{thumb(ia)}" alt="">', f'<img src="{thumb(ib)}" alt="">'
+        box = box if changed else None
+        left, right = f'<img src="{thumb(ia, box)}" alt="">', f'<img src="{thumb(ib, box)}" alt="">'
     elif r.exists():
         changed, status = True, "new"
         left, right = "<p>Not on master</p>", f'<img src="{thumb(Image.open(r))}" alt="">'
@@ -68,7 +77,7 @@ section.changed {{ border-color: var(--warn); }} section.same {{ opacity: .6; }}
 .changed h2 span {{ color: var(--warn); opacity: 1; }}
 .pair {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }}
 figure {{ margin: 0; }} img {{ width: 100%; height: auto; border-radius: 6px; }} figcaption {{ font-size: 13px; opacity: .7; }}
-</style><main><h1>{count} of {len(rows)} pictures changed</h1>{cards}</main></html>""",
+</style><main><h1>{count} of {len(rows)} pictures changed</h1><p>{html.escape(note)}</p>{cards}</main></html>""",
     encoding="utf-8",
 )
 print(f"{count} of {len(rows)} pictures changed")

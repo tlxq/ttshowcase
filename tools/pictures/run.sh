@@ -41,7 +41,7 @@ if [ "$compare_only" = 0 ]; then
   port=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
   python3 -I -m http.server "$port" --bind 127.0.0.1 --directory out >/dev/null 2>&1 &
   server=$!
-  trap 'kill "$server" 2>/dev/null' EXIT
+  trap 'kill "$server" 2>/dev/null; for k in desktop phone; do playwright-cli -s="pictures-$k" close >/dev/null 2>&1; done' EXIT
   for _ in $(seq 1 50); do
     curl -fs "http://127.0.0.1:$port/" >/dev/null 2>&1 && break
     sleep 0.1
@@ -74,9 +74,18 @@ fi
 if [ "$branch" = master ] || [ "$save_base" = 1 ]; then
   rm -rf "$base"
   cp -r "$run" "$base"
+  git rev-parse HEAD > "$base/SHA"
   echo "Saved $(ls "$base"/*.png | wc -l) pictures as the baseline."
   exit 0
 fi
 [ -d "$base" ] || { echo "No pictures from master to compare with. Run mise run pictures on master first." >&2; exit 1; }
-python3 -I tools/pictures/compare.py "$base" "$run" "$page" "$branch" || exit 1
+# The baseline is only fair when it is the master this branch starts from.
+from=$(cat "$base/SHA" 2>/dev/null || echo unknown)
+start=$(git merge-base HEAD master 2>/dev/null || echo unknown)
+note="Compared with master at ${from:0:7}."
+if [ "$from" != "$start" ]; then
+  note="$note This branch starts from ${start:0:7}, so some changes may be master's own. Run mise run pictures on master again."
+  echo "$note" >&2
+fi
+python3 -I tools/pictures/compare.py "$base" "$run" "$page" "$branch" "$note" || exit 1
 echo "Page: $page"
