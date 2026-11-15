@@ -7,7 +7,6 @@ async page=>{ const errs=[], res={errs};
  // Known spots, found when the walk was made (11-15) and waiting for their own fix: shown in the
  // result, never a failure. One that is clear now fails too, so it leaves this list once fixed.
  const KNOWN=[
-  {what:'"my daily tools"', sizes:['1440x900','1280x800','1024x768','768x1024','390x844'], id:'F-cl-1 the line runs through the hand note'},
   {what:'"Screens,"', sizes:['1024x768','390x844'], id:'F-cl-2 the comma close to the line'},
  ];
  page.on('pageerror',e=>errs.push('page error: '+e.message));

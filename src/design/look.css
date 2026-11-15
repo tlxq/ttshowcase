@@ -579,10 +579,11 @@ html:has(.lk) body {
     grid-template-columns: minmax(0, 1fr);
     min-height: 0;
   }
+  /* Room above Tom's note for the line to cross, clear of the words above it */
   .lk-tom-stack {
     grid-column: 1;
     grid-row: auto;
-    margin-top: var(--s6);
+    margin-top: var(--s7);
     padding-top: 0;
   }
   .lk-tom-tools {
