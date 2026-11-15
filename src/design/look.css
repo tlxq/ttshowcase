@@ -611,9 +611,10 @@ html:has(.lk) body {
 /* The Live part (Live.tsx): back on the dark ground. Each project rises in on its own --rise
    (Motion.tsx): the name tips up and comes out from under its cut, then its letters open onto its
    picture, then its words follow. */
+/* The line runs down its right side (LookLine.tsx): everything in it ends a clear gap before the line */
 .lk-run {
   position: relative;
-  padding: var(--s7) var(--lk-side);
+  padding: var(--s7) calc(var(--lk-side) + var(--s3)) var(--s7) var(--lk-side);
   background: var(--look-ground);
   color: var(--look-text);
 }
@@ -639,7 +640,7 @@ html:has(.lk) body {
   color: var(--look-soft);
   opacity: var(--rise, 1);
 }
-/* Above the one line, so it runs on behind the names */
+/* Above the one line where it turns in at the top */
 .lk-run-name {
   position: relative;
   z-index: 2;
@@ -740,12 +741,10 @@ html:has(.lk) body {
   color: var(--look-quiet);
 }
 /* A project as a case study (Live.tsx): its screens on the left, its words beside them */
-/* The line runs down between them (LookLine.tsx sets --lk-line-x): the screens end a gap before
-   it, the words start the same gap after it */
 .lk-case {
   display: grid;
-  grid-template-columns: calc(var(--lk-line-x, 60vw) - var(--lk-side) - var(--s5)) minmax(0, 1fr);
-  column-gap: calc(var(--s5) * 2);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  column-gap: var(--s5);
   row-gap: var(--s5);
   align-items: center;
   margin-top: var(--s5);
@@ -985,18 +984,6 @@ html:has(.lk) body {
 @media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
   .lk-case {
     grid-template-columns: minmax(0, 1fr);
-    margin-left: var(--s5);
-  }
-  .lk-case .lk-run-words {
-    margin-left: 0;
-  }
-}
-@media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
-  /* The line runs down the left side here: the words keep clear of it */
-  .lk-run .lk-eyebrow,
-  .lk-run-head,
-  .lk-run-words {
-    margin-left: var(--s5);
   }
 }
 
@@ -1068,10 +1055,8 @@ html:has(.lk) body {
   .lk-lab-wall {
     grid-template-columns: minmax(0, 1fr);
     max-width: none;
-    margin-left: var(--s5);
-  }
-  .lk-lab .lk-eyebrow {
-    margin-left: var(--s5);
+    /* The line runs down the right side here: the posters keep clear of it */
+    margin-right: var(--s3);
   }
   .lk-lab-poster {
     min-height: 0;
@@ -1253,16 +1238,16 @@ html:has(.lk) body {
 @media (max-width: 760px), (max-width: 1100px) and (orientation: portrait) {
   .lk-lab-wip {
     left: auto;
-    right: var(--lk-side);
+    right: calc(var(--lk-side) + var(--s3));
   }
+  /* The line runs down the right side here: the words keep clear of it */
   .lk-ask {
-    --ask-in: var(--s5);
+    --ask-in: var(--s3);
   }
-  .lk-ask .lk-eyebrow,
   .lk-ask-title,
   .lk-ask-write,
   .lk-ask-reach {
-    margin-left: var(--s5);
+    margin-right: var(--s3);
   }
 }
 

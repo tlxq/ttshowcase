@@ -139,8 +139,18 @@ export function LookLine() {
           path.Q(lx, y + r, lx, y + 2 * r);
         }
       }
-      // The Live part's projects keep their screens left of where the line runs down, their words right of it.
-      host.style.setProperty("--lk-line-x", `${f(atX)}px`);
+      const live = host.querySelector<HTMLElement>("[data-line-right]");
+      if (live && Math.abs(right - atX) >= ROUND * 2) {
+        // Into the Live part: across its empty top to the right side, and down it clear of the names.
+        const b = live.getBoundingClientRect();
+        const ty = b.top - area.top + parseFloat(getComputedStyle(live).paddingTop) / 2;
+        const dir = right < atX ? -1 : 1;
+        path.V(ty - ROUND);
+        path.Q(atX, ty, atX + dir * ROUND, ty);
+        path.H(right - dir * ROUND);
+        path.Q(right, ty, right, ty + ROUND);
+        atX = right;
+      }
       const sign = host.querySelector<SVGSVGElement>("[data-line-end]");
       if (sign) {
         // The end: over to where Tom's signature starts, and down into it; the signature runs on.
@@ -176,19 +186,22 @@ export function LookLine() {
     const whole = root?.querySelector<SVGPathElement>(".lk-path");
     if (!root || !whole || !route) return;
     const total = whole.getTotalLength();
-    // How far along the line each 8 px reaches, and how low it is there.
-    const table: { at: number; y: number }[] = [];
-    for (let at = 0; at <= total; at += 8) table.push({ at, y: whole.getPointAtLength(at).y });
     // Each piece: where along the line it starts, how long it is, its ink and haze, what it shows.
+    // And how far along the line each 8 px reaches, and how low it is there: measured on the pieces,
+    // each one curve long, because measuring along the whole line walks all of it at every point.
+    const table: { at: number; y: number }[] = [];
     let from = 0;
     const hazes = [...root.querySelectorAll<SVGPathElement>(".lk-haze")];
     const pieces = [...root.querySelectorAll<SVGPathElement>(".lk-ink")].map((ink, i) => {
       const paths = [ink, hazes[i]].filter((p): p is SVGPathElement => !!p);
       const long = Math.max(0.01, ink.getTotalLength());
+      for (let at = Math.ceil(from / 8) * 8; at < from + long; at += 8)
+        table.push({ at, y: ink.getPointAtLength(at - from).y });
       const piece = { from, long, paths, shown: "" };
       from += long;
       return piece;
     });
+    table.push({ at: total, y: whole.getPointAtLength(total).y });
     const host = root.parentElement!;
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
     // It starts once the tag is written.
