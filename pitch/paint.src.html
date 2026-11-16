@@ -1032,9 +1032,9 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       const h = Math.max(48, by - ay), cy = (ay + by) / 2; Object.assign(hot3.style, { display: "block", left: ax - 4 + "px", top: cy - h / 2 + "px", width: Math.max(48, bx - ax + 8) + "px", height: h + "px" }); hot3.tabIndex = 0; }
     else { hot3.style.display = "none"; hot3.tabIndex = -1; } }
 
-  // ---- the ending (Tom 11-16: downhill, then under): stairs down off the street into a low underpass under a road deck. On its wall three
-  // pieces, each with one of Tom's own pen tags: the self-hosted platform ("my own server"), ttoolbox ("my daily tools"), app-utveckling.se for EDGE ("still
-  // running →"). Then the deck ends, dawn comes up over the city, and the last wall carries the signature, "ask me" and the ways to reach Tom.
+  // ---- the ending (Tom 11-16: downhill, then under): stairs down off the street into a low underpass under a road deck. On its wall two
+  // pieces, each with one of Tom's own pen tags: the self-hosted platform ("my own server"), ttoolbox ("my daily tools"). Past the deck, EDGE on its own
+  // clean wall (a printed sheet, no tag), then dawn comes up over the city, and the last wall carries the signature, "ask me" and the ways to reach Tom.
   // Words from src/content/look.ts, tags from src/content/hand. Signs are drawn once and shown by time (reveal): nothing is re-sent per frame.
   const DX0 = 35.8, DX1 = 62.3, DY = G4 + 3.2, DT = 1.3; // the deck: from, to, its underside, its thickness
   const conc = (w, h, x0, y0, col) => new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE),
@@ -1113,19 +1113,33 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     const box = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: cabTex, metalness: .45, roughness: .55, envMapIntensity: .6 })); box.position.set(x, y, .115); scene.add(box);
     ledM.forEach((m, i) => { const l = new THREE.Mesh(new THREE.CircleGeometry(.011, 12), m); l.position.set(x + .2 - i * .045, y + ch / 2 - .09, .227); scene.add(l); });
     pipe(V(x - .2, y + ch / 2, .06), V(x - .2, DY - .14, .06), .025); pipe(V(x + .15, y - ch / 2, .06), V(x + .15, G4, .06), .025); }
-  // EDGE's site on a pasted paper poster, wet glue, a torn corner; the wall's bumps show through
+  // EDGE (Tom 11-16, storyboard 6): client work stands apart from my own. Past the deck, in the open: a clean plastered wall, a lamp over it,
+  // and one printed sheet pasted on it, "Delivered for EDGE Associates", the site, its two links. Printed, no spray, no pen tag.
+  const EDGE_X = 66, EDGE_W = NARROW ? 3.6 : 5.2, EDGE_H = 4;
+  { const w = EDGE_W, h = EDGE_H, m = new THREE.Mesh(new THREE.BoxGeometry(w, h, .05), new THREE.MeshStandardMaterial({ color: 0x9c9a95, roughness: .78, envMapIntensity: .35,
+      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (EDGE_X - w / 2 + 21) / TILE, 0), normalScale: new THREE.Vector2(.12, .12) }));
+    m.position.set(EDGE_X, G4 + h / 2, .025); scene.add(m);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(.05, .05, 1.1), fixM); arm.position.set(EDGE_X, G4 + h - .12, .55); const hood = new THREE.Mesh(new THREE.BoxGeometry(.7, .09, .22), fixM); hood.position.set(EDGE_X, G4 + h - .14, 1.1); hood.rotation.x = .35; scene.add(arm, hood); }
+  const edgeL = new THREE.SpotLight(0xfff0dc, 0, 12, 1.15, 1, 1.2); edgeL.position.set(EDGE_X, G4 + EDGE_H - .2, 1.15); edgeL.target.position.set(EDGE_X, G4 + 1.7, 0); scene.add(edgeL, edgeL.target);
   const posterImg = new Image(); posterImg.src = "assets/edge_poster.jpg";
-  const pcv4 = document.createElement("canvas"); pcv4.width = 1152; pcv4.height = 720; const posterTex = new THREE.CanvasTexture(pcv4); posterTex.encoding = THREE.sRGBEncoding; posterTex.anisotropy = maxAniso;
-  posterImg.onload = () => { const g = pcv4.getContext("2d"), W = pcv4.width, H = pcv4.height; g.drawImage(posterImg, 0, 0, W, H);
-    g.fillStyle = "rgba(233,226,208,.12)"; g.fillRect(0, 0, W, H); // printed on paper: a little washed out
-    for (let i = 0; i < 4; i++) { const yy = H * (.15 + Math.random() * .7), gr = g.createLinearGradient(0, yy - 6, 0, yy + 6); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(.5, `rgba(${i % 2 ? "255,255,255,.18" : "0,0,0,.22"})`); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.save(); g.translate(0, yy); g.rotate((Math.random() - .5) * .08); g.fillRect(0, -6, W, 12); g.restore(); } // creases
-    const eg = g.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, W * .62); eg.addColorStop(0, "rgba(30,20,10,0)"); eg.addColorStop(1, "rgba(30,20,10,.35)"); g.fillStyle = eg; g.fillRect(0, 0, W, H); // glue soaked at the edges
-    g.globalCompositeOperation = "destination-out"; g.beginPath(); g.moveTo(W, H * .52); let px = W, py = H * .52; while (py < H) { px -= 8 + Math.random() * 22; py += 10 + Math.random() * 26; g.lineTo(Math.max(W * .66, px + (Math.random() - .5) * 18), Math.min(H, py)); } g.lineTo(W, H); g.closePath(); g.fill(); // a torn corner
-    g.globalCompositeOperation = "source-over"; posterTex.needsUpdate = true; };
-  const poster = (cx, cy, w) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * .625), new THREE.MeshStandardMaterial({ map: posterTex, transparent: true, roughness: .5, envMapIntensity: .5,
-      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, w * .625 / TILE, (cx - w / 2 + 21) / TILE, (cy - w * .3125 - GROUND) / TILE), normalScale: new THREE.Vector2(.35, .35), polygonOffset: true, polygonOffsetFactor: -2 }));
-    m.position.set(cx, cy, .003); m.rotation.z = .012; scene.add(m); return m; };
-  const HSV = __HAND_SERVER__, HTL = __HAND_TOOLS__, HRN = __HAND_RUN__, HASK = __HAND_ASK__, HSIG = __HAND_SIGN__;
+  // the sheet: hung from its top edge, so pasting it smooths it down the wall; wet glue shines, then dries
+  function printSheet(cx, top, w) { const c = document.createElement("canvas"); c.width = 1200; c.height = 1130; const P = c.width / w, h = c.height / P;
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; const geo = new THREE.PlaneGeometry(w, h); geo.translate(0, -h / 2, 0);
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: .25, envMapIntensity: .5, polygonOffset: true, polygonOffsetFactor: -2,
+      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, 0, 0), normalScale: new THREE.Vector2(.08, .08) }));
+    m.position.set(cx, top, .056); m.rotation.z = .006; m.scale.y = 0; m.visible = false; scene.add(m);
+    return { c, t, m, P, w, h, at: (px, py) => V(cx - w / 2 + px / P, top - py / P * m.scale.y, .06) }; }
+  function drawPrint(S, links) { const g = S.c.getContext("2d"), W = S.c.width, H = S.c.height, M = 64, ink = "#17181b";
+    g.fillStyle = "#efebe2"; g.fillRect(0, 0, W, H);
+    for (let i = 0; i < 14000; i++) { g.fillStyle = `rgba(${Math.random() < .5 ? "60,50,40" : "255,255,255"},${Math.random() * .05})`; g.fillRect(Math.random() * W, Math.random() * H, 2, 2); } // paper grain
+    g.fillStyle = ink; g.textBaseline = "alphabetic"; g.font = '500 30px "Clash Display", system-ui, sans-serif'; g.fillText("DELIVERED FOR", M, M + 26);
+    g.font = '600 84px "Clash Display", system-ui, sans-serif'; g.fillText("EDGE Associates", M, M + 26 + 92);
+    const iy = M + 160, iw = W - 2 * M, ih = iw * 720 / 1152; g.drawImage(posterImg, M, iy, iw, ih); g.strokeStyle = "rgba(23,24,27,.25)"; g.lineWidth = 2; g.strokeRect(M, iy, iw, ih);
+    let y = iy + ih + 34; g.font = '500 54px "Clash Display", system-ui, sans-serif';
+    links.forEach(l => { const s = l.t + " \u2192", lw = g.measureText(s).width; g.fillText(s, M, y + 50); g.fillRect(M, y + 62, lw, 3); l.box = { x0: M - 8, y0: y, x1: M + lw + 8, y1: y + 72 }; y += 86; });
+    const eg = g.createRadialGradient(W / 2, H / 2, H * .42, W / 2, H / 2, W * .78); eg.addColorStop(0, "rgba(60,45,25,0)"); eg.addColorStop(1, "rgba(60,45,25,.22)"); g.fillStyle = eg; g.fillRect(0, 0, W, H); // glue soaked at the edges
+    S.t.needsUpdate = true; }
+  const HSV = __HAND_SERVER__, HTL = __HAND_TOOLS__, HASK = __HAND_ASK__, HSIG = __HAND_SIGN__;
   const GHUB = "https://github.com/tlxq/";
   // where each one stands (laptop / phone): the three pieces, then the exit. key: the scroll (vh) where the camera has arrived; the camera stops in front.
   const N_ = NARROW, U4 = [
@@ -1133,22 +1147,21 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       plate: "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool.<br>About ten services in Docker, running day and night; close to 300 pull requests<br>Built alone<br><span>TypeScript &middot; Next.js &middot; Hono &middot; SQLite &middot; Java &middot; Docker &middot; Caddy &middot; Tailscale</span>" },
     { x: 48.5, key: 715, name: "ttoolbox", links: [{ t: "Code for ttoolbox", href: GHUB + "ttoolbox", gh: 1 }, { t: "Code for dot", href: GHUB + "dot", gh: 1 }], tagH: HTL, tag: N_ ? [48.5, G4 + .55, 1.9] : [50.6, G4 + .95, 1.8], board: N_ ? [47.35, G4 + 2.95, 2.4, 1.5, 300] : [46.3, G4 + 2.6, 3.6, 1.5, 400], o: { nameS: N_ ? .4 : .44, linkS: N_ ? .17 : .15, gap: N_ ? .12 : .08 },
       plate: "<b>ttoolbox</b>Claude Code plugins and a CLI that keep my two PCs the same.<br>The dot CLI: 2,302 lines of Bash, 92 bats tests<br>Built and used daily by me<br><span>Claude Code &middot; Bash &middot; bats &middot; GNU Stow &middot; mise</span>" },
-    { x: 56, key: 790, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }], tagH: HRN,
-      tag: N_ ? [56.55, G4 + 1.55, 1.15] : [57.5, G4 + .95, 1.9], board: N_ ? [54.8, G4 + 3.12, 2.45, .36, 300] : [53.5, G4 + 2.95, 3.2, .42, 400], links2: N_ ? [54.8, G4 + 1.2, 2.45, .78, 300] : [56.2, G4 + 2.2, 2.8, .72, 400], o: { nameS: N_ ? .25 : .32, linkS: N_ ? .15 : .14, gap: N_ ? .1 : .07 },
-      poster: N_ ? [56, G4 + 2.15, 1.95] : [54.7, G4 + 1.62, 2.3],
+    { x: 66, key: 790, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
+      print: N_ ? [66, G4 + 3.35, 2.5] : [66, G4 + 3.55, 3] /* the sheet: centre x, top, width */,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base.<br>51 pull requests, from the first sketch to live<br>Work project, built alone<br><span>Astro &middot; TypeScript</span>" },
-    { x: 69, key: 880, exit: 1, name: null, links: [{ t: "Write to me", href: "https://ttdevs.com/#write" }, { t: "GitHub", href: GHUB.slice(0, -1) }, { t: "LinkedIn", href: "https://linkedin.com/in/tlxq" }],
-      tagH: HASK, tag: N_ ? [68.25, G4 + 2.15, 1.05] : [70.6, G4 + 2.75, 1.3], board: N_ ? [68.85, G4 + 2.45, 1.75, 1.35, 300] : [71.1, G4 + 2.2, 2.4, 1.25, 400], o: { linkS: N_ ? .19 : .17, gap: N_ ? .1 : .08 }, sig: N_ ? [69, G4 + 3.35, 2.5] : [67.4, G4 + 2.6, 3.4] } ];
-  U4.forEach((u, i) => { u.T = tag4(u.tagH, u.tag[0], u.tag[1], u.tag[2], u.exit ? .9 : 1.1); u.B = board(...u.board); if (u.links2) u.B2 = board(...u.links2);
-    if (u.sig) u.S = tag4(HSIG, u.sig[0], u.sig[1], u.sig[2], 1.3); if (u.cab) cabinet(...u.cab); if (u.poster) poster(...u.poster); u.start = 0;
+    { x: 75, key: 880, exit: 1, name: null, links: [{ t: "Write to me", href: "https://ttdevs.com/#write" }, { t: "GitHub", href: GHUB.slice(0, -1) }, { t: "LinkedIn", href: "https://linkedin.com/in/tlxq" }],
+      tagH: HASK, tag: N_ ? [74.25, G4 + 2.15, 1.05] : [76.6, G4 + 2.75, 1.3], board: N_ ? [74.85, G4 + 2.45, 1.75, 1.35, 300] : [77.1, G4 + 2.2, 2.4, 1.25, 400], o: { linkS: N_ ? .19 : .17, gap: N_ ? .1 : .08 }, sig: N_ ? [75, G4 + 3.35, 2.5] : [73.4, G4 + 2.6, 3.4] } ];
+  U4.forEach((u, i) => { if (u.tagH) u.T = tag4(u.tagH, u.tag[0], u.tag[1], u.tag[2], u.exit ? .9 : 1.1); if (u.board) u.B = board(...u.board); if (u.print) u.P = printSheet(...u.print);
+    if (u.sig) u.S = tag4(HSIG, u.sig[0], u.sig[1], u.sig[2], 1.3); if (u.cab) cabinet(...u.cab); u.start = 0;
     u.hots = u.links.map((l, j) => { const a = document.createElement("a"); a.className = "hot"; a.href = l.href; a.target = "_blank"; a.rel = "noopener"; a.setAttribute("aria-label", l.t); a.tabIndex = -1; a.style.display = "none"; document.querySelector(".hud").append(a); return a; });
     if (u.plate) { const el = document.createElement("div"); el.className = "tag facts"; el.innerHTML = u.plate; document.querySelector(".hud").append(el); u.el = el;
       svg.insertAdjacentHTML("beforeend", `<line id="lu${i}"/><circle id="cu${i}" r="4"/>`); u.l = svg.querySelector("#lu" + i); u.c = svg.querySelector("#cu" + i); } });
   document.querySelector(".hud").insertAdjacentHTML("beforeend", '<p class="head">Self-hosted platform: my own server with web apps, a TV app and a job tool. ttoolbox: Claude Code plugins and a CLI that keep my two PCs the same. app-utveckling.se: two landing pages for EDGE Associates. Ask me: write to me, GitHub, LinkedIn.</p>');
   let endDrawn = false;
-  function drawEnd() { const F = '40px "Saira Stencil One"'; if (!document.fonts.check(F)) { document.fonts.load(F); return; }
-    U4.forEach(u => { if (u.links2) { drawBoard(u.B, u.name, [], u.o); drawBoard(u.B2, null, u.links, u.o); } else drawBoard(u.B, u.name, u.links, u.o); }); endDrawn = true; }
-  const linkBoard = u => u.B2 || u.B;
+  function drawEnd() { const F = '40px "Saira Stencil One"', F2 = '600 40px "Clash Display"'; if (!document.fonts.check(F) || !document.fonts.check(F2) || !(posterImg.naturalWidth > 0)) { document.fonts.load(F); document.fonts.load(F2); return; }
+    U4.forEach(u => { if (u.P) drawPrint(u.P, u.links); else drawBoard(u.B, u.name, u.links, u.o); }); endDrawn = true; }
+  const PASTE = .9; // seconds to smooth the sheet down the wall
   function placeHot(el, B, box, on) { if (on) { const [ax, ay] = proj(B.at(box.x0, box.y0)), [bx, by] = proj(B.at(box.x1, box.y1));
       if (bx > 0 && ax < innerWidth && by > 0 && ay < innerHeight) { const h = Math.max(48, by - ay), w = Math.max(48, bx - ax + 8), cy = (ay + by) / 2;
         Object.assign(el.style, { display: "block", left: ax - 4 + "px", top: cy - h / 2 + "px", width: w + "px", height: h + "px" }); el.tabIndex = 0; return; } }
@@ -1156,13 +1169,13 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   // the camera's way: off the street, down the stairs, under the deck, a stop in front of each piece, out into the dawn, a step back
   const KEYS = NARROW
     ? [[548, 612, V(31.8, G3 + 2, 11), V(33, G3 + .2, 0)], [590, 640, V(41, G4 + 1.55, 7), V(41, G4 + 1.55, 0)], [665, 715, V(48.5, G4 + 1.55, 7), V(48.5, G4 + 1.55, 0)],
-       [740, 790, V(56, G4 + 1.6, 7), V(56, G4 + 1.6, 0)], [815, 880, V(69, G4 + 2.3, 8.6), V(69, G4 + 2.4, 0)], [900, 930, V(69, G4 + 3.1, 12.5), V(69, G4 + 3.3, 0)]]
+       [740, 790, V(66, G4 + 1.9, 8.4), V(66, G4 + 1.9, 0)], [815, 880, V(75, G4 + 2.3, 8.6), V(75, G4 + 2.4, 0)], [900, 930, V(75, G4 + 3.1, 12.5), V(75, G4 + 3.3, 0)]]
     : [[548, 612, V(31.5, G3 + 1.9, 9.6), V(32.8, G3 + .3, 0)], [590, 640, V(41.1, G4 + 1.3, 7.6), V(41, G4 + 1.75, 0)], [665, 715, V(48.6, G4 + 1.3, 7.6), V(48.5, G4 + 1.75, 0)],
-       [740, 790, V(56.1, G4 + 1.3, 7.6), V(56, G4 + 1.75, 0)], [815, 880, V(69.1, G4 + 2.1, 9.6), V(69, G4 + 2.5, 0)], [900, 930, V(69.6, G4 + 3, 14), V(69.6, G4 + 3.5, 0)]];
+       [740, 790, V(66.1, G4 + 1.7, 9.2), V(66, G4 + 2, 0)], [815, 880, V(75.1, G4 + 2.1, 9.6), V(75, G4 + 2.5, 0)], [900, 930, V(75.6, G4 + 3, 14), V(75.6, G4 + 3.5, 0)]];
   function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cx) {
-    const under = sm(cl((cx - DX0 + .5) / 2.5)) * (1 - sm(cl((cx - DX1 + .5) / 3))), dawn = sm(cl((sv - 790) / 90));
-    tubeLight.intensity = 5.5 * under; tubeLight.position.set(cx, DY - .1, 1.6); tubeLight.target.position.set(cx, G4 + .9, 0);
+    const under = sm(cl((cx - DX0 + .5) / 2.5)) * (1 - sm(cl((cx - DX1 + .5) / 3))), dawn = sm(cl((sv - 805) / 75));
+    tubeLight.intensity = 5.5 * under; edgeL.intensity = 6.5 * (1 - sm(cl((Math.abs(cx - EDGE_X) - 2) / 6))); tubeLight.position.set(cx, DY - .1, 1.6); tubeLight.target.position.set(cx, G4 + .9, 0);
     tubeBad.emissiveIntensity = Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4;
     skyU.uDawn.value = dawn; cityFar.material.color.setScalar(.25 + .75 * dawn); dawnL.intensity = 3.2 * dawn; lens.uniforms.uAper.value *= 1 - .85 * dawn; /* far roofs stay sharp at the exit */ scene.fog.color.copy(FOG0).lerp(FOG1, dawn); sky.intensity = sky.intensity * (1 - .55 * under) + .3 * dawn; sky.color.copy(SKY0).lerp(SKYW, dawn * .6);
     if (!endDrawn && sv > 540) drawEnd(); /* reduced motion skips the bucket's wait, where they are drawn otherwise */
@@ -1170,12 +1183,15 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && (u.exit || sv < KEYS[i + 2][0] + 15);
       if (introOver && sv > u.key - 14 && !u.start) u.start = now; // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1;
-      u.T.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1; if (u.S) u.S.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1;
-      const t0 = u.exit ? 1.1 : .35; u.B.R.uE.value = sec < 0 ? -1 : sec - t0; if (u.B2) u.B2.R.uE.value = sec < 0 ? -1 : sec - t0 - u.B.end;
-      const lb = linkBoard(u), done = sec - t0 - (u.B2 ? u.B.end : 0) > lb.end;
-      u.hots.forEach((h, j) => placeHot(h, lb, u.links[j].box, done && near && here));
-      if (u.el) { const show = here && near && sec > t0 + u.B.end + (u.B2 ? u.B2.end : 0) + .2; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0);
-        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, G4 + .05, .3) : u.cab ? V(u.cab[0] - .25, u.cab[1] - .42, .2) : u.poster ? V(u.poster[0] - u.poster[2] * .4, u.poster[1] - u.poster[2] * .28, 0) : V(u.board[0] + .3, u.board[1] - u.board[3] + .1, 0), NARROW ? 10 : -20, NARROW ? 40 : 70); } // phone: on the floor below the wall, where nothing is sprayed
+      if (u.T) u.T.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1; if (u.S) u.S.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1;
+      const t0 = u.exit ? 1.1 : .35; let shown;
+      if (u.P) { const k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / PASTE)), wet = sec < 0 ? 1 : REDUCED ? 0 : cl((sec - t0 - PASTE) / 2.5);
+        u.P.m.visible = k > 0; u.P.m.scale.y = Math.max(.001, k); u.P.m.material.roughness = .25 + .4 * wet; shown = sec - t0 - PASTE > 0; }
+      else { u.B.R.uE.value = sec < 0 ? -1 : sec - t0; shown = sec - t0 > u.B.end; }
+      const lb = u.P || u.B;
+      u.hots.forEach((h, j) => placeHot(h, lb, u.links[j].box, shown && endDrawn && near && here));
+      if (u.el) { const show = here && near && shown && sec > t0 + .2 + (u.P ? PASTE : u.B.end); [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0);
+        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, G4 + .05, .3) : u.cab ? V(u.cab[0] - .25, u.cab[1] - .42, .2) : u.P ? V(u.print[0] - u.print[2] * .42, u.print[1] - u.P.h + .15, .06) : V(u.board[0] + .3, u.board[1] - u.board[3] + .1, 0), NARROW ? 10 : -20, NARROW ? 40 : 70); } // phone: on the floor below the wall, where nothing is sprayed
       if (u.cab) { ledM[0].emissiveIntensity = sec > .2 ? 3 : 0; /* the box powers up as you arrive: steady, network, now and then */ ledM[1].emissiveIntensity = sec > .45 && Math.sin(now / 90) + Math.sin(now / 37) > .3 ? 3 : 0; ledM[2].emissiveIntensity = sec > .7 && Math.sin(now / 900) > .85 ? 2.5 : 0; } }); }
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
