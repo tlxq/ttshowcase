@@ -11,3 +11,6 @@ __pycache__/
 # Settings that stay out of the code, like the contact address.
 .env*
 .vercel
+
+# Old single-file builds
+dist/
