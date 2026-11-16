@@ -67,3 +67,7 @@ run = ["npm run typecheck", "npm run lint", "npm run build", "tools/osv-gate"]
 description = "Format the files given (pre-commit passes the staged ones and restages them), or all"
 depends = ["install"]
 run = "bash -c 'npx prettier --write --ignore-unknown \"${@:-.}\"' --"
+
+[tasks.deps]
+description = "Outdated packages (runs locally instead of Dependabot)"
+run = "npm outdated || true"
