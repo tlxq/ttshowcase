@@ -1,0 +1,1300 @@
+<meta charset="utf-8">
+<title>Tom Larsson</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+__EMBED__
+:root { --bg: #07080a; --fg: #efe9dc; --soft: #9a958c; --spray: #ff4f1a; color-scheme: dark; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
+#c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+.track { height: 1030vh; } /* bucket, epaRadar, raddavarfruberga, then the underpass and the exit */
+.hud { position: fixed; inset: 0; pointer-events: none; }
+.hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hud line { stroke: rgba(239, 233, 220, .55); stroke-width: 1; }
+.hud circle { fill: none; stroke: rgba(239, 233, 220, .8); stroke-width: 1; }
+.tag { position: absolute; font: 500 13px/1.5 ui-monospace, "IBM Plex Mono", monospace; letter-spacing: .06em; background: rgba(8, 9, 12, .88); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; padding: 7px 10px; text-transform: uppercase; color: var(--fg); white-space: nowrap; opacity: 0; transition: opacity .6s; }
+.tag.wrap { white-space: normal; width: min(300px, 70vw); }
+/* the facts label: the label word small and uppercase, the sentences in sentence case (signum K3) */
+.tag.facts { white-space: normal; width: min(330px, 74vw); text-transform: none; letter-spacing: .02em; }
+.tag.facts b { text-transform: uppercase; letter-spacing: .08em; }
+.tag.facts span { color: var(--fg); opacity: .78; }
+.tag b { display: block; font-weight: 500; color: var(--spray); }
+.hot { position: absolute; pointer-events: auto; display: block; border-radius: 2px; }
+.hot:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+.hot { cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
+.hot:hover { background: radial-gradient(closest-side, rgba(255, 110, 60, .16), transparent); }
+.head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); font: 16px system-ui; }
+</style>
+
+<canvas id="c"></canvas>
+<div class="track"></div>
+<div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map. Only friends see where you are.<br>Degree project, built by me<br><span>React Native &middot; Expo &middot; Supabase &middot; Postgres &middot; pgTAP</span></div></div>
+<div class="head" id="head"><span>Tom Larsson &middot; Fullstack engineer</span><h1>I build and run things myself.</h1></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+(() => {
+  // The opening: a real concrete wall at night, one street light grazing it, and Tom's line poured down the wall
+  // as the light comes on. (The hand-written tag code stays but is off: no pen samples.)
+  const HAND = __HAND__;
+  const NARROW = innerWidth / innerHeight < .8;
+  const canvas = document.getElementById("c");
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" }); }
+  catch (e) { document.body.insertAdjacentHTML("beforeend", '<div class="nogl">This page needs WebGL.</div>'); return; }
+  THREE.ColorManagement.legacyMode = false;
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .95;
+  // loading progress for the bucket: every texture goes through the default manager
+  let loadFrac = 0; THREE.DefaultLoadingManager.onProgress = (u, a, b) => { loadFrac = a / b; };
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0x07080a); scene.fog = new THREE.FogExp2(0x0d0f13, .04);
+  const camera = new THREE.PerspectiveCamera(NARROW ? 46 : 34, 1, .1, 120);
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const sm = t => t * t * (3 - 2 * t), cl = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+
+  // night light from a real rooftop (Poly Haven, CC0), only for reflections
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  new THREE.TextureLoader().load("assets/env.jpg", t => { t.mapping = THREE.EquirectangularReflectionMapping; t.encoding = THREE.sRGBEncoding; scene.environment = pmrem.fromEquirectangular(t).texture; t.dispose(); });
+
+  // the wall: scanned concrete (Poly Haven concrete_wall_003, CC0)
+  const tl = new THREE.TextureLoader(), maxAniso = renderer.capabilities.getMaxAnisotropy();
+  // each picture is loaded and sent to the graphics card once; every surface that uses it shares it (own repeat/offset only)
+  const texCache = {};
+  const tex = (u, srgb, rx, ry, ox = 0, oy = 0) => { let c = texCache[u];
+    if (!c) { c = texCache[u] = { all: [] }; c.base = tl.load(u, () => { c.all.forEach(t => t.needsUpdate = true); renderer.initTexture(c.base); }); }
+    const t = c.all.length ? c.base.clone() : c.base; c.all.push(t); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.offset.set(ox, oy); t.anisotropy = maxAniso; if (srgb) t.encoding = THREE.sRGBEncoding; return t; };
+  const WW = 83, WX = 20.5, WH = 10, GROUND = -2.2, TILE = 6;
+  // downhill (Tom 11-16: scrolling down should go down): the street steps down 1.8 m twice, between the scenes
+  const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, G4 = GROUND - 3 * DROP, STAIRS = [[5, 8, GROUND, G2], [19.3, 22.3, G2, G3], [31, 34, G3, G4]], NSTEP = 12; // the third flight goes down under the road deck
+  const wallGeo = new THREE.PlaneGeometry(WW, WH + TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
+  const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
+  wall.position.set(WX, GROUND - TILE + (WH + TILE) / 2, 0); wall.receiveShadow = true; scene.add(wall);
+  // the hole for moment 3 (Tom 11-16: the wall falls apart and the preschool shows behind it). Its edge: r(a) below, the same in JS (holeR)
+  const holeU = { uHC: { value: new THREE.Vector2(0, 0) }, uHR: { value: new THREE.Vector2(1, 1) }, uOpen: { value: 0 }, uCrack: { value: 0 } };
+  wall.material.onBeforeCompile = sh => { Object.assign(sh.uniforms, holeU);
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.)).xyz;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
+      varying vec3 vWP; uniform vec2 uHC, uHR; uniform float uOpen, uCrack;
+      float hh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float hn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(hh(i), hh(i + vec2(1, 0)), f.x), mix(hh(i + vec2(0, 1)), hh(i + vec2(1, 1)), f.x), f.y); }
+      float holeD(vec2 p) { vec2 q = (p - uHC) / uHR; float a = atan(q.y, q.x);
+        return length(q) / (1. + .12 * sin(3. * a + 1.) + .07 * sin(7. * a + 2.) + .05 * sin(13. * a + .5) + .03 * sin(23. * a + 4.)); }`)
+      .replace("#include <map_fragment>", `#include <map_fragment>
+        float hd = holeD(vWP.xy); if (hd < uOpen) discard;
+        float aw = fwidth(hd) * 1.5;
+        vec2 cq = vWP.xy - uHC; float cr = length(cq), ca0 = atan(cq.y, cq.x);
+        // an impact, not a drawn star (Tom 11-16): uneven angles, a few cracks missing, wider near the hit, starting from a crushed patch, never meeting in one point
+        float ca = ca0 + .12 * sin(3. * ca0 + 1.) + .06 * sin(5. * ca0 + 2.);
+        float cu = ca * 11. / 6.2832 + (hn(vec2(cr * 2.7, ca * 2.)) - .5) * .55 + (hn(vec2(cr * 13., ca * 5.)) - .5) * .12, cid = floor(cu + .5);
+        float cdst = abs(cu - cid) * 6.2832 / 11. * cr, cw = .007 * (1.4 - .5 * hd / max(uCrack, .01)) * (1. + 1.3 * exp(-cr * 2.2));
+        float R0 = .2 * (.85 + .3 * hn(vec2(ca0 * 2.5, 1.))) * smoothstep(0., .25, uCrack); // the crushed patch grows in the first moment
+        float ck = (1. - smoothstep(cw, cw + fwidth(cdst) * 1.5, cdst)) * (1. - smoothstep(-.15, 0., hd - uCrack * (1.1 + .55 * hh(vec2(cid, 3.)))))
+          * step(.22, hh(vec2(cid, 7.))) * smoothstep(R0 * .75, R0 * 1.05, cr);
+        float crush = (1. - smoothstep(R0 * .85, R0, cr)) * step(.001, uCrack), chip = (smoothstep(R0 * .8, R0, cr) - smoothstep(R0, R0 * 1.2, cr)) * step(.001, uCrack);
+        diffuseColor.rgb *= 1. - crush * (.35 + .35 * hn(vWP.xy * 55.)); // pulverised: darker, grainy
+        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.25, chip * hn(vWP.xy * 40.)); // chipped edge catches the light
+        float rim = uOpen > .01 ? 1. - smoothstep(uOpen, uOpen + .09, hd) : 0.;
+        diffuseColor.rgb *= 1. - .8 * ck;
+        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.18, 1.14, 1.08) * (.75 + .5 * hn(vWP.xy * 30.)), rim);`); };
+  const PROF = (() => { const pts = [[-28, GROUND]]; for (const [a, b, h0, h1] of STAIRS) { const t = (b - a) / NSTEP, r = (h0 - h1) / NSTEP;
+      pts.push([a, h0]); for (let k = 0; k < NSTEP; k++) { pts.push([a + k * t, h0 - (k + 1) * r], [a + (k + 1) * t, h0 - (k + 1) * r]); } } pts.push([96, G4]); return pts; })();
+  const groundAt = x => { let h = GROUND; for (const [a, b, h0, h1] of STAIRS) { if (x >= b) h = h1; else if (x >= a) h = h0 - (Math.floor((x - a) / ((b - a) / NSTEP)) + 1) * (h0 - h1) / NSTEP; } return h; };
+  const groundGeo = (() => { const P = [], N = [], U = []; for (let i = 0; i < PROF.length - 1; i++) { const [x0, y0] = PROF[i], [x1, y1] = PROF[i + 1]; if (x0 === x1 && y0 === y1) continue;
+      const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy), n = [-dy / l, dx / l, 0], u0 = (x0 + 28 + (GROUND - y0)) / 64, u1 = (x1 + 28 + (GROUND - y1)) / 64;
+      const q = [[x0, y0, 0, u0, 1], [x0, y0, 20, u0, 0], [x1, y1, 20, u1, 0], [x0, y0, 0, u0, 1], [x1, y1, 20, u1, 0], [x1, y1, 0, u1, 1]];
+      for (const [x, y, z, u, v] of q) { P.push(x, y, z); N.push(...n); U.push(u, v); } }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(N, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(U, 2)); g.setAttribute("uv2", g.attributes.uv); return g; })();
+  const ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, 64 / TILE, 20 / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, 64 / TILE, 20 / TILE), aoMap: tex("assets/wall4_ao.jpg", false, 64 / TILE, 20 / TILE), color: 0x7a7c80, roughness: .78, envMapIntensity: .35 }));
+  // pavement: 1.2 m slabs with sunk joints from the wall out to the curb, then darker asphalt (Tom 11-16: a real ground for the paint)
+  const CURB_Z = 2.7;
+  // the road: Poly Haven's aerial_asphalt_01 (CC0, Rob Tuytel), 4 m a tile, sampled by world place (Tom 11-16: the drawn cracks read as a map)
+  const roadT = { tRD: { value: tex("assets/road_diff.jpg", true, 1, 1) }, tRN: { value: tex("assets/road_nor_gl.jpg", false, 1, 1) }, tRR: { value: tex("assets/road_rough.jpg", false, 1, 1) } };
+  ground.material.onBeforeCompile = sh => { Object.assign(sh.uniforms, roadT);
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.)).xyz;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
+      varying vec3 vWP; float gJoint; float gRoad; float gWet; float gGrate; vec2 gUV; uniform sampler2D tRD, tRN, tRR;
+      float gh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float gn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(gh(i), gh(i + vec2(1, 0)), f.x), mix(gh(i + vec2(0, 1)), gh(i + vec2(1, 1)), f.x), f.y); }
+      float gf(vec2 p) { float a = .5, s = 0.; for (int i = 0; i < 5; i++) { s += a * gn(p); p = p * 2.03 + 11.7; a *= .5; } return s; }`)
+      .replace("#include <map_fragment>", `#include <map_fragment>
+        float jx = abs(fract((vWP.x - .13) / 1.2 + .5) - .5) * 1.2, jz = abs(fract(vWP.z / 1.2 + .5) - .5) * 1.2, aw = fwidth(vWP.x) + fwidth(vWP.z);
+        gRoad = smoothstep(${CURB_Z.toFixed(2)} + .32, ${CURB_Z.toFixed(2)} + .36, vWP.z);
+        gJoint = (1. - gRoad) * (1. - smoothstep(.012, .012 + aw, min(jx, jz))) * step(.15, vWP.z);
+        float wallFoot = 1. - smoothstep(0., .12, vWP.z); // grime where the slab meets the wall
+        diffuseColor.rgb *= mix(1., .38, gJoint) * mix(1., .55, wallFoot);
+        // the abandoned back street (Tom 11-16): real cracked asphalt, the gutter, a worn centre line, rain in the dips, a rusty drain
+        vec2 P = vWP.xz; float z = vWP.z - ${CURB_Z.toFixed(2)}; gUV = vec2(P.x, -P.y) / 4.;
+        float gut = smoothstep(.32, .36, z) * (1. - smoothstep(.62, .66, z));
+        float n = gf(P * 1.3);
+        vec3 asph = texture2D(tRD, gUV).rgb * .5 * (.8 + .4 * gf(P * .3 + 5.));
+        float lz = z - 3.9, dash = step(.45, fract(P.x / 6.)), worn = smoothstep(.35, .75, gf(P * 3.1 + 2.)) * smoothstep(.25, .45, texture2D(tRD, gUV).g);
+        float line = (1. - smoothstep(.06, .07, abs(lz))) * dash * worn * .5;
+        asph = mix(asph, vec3(.6, .58, .52), line);
+        vec3 gutC = vec3(.2, .2, .2) * (.8 + .4 * n) * (1. - .35 * (1. - abs(z - .49) / .15));
+        gWet = smoothstep(.66, .69, gf(P * 1.1 + 3.)) * smoothstep(.45, .55, gn(P * .35 + 9.)) * gRoad * (1. - gut) + gut * .7; // small puddles in the dips, not one big stain
+        vec2 gq = vec2(P.x - ${DRAIN_X.toFixed(2)}, z - .49); float inG = step(abs(gq.x), .32) * step(abs(gq.y), .12);
+        gGrate = inG * (1. - step(.5, fract(gq.x * 22.)) * step(abs(gq.y), .1) * step(abs(gq.x), .3));
+        vec3 grate = mix(vec3(.01), vec3(.2, .09, .04) * (.6 + .6 * gn(P * 40.)), gGrate);
+        vec3 road = mix(asph, gutC, gut); road = mix(road, grate, inG);
+        road *= mix(1., .5, gWet);
+        diffuseColor.rgb = mix(diffuseColor.rgb, road, gRoad);`)
+      .replace("#include <normal_fragment_maps>", `#include <normal_fragment_maps>
+        { vec3 nm = texture2D(tRN, gUV).xyz * 2. - 1.; vec3 wn = normalize(mix(vec3(nm.x, nm.z, -nm.y), vec3(0, 1, 0), max(gWet, .15))); // the rain lies flat
+          normal = normalize(mix(normal, normalize((viewMatrix * vec4(wn, 0.)).xyz), gRoad)); }`)
+      .replace("#include <lights_fragment_maps>", "#include <lights_fragment_maps>\n#ifdef USE_ENVMAP\n radiance *= mix(1., .3, gRoad); // a night street mirrors the dark, not a bright sky\n#endif")
+      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, .95, gJoint); roughnessFactor = mix(roughnessFactor, mix(.6, 1., texture2D(tRR, gUV).r), gRoad); roughnessFactor = mix(roughnessFactor, .04, gWet); roughnessFactor = mix(roughnessFactor, .5, gGrate);"); };
+  // the curb has a broken gap; the paint from one puddle finds it and runs along the gutter into the drain (Tom 11-16)
+  const GAP_X = NARROW ? .7 : 1.25, DRAIN_X = NARROW ? 1.55 : 2.3, X0 = WX - WW / 2, X1 = 96; // the curb runs on under the deck and past the exit
+  const curbM = new THREE.MeshStandardMaterial({ color: 0x8a8c90, roughness: .85, map: tex("assets/wall4_diff.jpg", true, WW / TILE, .3), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, .3), envMapIntensity: .3 });
+  for (let i = 0; i < PROF.length - 1; i++) { const [p0, h] = PROF[i], [p1, h1] = PROF[i + 1]; if (h !== h1 || p1 <= p0) continue; // each flat piece of ground
+    for (const [a, b] of [[X0, GAP_X - .22], [GAP_X + .2, X1]]) { const x0 = Math.max(a, p0), x1 = Math.min(b, p1); if (x1 - x0 < .01) continue; const c = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, .16, .34), curbM); c.position.set((x0 + x1) / 2, h + .02, CURB_Z + .17); scene.add(c); } }
+  for (const [x, z, r, sy] of [[GAP_X - .27, CURB_Z + .5, .07, .6], [GAP_X + .3, CURB_Z + .1, .05, .7], [GAP_X - .1, CURB_Z - .12, .035, .8]]) { // broken bits of the curb
+    const b = new THREE.Mesh(new THREE.DodecahedronGeometry(r), curbM); b.scale.y = sy; b.position.set(x, GROUND + r * sy * .7, z); b.rotation.set(x * 3, z * 5, 1); scene.add(b); }
+  // a street light on the pavement's edge, its pool of light on the road; the rain in the dips reflects it (Tom 11-16)
+  const POST = V(-4.4, 0, 2.45), postM = new THREE.MeshStandardMaterial({ color: 0x1a1b1d, metalness: .6, roughness: .55, envMapIntensity: .5 });
+  const bulbM = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffd9a8, emissiveIntensity: 0 });
+  { const pole = new THREE.Mesh(new THREE.CylinderGeometry(.06, .09, 6.6, 16), postM); pole.position.set(POST.x, GROUND + 3.3, POST.z);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, 1.3, 10), postM); arm.rotation.x = Math.PI / 2 - .2; arm.position.set(POST.x, GROUND + 6.5, POST.z + .62);
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(.13, .32, .18, 20), postM); head.position.set(POST.x, GROUND + 6.45, POST.z + 1.25);
+    const bulb = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .02, 20), bulbM); bulb.position.set(POST.x, GROUND + 6.35, POST.z + 1.25);
+    scene.add(pole, arm, head, bulb); }
+  // the steps: worn yellow paint on each edge, a handrail by the wall, a wall lamp over each flight; one light, moved to the flight in view
+  { const prev = ground.material.onBeforeCompile; ground.material.onBeforeCompile = sh => { prev(sh);
+    sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", `float nose = 0.;
+          ${STAIRS.map(([a, b]) => `if (vWP.x > ${a.toFixed(3)} && vWP.x < ${(b + .001).toFixed(3)}) { float f = fract((vWP.x - ${a.toFixed(3)}) / ${((b - a) / NSTEP).toFixed(4)}); nose = max(nose, smoothstep(.8, .84, f) + (1. - smoothstep(.0, .02, f))); }`).join("\n")}
+          nose *= smoothstep(.42, .62, gf(vWP.xz * 4.1 + 7.)) * (1. - gWet) * .8;
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.5, .39, .09) * (.6 + .4 * gn(vWP.xz * 40.)), clamp(nose, 0., 1.));
+          #include <emissivemap_fragment>`); }; }
+  const stairLamps = STAIRS.map(([a, b, h0, h1]) => { const m = new THREE.Group(), x = (a + b) / 2;
+    const box = new THREE.Mesh(new THREE.BoxGeometry(.32, .18, .12), postM), lens = new THREE.Mesh(new THREE.BoxGeometry(.26, .04, .1), new THREE.MeshStandardMaterial({ color: 0, emissive: 0xffd9a8, emissiveIntensity: 2 }));
+    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, h1 + 2.5, .07); scene.add(m);
+    const pts = [V(a - .4, h0 + .9, .3), V(a, h0 + .9, .3), V(b, h1 + .9, .3), V(b + .4, h1 + .9, .3)];
+    for (let i = 0; i < 3; i++) { const d = pts[i + 1].clone().sub(pts[i]), r = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, d.length(), 8), postM);
+      r.position.copy(pts[i]).addScaledVector(d, .5); r.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize()); scene.add(r); }
+    for (const [px, py] of [[a - .35, h0], [(a + b) / 2, groundAt((a + b) / 2)], [b + .35, h1]]) { const top = py === h0 ? h0 + .9 : py === h1 ? h1 + .9 : groundAt(px) + .9 + 0 * 0;
+      const yTop = px <= a ? h0 + .9 : px >= b ? h1 + .9 : h0 + .9 + (h1 - h0) * (px - a) / (b - a), po = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, yTop - py, 8), postM); po.position.set(px, (yTop + py) / 2, .3); scene.add(po); }
+    return { x, y: h1 + 2.4 }; });
+  const stairLight = new THREE.SpotLight(0xffd9a8, 0, 7, .95, .8, 1.4); scene.add(stairLight, stairLight.target);
+  function stairsAt(cx) { const i = cx < 12 ? 0 : cx < 29 ? 1 : 2, s = stairLamps[i];
+    const w = i === 0 ? 1 - sm(cl((cx - 10) / 2)) : i === 1 ? sm(cl((cx - 12) / 2)) * (1 - sm(cl((cx - 27) / 2))) : sm(cl((cx - 29) / 2)) * (1 - sm(cl((cx - 38) / 3)));
+    stairLight.position.set(s.x, s.y, .4); stairLight.target.position.set(s.x, s.y - 3, 1.6); stairLight.intensity = 7 * w * (introOver ? 1 : 0); }
+  const pool = new THREE.SpotLight(0xffd2a0, 0, 14, .62, .85, 1.6); pool.position.set(POST.x, GROUND + 6.3, POST.z + 1.25); pool.target.position.set(POST.x + .3, GROUND, POST.z + 1.6); scene.add(pool, pool.target); // a curb stone at the pavement's edge; the darker band beyond is the road
+  ground.receiveShadow = true; scene.add(ground);
+
+  // one warm street light grazing the wall from the left, so every pit in the concrete shows; a cold sky fill
+  const lamp = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp.position.set(-8.5, 4.2, 1.6); lamp.target.position.set(.5, .2, 0);
+  scene.add(lamp, lamp.target);
+  const sky = new THREE.HemisphereLight(0x4f6699, 0x0a0a0c, .35); scene.add(sky);
+  const bounce = new THREE.PointLight(0xff5a24, 0, 4, 2); scene.add(bounce);
+
+  // the paint layer: a canvas painted at the pen's own pace, wet and glossy, following the concrete's bumps
+  const PW = NARROW ? 4.6 : 9.4, PH = NARROW ? 4.6 : 3.4, PX = 256, PCY = NARROW ? 1 : .75;
+  const pc = document.createElement("canvas"); pc.width = PW * PX; pc.height = PH * PX; const g = pc.getContext("2d", { willReadFrequently: true });
+  const paintTex = new THREE.CanvasTexture(pc); paintTex.encoding = THREE.sRGBEncoding; paintTex.anisotropy = maxAniso;
+  const paintMat = new THREE.MeshPhysicalMaterial({ map: paintTex, transparent: true, depthWrite: false, roughness: .2, clearcoat: .9, clearcoatRoughness: .12, envMapIntensity: .9,
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, PW / TILE, PH / TILE, (WW / 2 - WX - PW / 2) / TILE, (PCY - PH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.5, .5), polygonOffset: true, polygonOffsetFactor: -2 });
+  const paint = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), paintMat); paint.position.set(0, PCY, .002); paint.receiveShadow = true; scene.add(paint);
+
+  // pen samples → canvas pixels, at Tom's timing
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; HAND.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); } });
+  const WRITE_W = (NARROW ? 3.9 : 6) * PX, sc = WRITE_W / (x1 - x0), ox = (pc.width - WRITE_W) / 2, oy = (pc.height - (y1 - y0) * sc) / 2 - 10;
+  const samples = []; HAND.strokes.forEach((s, si) => { for (let i = 0; i < s.length; i += 4) samples.push({ x: ox + (s[i] - x0) * sc, y: oy + (s[i + 1] - y0) * sc, t: s[i + 2], p: s[i + 3], si, first: i === 0 }); });
+  samples.length = 0; // the hand-written tag is out for now (Tom 11-16); the wall carries the title instead
+  // the mural: Tom's line, poured. Streams fall from the top of the wall, land on each letter, flood it from the top down,
+  // run on to the letter below and drip at the bottom. Every pixel's wet time is worked out once at load (a flood fill where
+  // paint runs down fast, sideways slower and up only slowly); the GPU then only compares it with the clock.
+  const MURAL = NARROW ? ["I build", "and run", "things", "myself."] : ["I build and run", "things myself."];
+  const WALL_TOP = GROUND + WH, YB = PCY - PH / 2, HT = WALL_TOP - GROUND, POUR = 1.4, TMAX = 14, NS = 40;
+  const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // the sheet that comes over the top edge: depth per column, and how fast it slides down (it slows as it thins)
+  const VSH = 3; let SB = .3;
+  const sheetD = x => SB * (1 + .22 * Math.sin(x * 7.3 + 1) + .14 * Math.sin(x * 17.9 + 2) + .07 * Math.sin(x * 41.3));
+  let grounds = [], muralPin = null, pourReady = false, pourDone = 1e9, uTnow = -1, streams = [];
+  const SPAN = PW / 2 + .2, BK = { r0: .24, r1: .3, h: .58 };
+  // the bucket stands at the left end of the wall's top; the visitor tips it over on its side, the paint floods right along the top and spills down
+  const TS = .8, left = ic => ic < .2 ? 1 : Math.exp(-(ic - .2) / .6); // left(): how much is still in the bucket; the flow follows it
+  const LEDGE = { x: -SPAN - .55, tip: .4, spread: NARROW ? 3 : 5, run: NARROW ? 3.6 : 4.2 };
+  LEDGE.x0 = LEDGE.x + BK.r0 + BK.h;
+  const ledgeArrive = x => LEDGE.tip + .05 + Math.max(0, x - LEDGE.x0) / LEDGE.spread;
+  const pourNor = tex("assets/wall4_nor_gl.jpg", false, PW / TILE, HT / TILE, (WW / 2 - WX - PW / 2) / TILE, 0);
+  const pourU = { uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
+    uA: { value: Array.from({ length: NS }, () => new THREE.Vector4(0, -99, -99, 99)) }, uB: { value: Array.from({ length: NS }, () => new THREE.Vector4()) },
+    uC: { value: new THREE.Color("rgb(255,79,26)") }, uRep: { value: pourNor.repeat }, uOff: { value: pourNor.offset }, uDims: { value: new THREE.Vector4(PW, PH, HT, GROUND) }, uYB: { value: YB },
+    uSh: { value: new THREE.Vector4(.3, VSH, WALL_TOP, 0) }, uL: { value: new THREE.Vector4(LEDGE.tip + .05, LEDGE.x0, LEDGE.spread, 0) } };
+  const pourMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .22, clearcoat: .9, clearcoatRoughness: .1, envMapIntensity: .9, normalMap: pourNor, normalScale: new THREE.Vector2(.5, .5), polygonOffset: true, polygonOffsetFactor: -2 });
+  pourMat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, pourU);
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
+      uniform sampler2D uMask, uWet; uniform float uT; uniform vec4 uA[${NS}], uB[${NS}]; uniform int uN; uniform vec3 uC; uniform vec2 uRep, uOff; uniform vec4 uDims, uSh, uL; uniform float uYB;
+      float wetG;`)
+      .replace("#include <map_fragment>", `
+        vec2 uv0 = (vUv - uOff) / uRep;
+        float wx = (uv0.x - .5) * uDims.x, wy = uDims.w + uv0.y * uDims.z, pa = 0.; wetG = 0.;
+        vec2 cuv = vec2(uv0.x, (wy - uYB) / uDims.y);
+        if (cuv.y > 0. && cuv.y < 1.) { float m = texture2D(uMask, cuv).r, T = texture2D(uWet, cuv).r * ${TMAX}.; float age = uT - T; pa = m * smoothstep(-.03, .06, age); wetG = pa * (1. - smoothstep(.3, 3., age)); }
+        float aa = fwidth(wx);
+        // the sheet: comes over the edge where the ledge paint reaches it, slides down, slows, gathers a bead at its lower edge
+        { float ft = uT - (uL.x + max(0., wx - uL.y) / uL.z); if (ft > 0.) {
+          float D = uSh.x * (1. + .22 * sin(wx * 7.3 + 1.) + .14 * sin(wx * 17.9 + 2.) + .07 * sin(wx * 41.3));
+          D = max(.001, D * smoothstep(uDims.x * .5 - .02, uDims.x * .5 - .7 - .25 * sin(wx * 9.1), abs(wx))); // the sheet thins out before the paint layer's sides: no straight cut
+          float fr = D * (1. - exp(-ft * uSh.y * (1. + .15 * sin(wx * 5.1 + 3.)) / D));
+          fr += .022 * pow(abs(sin(wx * 21. + 1.3)), 8.) * fr / D;   // small drops hanging from the bead
+          float dep = uSh.z - wy, ay = fwidth(wy), sa = 1. - smoothstep(fr - ay, fr + ay, dep);
+          pa = max(pa, sa); wetG = max(wetG, sa * mix(.55, 1., smoothstep(fr - .05, fr - .01, dep))); } }
+        // runs: they wobble, swell and thin, carry a drop at the head; feeding runs drain to a thin trace, a few stay
+        for (int i = 0; i < ${NS}; i++) { if (i >= uN) break; vec4 a = uA[i], b = uB[i];
+          float tt = uT - a.w; if (tt <= 0. || wy > a.y + .01 || wy < a.z - .06) continue;
+          float L = max(a.y - a.z, .01), fall = a.y - wy;
+          float head = b.z < .5 ? min(b.y * tt, L) : L * (1. - exp(-tt * b.y / L));
+          if (fall > head + b.x) continue;
+          float tail = (b.z < .5 && tt > ${POUR.toFixed(1)}) ? b.y * (tt - ${POUR.toFixed(1)}) : -1.;
+          float ph = a.x * 37.1, k = min(1., fall * 2.5);
+          float wob = (.009 * sin(wy * 4.3 + ph) + .004 * sin(wy * 11.7 + ph * 1.7)) * k;
+          float w = b.x * (1. + .32 * sin(wy * 8.3 + ph * 2.1) + .16 * sin(wy * 21. + ph)) * (1. + 1.3 * exp(-fall * 14.));
+          float film = 1.;
+          if (fall < tail) { w *= b.w > .5 ? .42 : .2; film = b.w > .5 ? 1. : .12; }
+          float sa = (1. - smoothstep(w * .5 - aa, w * .5 + aa, abs(wx - a.x - wob))) * step(fall, head);
+          float br = b.x * .8; vec2 bc = vec2(a.x + wob, a.y - head + br * .5);
+          if (b.z > .5 || head < L - .001) sa = max(sa, 1. - smoothstep(br - aa, br + aa, length(vec2(wx, wy) - bc)));
+          sa *= film; pa = max(pa, sa); wetG = max(wetG, sa * (fall < tail ? .3 : 1.)); }
+        diffuseColor = vec4(uC * (1. - .18 * wetG), pa);`)
+      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n roughnessFactor = mix(roughnessFactor, .04, wetG);");
+  };
+  const puddleU = { uT: pourU.uT, uC: pourU.uC, uP: { value: Array.from({ length: 12 }, () => new THREE.Vector4(0, 99, 0, 0)) }, uPN: { value: 0 } };
+  const puddleMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .06, clearcoat: 1, clearcoatRoughness: .03, envMapIntensity: 1, polygonOffset: true, polygonOffsetFactor: -2 });
+  puddleMat.defines = { USE_UV: "" };
+  puddleMat.onBeforeCompile = sh => { Object.assign(sh.uniforms, puddleU);
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform float uT; uniform vec3 uC; uniform vec4 uP[12]; uniform int uPN;")
+      .replace("#include <map_fragment>", `
+        float x = (vUv.x - .5) * ${(PW + 3).toFixed(2)}, z = (1. - vUv.y) * 1.6, f = 0.;
+        for (int i = 0; i < 12; i++) { if (i >= uPN) break; vec4 p = uP[i]; float age = uT - p.y; if (age <= 0.) continue;
+          float g = 1. - exp(-age / 1.3), rx = p.z * g + .03, rz = p.w * g + .02, dx = (x - p.x) / rx, dz = (z - rz * .35) / rz;
+          f += 1. / (dx * dx + dz * dz + .001);
+          for (int j = 0; j < 7; j++) { float fj = float(j) + float(i) * 7.; vec2 o = vec2(sin(fj * 12.9) * .6 + sin(fj * 3.1) * .25, .05 + abs(sin(fj * 7.7)) * .5) * (.7 + .5 * g);
+            float rr = .016 + .02 * fract(sin(fj * 91.7) * 43.1); vec2 q = vec2(x - p.x - o.x * sign(sin(fj * 5.3)), z - o.y) / (rr * smoothstep(0., .15, age));
+            f += .5 / (dot(q, q) + .001); } }
+        float e = 1. + .18 * sin(x * 9. + z * 4.) * sin(z * 13. + x * 5.) + .08 * sin(x * 31. - z * 27.), v = f * e, aa = fwidth(v);
+        float body = smoothstep(1. - aa, 1. + aa, v), rim = smoothstep(1., 1.25, v) * (1. - smoothstep(1.4, 2.6, v));
+        vec3 col = uC * mix(.62, .9, smoothstep(1.2, 4., v));          // deeper where the paint is thick
+        col = mix(col * .45, col, smoothstep(1., 1.1, v));                // the meniscus: a dark line right at the edge
+        col += uC * .55 * rim;                                            // the rounded edge catching the light
+        diffuseColor = vec4(col, body);`); };
+  const creepU = { uFront: { value: -1 }, uLen: { value: 1 }, uGut: { value: 9 }, uC: pourU.uC }; let creep = null;
+  const creepMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .06, clearcoat: 1, clearcoatRoughness: .03, polygonOffset: true, polygonOffsetFactor: -3 });
+  creepMat.onBeforeCompile = sh => { Object.assign(sh.uniforms, creepU);
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nattribute vec2 aSD; varying vec2 vSD;").replace("#include <begin_vertex>", "#include <begin_vertex>\nvSD = aSD;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform float uFront, uLen, uGut; uniform vec3 uC; varying vec2 vSD;")
+      .replace("#include <map_fragment>", `
+        float sA = vSD.x, d = abs(vSD.y), ah = fwidth(d) + .002;
+        float w = (.024 + .009 * sin(sA * 7.3) + .006 * sin(sA * 19.1 + 1.)) * mix(1., 1.9, smoothstep(uGut - .1, uGut + .3, sA)); // wider once it reaches the wet gutter
+        w *= 1. + .45 * exp(-max(uFront - sA, 0.) * 9.);                                                             // the bead at the front
+        float body = (1. - smoothstep(w - ah, w + ah, d)) * (1. - smoothstep(uFront - .002, uFront + .002, sA));
+        float cap = 1. - smoothstep(w - ah, w + ah, length(vec2(d, max(sA - uFront, 0.))));                          // a round head
+        float a = max(body, cap * step(uFront, sA)) * step(.0, uFront) * (1. - smoothstep(uLen - .06, uLen, sA));  // gone into the grate
+        float r = d / w; vec3 col = uC * .82; col *= mix(1., .45, smoothstep(.72, 1., r)); col += uC * .4 * (1. - smoothstep(.2, .55, abs(r - .45)));
+        diffuseColor = vec4(col, a);`); };
+  function makeCreep() { // from the puddle nearest the gap, across the slabs, through the gap, along the gutter to the drain
+    const src = grounds.slice(0, 12).filter(g => !g.big).reduce((b, g) => !b || Math.abs(g.x - GAP_X + .5) < Math.abs(b.x - GAP_X + .5) ? g : b, null); if (!src) return;
+    const P = (x, z) => V(x, GROUND + .007, z), gz = CURB_Z + .5;
+    const curve = new THREE.CatmullRomCurve3([P(src.x, .3), P(src.x + (GAP_X - src.x) * .25 + .08, 1.05), P(src.x + (GAP_X - src.x) * .7 - .06, 1.9), P(GAP_X - .02, 2.5), P(GAP_X, 2.88), P(GAP_X + .12, gz - .05), P(GAP_X + .45, gz), P(DRAIN_X - .3, gz + .01)], false, "centripetal", .4);
+    const N = 360, HW = .07, pos = [], sd = [], idx = [], L = curve.getLength(), lens = curve.getLengths(N);
+    for (let i = 0; i <= N; i++) { const u = i / N, c = curve.getPointAt(u), t = curve.getTangentAt(u), n = V(-t.z, 0, t.x).normalize(), sA = u * L, wob = .012 * Math.sin(sA * 11.);
+      for (const sg of [-1, 1]) { pos.push(c.x + n.x * (sg * HW + wob), c.y, c.z + n.z * (sg * HW + wob)); sd.push(sA, sg * HW); }
+      if (i < N) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute("aSD", new THREE.Float32BufferAttribute(sd, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+    if (geo.attributes.normal.getY(0) < 0) idx.reverse(), geo.setIndex(idx), geo.computeVertexNormals();
+    // where the gutter begins along the path: the first point past the curb's road side
+    let gut = L; for (let i = 0; i <= N; i++) if (curve.getPointAt(i / N).z > CURB_Z + .36) { gut = i / N * L; break; }
+    creepU.uLen.value = L; creepU.uGut.value = gut;
+    creep = { mesh: new THREE.Mesh(geo, creepMat), L, at: src.land + 1.8 }; scene.add(creep.mesh); }
+  const puddle = new THREE.Mesh(new THREE.PlaneGeometry(PW + 3, 1.6), puddleMat); puddle.rotation.x = -Math.PI / 2; puddle.position.set(0, GROUND + .004, .8); scene.add(puddle);
+  const pourMesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, HT), pourMat); pourMesh.position.set(0, GROUND + HT / 2, .003); pourMesh.visible = false; scene.add(pourMesh);
+  document.fonts.load('700 100px "Clash Display"').catch(() => {}).then(buildPour);
+
+  function buildPour() {
+    const W = pc.width, H = pc.height, mk = document.createElement("canvas"); mk.width = W; mk.height = H; const m = mk.getContext("2d", { willReadFrequently: true });
+    const font = n => `700 ${n}px "Clash Display", system-ui, sans-serif`;
+    m.font = font(100); const w100 = Math.max(...MURAL.map(l => m.measureText(l).width));
+    const size = Math.min(100 * W * .9 / w100, H * .9 / (MURAL.length * .9)), lh = size * .9, lw = w100 * size / 100;
+    const x0 = (W - lw) / 2, top = (H - lh * MURAL.length) / 2 + size * .74;
+    m.fillStyle = "#000"; m.fillRect(0, 0, W, H); m.fillStyle = "#fff"; m.font = font(size); m.textBaseline = "alphabetic";
+    MURAL.forEach((l, i) => m.fillText(l, x0, top + i * lh));
+    muralPin = toWorld(x0 + lw * (NARROW ? .55 : .985), top - size * .72);
+    // a half-size grid for the flow
+    const full = m.getImageData(0, 0, W, H).data, w = W >> 1, h = H >> 1, N = w * h, PXH = PX / 2;
+    const lit = new Uint8Array(N);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const a = (2 * y * W + 2 * x) * 4; lit[y * w + x] = Math.max(full[a], full[a + 4], full[a + W * 4], full[a + W * 4 + 4]); }
+    // the letters as separate pieces, each with its top and bottom edge per column
+    const lab = new Int32Array(N).fill(-1), comps = [], st = [];
+    for (let i = 0; i < N; i++) {
+      if (lit[i] < 128 || lab[i] >= 0) continue;
+      const c = { id: comps.length, x0: 1e9, x1: -1, y0: 1e9, y1: -1 }; comps.push(c); lab[i] = c.id; st.push(i);
+      while (st.length) { const j = st.pop(), x = j % w, y = j / w | 0; c.x0 = Math.min(c.x0, x); c.x1 = Math.max(c.x1, x); c.y0 = Math.min(c.y0, y); c.y1 = Math.max(c.y1, y);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const k = ny * w + nx; if (lit[k] >= 128 && lab[k] < 0) { lab[k] = c.id; st.push(k); } } }
+    }
+    comps.forEach(c => { c.top = new Int32Array(c.x1 - c.x0 + 1).fill(1e9); c.bot = new Int32Array(c.x1 - c.x0 + 1).fill(-1); });
+    for (let i = 0; i < N; i++) { const L = lab[i]; if (L < 0) continue; const c = comps[L], x = i % w, y = i / w | 0, k = x - c.x0; if (y < c.top[k]) c.top[k] = y; if (y > c.bot[k]) c.bot[k] = y; }
+    const pass = new Uint8Array(N); for (let i = 0; i < N; i++) pass[i] = lit[i] >= 60 ? 1 : 0;
+    const T = new Float64Array(N).fill(Infinity), seeds = [];
+    // each piece is fed by the nearest piece above it (a thin run), or by its own stream from the top of the wall
+    const gapMax = lh / 2 * 1.3, RUN = Math.max(2, size * .011);
+    m.fillStyle = "#fff";
+    for (const c of comps) {
+      let best = null; const mid = c.top.length / 2;
+      for (let k = 1; k < c.top.length - 1; k++) { const x = c.x0 + k, ty = c.top[k]; if (ty > 1e8) continue;
+        for (let y = ty - 1; y >= Math.max(0, ty - gapMax); y--) { const L = lab[y * w + x]; if (L < 0) continue;
+          const gap = ty - y; if (!best || gap < best.gap - 1 || (gap <= best.gap + 1 && Math.abs(k - mid) < Math.abs(best.x - c.x0 - mid))) best = { x, y, ty, gap }; break; } }
+      if (best) { // a run from the piece above
+        m.fillRect(2 * best.x + 1 - RUN / 2, 2 * best.y, RUN, 2 * (best.ty - best.y) + 2);
+        const r = Math.max(0, Math.round(RUN / 4)); c.parent = lab[best.y * w + best.x]; c.feed = { x: best.x, y0: best.y, y1: best.ty, r }; for (let y = best.y; y <= best.ty; y++) for (let x = best.x - r; x <= best.x + r; x++) pass[y * w + x] = 1;
+      } else { // a stream: the column at the piece's highest point
+        const minT = Math.min(...c.top); const cols = []; c.top.forEach((v, k) => { if (v <= minT + 1) cols.push(k); });
+        const hx = c.x0 + cols[cols.length >> 1], hy = c.top[hx - c.x0], p = toWorld(2 * hx + 1, 2 * hy);
+        streams.push({ x: p.x, y: p.y, hx, c });
+      }
+    }
+    // each run breaks off the sheet's bead, once the sheet has slid nearly all the way down
+    SB = Math.min(.34, (WALL_TOP - Math.max(...comps.map(c => toWorld(0, 2 * c.y0).y))) * .38); pourU.uSh.value.x = SB;
+    const startOf = x => { const D = sheetD(x); return [WALL_TOP - D * .9, ledgeArrive(x) + 2.3 * D / VSH]; };
+    const speed = LEDGE.run;
+    streams.forEach(s => { const [ys, t0] = startOf(s.x);
+      Object.assign(s, { ys, t0: t0 + Math.random() * .06, w: (NARROW ? .042 : .036) * (.8 + Math.random() * .45), v: speed * (.9 + Math.random() * .2), kind: 0, keep: Math.random() < .2 ? 1 : 0 });
+      s.land = s.t0 + (s.ys - s.y) / s.v; s.end = s.land + .5;
+      for (let x = s.hx - 2; x <= s.hx + 2; x++) { const k = x - s.c.x0; if (k >= 0 && k < s.c.top.length && s.c.top[k] < 1e8) seeds.push([s.c.top[k] * w + x, s.land]); }
+    });
+    // short runs that never reach a letter: they slow down and stop in a drop
+    const topY = Math.max(...comps.map(c => toWorld(0, 2 * c.y0).y)), shorts = [];
+    for (let n = 0, tries = 0; n < (NARROW ? 7 : 12) && tries < 80; tries++) {
+      const x = (Math.random() * 2 - 1) * SPAN, [ys, t0] = startOf(x), L = Math.min(.15 + Math.pow(Math.random(), 1.6) * 2.6, ys - topY - .1);
+      if (L < .1) continue;
+      shorts.push({ x, y: ys - L, ys, t0: t0 + .05 + Math.random() * .3, w: (NARROW ? .036 : .03) * (.7 + Math.random() * .5), v: 1.2 + Math.random(), kind: 1, keep: 1 }); n++;
+    }
+    const all = streams.concat(shorts).slice(0, NS);
+    // flood: down fast, sideways slower, up slowly; a lumpy speed field so the front has fingers
+    const CG = 10, cw = Math.ceil(w / CG) + 2, chh = Math.ceil(h / CG) + 2, cgrid = Float32Array.from({ length: cw * chh }, () => .55 + Math.random() * 1.05);
+    const nz = new Float32Array(N);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const gx = x / CG, gy = y / CG, ix = gx | 0, iy = gy | 0, fx = gx - ix, fy = gy - iy, at = (a, b) => cgrid[b * cw + a];
+      nz[y * w + x] = (at(ix, iy) * (1 - fx) + at(ix + 1, iy) * fx) * (1 - fy) + (at(ix, iy + 1) * (1 - fx) + at(ix + 1, iy + 1) * fx) * fy + Math.random() * .25; }
+    const VD = 4.2, VS = 1.9, VU = .8, cv = dy => dy > 0 ? 1 / VD : dy < 0 ? 1 / VU : 1 / VS;
+    const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].map(([dx, dy]) => [dx, dy, (dx && dy ? Math.SQRT2 * (cv(0) + cv(dy)) / 2 : cv(dy)) / PXH]);
+    const hi = [], hk = [];
+    const push = (i, t) => { let n = hi.length; hi.push(i); hk.push(t); while (n > 0) { const p = (n - 1) >> 1; if (hk[p] <= t) break; hi[n] = hi[p]; hk[n] = hk[p]; n = p; } hi[n] = i; hk[n] = t; };
+    const pop = () => { const i = hi[0], t = hk[0], li = hi.pop(), lk = hk.pop(), n = hi.length; if (n) { let j = 0; for (;;) { let c = 2 * j + 1; if (c >= n) break; if (c + 1 < n && hk[c + 1] < hk[c]) c++; if (hk[c] >= lk) break; hi[j] = hi[c]; hk[j] = hk[c]; j = c; } hi[j] = li; hk[j] = lk; } return [i, t]; };
+    for (const [i, t] of seeds) if (t < T[i]) { T[i] = t; push(i, t); }
+    while (hi.length) { const [i, t] = pop(); if (t > T[i]) continue; const x = i % w, y = i / w | 0;
+      for (const [dx, dy, c] of DIRS) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const j = ny * w + nx; if (!pass[j]) continue; const nt = t + c * nz[j]; if (nt < T[j]) { T[j] = nt; push(j, nt); } } }
+    // reading order: line by line, left to right. A piece waits its turn (the paint pools in the piece above, then runs on)
+    { const lineOf = c => Math.round((c.y0 + c.y1 - (top - size * .35)) / lh), E = comps.map(() => Infinity), Mx = comps.map(() => -Infinity), S = new Float64Array(comps.length);
+      for (let i = 0; i < N; i++) { const L = lab[i]; if (L < 0 || !(T[i] < 1e9)) continue; if (T[i] < E[L]) E[L] = T[i]; if (T[i] > Mx[L]) Mx[L] = T[i]; }
+      const order = comps.filter(c => E[c.id] < 1e9).sort((a, b) => lineOf(a) - lineOf(b) || a.x0 - b.x0), done = new Uint8Array(comps.length);
+      let cur = null, prevStart = -Infinity, lineEnd = -Infinity, curEnd = -Infinity;
+      const visit = c => { if (done[c.id]) return; done[c.id] = 1; const k = lineOf(c);
+        if (c.parent != null && c.parent >= 0 && !done[c.parent] && lineOf(comps[c.parent]) === k) visit(comps[c.parent]);
+        if (k !== cur) { if (cur !== null) lineEnd = Math.max(lineEnd, curEnd); cur = k; prevStart = -Infinity; curEnd = -Infinity; }
+        let need = Math.max(prevStart + .05, lineEnd - .45); if (c.parent != null && c.parent >= 0) need = Math.max(need, E[c.id] + S[c.parent]);
+        S[c.id] = Math.max(0, need - E[c.id]); prevStart = E[c.id] + S[c.id]; curEnd = Math.max(curEnd, Mx[c.id] + S[c.id]); };
+      order.forEach(visit);
+      const own = Int32Array.from(lab);
+      for (const c of comps) if (c.feed) { const f = c.feed; for (let y = f.y0; y <= f.y1; y++) for (let x = f.x - f.r; x <= f.x + f.r; x++) { const j = y * w + x; if (lab[j] < 0) own[j] = c.id; } }
+      for (let i = 0; i < N; i++) { if (own[i] >= 0 || !(T[i] < 1e9)) continue; const x = i % w, y = i / w | 0; let b = -1;
+        for (let dy = -2; dy <= 2 && b < 0; dy++) for (let dx = -2; dx <= 2; dx++) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const L = lab[ny * w + nx]; if (L >= 0) { b = L; break; } }
+        own[i] = b; }
+      for (let i = 0; i < N; i++) if (own[i] >= 0 && T[i] < 1e9) T[i] += S[own[i]];
+      streams.forEach(st => { const d = S[st.c.id]; st.t0 += d; st.land += d; st.end += d; }); }
+    pourDone = 0; for (let i = 0; i < N; i++) if (lab[i] >= 0 && T[i] < 1e9) pourDone = Math.max(pourDone, T[i]); pourDone += .3;
+    // drips from the bottom line: they run, slow down as they dry, and end in a bead
+    const maxB = Math.max(...comps.map(c => c.y1)), lows = comps.filter(c => c.y1 >= maxB - lh / 2 * .35 && c.top.length > 8);
+    const TAU = 1;
+    for (let n = 0, tries = 0; n < (NARROW ? 5 : 7) && tries < 200 && lows.length; tries++) {
+      const c = lows[Math.random() * lows.length | 0], k = 3 + (Math.random() * (c.top.length - 6) | 0), hx = c.x0 + k, by = c.bot[k];
+      if (by < 0 || !(T[by * w + hx] < 1e9) || lit[(by + 2) * w + hx] > 0) continue;
+      const room = (h - by) / PXH - .1; if (room < .12) continue;
+      const L = Math.min(room, .12 + Math.random() * .5), wd = size * (.016 + Math.random() * .016), Lp = L * PX, fx = 2 * hx + 1, fy = 2 * by + 1;
+      m.beginPath(); m.moveTo(fx - wd * 1.4, fy - 2); m.quadraticCurveTo(fx - wd * .5, fy, fx - wd * .5, fy + wd * 1.4); m.lineTo(fx - wd * .32, fy + Lp); m.lineTo(fx + wd * .32, fy + Lp); m.lineTo(fx + wd * .5, fy + wd * 1.4); m.quadraticCurveTo(fx + wd * .5, fy, fx + wd * 1.4, fy - 2); m.fill();
+      m.beginPath(); m.arc(fx, fy + Lp, wd * .55, 0, 6.283); m.fill();
+      const t0 = T[by * w + hx] + .2 + Math.random() * .8, L2 = L / .98, r = Math.ceil(wd / 2) + 1;
+      for (let y = by + 1; y <= Math.min(h - 1, by + Lp / 2 + wd / 2 + 2); y++) { const d = Math.min((y - by) / PXH, L), t = t0 - TAU * Math.log(1 - d / L2);
+        for (let x = hx - r; x <= hx + r; x++) { const j = y * w + x; if (t < T[j]) T[j] = t; } }
+      n++;
+    }
+    // a few runs keep going past the letters to the foot of the wall; each makes a puddle where it lands
+    for (let n = 0, tries = 0; n < (NARROW ? 4 : 6) && tries < 200 && lows.length && all.length < NS; tries++) {
+      const c = lows[Math.random() * lows.length | 0], k = 3 + (Math.random() * (c.top.length - 6) | 0), hx = c.x0 + k, by = c.bot[k];
+      if (by < 0 || !(T[by * w + hx] < 1e9) || lit[(by + 2) * w + hx] > 0 || grounds.some(g => Math.abs(g.hx - hx) < 12)) continue;
+      const p = toWorld(2 * hx + 1, 2 * by + 2), t0 = T[by * w + hx] + .3 + Math.random() * .7, v = .9 + Math.random() * .6;
+      const g = { hx, x: p.x, ys: p.y, y: GROUND, t0, v, w: (NARROW ? .04 : .034) * (.8 + Math.random() * .5), kind: 0, keep: Math.random() < .5 ? 1 : 0 };
+      g.land = t0 + (p.y - GROUND) / v; g.feed = g.land + Math.max(.4, 1.4 - (p.y - GROUND) / v); grounds.push(g); all.push(g); n++;
+    }
+    grounds.unshift({ x: CUR.x, land: CUR.land, feed: CUR.tailLand, big: .62 }, ...LRUNS.map(r => ({ x: r.x, land: r.land, feed: r.land + .4, big: .2 })));
+    grounds.slice(0, 12).forEach((g, i) => puddleU.uP.value[i].set(g.x, g.land, g.big ? g.big * (NARROW ? .8 : 1) : (.24 + Math.random() * .26) * (NARROW ? .8 : 1), g.big ? g.big * .7 : .3 + Math.random() * .16)); puddleU.uPN.value = Math.min(12, grounds.length); makeCreep();
+    all.forEach((s, i) => { pourU.uA.value[i].set(s.x, s.ys, s.y, s.t0); pourU.uB.value[i].set(s.w, s.v, s.kind, s.keep); }); pourU.uN.value = all.length;
+    // close the soft edges: every pixel the paint touches takes the time of its wet neighbour
+    for (let pass2 = 0; pass2 < 3; pass2++) { const U = T.slice(); for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) { const i = y * w + x; if (U[i] < 1e9) continue;
+      let b = Infinity; for (const [dx, dy] of DIRS) { const v = U[i + dy * w + dx]; if (v < b) b = v; } if (b < 1e9) T[i] = b + .02; } }
+    const maskTex = new THREE.CanvasTexture(mk); maskTex.anisotropy = maxAniso;
+    const data = new Uint8Array(N * 4);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const t = T[y * w + x], v = t < 1e9 ? Math.min(254, Math.round(t / TMAX * 255)) : 255, r = ((h - 1 - y) * w + x) * 4; data[r] = data[r + 1] = data[r + 2] = v; data[r + 3] = 255; }
+    const wetTex = new THREE.DataTexture(data, w, h); wetTex.minFilter = wetTex.magFilter = THREE.LinearFilter; wetTex.generateMipmaps = false; wetTex.needsUpdate = true;
+    pourU.uMask.value = maskTex; pourU.uWet.value = wetTex; pourMesh.visible = true; pourReady = true;
+  }
+  function splashGround(at, n) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = 1; mc[i * 3 + 1] = .36; mc[i * 3 + 2] = .12; mp[i * 3] = at.x + gauss() * .03; mp[i * 3 + 1] = at.y; mp[i * 3 + 2] = .05;
+    mv[i * 3] = gauss() * .45; mv[i * 3 + 1] = .25 + Math.random() * .45; mv[i * 3 + 2] = .1 + Math.random() * .35; ml[i] = .45 + Math.random() * .15; } }
+  function splash(at, n) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = 1; mc[i * 3 + 1] = .36; mc[i * 3 + 2] = .12; mp[i * 3] = at.x; mp[i * 3 + 1] = at.y; mp[i * 3 + 2] = .03;
+    mv[i * 3] = gauss() * .9; mv[i * 3 + 1] = .1 + Math.random() * .7; mv[i * 3 + 2] = .2 + Math.random() * .6; ml[i] = .8 + Math.random() * .2; } }
+
+  // ---- the intro: a dark wall, a bucket filling like a progress bar, then the paint goes onto the wall (plays once, by itself)
+  const ORANGE = new THREE.Color("rgb(255,79,26)");
+  const metal = new THREE.MeshPhysicalMaterial({ color: 0x8b9197, metalness: .85, roughness: .36, clearcoat: .3, envMapIntensity: 1.2, side: THREE.DoubleSide });
+  const paintIn = new THREE.MeshPhysicalMaterial({ color: ORANGE, roughness: .1, clearcoat: 1, clearcoatRoughness: .04, envMapIntensity: 1.1 });
+  const paintCoat = paintIn.clone(); paintCoat.side = THREE.DoubleSide; const coatCut = new THREE.Plane(); paintCoat.clippingPlanes = [coatCut]; renderer.localClippingEnabled = true;
+  // the paint in the bucket is a body of liquid: its inside cut by a level plane (world up), and the inside faces you see through the cut lit as a
+  // flat surface, so the top always lies level whatever the bucket does (Tom 11-16: the old disc tilted with the bucket and left a straight line)
+  paintCoat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace("#include <normal_fragment_maps>", "#include <normal_fragment_maps>\n if (!gl_FrontFacing) normal = normalize((viewMatrix * vec4(0., 1., 0., 0.)).xyz);"); };
+  const filmMat = paintIn.clone(); filmMat.side = THREE.DoubleSide; filmMat.color = ORANGE.clone().multiplyScalar(.45); filmMat.roughness = .25; // the walls it leaves wet
+  const bucketHome = new THREE.Group(), bucketTip = new THREE.Group(), bucket = new THREE.Group();
+  bucketHome.add(bucketTip); bucketTip.add(bucket); scene.add(bucketHome);
+  // the pail: one turned profile of thin metal, a rolled rim, two pressed rings, a wire handle
+  const pail = [[0, 0], [BK.r0, 0], [BK.r0 + .004, .012], [BK.r1, BK.h]].map(([r, y]) => new THREE.Vector2(r, y));
+  bucket.add(new THREE.Mesh(new THREE.LatheGeometry(pail, 72), metal));
+  const ring = (r, y, t) => { const m = new THREE.Mesh(new THREE.TorusGeometry(r, t, 10, 72), metal); m.rotation.x = Math.PI / 2; m.position.y = y; bucket.add(m); };
+  ring(BK.r1 + .006, BK.h, .012); [.2, .45].forEach(f => ring(BK.r0 + (BK.r1 - BK.r0) * f + .002, BK.h * f, .006));
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(BK.r1 + .02, .007, 8, 48, Math.PI), new THREE.MeshStandardMaterial({ color: 0x6f747a, metalness: 1, roughness: .3 }));
+  // the paint inside: a coat on the inner wall up to the level, and the glossy surface
+  const coat = new THREE.Mesh(new THREE.LatheGeometry(pail.map(v => new THREE.Vector2(Math.max(0, v.x - .011), Math.max(.004, v.y))), 72), paintCoat); bucket.add(coat);
+  const film = new THREE.Mesh(new THREE.LatheGeometry(pail.map(v => new THREE.Vector2(Math.max(0, v.x - .004), Math.min(BK.h - .01, Math.max(.002, v.y)))), 72), filmMat); film.visible = false; bucket.add(film);
+  const surface = new THREE.Mesh(new THREE.CircleGeometry(1, 64), paintIn); surface.rotation.x = -Math.PI / 2; bucket.add(surface);
+  const FULL = BK.h * .9;
+  // what pours in from above while it fills, and what pours out after
+  const colGeo = new THREE.CylinderGeometry(1, 1, 1, 16, 1, true); colGeo.translate(0, .5, 0);
+  const inflow = new THREE.Mesh(colGeo, paintIn); scene.add(inflow);
+  // what pours out (Tom 11-16: the pipe felt off): a sheet that leaves over the lowest point of the rim, falls in an arc,
+  // narrows as it speeds up, with ripples running down it; the rim gets wet; at the end the tail falls away from the lip
+  const OK_ = 30, OM = 14, outGeo = new THREE.BufferGeometry(), outPos = new Float32Array(OK_ * OM * 3), outIdx = [];
+  for (let i = 0; i < OK_ - 1; i++) for (let j = 0; j < OM; j++) { const a = i * OM + j, b = i * OM + (j + 1) % OM; outIdx.push(a, a + OM, b, b, a + OM, b + OM); }
+  outGeo.setAttribute("position", new THREE.BufferAttribute(outPos, 3)); outGeo.setIndex(outIdx);
+  const outflow = new THREE.Mesh(outGeo, paintIn); outflow.visible = false; outflow.frustumCulled = false; scene.add(outflow);
+  const lipGeo = new THREE.TorusGeometry(BK.r1 + .008, .0105, 10, 32, 1.1); lipGeo.rotateZ(-.55); lipGeo.rotateX(Math.PI / 2); lipGeo.translate(0, BK.h, 0);
+  const lipWet = new THREE.Mesh(lipGeo, paintIn); lipWet.visible = false; bucket.add(lipWet);
+  function pourSheet(f, tail, now) { // f: how much flows (0..1); tail: 0..1 how far the tail has fallen from the lip
+    const inn = bucket.localToWorld(V(BK.r1 - .016, BK.h - .004, 0)), /* starts at the rim, not inside the bucket (that showed as a hard wedge) */ lip = bucket.localToWorld(V(BK.r1 + .01, BK.h + .012, 0));
+    const out = lip.clone().sub(bucket.localToWorld(V(0, BK.h, 0))).setZ(0).normalize(), u = .35 + .75 * f, yEnd = WALL_TOP + .03;
+    const yv = out.y * u, T = (yv + Math.sqrt(Math.max(0, yv * yv + 2 * 9.8 * (lip.y - yEnd)))) / 9.8, pts = [];
+    for (let i = 0; i < OK_; i++) { const q = i / (OK_ - 1);
+      if (i < 3) { pts.push(inn.clone().lerp(lip, i / 2)); continue; }
+      const t = (q - 3 / (OK_ - 1)) / (1 - 3 / (OK_ - 1)) * T * 1.04; pts.push(V(lip.x + out.x * u * t, lip.y + yv * t - 4.9 * t * t, lip.z)); }
+    const B = V(0, 0, 1), Tg = V(), N = V();
+    for (let i = 0; i < OK_; i++) { const q = i / (OK_ - 1), a = pts[Math.max(0, i - 1)], b = pts[Math.min(OK_ - 1, i + 1)];
+      Tg.subVectors(b, a).normalize(); N.crossVectors(Tg, B).normalize();
+      const fall = Math.max(0, q - .07), w0 = (.03 + .17 * f), rip = 1 + .035 * Math.sin(q * 16 - now / 40) + .015 * Math.sin(q * 33 - now / 27);
+      let w = w0 / (1 + 3 * fall) * rip, th = Math.min(w, (.012 + .032 * f) * (1 + 2.2 * fall)) * (2 - rip); // flat over the lip, round as it falls
+      const gone = q < tail ? 0 : 1, bead = q < tail + .06 && tail > 0 ? 1.3 : 1; w = Math.max(.002, w * gone * bead); th = Math.max(.002, th * gone * bead);
+      for (let j = 0; j < OM; j++) { const ang = j / OM * Math.PI * 2, cw = Math.cos(ang), sw = Math.sin(ang), k = (i * OM + j) * 3;
+        outPos[k] = pts[i].x + B.x * cw * w + N.x * sw * th; outPos[k + 1] = pts[i].y + B.y * cw * w + N.y * sw * th; outPos[k + 2] = pts[i].z + B.z * cw * w + N.z * sw * th; } }
+    outGeo.attributes.position.needsUpdate = true; outGeo.computeVertexNormals(); }
+  // paint that leaves the wall top: the first gush goes over the front edge as a free-falling curtain that breaks into strands;
+  // left of the bucket two thin runs go down the wall (Tom 11-16: a full bucket's worth reaches the floor early, not only to one side)
+  const fallMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .08, clearcoat: 1, clearcoatRoughness: .04, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3 });
+  function makeFall(cx, z, o) { const u = { uFront: { value: 99 }, uTail: { value: 99 }, uTop: { value: WALL_TOP }, uCX: { value: cx }, uW: { value: o.w }, uNar: { value: o.nar }, uBrk: { value: o.brk }, uC: { value: ORANGE }, uTm: { value: 0 } };
+    const m = fallMat.clone(); m.onBeforeCompile = sh => { Object.assign(sh.uniforms, u);
+      sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.)).xyz;");
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
+        varying vec3 vWP; uniform float uFront, uTail, uTop, uCX, uW, uNar, uBrk, uTm; uniform vec3 uC;
+        float fh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float fn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(fh(i), fh(i + vec2(1, 0)), f.x), mix(fh(i + vec2(0, 1)), fh(i + vec2(1, 1)), f.x), f.y); }`)
+        .replace("#include <map_fragment>", `
+        float y = vWP.y, fall = max(0., uTop - y), wob = .035 * sin(y * 2.7 + uTm * 1.7) * min(1., fall * .4);
+        float x = vWP.x - uCX - wob, w = uW / (1. + uNar * fall);
+        w *= 1. + .5 * exp(-max(y - uFront, 0.) * 9.);                                         // a bead at the front
+        float side = step(0., x), ew = 1. + .32 * (fn(vec2(y * 2.3 - uTm * 7. + side * 17., side * 5.)) - .5) * min(1., fall * .8 + .2); w *= ew; // uneven edges that move with the flow
+        float aa = fwidth(x) + .002, a = (1. - smoothstep(w - aa, w + aa, abs(x))) * step(uFront, y) * step(y, uTail);
+        if (uBrk > 0.) a *= smoothstep(.32, .5, fn(vec2(x / max(w, .01) * 2.6 + 7., y * .35)) + 1.6 / (1. + fall * uBrk)); // splits into strands as it falls
+        float r = abs(x) / max(w, .001); vec3 col = uC * .8; col *= mix(1., .5, smoothstep(.6, 1., r)); col += uC * .4 * (1. - smoothstep(.05, .5, r));
+        col *= .82 + .32 * fn(vec2(x / max(w, .01) * 5., y * .9 - uTm * 9.)); // streaks running down: it flows
+        diffuseColor = vec4(col, a);`); };
+    const me = new THREE.Mesh(new THREE.PlaneGeometry(o.w * 2 + .5, WALL_TOP - GROUND + .2), m); me.position.set(cx, (WALL_TOP + GROUND) / 2, z); me.visible = false; me.frustumCulled = false; scene.add(me); return { me, u }; }
+  const g2 = Math.sqrt(2 * (WALL_TOP - .05 - GROUND) / 9.8) * TS; // free fall from the wall top to the ground, in pour-clock seconds
+  const CUR = { x: LEDGE.x0 + .28, c0: .38, c1: .2 + .6 * Math.log(1 / .45) }; CUR.land = CUR.c0 + g2; CUR.tailLand = CUR.c1 + g2;
+  const curtain = makeFall(CUR.x, .09, { w: .34, nar: .07, brk: .9 });
+  const LRUNS = [{ x: LEDGE.x0 - .55, t0: .85, v: 2.4, w: .026 }, { x: LEDGE.x0 - 1.05, t0: 1.25, v: 2, w: .018 }].map(r => ({ ...r, land: r.t0 + (WALL_TOP - .12 - GROUND) / r.v, f: makeFall(r.x, .006, { w: r.w, nar: 0, brk: 0 }) }));
+  // prepare everything that first shows during the pour while the bucket waits, so the pour itself has no first-use stalls (S23 11-16: 158 ms)
+  // one piece a frame, with only the lights and that piece shown, so no single frame carries the whole cost
+  // warm-up while the bucket waits: every object is drawn once, for real, into a 4 x 4 image the way the page draws (HalfFloat target,
+  // as the composer). compile() alone built the screen variants, and the phone only finishes a shader on its first draw (S23 cold run 11-16:
+  // 525 ms on arriving at epaRadar, 234 ms at the break)
+  let warmQ = null; const warmRT = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType });
+  function warmUp() { warmQ = []; const seen = new Set(); scene.traverse(o => { if (!(o.isMesh || o.isPoints || o.isLine)) return; // one object per material: the rest share its shader
+    const k = (Array.isArray(o.material) ? o.material : [o.material]).map(m => m.uuid).join() + (o.isInstancedMesh ? 'i' : ''); if (!seen.has(k)) { seen.add(k); warmQ.push(o); } }); }
+  function warmStep() { if (!warmQ || !warmQ.length) return; const m = warmQ.shift(), keep = new Set(); for (let o = m; o; o = o.parent) keep.add(o);
+    const was = []; scene.traverse(o => { if (!o.isLight && !keep.has(o) && o.visible && o !== scene) was.push(o); }); was.forEach(o => o.visible = false);
+    const anc = [...keep].map(o => [o, o.visible]); anc.forEach(([o]) => o.visible = true); const fc = m.frustumCulled; m.frustumCulled = false;
+    const bg = scene.background; scene.background = null;
+    try { renderer.setRenderTarget(warmRT); renderer.render(scene, camera); } catch (e) {} renderer.setRenderTarget(null);
+    scene.background = bg; m.frustumCulled = fc; anc.forEach(([o, v]) => o.visible = v); was.forEach(o => o.visible = true); }
+  function fallsAt(ic) { const free = t => WALL_TOP - .05 - 4.9 * Math.pow(Math.max(0, t) / TS, 2);
+    const cu = curtain.u, on = ic > CUR.c0 && ic < CUR.tailLand + .1; curtain.me.visible = on;
+    if (on) { cu.uFront.value = Math.max(GROUND - .1, free(ic - CUR.c0)); cu.uTail.value = ic < CUR.c1 ? WALL_TOP + .1 : free(ic - CUR.c1); cu.uW.value = .06 + .17 * left(Math.min(ic, CUR.c1)); cu.uTm.value = ic; }
+    LRUNS.forEach(r => { const on = ic > r.t0; r.f.me.visible = on; if (on) { r.f.u.uTop.value = WALL_TOP - .1; r.f.u.uFront.value = Math.max(GROUND - .05, WALL_TOP - .12 - r.v * (ic - r.t0)); r.f.u.uTail.value = WALL_TOP - .1; r.f.u.uTm.value = ic; } }); }
+  const column = (m, a, b, r) => { const d = b.clone().sub(a), L = d.length(); m.position.copy(a); m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); m.scale.set(r, L, r); };
+  // the wall's cap: the bucket stands on it (ledge), the paint floods along it
+  const capNor = tex("assets/wall4_nor_gl.jpg", false, WW / TILE, .5 / TILE);
+  const cap2 = new THREE.Mesh(new THREE.BoxGeometry(WW, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, normalMap: capNor, envMapIntensity: .3 }));
+  cap2.position.set(WX, WALL_TOP - .02, -.17); scene.add(cap2);
+  const sheetU = { uFrom: { value: 99 }, uTo: { value: 99 }, uC: { value: ORANGE } };
+  const sheetMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .1, clearcoat: 1, clearcoatRoughness: .05, polygonOffset: true, polygonOffsetFactor: -2 });
+  sheetMat.defines = { USE_UV: "" };
+  sheetMat.onBeforeCompile = sh => { Object.assign(sh.uniforms, sheetU);
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
+      uniform float uFrom, uTo; uniform vec3 uC;
+      float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
+      float fbm(vec2 p) { float a = .5, s = 0.; for (int i = 0; i < 5; i++) { s += a * vn(p); p = p * 2.07 + 17.3; a *= .5; } return s; }`)
+      // the edge of spreading paint: uneven fingers at several sizes (no repeating wave), a darker thick rim; d = metres back from the front edge, continuous over the corner
+      .replace("#include <map_fragment>", `float x = (vUv.x - .5) * ${(WW).toFixed(1)} + ${WX.toFixed(1)}, d = vUv.y * .46;
+        float e = (fbm(vec2(x * 2.6, d * 2.6)) - .5) * .34 + (vn(vec2(x * 11., d * 11.)) - .5) * .07;
+        float aa = fwidth(x + e) + .002, lead = uTo - (x + e), tail = x + e - uFrom;
+        float a = smoothstep(-aa, aa, tail) * smoothstep(-aa, aa, lead);
+        float rim = 1. - smoothstep(0., .035, min(lead, tail));
+        diffuseColor = vec4(uC * (1. - .28 * rim), a);`); };
+  const sheetTop = new THREE.Mesh(new THREE.PlaneGeometry(WW, .46), sheetMat); sheetTop.rotation.x = -Math.PI / 2; sheetTop.position.set(WX, WALL_TOP + .051, -.17);
+  const frontGeo = new THREE.PlaneGeometry(WW, .14), fuv = frontGeo.attributes.uv; for (let i = 0; i < fuv.count; i++) fuv.setY(i, (fuv.getY(i) - 1) * .14 / .46); // the front face goes on from the top's front edge
+  const sheetFront = new THREE.Mesh(frontGeo, sheetMat); sheetFront.position.set(WX, WALL_TOP - .02, .061);
+  scene.add(sheetTop, sheetFront);
+  handle.position.y = BK.h - .05; handle.rotation.x = -1.25; bucket.add(handle);
+  bucketTip.position.set(BK.r0, 0, 0); bucket.position.set(-BK.r0, 0, 0); bucketHome.position.set(LEDGE.x, WALL_TOP + .05, -.17);
+  // a small work light on the bucket while the wall is dark
+  const workAt = { x: LEDGE.x + .1, y: WALL_TOP + .2 };
+  const work = new THREE.SpotLight(0xffe6cc, 0, 14, .2, .8, 1.4); scene.add(work, work.target);
+  work.position.set(LEDGE.x + .9, WALL_TOP + 4.2, 1.6); work.target.position.set(LEDGE.x + .1, WALL_TOP + .2, -.17);
+  const INTRO = NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x + .8, WALL_TOP + 2.2, 2.9), V(LEDGE.x + .25, WALL_TOP + .25, -.17)];
+  const CAM_IN = [.4, 0], FREE_AT = 3.2; // camera starts moving, finishes (set when the pour is known); FREE_AT: on the pour clock the scroll is free here, ~4 s after the tap, while the paint still runs
+  // the visitor tips the bucket: one click or tap, or Enter/Space. Until then it waits, rocking a little now and then.
+  let goAt = 0, level = 0, skipped = false, introOver = false, coatMax = 0, readyAt = 0, tilt = 0, tiltV = 0, tilt0 = 0, slosh = 0, sloshV = 0, rocks = 0;
+  try { history.scrollRestoration = "manual"; } catch (e) {} scrollTo(0, 0);
+  // a reload starts at the top: some hosts put the old scroll place back after load, so hold the top until the intro ends
+  addEventListener("pageshow", () => { if (!introOver) scrollTo(0, 0); });
+  const root = document.documentElement; root.style.overflow = "hidden"; root.style.touchAction = "none";
+  const go = () => { if (!goAt) { goAt = performance.now(); tilt0 = tilt; } };
+  addEventListener("pointerdown", () => { if (goAt && !introOver) skipped = true; else if (readyAt) go(); });
+  addEventListener("keydown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } });
+  addEventListener("wheel", () => { if (goAt && !introOver) skipped = true; }, { passive: true });
+  const tagBucket = document.getElementById("tagBucket"); let tagText = "";
+  const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
+  const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
+  function intro(now, dt) {
+    const since = (now - t0) / 1000;
+    if (!goAt) {
+      const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 2.2);
+      level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 3.5);
+      if (pourReady && level > .975 && !readyAt) { readyAt = now; warmUp(); } else warmStep();
+      if (readyAt && !parts) pieceAt(-1); else if (readyAt && !parts3) sign3At(-99); else if (readyAt && !endDrawn) drawEnd(); // draw both sprayed signs once while the bucket waits, not on arrival (S23: 67 ms)
+      if (pourReady && REDUCED) goAt = now - 60000;
+      // a small rock now and then shows it can move
+      { if (readyAt && Math.floor((now - readyAt) / 3200) > rocks) { rocks++; tiltV += .55; } tiltV += (-42 * tilt - 6 * tiltV) * dt; tilt = Math.max(-.04, tilt + tiltV * dt); }
+    } else if (skipped && now - goAt < 60000) goAt = now - 60000;
+    const ic = goAt ? (now - goAt) / 1000 * TS : -1; // the pour clock: 0.8 of real time, so the whole pour is calmer
+    if (pourReady && !CAM_IN[1]) CAM_IN[1] = Math.min(FREE_AT - .3, Math.max(CAM_IN[0] + 1.5, pourDone - .7));
+    if (!introOver && (scrollX || scrollY)) scrollTo(0, 0);
+    if (!introOver && ic > Math.min(pourDone + .3, FREE_AT)) { scrollTo(0, 0); introOver = true; root.style.overflow = ""; root.style.touchAction = ""; document.body.style.cursor = ""; }
+    if (!goAt) document.body.style.cursor = readyAt ? "pointer" : "";
+    // the bucket fills
+    const fillL = goAt ? Math.max(.03, left(ic)) : level; coatMax = Math.max(coatMax, fillL);
+    const inflowOn = !readyAt && !goAt, sy = fillL * FULL, sr = BK.r0 + (BK.r1 - BK.r0) * sy / BK.h - .006;
+    inflow.visible = inflowOn;
+    if (inflowOn) { const top = bucket.localToWorld(V(.1, sy, .06)), r = .02 * (1 + Math.sin(now / 70) * .08);
+      column(inflow, top, top.clone().add(V(0, 9, 0)), Math.max(1e-4, r)); if (Math.random() < .5) splash(top, 1); }
+    // the bucket tips: from where the visitor left it, all the way over on its side
+    const k = cl(ic / .45), ang = goAt ? tilt0 + (1.52 - tilt0) * (k < 1 ? sm(k) * (1 + .12 * Math.sin(k * Math.PI)) : 1) : tilt;
+    bucketTip.rotation.z = -ang;
+    // the paint surface stays level and sloshes a little behind the bucket
+    sloshV += (-(slosh - ang) * 70 - sloshV * 6) * dt; slosh += sloshV * dt;
+    surface.visible = false;
+    // the paint's level: find the height where the bucket, at its angle, holds what is left; never above the lowest point of the rim
+    { bucket.updateWorldMatrix(true, false); const u = V(0, 1, 0).applyQuaternion(bucket.getWorldQuaternion(new THREE.Quaternion())), b0 = bucket.localToWorld(V(0, 0, 0)), sn = Math.sqrt(Math.max(0, 1 - u.y * u.y));
+      const N = 24, ds = BK.h / N, rad = s_ => BK.r0 + (BK.r1 - BK.r0) * s_ / BK.h - .011;
+      const vol = L => { let v = 0; for (let i = 0; i < N; i++) { const s_ = (i + .5) * ds, r = rad(s_), cy = b0.y + u.y * s_, e = r * sn;
+        const t = e < 1e-4 ? (L > cy ? 1 : -1) : Math.max(-1, Math.min(1, (L - cy) / e)); v += Math.PI * r * r * ((t * Math.sqrt(1 - t * t) + Math.asin(t)) / Math.PI + .5) * ds; } return v; };
+      let full = 0; for (let i = 0; i < N; i++) { const s_ = (i + .5) * ds; if (s_ < FULL) full += Math.PI * rad(s_) ** 2 * ds; }
+      const want = fillL * full; let lo = b0.y - 1, hi = b0.y + 1; for (let k = 0; k < 22; k++) { const m = (lo + hi) / 2; if (vol(m) < want) lo = m; else hi = m; }
+      const rimC = bucket.localToWorld(V(0, BK.h, 0)), lip = rimC.y - (BK.r1 - .011) * sn;
+      coatCut.set(V(0, -1, 0), Math.min(lo, lip) + Math.sin(now / 160) * .002); coat.visible = fillL > .02; film.visible = !!goAt; }
+
+    sheetU.uFrom.value = LEDGE.x - .1; sheetU.uTo.value = ic < LEDGE.tip ? LEDGE.x - .2 : Math.min(SPAN + .1, LEDGE.x0 + (ic - LEDGE.tip) * LEDGE.spread);
+    let pourFrom = null, pourTo = null, pr = 0;
+    if (ic > .2 && ic < 2.3) { pourFrom = bucket.localToWorld(V(0, BK.h, 0)); pourTo = V(pourFrom.x + .3, WALL_TOP + .05, -.17); pr = .07 * (1 - cl((ic - .2) / 2.1)); }
+    if (goAt) fallsAt(ic);
+    { const f = ic > .2 ? left(ic) : 0, tail = sm(cl((ic - 2.05) / .45)); outflow.visible = ic > .2 && tail < .98; if (outflow.visible) pourSheet(f, tail, now); lipWet.visible = ic > .15; }
+    // the label: shows when the bucket is full, until it tips
+    // while it fills: the paint level as a number (nothing in the first second); when full: what to do (signum L1, L2)
+    const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000);
+    const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
+    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>${txt}</b>`; }
+    tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
+    if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -125 : -60); // phone: no room at the side, so above
+    // light: dark wall, work light on the bucket; the street light comes on as the paint goes
+    const lk = ic < 0 ? 0 : sm(cl((ic - .6) / 1.1)), flick = lk > 0 && lk < .6 && Math.random() < .3 ? .2 : 1;
+    lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2))));
+    // after the tip the work light widens and follows the paint's front along the top, so the sheet is seen coming down
+    { const k = ic < 0 ? 0 : sm(cl((ic - .25) / .6)), fx = Math.min(SPAN - .6, LEDGE.x0 + Math.max(0, ic - LEDGE.tip - .2) * LEDGE.spread - .6);
+      const tx = LEDGE.x + .1 + (fx - LEDGE.x - .1) * k, ty = WALL_TOP + .2 - (.2 + SB * .8) * k;
+      workAt.x += (tx - workAt.x) * Math.min(1, dt * 5); workAt.y += (ty - workAt.y) * Math.min(1, dt * 5);
+      work.target.position.set(workAt.x, workAt.y, -.17 + .17 * k); work.position.set(workAt.x + .8, WALL_TOP + 4.2, 1.6 + 1.2 * k); work.angle = .2 + .22 * k; }
+    return ic;
+  }
+  const T_END = 0, lifts = HAND.strokes.length - 1;
+  const toWorld = (x, y) => V(-PW / 2 + x / PX, PCY + PH / 2 - y / PX, 0);
+  const SPRAY = "255,79,26";
+  function spray(x, y, p, amount) {
+    const rc = 5 + p * 9;
+    const gr = g.createRadialGradient(x, y, 0, x, y, rc); gr.addColorStop(0, `rgba(${SPRAY},${.7 * amount})`); gr.addColorStop(.5, `rgba(${SPRAY},${.45 * amount})`); gr.addColorStop(1, `rgba(${SPRAY},0)`);
+    g.fillStyle = gr; g.beginPath(); g.arc(x, y, rc, 0, 6.283); g.fill();
+    g.fillStyle = `rgba(${SPRAY},.55)`;
+    for (let k = 0; k < 10 * amount; k++) { const r = rc * (1 + Math.abs(gauss()) * 1.6), a = Math.random() * 6.283, s = .4 + Math.random() * 1.1; g.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, s, s); }
+  }
+  const gauss = () => { let u = 0; for (let i = 0; i < 3; i++) u += Math.random(); return u - 1.5; };
+  const drips = []; let dripsLeft = HAND.paint && HAND.paint.drips === "less" ? 5 : 9;
+
+  // the can: modelled from its profile, painted black metal, an orange cap that is the paint inside
+  const can = new THREE.Group();
+  const prof = [[0, 0], [.27, 0], [.3, .02], [.3, 1.02], [.285, 1.1], [.2, 1.2], [.115, 1.25], [.115, 1.29], [0, 1.29]].map(([r, y]) => new THREE.Vector2(r, y));
+  const body = new THREE.Mesh(new THREE.LatheGeometry(prof, 72), new THREE.MeshPhysicalMaterial({ color: 0x0c0c0e, metalness: .55, roughness: .32, clearcoat: 1, clearcoatRoughness: .08, envMapIntensity: 1.2 }));
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(.302, .302, .32, 72, 1, true), new THREE.MeshPhysicalMaterial({ color: 0xff4f1a, roughness: .4, clearcoat: .6, envMapIntensity: .8 })); band.position.y = .82;
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(.115, .012, 12, 48), new THREE.MeshStandardMaterial({ color: 0xd8d8dc, metalness: 1, roughness: .22 })); rim.rotation.x = Math.PI / 2; rim.position.y = 1.29;
+  const capMat = new THREE.MeshPhysicalMaterial({ color: 0xff4f1a, roughness: .35, clearcoat: .5 });
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(.06, .066, .1, 32), capMat); cap.position.y = 1.34;
+  const tip = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .03, 16), new THREE.MeshStandardMaterial({ color: 0x111111 })); tip.rotation.x = Math.PI / 2; tip.position.set(0, 1.355, -.065);
+  [body, band, rim, cap, tip].forEach(m => can.add(m)); scene.add(can);
+  // the can's shadow: where the street light's rays through the can meet the wall (drawn, soft, long because the light grazes)
+  const shTex = (() => { const c = document.createElement("canvas"); c.width = 256; c.height = 64; const x = c.getContext("2d"); const gr = x.createRadialGradient(128, 32, 4, 128, 32, 128); gr.addColorStop(0, "#fff"); gr.addColorStop(.55, "#777"); gr.addColorStop(1, "#000"); x.fillStyle = gr; x.save(); x.scale(1, .25); x.fillRect(0, 0, 256, 256); x.restore(); return new THREE.CanvasTexture(c); })();
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0x000000, alphaMap: shTex, transparent: true, depthWrite: false, opacity: 0, fog: false }));
+  shadow.position.z = .006; scene.add(shadow);
+  const onWall = (w, L = lamp.position) => { const k = L.z / (L.z - w.z); return V(L.x + (w.x - L.x) * k, L.y + (w.y - L.y) * k, .006); };
+  const NOZZLE = V(0, 1.355, -.08), REACH = .55;
+
+  // mist: grains leaving the nozzle toward the wall; some hang in the light
+  const MN = 2400, mp = new Float32Array(MN * 3), mv = new Float32Array(MN * 3), ml = new Float32Array(MN); let mi = 0;
+  const mg = new THREE.BufferGeometry(); mg.setAttribute("position", new THREE.BufferAttribute(mp, 3)); mg.setAttribute("life", new THREE.BufferAttribute(ml, 1)); const mc = new Float32Array(MN * 3).fill(1); mg.setAttribute("col", new THREE.BufferAttribute(mc, 3));
+  const mist = new THREE.Points(mg, new THREE.ShaderMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uScale: { value: 1 } },
+    vertexShader: "attribute float life; attribute vec3 col; uniform float uScale; varying float vL; varying vec3 vC; void main(){ vL = life; vC = col; vec4 m = modelViewMatrix * vec4(position, 1.); gl_Position = projectionMatrix * m; gl_PointSize = (.012 + (1. - life) * .03) * uScale / -m.z; }",
+    fragmentShader: "varying float vL; varying vec3 vC; void main(){ vec2 c = gl_PointCoord - .5; float a = smoothstep(.25, 0., dot(c, c)) * vL * .55; gl_FragColor = vec4(vC * a, 1.); }" }));
+  mist.frustumCulled = false; scene.add(mist);
+  let mistCol = [1, .36, .12];
+  function emit(from, to, n) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = from.x; mp[i * 3 + 1] = from.y; mp[i * 3 + 2] = from.z; const d = to.clone().sub(from); d.x += gauss() * .12; d.y += gauss() * .12; d.multiplyScalar((2.2 + Math.random() * 1.2)); mv[i * 3] = d.x; mv[i * 3 + 1] = d.y; mv[i * 3 + 2] = d.z; ml[i] = 1; } }
+
+  // lens: bloom on the light, then depth of field, colour fringe at the edges, grain and the film curve
+  const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }); const composer = new THREE.EffectComposer(renderer, rt);
+  [composer.renderTarget1, composer.renderTarget2].forEach(r => { r.depthTexture = new THREE.DepthTexture(); r.depthTexture.type = THREE.UnsignedIntType; });
+  composer.addPass(new THREE.RenderPass(scene, camera));
+  const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), .35, .5, .92); composer.addPass(bloom);
+  const lens = new THREE.ShaderPass({ uniforms: { tDiffuse: { value: null }, tDepth: { value: null }, uRes: { value: new THREE.Vector2() }, uFocus: { value: 6 }, uNear: { value: camera.near }, uFar: { value: camera.far }, uTime: { value: 0 }, uAper: { value: 1 } },
+    vertexShader: "varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }",
+    fragmentShader: `
+      uniform sampler2D tDiffuse, tDepth; uniform vec2 uRes; uniform float uFocus, uNear, uFar, uTime, uAper; varying vec2 vUv;
+      float viewZ(vec2 uv){ float d = texture2D(tDepth, uv).x; return uNear * uFar / ((uFar - uNear) * d - uFar); }
+      float coc(vec2 uv){ return clamp(abs(-viewZ(uv) - uFocus) * .9 * uAper, 0., 9.); }
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      void main(){
+        float r = coc(vUv); vec3 acc = vec3(0.); float wsum = 0.;
+        for (int i = 0; i < 24; i++) { float fi = float(i); float a = fi * 2.39996; float rr = sqrt((fi + .5) / 24.) * r; vec2 o = vec2(cos(a), sin(a)) * rr / uRes;
+          float w = clamp(coc(vUv + o) / max(r, .001) + .2, 0., 1.); acc += texture2D(tDiffuse, vUv + o).rgb * w; wsum += w; }
+        vec3 col = acc / max(wsum, .001);
+        vec2 dc = vUv - .5; float e = dot(dc, dc);
+        float fr = .8 * (1. - smoothstep(.8, 3., r)); // no fringe on blurred parts: it sampled the sharp picture there and lit specks as coloured dots
+        col.r = mix(col.r, texture2D(tDiffuse, vUv - dc * e * .018).r, fr); col.b = mix(col.b, texture2D(tDiffuse, vUv + dc * e * .018).b, fr);
+        col *= 1. - e * 1.25;
+        gl_FragColor = vec4(col, 1.);
+        #include <tonemapping_fragment>
+        #include <encodings_fragment>
+        gl_FragColor.rgb += (hash(vUv * uRes + fract(uTime) * 91.) - .5) * .045;
+      }` });
+  composer.addPass(lens);
+
+  const fit = () => {
+    const w = innerWidth, h = innerHeight; camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h, false); composer.setSize(w, h);
+    lens.uniforms.uRes.value.set(w * renderer.getPixelRatio(), h * renderer.getPixelRatio()); mist.material.uniforms.uScale.value = h * renderer.getPixelRatio() / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+  };
+  fit(); addEventListener("resize", fit);
+
+  // labels pinned to the can and to the writing, with real facts from the hand file
+  const tagCan = document.getElementById("tagCan"), tagHand = document.getElementById("tagHand"), svg = document.getElementById("lines");
+  tagCan.innerHTML = `<b>${HAND.pen}</b>written ${HAND.written}`;
+  tagHand.innerHTML = "<b>Tom Larsson</b>Fullstack engineer";
+  svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/><line id="l2"/><circle id="c2" r="4"/>');
+  const proj = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight, p.z < 1]; };
+  function pin(el, line, dot, world, dx, dy) {
+    const [x, y, ok] = proj(world); const tx = x + dx, ty = y + dy;
+    dot.setAttribute("cx", x); dot.setAttribute("cy", y); line.setAttribute("x1", x); line.setAttribute("y1", y); line.setAttribute("x2", tx); line.setAttribute("y2", ty);
+    el.style.left = cl(dx < 0 ? tx - el.offsetWidth - 6 : tx + 6, 12, innerWidth - el.offsetWidth - 12) + "px"; el.style.top = cl(ty - 9, 12, innerHeight - el.offsetHeight - 12) + "px";
+  }
+
+  // ---- moment 2: epaRadar, sprayed through hand-cut stencils, one colour at a time (scroll drives it)
+  // the layers come from the real epaRadar page: 7 colours, darkest first, the white text last
+  const EX = 13, EY = .7 - DROP, EW = 6.4, EH = 4, MG = .32;
+  const PAL = __PAL__.map(c => { const m = (c[0] + c[1] + c[2]) / 3; return c.map(v => cl(Math.pow(cl(m + (v - m) * 1.35), .8))); });
+  const COLS = PAL.map(c => new THREE.Color(c[0], c[1], c[2]).convertSRGBToLinear());
+  const HEX = PAL.map(c => "#" + c.map(v => Math.round(v * 255).toString(16).padStart(2, "0")).join(""));
+  const LAYER_S = 1; // each stencil layer plays by itself, calm: ~0.35 s slide on, ~1.7 s spray, ~0.35 s peel (Tom 11-16)
+  const MODES = [0, 1, 3, 2]; // rows, columns, from the middle out, diagonal
+  const NL = PAL.length;
+  const lin = t => { t.encoding = THREE.LinearEncoding; t.anisotropy = maxAniso; return t; };
+  const M1 = lin(tl.load("assets/epa_m1.png")), M2 = lin(tl.load("assets/epa_m2.png"));
+  const STENCIL_GLSL = `
+    uniform sampler2D uM1, uM2;
+    float sEdge(float v){ float w = fwidth(v) * .75 + .02; return smoothstep(.5 - w, .5 + w, v); }
+    float sHash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    float sMask(float k, vec2 uv){ if (k < .5) return 1.; vec3 a = texture2D(uM1, uv).rgb, b = texture2D(uM2, uv).rgb;
+      return sEdge(dot(a, step(abs(vec3(k) - vec3(1., 2., 3.)), vec3(.5))) + dot(b, step(abs(vec3(k) - vec3(4., 5., 6.)), vec3(.5)))); }
+    float sNear(float k, vec2 uv){ if (k < .5) return 1.; vec3 a = texture2D(uM1, uv, 6.).rgb, b = texture2D(uM2, uv, 6.).rgb;
+      return smoothstep(.0, .1, dot(a, step(abs(vec3(k) - vec3(1., 2., 3.)), vec3(.5))) + dot(b, step(abs(vec3(k) - vec3(4., 5., 6.)), vec3(.5)))); }
+    float sCover(vec2 uv, float q, float mode){
+      if (q <= 0.) return 0.; if (q >= 1.) return 1.;
+      float f;
+      if (mode < .5) { float R = 6.; float row = floor((1. - uv.y) * R); float loc = q * R - row; float xs = mod(row, 2.) < .5 ? uv.x : 1. - uv.x; f = loc >= 1. ? 1. : loc <= 0. ? 0. : (loc - xs) / .06 + .5; }
+      else if (mode < 1.5) { float R = 8.; float col = floor(uv.x * R); float loc = q * R - col; float ys = mod(col, 2.) < .5 ? 1. - uv.y : uv.y; f = loc >= 1. ? 1. : loc <= 0. ? 0. : (loc - ys) / .06 + .5; }
+      else if (mode < 2.5) { float d = (uv.x + 1. - uv.y) * .5; f = (q * 1.12 - .06 - d) / .05 + .5; }
+      else { float d = length((uv - .5) * vec2(1.6, 1.)); f = (q * 1.05 - d) / .05 + .5; }
+      float n = sHash(floor(uv * vec2(1100., 690.)));
+      return smoothstep(n - .08, n + .08, clamp(f, 0., 1.));
+    }`;
+  const nozzleUV = (mode, q) => {
+    if (mode === 0) { const R = 6, row = Math.min(R - 1, Math.floor(q * R)), loc = cl(q * R - row); return [row % 2 ? 1 - loc : loc, 1 - (row + .5) / R]; }
+    if (mode === 1) { const R = 8, col = Math.min(R - 1, Math.floor(q * R)), loc = cl(q * R - col); return [(col + .5) / R, col % 2 ? loc : 1 - loc]; }
+    if (mode === 2) { const d = q * 1.12 - .06, s = .5 + .5 * Math.sin(q * 70); const x = cl(2 * d * s + (1 - s) * (2 * d - 1)); return [x, cl(1 - (2 * d - x))]; }
+    const a = q * 44, r = q * 1.05; return [cl(.5 + Math.cos(a) * r / 1.6), cl(.5 + Math.sin(a) * r)];
+  };
+
+  // the piece: paint on the wall, glossy, following the concrete's bumps
+  const uQ = { value: new Array(NL).fill(0) };
+  const pieceMat = new THREE.MeshPhysicalMaterial({ map: M1, transparent: true, depthWrite: false, roughness: .25, clearcoat: .8, clearcoatRoughness: .15, envMapIntensity: .8,
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, EW / TILE, EH / TILE, (EX - EW / 2 - (WX - WW / 2)) / TILE, (EY - EH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.9, .9), polygonOffset: true, polygonOffsetFactor: -2 });
+  pieceMat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, { uM1: { value: M1 }, uM2: { value: M2 }, uQ, uMd: { value: MODES }, uCol: { value: COLS } });
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>\n${STENCIL_GLSL}\nuniform float uQ[${NL}], uMd[${NL}]; uniform vec3 uCol[${NL}];`)
+      .replace("#include <map_fragment>", `
+        vec3 pc = uCol[0]; float pa = sCover(vUv, uQ[0], 0.);
+        for (int k = 1; k < ${NL}; k++) { float m = sMask(float(k), vUv) * sCover(vUv, uQ[k], uMd[k]); pc = mix(pc, uCol[k], m); }
+        diffuseColor = vec4(pc, pa);`);
+  };
+  const piece = new THREE.Mesh(new THREE.PlaneGeometry(EW, EH), pieceMat); piece.position.set(EX, EY, .002); scene.add(piece);
+
+  // the stencil card: cardboard, cut along one colour's shapes, picking up overspray as the can passes
+  const cardTex = (() => { const c = document.createElement("canvas"); c.width = 1024; c.height = 680; const x = c.getContext("2d");
+    x.fillStyle = "#7d6646"; x.fillRect(0, 0, c.width, c.height);
+    for (let i = 0; i < 26000; i++) { const v = Math.random(); x.fillStyle = v < .5 ? `rgba(70,50,30,${Math.random() * .12})` : `rgba(240,220,190,${Math.random() * .12})`; x.fillRect(Math.random() * c.width, Math.random() * c.height, 1 + Math.random() * 3, 1); }
+    x.strokeStyle = "rgba(60,44,28,.18)"; for (let i = 0; i < 18; i++) { const y = Math.random() * c.height; x.beginPath(); x.moveTo(0, y); x.lineTo(c.width, y + gauss() * 20); x.stroke(); }
+    x.fillStyle = "rgba(200,200,190,.75)"; [[0, 0], [c.width - 90, 0], [0, c.height - 40], [c.width - 90, c.height - 40]].forEach(([a, b]) => x.fillRect(a, b, 90, 40)); // tape
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; })();
+  const cardU = { uK: { value: 0 }, uCQ: { value: 0 }, uMode: { value: 0 }, uC: { value: new THREE.Color() }, uMg: { value: new THREE.Vector2(MG / (EW + 2 * MG), MG / (EH + 2 * MG)) } };
+  const cardCode = shadow => `
+    vec2 muv = (vUv - uMg) / (1. - 2. * uMg);
+    float inside = step(0., muv.x) * step(muv.x, 1.) * step(0., muv.y) * step(muv.y, 1.);
+    if (inside * sMask(uK, clamp(muv, 0., 1.)) > .5) discard;
+    ${shadow ? "diffuseColor = vec4(0., 0., 0., opacity);" : `
+    float out_ = max(max(-muv.x, muv.x - 1.), max(-muv.y, muv.y - 1.));
+    float sp = sCover(clamp(muv, 0., 1.), uCQ, uMode) * (1. - smoothstep(0., .07, out_)) * sNear(uK, clamp(muv, 0., 1.)); // the can only goes where the holes are
+    diffuseColor.rgb = mix(diffuseColor.rgb, uC, sp * .85);`}`;
+  const cardShader = shadow => sh => { Object.assign(sh.uniforms, { uM1: { value: M1 }, uM2: { value: M2 } }, cardU);
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>\n${STENCIL_GLSL}\nuniform float uK, uCQ, uMode; uniform vec3 uC; uniform vec2 uMg;`)
+      .replace("#include <map_fragment>", "#include <map_fragment>\n" + cardCode(shadow)); };
+  const cardGeo = new THREE.PlaneGeometry(EW + 2 * MG, EH + 2 * MG); cardGeo.translate(EW / 2 + MG, 0, 0); // hinge on the left edge, so it peels like a sheet
+  const cardMat = new THREE.MeshStandardMaterial({ map: cardTex, roughness: .92, side: THREE.DoubleSide }); cardMat.onBeforeCompile = cardShader(false);
+  const card = new THREE.Mesh(cardGeo, cardMat); scene.add(card);
+  const cardShMat = new THREE.MeshBasicMaterial({ map: cardTex, transparent: true, depthWrite: false, opacity: .5, fog: false }); cardShMat.onBeforeCompile = cardShader(true);
+  const cardSh = new THREE.Mesh(cardGeo, cardShMat); scene.add(cardSh);
+
+  // a second street light for the second piece; it flickers on as the camera arrives
+  const lamp2 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp2.position.set(EX - 6.5, 3.8 - DROP, 3.4); lamp2.target.position.set(EX + 1.2, NARROW ? EY + 2.6 : EY - .3, 0); scene.add(lamp2, lamp2.target); // phone: the tags and sticker sit above the stencil, so the light aims higher
+  const head = document.getElementById("head");
+
+  // ---- Tom's tags sprayed on the wall around the stencil, then the facts and the logo links sprayed through stencils (Tom 11-16).
+  // Stand-in tags until Tom writes the real ones: "work in progress" while it paints, "try it" by the links
+  // each tag paints on its own small canvas, cut to its own box: the whole canvas is sent to the graphics card on every frame it changes,
+  // and one shared canvas for all tags (~1000x1200 on a phone) made the S23 drop to 31 fps while a tag was sprayed (11-16)
+  const TPX = 128;
+  // paint once, reveal by time: a second canvas holds when each pixel gets painted (white = never), the shader shows what is due by uE seconds.
+  // Nothing is sent to the graphics card while it plays: re-sending a big canvas every frame cost the S23 30 fps (11-16)
+  function reveal(mat, w, h) { const tcv = document.createElement("canvas"); tcv.width = w; tcv.height = h; const tg = tcv.getContext("2d"); tg.fillStyle = "#fff"; tg.fillRect(0, 0, w, h);
+    const tt = new THREE.CanvasTexture(tcv); tt.minFilter = tt.magFilter = THREE.NearestFilter; tt.generateMipmaps = false; const uE = { value: -1 }, uTT = { value: 1 };
+    mat.onBeforeCompile = sh => { Object.assign(sh.uniforms, { uTag: { value: tt }, uE, uTT });
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform sampler2D uTag; uniform float uE, uTT;")
+        .replace("#include <map_fragment>", "#include <map_fragment>\n float tagT = texture2D(uTag, vUv).r; diffuseColor.a *= step(tagT * uTT, uE) * step(tagT, .99);"); };
+    const v = (t, TT) => { const g = Math.min(254, Math.max(0, Math.round(t / TT * 254))); return `rgb(${g},${g},${g})`; };
+    // stencil parts spray left to right over their time
+    const parts = out => { const TT = Math.max(...out.map(o => o.at + o.dur)) + .1; uTT.value = TT;
+      out.forEach(o => { const gr = tg.createLinearGradient(o.x, 0, o.x + o.w, 0); gr.addColorStop(0, v(o.at, TT)); gr.addColorStop(1, v(o.at + o.dur, TT)); tg.fillStyle = gr; tg.fillRect(o.x - 2, o.y - 2, o.w + 4, o.h + 4); }); tt.needsUpdate = true; };
+    return { tcv, tg, tt, uE, uTT, v, parts }; }
+  function tagSheet(cx, cy, wW, hW) { const x0 = cx - wW / 2 - .15, x1 = cx + wW / 2 + .15, y0 = cy - hW / 2 - .6, y1 = cy + hW / 2 + .15, w = x1 - x0, h = y1 - y0; // room below for the drips
+    const cv = document.createElement("canvas"); cv.width = Math.round(w * TPX); cv.height = Math.round(h * TPX);
+    const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding; tx.anisotropy = maxAniso;
+    const mat = new THREE.MeshPhysicalMaterial({ map: tx, transparent: true, depthWrite: false, roughness: .25, clearcoat: .8, clearcoatRoughness: .15,
+      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (x0 - (WX - WW / 2)) / TILE, (y0 - GROUND) / TILE), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 });
+    const R = reveal(mat, cv.width, cv.height);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, .003); scene.add(mesh);
+    return { R, cv, g: cv.getContext("2d"), tx, tg: R.tg, tt: R.tt, uE: R.uE, uTT: R.uTT, toTag: (x, y) => [(x - x0) * TPX, (y1 - y) * TPX] }; }
+  // a tag: Tom's pen samples placed at a world centre and width; pauses between strokes cut to 0.18 s so it reads as one gesture
+  function tagPath(H, cx, cy, wW, maxDur) {
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; H.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); } });
+    const sheet = tagSheet(cx, cy, wW, wW * (y1 - y0) / (x1 - x0)), sc = wW * TPX / (x1 - x0), [px, py] = sheet.toTag(cx, cy), ox = px - (x1 - x0) * sc / 2, oy = py - (y1 - y0) * sc / 2, pts = []; let shift = 0, lastEnd = null;
+    H.strokes.forEach(s => { if (lastEnd !== null) shift += Math.max(0, s[2] - lastEnd - 180); for (let i = 0; i < s.length; i += 4) pts.push({ x: ox + (s[i] - x0) * sc, y: oy + (s[i + 1] - y0) * sc, t: (s[i + 2] - shift) / 1000, p: s[i + 3], first: i === 0 }); lastEnd = s[s.length - 2]; });
+    const f = Math.min(1, maxDur / pts[pts.length - 1].t); pts.forEach(q => q.t *= f); // Tom's rhythm, sped up to fit the moment
+    return { pts, dur: pts[pts.length - 1].t, i: 0, drips: [], ...sheet };
+  }
+  const HW = __HAND_WIP__, HT2 = __HAND_TRY__;
+  const TAGS = NARROW
+    ? [{ h: HW, at: .6, c: [EX - .9, EY + EH / 2 + 3.75], w: 2.6, d: 2.4 }, { h: HT2, at: NL * LAYER_S + 2.4, c: [EX + 1.8, EY + EH / 2 + 3.7], w: 1.4, d: 1.1 }]
+    : [{ h: HW, at: .6, c: [EX + EW / 2 + MG + 1.75, EY + 1.2], w: 2.6, d: 2.4 }, { h: HT2, at: NL * LAYER_S + 2.4, c: [EX + EW / 2 + MG + 1.05, EY - 2.25], w: 1.2, d: 1.1 }]; // the signature, last: after the picture, the title and the links
+  TAGS.forEach(T => T.path = tagPath(T.h, T.c[0], T.c[1], T.w, T.d));
+  function tagDot(tg, x, y, p, stamp) { const rc = TPX * (.011 + .016 * p); if (stamp) stamp.push([x, y, rc * 1.8]);
+    const gr = tg.createRadialGradient(x, y, 0, x, y, rc * 1.8); gr.addColorStop(0, `rgba(${SPRAY},.95)`); gr.addColorStop(.45, `rgba(${SPRAY},.8)`); gr.addColorStop(1, `rgba(${SPRAY},0)`);
+    tg.fillStyle = gr; tg.beginPath(); tg.arc(x, y, rc * 1.8, 0, 6.283); tg.fill();
+    if (Math.random() < .5) { tg.fillStyle = `rgba(${SPRAY},.5)`; const a = Math.random() * 6.283, r = rc * (2 + Math.random() * 2.5); tg.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, 1, 1); } }
+  // paint each tag once, whole, and its time map: the time each spot gets painted (Tom's pen rhythm), drips after it; the shader shows what is due
+  function tagBake(T) { const P = T.path, st = [], tm = [];
+    for (let i = 0; i < P.pts.length; i++) { const a = P.pts[i], b = P.pts[i - 1];
+      if (b && !a.first) { const n = Math.max(1, Math.ceil(Math.hypot(a.x - b.x, a.y - b.y) / 1.2)); for (let k = 1; k <= n; k++) { tagDot(P.g, b.x + (a.x - b.x) * k / n, b.y + (a.y - b.y) * k / n, b.p + (a.p - b.p) * k / n, st); tm.push(b.t + (a.t - b.t) * k / n); } }
+      else { tagDot(P.g, a.x, a.y, a.p, st); tm.push(a.t); } }
+    const low = P.pts.slice().sort((u, v) => v.y - u.y).slice(0, 24), drips = [];
+    for (let k = 0; k < 3; k++) { const q = low[(Math.random() * low.length) | 0]; drips.push({ x: q.x, y: q.y, L: TPX * (.12 + Math.random() * .3), at: P.dur + Math.random() * .6 }); }
+    P.g.strokeStyle = `rgba(${SPRAY},.85)`; P.g.lineWidth = TPX * .012; drips.forEach(d => { P.g.beginPath(); P.g.moveTo(d.x, d.y); P.g.lineTo(d.x, d.y + d.L * .98); P.g.stroke(); });
+    const TT = P.dur + 3.6, v = t => P.R.v(t, TT), tg = P.tg; P.uTT.value = TT;
+    // drips: a run slows as it dries, so each step down comes later (length L at time at + -ln(1 - d/L) / 1.6)
+    drips.forEach(d => { for (let dy = d.L * .98; dy >= 0; dy -= 1) { tg.fillStyle = v(d.at - Math.log(1 - dy / d.L) / 1.6); tg.fillRect(d.x - TPX * .008, d.y + dy, TPX * .016, 1.5); } });
+    for (let i = st.length - 1; i >= 0; i--) { const [x, y, r] = st[i]; tg.fillStyle = v(tm[i]); tg.beginPath(); tg.arc(x, y, r, 0, 6.283); tg.fill(); }
+    P.tx.needsUpdate = P.tt.needsUpdate = true; }
+  TAGS.forEach(tagBake);
+  // the facts and links, sprayed through stencils onto the wall when the picture is done (Tom 11-16: no paper box; logos as the links).
+  // Words from the live site (src/content/look.ts). epaRadar's icon from its repo (packages/theme/assets/icon.svg); GitHub's mark links to the code.
+  const SK = NARROW ? 1.3 : 1, SW = NARROW ? 4.4 : 2.9, SH = NARROW ? 2.6 : 1.7, SX = NARROW ? EX : EX + EW / 2 + MG + 1.75, SY = NARROW ? EY + EH / 2 + MG + 1 : EY - 1, PPX = NARROW ? 300 : 400;
+  const pcv = document.createElement("canvas"); pcv.width = Math.round(SW * PPX); pcv.height = Math.round(SH * PPX); const pg = pcv.getContext("2d");
+  const pTex = new THREE.CanvasTexture(pcv); pTex.encoding = THREE.sRGBEncoding; pTex.anisotropy = maxAniso;
+  const facts = new THREE.Mesh(new THREE.PlaneGeometry(SW, SH), new THREE.MeshPhysicalMaterial({ map: pTex, transparent: true, depthWrite: false, roughness: .3, clearcoat: .6, clearcoatRoughness: .2,
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, SW / TILE, SH / TILE, (SX - SW / 2 - (WX - WW / 2)) / TILE, (SY - SH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 }));
+  facts.position.set(SX, SY, .004); scene.add(facts); const factsR = reveal(facts.material, pcv.width, pcv.height);
+  const CREAM = "236,230,216", GH = new Path2D("M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z");
+  const epaImg = new Image(); epaImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><mask id=\"cut\"><rect width=\"64\" height=\"64\" fill=\"#fff\"/><path d=\"M16.8 11.4h30.4l3.6 12.8H13.2Z\" fill=\"#000\"/><rect x=\"7.6\" y=\"32.6\" width=\"14\" height=\"5.6\" rx=\".6\" fill=\"#000\"/><rect x=\"42.4\" y=\"32.6\" width=\"14\" height=\"5.6\" rx=\".6\" fill=\"#000\"/><path d=\"M32 25.6 42 41.6H22Z\" fill=\"#000\" stroke=\"#000\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></mask><mask id=\"tri\"><rect width=\"64\" height=\"64\" fill=\"#fff\"/><path d=\"M32 32.4 36 39H28Z\" fill=\"#000\"/></mask></defs><g fill=\"currentColor\"><g mask=\"url(#cut)\"><rect x=\"6.6\" y=\"22.8\" width=\"3.4\" height=\"3.4\" rx=\".9\"/><rect x=\"54\" y=\"22.8\" width=\"3.4\" height=\"3.4\" rx=\".9\"/><path d=\"M15.6 9.2h32.8q1.7 0 2.2 1.6L54.6 26H9.4l4-15.2q.5-1.6 2.2-1.6Z\"/><path d=\"M8.6 25.6h46.8l1.6 2.2V40H7V27.8Z\"/><rect x=\"4\" y=\"40.4\" width=\"56\" height=\"5.4\" rx=\"1.6\"/><rect x=\"9\" y=\"45\" width=\"8\" height=\"6.2\" rx=\"1.6\"/><rect x=\"47\" y=\"45\" width=\"8\" height=\"6.2\" rx=\"1.6\"/></g><path mask=\"url(#tri)\" d=\"M32 27.6 40.4 41H23.6Z\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></g></svg>".replace(/currentColor/g, `rgb(${SPRAY})`));
+  const links = [{ t: "Open the site", href: "https://eparadar.se" }, { t: "Code for epaRadar", href: "https://github.com/tlxq/eparadar" }];
+  let parts = null; const target = pcv; // drawn once, whole; factsR shows it part by part
+  function layout() { // the finished facts drawn once; each part is then sprayed into view from it
+    const g = target.getContext("2d"), P = PPX * SK, m = .04 * PPX, W = pcv.width, out = []; let y = m;
+    const mono = n => `${Math.round(n * P)}px ui-monospace, "IBM Plex Mono", monospace`, clash = (w, n) => `${w} ${Math.round(n * P)}px "Clash Display", system-ui, sans-serif`;
+    const text = (lines, font, size, col, gap) => { g.font = font; g.fillStyle = `rgb(${col})`; g.textBaseline = "top"; const y0 = y; let w = 0;
+      lines.forEach(l => { g.fillText(l, m, y); w = Math.max(w, g.measureText(l).width); y += size * P * 1.18; }); out.push({ x: m, y: y0 - .02 * P, w: w + .02 * P, h: y - y0 + .02 * P, col, dur: .25 + w / P * .25 }); y += gap * P; };
+    const wrap = (txt, font, maxW) => { g.font = font; const L = []; let line = ""; for (const w of txt.split(" ")) { const t = line ? line + " " + w : w; if (g.measureText(t).width > maxW && line) { L.push(line); line = w; } else line = t; } L.push(line); return L; };
+    const sten = n => `${Math.round(n * P)}px "Saira Stencil One", "Clash Display", sans-serif`;
+    text(["epaRadar"], sten(.38), .38, SPRAY, .14);
+    const LS = .46 * P, colW = (W - 2 * m) / 2;
+    if (NARROW) links.forEach((l, i) => { const RS = .38 * P, fs = .24; // phone: one link per row, icon then words, so the words can be big enough to read
+      g.save(); g.translate(m, y); if (i === 0) g.drawImage(epaImg, -RS * .06, -RS * .06, RS * 1.12, RS * 1.12); else { g.scale(RS / 16, RS / 16); g.fillStyle = `rgb(${CREAM})`; g.fill(GH); } g.restore();
+      out.push({ x: m, y, w: RS, h: RS, col: i ? CREAM : SPRAY, dur: .3 });
+      g.font = sten(fs); g.fillStyle = `rgb(${CREAM})`; g.textBaseline = "middle"; const tx = m + RS + .1 * P, lw = g.measureText(l.t + " \u203a").width; g.fillText(l.t + " \u203a", tx, y + RS / 2); g.textBaseline = "top";
+      out.push({ x: tx, y: y + RS / 2 - fs * .7 * P, w: lw, h: fs * 1.4 * P, col: CREAM, dur: .35, link: i });
+      l.box = { x0: m - .05 * P, y0: y - .05 * P, x1: tx + lw + .05 * P, y1: y + RS + .05 * P }; y += RS + .34 * P; }); // rows 48 px+ apart on a phone, so the tap areas never overlap
+    else links.forEach((l, i) => { const x = m + i * colW;
+      g.save(); g.translate(x, y); if (i === 0) g.drawImage(epaImg, -LS * .06, -LS * .06, LS * 1.12, LS * 1.12); else { g.scale(LS / 16, LS / 16); g.fillStyle = `rgb(${CREAM})`; g.fill(GH); } g.restore();
+      out.push({ x, y, w: LS, h: LS, col: i ? CREAM : SPRAY, dur: .4 });
+      g.font = sten(.145); g.fillStyle = `rgb(${CREAM})`; g.textBaseline = "top"; const lw = g.measureText(l.t + " \u203a").width; g.fillText(l.t + " \u203a", x, y + LS + .06 * P);
+      out.push({ x, y: y + LS + .04 * P, w: lw, h: .19 * P, col: CREAM, dur: .35, link: i });
+      l.box = { x0: x - .05 * P, y0: y - .05 * P, x1: x + Math.max(LS, lw) + .05 * P, y1: y + LS + .27 * P }; });
+    // a cut stencil never sprays clean: the paint skips in specks and the edges go uneven
+    g.globalCompositeOperation = "destination-out"; for (let k = 0; k < W * target.height / 260; k++) { g.globalAlpha = .25 + Math.random() * .6; const r = Math.random() < .9 ? 1 : 2.5; g.fillRect(Math.random() * W, Math.random() * target.height, r, r); }
+    g.globalCompositeOperation = "source-over"; g.globalAlpha = 1;
+    let at = 0; out.forEach(o => { o.at = at; at += o.dur + .06; o.done = 0; }); return out; }
+  let pieceFront = null; // where the can sprays now, in world space
+  let pieceE = -1;
+  function pieceAt(e) { if (!parts) { const F = '40px "Saira Stencil One"'; if (!document.fonts.check(F)) { document.fonts.load(F); return false; } if (!epaImg.complete) return false; parts = layout(); factsR.parts(parts); pTex.needsUpdate = true; }
+    pieceE = REDUCED ? 1e3 : e; factsR.uE.value = pieceE; pieceFront = null;
+    parts.forEach(o => { const f = cl((pieceE - o.at) / o.dur); if (f > 0 && f < 1) { const fx = o.x + o.w * f, fy = o.y + o.h * (.5 + .35 * Math.sin(e * 23)); pieceFront = V(SX - SW / 2 + fx / PPX, SY + SH / 2 - fy / PPX, .04); } });
+    return true; }
+  const linkOn = i => parts && parts.some(o => o.link === i && pieceE >= o.at + o.dur);
+  document.querySelector(".hud").insertAdjacentHTML("beforeend", links.map((l, i) => `<a class="hot" id="hot${i}" href="${l.href}" target="_blank" rel="noopener" aria-label="${l.t}" tabindex="-1"></a>`).join("")
+    + '<p class="head">epaRadar: Friends on a live map. Only friends see where you are. Degree project, built by me. React Native, Expo, Supabase, Postgres, pgTAP.</p>');
+  const hots = links.map((l, i) => document.getElementById("hot" + i));
+  // ---- moment 3: raddavarfruberga. 1,024 people signed for the preschool: one yellow ribbon each, tied on a fence in front of the
+  // preschool painted on the wall (Tom 11-16). No words from the site (it is Swedish), no signers' names. Words from src/content/look.ts.
+  const RX = 26.5, RN = 1024, RYEL = new THREE.Color(0xffc81a), NAVY = "15,27,51";
+  // the hole: centre and size; the preschool's yard and its own photo stand behind the wall, seen through it once it breaks
+  const HRX = NARROW ? 2.1 : 2.7, HRY = NARROW ? 2.1 : 2.3, HC = G3 + (NARROW ? 1.35 : 1.25);
+  holeU.uHC.value.set(RX, HC); holeU.uHR.value.set(HRX, HRY);
+  const holeR = a => 1 + .12 * Math.sin(3 * a + 1) + .07 * Math.sin(7 * a + 2) + .05 * Math.sin(13 * a + .5) + .03 * Math.sin(23 * a + 4);
+  const edge3 = (() => { const sh = new THREE.Shape(); for (let i = 0; i <= 120; i++) { const a = i / 120 * 6.2832, r = holeR(a); sh[i ? "lineTo" : "moveTo"](Math.cos(a) * r * HRX, Math.sin(a) * r * HRY); }
+    const g = new THREE.ExtrudeGeometry(sh, { depth: .32, bevelEnabled: false, curveSegments: 1 });
+    const side = new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, 1.5, 1.5), normalMap: tex("assets/wall4_nor_gl.jpg", false, 1.5, 1.5), color: 0x9a9890, roughness: .95, side: THREE.BackSide });
+    const m = new THREE.Mesh(g, [new THREE.MeshBasicMaterial({ visible: false }), side]); m.position.set(RX, HC, -.32); m.visible = false; scene.add(m); return m; })();
+  const rebar = new THREE.Group(); { const rust = new THREE.MeshStandardMaterial({ color: 0x5b3a26, roughness: .7, metalness: .5 });
+    for (const a of [.35, 1.2, 2.3, 2.9, 3.6]) { const r = holeR(a), x = Math.cos(a) * r * HRX, y = Math.sin(a) * r * HRY, ix = -Math.cos(a), iy = -Math.sin(a);
+      const c = new THREE.QuadraticBezierCurve3(V(x - ix * .08, y - iy * .08, -.16), V(x + ix * .22, y + iy * .22, -.12), V(x + ix * .34, y + iy * .34 - .14, -.05 + Math.random() * .1));
+      rebar.add(new THREE.Mesh(new THREE.TubeGeometry(c, 10, .011, 6), rust)); } }
+  rebar.position.set(RX, HC, 0); rebar.visible = false; scene.add(rebar);
+  // behind: the yard (gravel, daylight) and the preschool's own public photo (raddavarfruberga public/img/vardfruberga-entre.jpg), unlit and out of the fog
+  const PW3 = NARROW ? 9 : 10.5, PH3 = PW3 * 900 / 1600, PZ = -6;
+  const photo3 = new THREE.Mesh(new THREE.PlaneGeometry(PW3, PH3), new THREE.MeshBasicMaterial({ map: tex("assets/rvf_photo.jpg", true, 1, 1), fog: false, color: 0xf2f2f2 }));
+  photo3.material.map.wrapS = photo3.material.map.wrapT = THREE.ClampToEdgeWrapping; photo3.position.set(RX, G3 + PH3 / 2 - .35, PZ); photo3.visible = false; scene.add(photo3);
+  const yard3 = new THREE.Mesh(new THREE.PlaneGeometry(PW3 + 2, -PZ), new THREE.MeshBasicMaterial({ map: tex("assets/road_diff.jpg", true, (PW3 + 2) / 3, -PZ / 3), color: 0xc9b493, fog: false }));
+  yard3.rotation.x = -Math.PI / 2; yard3.position.set(RX, G3 + .004, PZ / 2); yard3.visible = false; scene.add(yard3);
+  const sun3 = new THREE.SpotLight(0xffe0b0, 0, 24, .34, 1, 1.1); sun3.position.set(RX, G3 + 3.6, -5); sun3.target.position.set(RX, G3, 7); scene.add(sun3, sun3.target);
+  const fill3 = new THREE.SpotLight(0xfff0d8, 0, 8, .9, .6, 1); fill3.position.set(RX + .5, G3 + 3, -4.5); fill3.target.position.set(RX, G3 + .8, -1); scene.add(fill3, fill3.target); // daylight on the fence and ribbons
+  // the fall: chunks of concrete and a cloud of dust, once
+  const chG = new THREE.IcosahedronGeometry(1, 0).toNonIndexed(); { const pa = chG.attributes.position, mv = new Map(); for (let i = 0; i < pa.count; i++) { const k = [pa.getX(i), pa.getY(i), pa.getZ(i)].map(v => v.toFixed(3)).join(); if (!mv.has(k)) mv.set(k, .7 + Math.random() * .5); const f = mv.get(k); pa.setXYZ(i, pa.getX(i) * f, pa.getY(i) * f, pa.getZ(i) * f); } chG.computeVertexNormals(); }
+  const CHN = 70, chunks = new THREE.InstancedMesh(chG, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, .3, .3), color: 0xb8b8b2, roughness: .95, flatShading: true }), CHN);
+  chunks.frustumCulled = false; chunks.visible = false; scene.add(chunks); { const c = new THREE.Color(); for (let i = 0; i < CHN; i++) chunks.setColorAt(i, c.setScalar(.6 + Math.random() * .45)); }
+  const CH = [...Array(CHN)].map(() => { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * .9 * holeR(a), big = Math.random() < .2;
+    const sz = big ? .14 + Math.random() * .12 : .04 + Math.random() * .08;
+    return { p: V(RX + Math.cos(a) * r * HRX, Math.max(G3 + .2, HC + Math.sin(a) * r * HRY), -.05 - Math.random() * .25), v: V((Math.random() - .5) * 1.4, Math.random() * 1.6, .6 + Math.random() * 2.4),
+      d: Math.random() * .35, s: V(sz * (.8 + Math.random() * .6), sz * (.35 + Math.random() * .35), sz * (.8 + Math.random() * .6)), q: new THREE.Quaternion().random(), w: V(Math.random() - .5, Math.random() - .5, Math.random() - .5).multiplyScalar(9), rest: false }; });
+  const dustN = 180, dustP = new Float32Array(dustN * 3), dustV = [...Array(dustN)].map(() => V((Math.random() - .5) * 2.2, Math.random() * 1.1 - .2, Math.random() * 2.6));
+  const dcv = document.createElement("canvas"); dcv.width = dcv.height = 64; { const g = dcv.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,.3)"); gr.addColorStop(.5, "rgba(255,255,255,.12)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); }
+  const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute("position", new THREE.BufferAttribute(dustP, 3));
+  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: new THREE.CanvasTexture(dcv), color: 0xc9b9a0, size: .7, transparent: true, depthWrite: false, opacity: 0 })); dust.frustumCulled = false; dust.visible = false; scene.add(dust);
+  const dust0 = [...Array(dustN)].map(() => { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * holeR(a); return V(RX + Math.cos(a) * r * HRX, Math.max(G3 + .1, HC + Math.sin(a) * r * HRY), Math.random() * .2); });
+  let simT = 0; const BRK = .8, RIB0 = 1.6; // the wall cracks for BRK s, breaks, then the ribbons start at RIB0
+  function fall3(t) { // steps the chunks to time t after the break (fixed steps, at most 4 s of falling)
+    const M = new THREE.Matrix4(), dq = new THREE.Quaternion(), e = new THREE.Euler(), Z = V(0, 0, 0), dt = 1 / 120, T = Math.min(t, 4);
+    while (simT < T) { simT += dt; for (const c of CH) { if (c.rest || simT < c.d) continue;
+      c.v.y -= 9.8 * dt; c.p.addScaledVector(c.v, dt); dq.setFromEuler(e.set(c.w.x * dt, c.w.y * dt, c.w.z * dt)); c.q.multiply(dq);
+      const fl = G3 + c.s.y * .7; if (c.p.y < fl) { c.p.y = fl; c.v.y *= -.28; c.v.x *= .55; c.v.z *= .55; c.w.multiplyScalar(.5); if (Math.abs(c.v.y) < .25 && c.v.length() < .3) c.rest = true; } } }
+    CH.forEach((c, i) => { M.compose(c.p, c.q, simT < c.d ? Z : c.s); chunks.setMatrixAt(i, M); }); chunks.instanceMatrix.needsUpdate = true; }
+  // the fence: posts, a top rail and chain-link mesh
+  const FW = NARROW ? 5 : 7.4, FH = 1.85, FZ = -1.3, FX0 = RX - FW / 2;
+  const metal3 = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: .8, roughness: .45 });
+  for (let x = FX0; x <= FX0 + FW + .01; x += FW / Math.round(FW / 2.1)) { const po = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, FH + .06, 10), metal3); po.position.set(x, G3 + (FH + .06) / 2, FZ); scene.add(po); }
+  { const rail = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, FW, 8), metal3); rail.rotation.z = Math.PI / 2; rail.position.set(RX, G3 + FH, FZ); scene.add(rail); }
+  const lc = document.createElement("canvas"); lc.width = lc.height = 128; { const g = lc.getContext("2d"); g.strokeStyle = "#ffffff"; g.lineWidth = 11; g.beginPath(); g.moveTo(0, 0); g.lineTo(128, 128); g.moveTo(128, 0); g.lineTo(0, 128); g.stroke(); }
+  const lTex = new THREE.CanvasTexture(lc); lTex.wrapS = lTex.wrapT = THREE.RepeatWrapping; lTex.repeat.set(FW / .1, FH / .1); lTex.anisotropy = maxAniso;
+  const link3 = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), new THREE.MeshStandardMaterial({ color: 0x9aa0a6, metalness: .7, roughness: .4, alphaMap: lTex, transparent: true, depthWrite: false, opacity: .9, side: THREE.DoubleSide }));
+  link3.material.map = null; link3.position.set(RX, G3 + FH / 2, FZ); scene.add(link3);
+  // the ribbons: one instanced strip pair (a knot and two tails), tied at points of the mesh; each appears at its own time and moves in the wind
+  const rib = (() => { const pos = [], idx = []; const tail = (ang, L, w) => { const b = pos.length / 3; for (let i = 0; i <= 6; i++) { const t = i / 6 * L; for (const sx of [-1, 1]) pos.push(Math.sin(ang) * t + sx * w / 2 * Math.cos(ang), -Math.cos(ang) * t, 0); if (i < 6) { const k = b + i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); } } };
+    tail(.13, .19, .036); tail(-.1, .16, .036); const g = new THREE.InstancedBufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; })();
+  const rU = { uClk: { value: -1 }, uTm: { value: 0 } }, aIn = new Float32Array(RN * 4);
+  const ribMat = new THREE.MeshStandardMaterial({ color: RYEL, roughness: .42, side: THREE.DoubleSide, emissive: RYEL, emissiveIntensity: .06 }); // satin ribbon
+  ribMat.onBeforeCompile = sh => { Object.assign(sh.uniforms, rU);
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uClk, uTm; attribute vec4 aIn;")
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+        float s = max(0., -transformed.y), k = smoothstep(aIn.x, aIn.x + .3, uClk), pop = k + sin(k * 3.1416) * .35;
+        transformed.z += sin(s * 22. - uTm * 6.5 + aIn.y) * .9 * s * s * 4. + sin(uTm * 2.3 + aIn.y * 1.7) * .25 * s;  // the wind
+        transformed.x += sin(uTm * 3.1 + aIn.y * 2.3) * .35 * s;
+        transformed *= pop * aIn.z;`); };
+  const ribs = new THREE.InstancedMesh(rib, ribMat, RN); ribs.frustumCulled = false; scene.add(ribs);
+  { const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = V(1, 1, 1), cols = Math.round(Math.sqrt(RN * FW / (FH * .78))), rows = Math.ceil(RN / cols), order = [...Array(RN).keys()].sort(() => Math.random() - .5);
+    for (let i = 0; i < RN; i++) { const c = i % cols, r = (i / cols) | 0, x = FX0 + .1 + (c + .5 + (Math.random() - .5) * .5) / cols * (FW - .2), y = G3 + .3 + (r + .5 + (Math.random() - .5) * .4) / rows * (FH * .78);
+      Q.setFromAxisAngle(V(0, 0, 1), (Math.random() - .5) * .5); M.compose(V(x, y, FZ + .012), Q, S); ribs.setMatrixAt(i, M);
+      const j = order.indexOf(i), at = RIB0 + (j < 6 ? j * .35 : 2.1 + 2.6 * Math.pow((j - 6) / (RN - 6), .62)); // a few one by one, then faster and faster
+      aIn.set([at, Math.random() * 6.28, .8 + Math.random() * .45, 0], i * 4); }
+    rib.setAttribute("aIn", new THREE.InstancedBufferAttribute(aIn, 4)); ribs.instanceMatrix.needsUpdate = true; }
+  // the name and the link, sprayed through stencils on the wall above the hole, like epaRadar's (Tom 11-16: the fence tag was hard to read)
+  const S3W = NARROW ? 3.6 : 3.4, S3H = NARROW ? 1 : .85, S3X = RX + (NARROW ? 0 : .5), S3Y = HC + HRY * 1.1 + S3H / 2 + .1, P3 = NARROW ? 300 : 400;
+  const s3c = document.createElement("canvas"); s3c.width = Math.round(S3W * P3); s3c.height = Math.round(S3H * P3); const s3t = s3c; // drawn once, whole; sign3R shows it part by part
+  const s3Tex = new THREE.CanvasTexture(s3c); s3Tex.encoding = THREE.sRGBEncoding; s3Tex.anisotropy = maxAniso;
+  const sign3 = new THREE.Mesh(new THREE.PlaneGeometry(S3W, S3H), new THREE.MeshPhysicalMaterial({ map: s3Tex, transparent: true, depthWrite: false, roughness: .3, clearcoat: .6, clearcoatRoughness: .2,
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, S3W / TILE, S3H / TILE, (S3X - S3W / 2 - (WX - WW / 2)) / TILE, (S3Y - S3H / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 }));
+  sign3.position.set(S3X, S3Y, .004); scene.add(sign3); const sign3R = reveal(sign3.material, s3c.width, s3c.height);
+  let parts3 = null;
+  function layout3() { const g = s3t.getContext("2d"), P = P3 * (NARROW ? 1.3 : 1), m = .03 * P3, out = [], sten = n => `${Math.round(n * P)}px "Saira Stencil One", "Clash Display", sans-serif`;
+    g.textBaseline = "top"; g.font = sten(.3); g.fillStyle = `rgb(${SPRAY})`; const name = "raddavarfruberga", nw = g.measureText(name).width; g.fillText(name, m, m); out.push({ x: m, y: m - .02 * P, w: nw + .02 * P, h: .36 * P, col: SPRAY, dur: .6 });
+    const INK3 = "26,24,22", LF = NARROW ? .21 : .15; /* daylight falls on this wall: dark paint reads, cream does not */ g.font = sten(LF); g.fillStyle = `rgb(${INK3})`; const t = "Open the site \u203a", lw = g.measureText(t).width, ly = m + .38 * P; g.fillText(t, m, ly); out.push({ x: m, y: ly - .02 * P, w: lw + .02 * P, h: (LF + .05) * P, col: INK3, dur: .35, link: 1 });
+    g.globalCompositeOperation = "destination-out"; for (let k = 0; k < s3t.width * s3t.height / 260; k++) { g.globalAlpha = .25 + Math.random() * .6; const r = Math.random() < .9 ? 1 : 2.5; g.fillRect(Math.random() * s3t.width, Math.random() * s3t.height, r, r); }
+    g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; let at = 0; out.forEach(o => { o.at = at; at += o.dur + .06; o.done = 0; }); return out; }
+  let sign3E = -1;
+  function sign3At(e) { if (!parts3) { const F = '40px "Saira Stencil One"'; if (!document.fonts.check(F)) { document.fonts.load(F); return; } parts3 = layout3(); sign3R.parts(parts3); s3Tex.needsUpdate = true; }
+    sign3E = REDUCED ? 1e3 : e; sign3R.uE.value = sign3E; }
+  const link3On = () => parts3 && parts3.every(o => sign3E >= o.at + o.dur), link3Box = () => parts3 && parts3.find(o => o.link);
+  const lamp3 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp3.position.set(RX - 6.5, 3.8 - 2 * DROP, 4.4); lamp3.target.position.set(RX + .5, .3 - 2 * DROP, 0); lamp3.castShadow = false; scene.add(lamp3, lamp3.target);
+  document.querySelector(".hud").insertAdjacentHTML("beforeend", '<a class="hot" id="hot3" href="https://raddavarfruberga.se" target="_blank" rel="noopener" aria-label="Open the site" tabindex="-1"></a>'
+    + '<div class="tag facts" id="tagRvf"><b>raddavarfruberga.se</b>Petition site for our preschool\'s parents. I\'m one of the parents.<br>1,000+ signatures, stored in the EU, no one\'s row public<br>Volunteer project, live<br><span>Next.js &middot; TypeScript &middot; Supabase &middot; Resend &middot; Vercel</span></div>');
+  const hot3 = document.getElementById("hot3"), tagRvf = document.getElementById("tagRvf");
+  svg.insertAdjacentHTML("beforeend", '<line id="l7"/><circle id="c7" r="4"/>'); const l7 = svg.querySelector("#l7"), c7 = svg.querySelector("#c7");
+  let rvfStart = 0; const RVF_END = RIB0 + 2.9; // the tag and the facts come while the last ribbons are tied
+  let endK = 0; // how far the camera has left raddavarfruberga for the underpass
+  function rvfAt(now, walk3, end3) {
+    lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3)); rU.uTm.value = now / 1000;
+    if (introOver && walk3 > .5 && !rvfStart) rvfStart = now; // once per visit
+    const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1; rU.uClk.value = sec;
+    // the break: cracks run, then the wall gives, chunks fall out onto the street, dust, daylight floods through
+    const tb = sec - BRK, op = tb < 0 ? 0 : 1 - Math.pow(1 - cl(tb / .45), 3);
+    holeU.uCrack.value = sec < 0 ? 0 : sm(cl(sec / BRK)) * .95 + .35 * sm(cl(tb / .6)); holeU.uOpen.value = op;
+    const open = op > .01; edge3.visible = open; edge3.scale.set(op, op, 1); rebar.visible = op > .95; ribs.visible = open; photo3.visible = yard3.visible = open;
+    chunks.visible = open; if (open) fall3(tb);
+    const dk = tb < 0 ? 0 : cl(tb / 4.5); dust.visible = tb > 0 && dk < 1;
+    if (dust.visible) { const dr = 1 - Math.exp(-tb * 1.6); for (let i = 0; i < dustN; i++) { const o = dust0[i], v = dustV[i]; dustP[i * 3] = o.x + v.x * dr; dustP[i * 3 + 1] = Math.max(G3 + .05, o.y + v.y * dr - .12 * tb); dustP[i * 3 + 2] = o.z + v.z * dr; }
+      dustGeo.attributes.position.needsUpdate = true; dust.material.opacity = .7 * (1 - dk) * sm(cl(tb / .15)); dust.material.size = 1.4 + 2.4 * dk; }
+    const day = tb < 0 ? 0 : sm(cl(tb / 1.2)) * sm(cl((walk3 - .3) / .3)); sun3.intensity = (NARROW ? 9 : 18) * day; fill3.intensity = 7 * day;
+    if (sec >= 0) sign3At(sec - RVF_END + .9); // the name first, then the link, done at RVF_END
+    const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0);
+    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - HRX * .4, G3 + .1, .3) : V(RX - HRX * .8, HC + HRY * .75, 0), NARROW ? 14 : -20, NARROW ? 70 : -60); // phone: below the street, where there is room
+    if (link3On() && walk3 > .5 && endK < .5) { const o = link3Box(), [ax, ay] = proj(V(S3X - S3W / 2 + o.x / P3, S3Y + S3H / 2 - o.y / P3, 0)), [bx, by] = proj(V(S3X - S3W / 2 + (o.x + o.w) / P3, S3Y + S3H / 2 - (o.y + o.h) / P3, 0));
+      const h = Math.max(48, by - ay), cy = (ay + by) / 2; Object.assign(hot3.style, { display: "block", left: ax - 4 + "px", top: cy - h / 2 + "px", width: Math.max(48, bx - ax + 8) + "px", height: h + "px" }); hot3.tabIndex = 0; }
+    else { hot3.style.display = "none"; hot3.tabIndex = -1; } }
+
+  // ---- the ending (Tom 11-16: downhill, then under): stairs down off the street into a low underpass under a road deck. On its wall three
+  // pieces, each with one of Tom's own pen tags: the self-hosted platform ("my own server"), ttoolbox ("my daily tools"), app-utveckling.se for EDGE ("still
+  // running →"). Then the deck ends, dawn comes up over the city, and the last wall carries the signature, "ask me" and the ways to reach Tom.
+  // Words from src/content/look.ts, tags from src/content/hand. Signs are drawn once and shown by time (reveal): nothing is re-sent per frame.
+  const DX0 = 35.8, DX1 = 62.3, DY = G4 + 3.2, DT = 1.3; // the deck: from, to, its underside, its thickness
+  const conc = (w, h, x0, y0, col) => new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE),
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE), color: col, roughness: .92, envMapIntensity: .2 });
+  { const deck = new THREE.Mesh(new THREE.BoxGeometry(DX1 - DX0, DT, 16.3), conc(DX1 - DX0, 16.3, DX0, 0, 0x6a6c70)); deck.material.emissive = new THREE.Color(0x0b0c0f); deck.position.set((DX0 + DX1) / 2, DY + DT / 2, 7.85); scene.add(deck);
+    const beamM = conc(DX1 - DX0, .55, DX0, 0, 0x74767a), beam = new THREE.Mesh(new THREE.BoxGeometry(DX1 - DX0, .55, .7), beamM); beam.position.set((DX0 + DX1) / 2, DY - .275, 3.3); scene.add(beam);
+    for (const x of [37.3, 44.75, 52.25, 59.75]) { const h = DY - .55 - G4, pl = new THREE.Mesh(new THREE.BoxGeometry(.7, h, .7), conc(.7, h, x, G4, 0x8d8f93)); pl.position.set(x, G4 + h / 2, 3.3); scene.add(pl); } }
+  // tube lights under the deck, close to the wall; one of them flickers
+  const fixM = new THREE.MeshStandardMaterial({ color: 0x2a2c2f, metalness: .5, roughness: .5 }), tubeM = new THREE.MeshStandardMaterial({ color: 0, emissive: 0xdfe9ff, emissiveIntensity: 2.4 }), tubeBad = tubeM.clone();
+  const TUBES = [38.6, 43.6, 48.6, 53.6, 58.6];
+  TUBES.forEach((x, i) => { const f = new THREE.Mesh(new THREE.BoxGeometry(1.3, .05, .13), fixM); f.position.set(x, DY - .03, 1.1); const t = new THREE.Mesh(new THREE.BoxGeometry(1.18, .026, .06), i === 3 ? tubeBad : tubeM); t.position.set(x, DY - .066, 1.1); scene.add(f, t); });
+  const tubeLight = new THREE.SpotLight(0xdce8ff, 0, 10, 1.15, .75, 1.6); scene.add(tubeLight, tubeLight.target);
+  // a conduit along the wall under the ceiling, from piece to piece
+  const pipeM = new THREE.MeshStandardMaterial({ color: 0x6f7377, metalness: .7, roughness: .45 });
+  const pipe = (a, b, r = .022) => { const d = b.clone().sub(a), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 8), pipeM); m.position.copy(a).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); scene.add(m); return m; };
+  pipe(V(DX0 + .2, DY - .14, .06), V(DX1 - .2, DY - .14, .06));
+  // the last wall past the deck, lower, so the sky shows over it; the coping on top
+  const XW0 = DX1 - .3, XW1 = 96, XWT = G4 + 4.2;
+  { const w = XW1 - XW0, h = XWT - G4 + .6, m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), conc(w, h, XW0, G4 - .6, 0xc9ccd0)); m.position.set((XW0 + XW1) / 2, G4 - .6 + h / 2, 0); scene.add(m);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, .5 / TILE), envMapIntensity: .3 })); cap.position.set((XW0 + XW1) / 2, XWT - .02, -.17); scene.add(cap); }
+  // dawn: a sky that lightens from night, the city's roofs against it, a low warm light over the last wall
+  const skyU = { uDawn: { value: 0 } };
+  const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(220, 110), new THREE.ShaderMaterial({ uniforms: skyU, depthWrite: false, fog: false,
+    vertexShader: "varying vec3 vP; void main(){ vP = (modelMatrix * vec4(position, 1.)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vP, 1.); }",
+    fragmentShader: `varying vec3 vP; uniform float uDawn;
+      void main(){ float h = clamp((vP.y - ${(G4 + 1).toFixed(2)}) / 36., 0., 1.);
+        vec3 night = mix(vec3(.012, .015, .026), vec3(.003, .004, .009), h);
+        vec3 dawn = mix(mix(vec3(1.05, .46, .22), vec3(.5, .3, .45), smoothstep(.1, .4, h)), vec3(.05, .08, .19), smoothstep(.35, .95, h)); /* the warm band high enough to show over the last wall */
+        float sun = exp(-length((vP.xy - vec2(92., ${(G4 + 1.5).toFixed(2)})) * vec2(.05, .14)));
+        dawn += vec3(1.4, .7, .32) * sun * .7;
+        gl_FragColor = vec4(mix(night, dawn, uDawn), 1.); }` }));
+  skyMesh.position.set(95, G4 + 30, -80); scene.add(skyMesh);
+  // the city against the sky: a hazy far row and a dark near row of roofs, a few windows still lit
+  const roofs = (col, hMin, hMax, lit) => { const c = document.createElement("canvas"); c.width = 2048; c.height = 410; const g = c.getContext("2d"); let x = 0;
+    while (x < c.width) { const w = 14 + Math.random() * 62, h = hMin + Math.pow(Math.random(), 1.6) * (hMax - hMin), y = c.height - h; g.fillStyle = col; g.fillRect(x, y, w, h);
+      if (Math.random() < .35) { const sw = w * (.3 + Math.random() * .4); g.fillRect(x + (w - sw) / 2, y - 8 - Math.random() * 18, sw, 30); } // a stepped top
+      if (Math.random() < .18) g.fillRect(x + w * (.2 + Math.random() * .6), y - 30 - Math.random() * 30, 1.5, 60); // a mast
+      for (let wy = y + 6; wy < c.height - 5; wy += 7) for (let wx = x + 3; wx < x + w - 4; wx += 5) if (Math.random() < lit) { g.fillStyle = Math.random() < .8 ? "#ffcf8a" : "#cfe2ff"; g.fillRect(wx, wy, 2, 3); g.fillStyle = col; }
+      x += w + (Math.random() < .25 ? Math.random() * 20 : 0); }
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
+  const cityFar = new THREE.Mesh(new THREE.PlaneGeometry(170, 34), new THREE.MeshBasicMaterial({ map: roofs("#3a3044", 60, 230, .01), transparent: true, depthWrite: false, fog: false }));
+  cityFar.position.set(95, G4 - 2 + 17, -70); scene.add(cityFar);
+  const city = new THREE.Mesh(new THREE.PlaneGeometry(130, 26), new THREE.MeshBasicMaterial({ map: roofs("#0a0c11", 40, 300, .035), transparent: true, depthWrite: false, fog: false }));
+  city.position.set(95, G4 - 2 + 13, -40); scene.add(city);
+  const dawnL = new THREE.SpotLight(0xffc4a8, 0, 45, .65, .9, 1.1); dawnL.position.set(84, G4 + 9, 18); dawnL.target.position.set(68, G4 + 1, 0); scene.add(dawnL, dawnL.target);
+  cityFar.material.color.setScalar(.6); const FOG0 = scene.fog.color.clone(), FOG1 = new THREE.Color(0x221c26), SKY0 = sky.color.clone(), SKYW = new THREE.Color(0xd69a86);
+  // signs on this wall: drawn once, whole; each part shown by time from the left
+  const speckle = (g, c) => { g.globalCompositeOperation = "destination-out"; for (let k = 0; k < c.width * c.height / 260; k++) { g.globalAlpha = .25 + Math.random() * .6; const r = Math.random() < .9 ? 1 : 2.5; g.fillRect(Math.random() * c.width, Math.random() * c.height, r, r); } g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; };
+  function board(left, top, w, h, P) { const c = document.createElement("canvas"); c.width = Math.round(w * P); c.height = Math.round(h * P); const cx = left + w / 2, cy = top - h / 2;
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshPhysicalMaterial({ map: t, transparent: true, depthWrite: false, roughness: .3, clearcoat: .6, clearcoatRoughness: .2,
+      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (left + 21) / TILE, (cy - h / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 }));
+    m.position.set(cx, cy, .004); scene.add(m);
+    return { c, t, m, R: reveal(m.material, c.width, c.height), P, end: 0, parts: null, at: (px, py) => V(left + px / P, top - py / P, 0) }; }
+  // the name in orange stencil, then one row per link: GitHub's mark where it is code, then the words
+  function drawBoard(B, name, links, o) { const g = B.c.getContext("2d"), P = B.P, m = .03 * P, out = []; let y = m;
+    const sten = n => `${Math.round(n * P)}px "Saira Stencil One", "Clash Display", sans-serif`; g.textBaseline = "top";
+    if (name) { g.font = sten(o.nameS); const fit = Math.min(1, (B.c.width - 2 * m) / g.measureText(name).width); g.font = sten(o.nameS * fit); g.fillStyle = `rgb(${SPRAY})`; const nw = g.measureText(name).width; /* a long name shrinks to the board */ g.fillText(name, m, y); out.push({ x: m, y: y - .02 * P, w: nw + .02 * P, h: o.nameS * 1.15 * P, col: SPRAY, dur: .45 }); y += o.nameS * 1.3 * P; }
+    links.forEach(l => { const rh = o.linkS * 1.5 * P; let x = m;
+      if (l.gh) { g.save(); g.translate(m, y); g.scale(rh / 16, rh / 16); g.fillStyle = `rgb(${CREAM})`; g.fill(GH); g.restore(); out.push({ x: m, y, w: rh, h: rh, col: CREAM, dur: .15 }); x = m + rh + .07 * P; }
+      g.font = sten(o.linkS); g.fillStyle = `rgb(${o.ink || CREAM})`; g.textBaseline = "middle"; const t = l.t + " \u203a", lw = g.measureText(t).width; g.fillText(t, x, y + rh / 2); g.textBaseline = "top";
+      out.push({ x, y: y + rh / 2 - o.linkS * .7 * P, w: lw, h: o.linkS * 1.4 * P, col: CREAM, dur: .28, link: 1 });
+      l.box = { x0: m - .04 * P, y0: y - .04 * P, x1: x + lw + .04 * P, y1: y + rh + .04 * P }; y += rh + o.gap * P; });
+    speckle(g, B.c); let at = 0; out.forEach(p => { p.at = at; at += p.dur + .05; }); B.R.parts(out); B.t.needsUpdate = true; B.parts = out; B.end = at; }
+  const tag4 = (H, cx, cy, w, d) => { const T = { path: tagPath(H, cx, cy, w, d) }; tagBake(T); return T; };
+  // the self-hosted platform's box on the wall: a metal cabinet, its lights come on as you arrive
+  const cabTex = (() => { const c = document.createElement("canvas"); c.width = 256; c.height = 348; const g = c.getContext("2d");
+    g.fillStyle = "#8b8f86"; g.fillRect(0, 0, 256, 348); for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(${Math.random() < .5 ? "40,40,36" : "220,220,210"},${Math.random() * .08})`; g.fillRect(Math.random() * 256, Math.random() * 348, 2, 1); }
+    const gr = g.createLinearGradient(0, 220, 0, 348); gr.addColorStop(0, "rgba(40,30,20,0)"); gr.addColorStop(1, "rgba(40,30,20,.45)"); g.fillStyle = gr; g.fillRect(0, 0, 256, 348);
+    g.strokeStyle = "rgba(20,20,18,.75)"; g.lineWidth = 3; g.strokeRect(14, 14, 228, 320); g.fillStyle = "#1c1c1a"; g.fillRect(222, 160, 8, 30); // the door's seam, the lock
+    for (let k = 0; k < 6; k++) { g.fillStyle = "rgba(15,15,14,.8)"; g.fillRect(70, 250 + k * 11, 116, 4); } // vents
+    g.save(); g.translate(48, 52); g.fillStyle = "#e7b416"; g.beginPath(); g.moveTo(0, -26); g.lineTo(26, 20); g.lineTo(-26, 20); g.closePath(); g.fill(); g.fillStyle = "#111"; g.beginPath(); g.moveTo(3, -12); g.lineTo(-6, 4); g.lineTo(1, 4); g.lineTo(-3, 15); g.lineTo(7, -1); g.lineTo(0, -1); g.closePath(); g.fill(); g.restore();
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; })();
+  const ledM = [0x39ff7a, 0x4aa8ff, 0xffa23a].map(c => new THREE.MeshStandardMaterial({ color: 0, emissive: c, emissiveIntensity: 0 }));
+  function cabinet(x, y) { const cw = .62, ch = .84, g = THREE.RoundedBoxGeometry ? new THREE.RoundedBoxGeometry(cw, ch, .22, 3, .025) : new THREE.BoxGeometry(cw, ch, .22);
+    const box = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: cabTex, metalness: .45, roughness: .55, envMapIntensity: .6 })); box.position.set(x, y, .115); scene.add(box);
+    ledM.forEach((m, i) => { const l = new THREE.Mesh(new THREE.CircleGeometry(.011, 12), m); l.position.set(x + .2 - i * .045, y + ch / 2 - .09, .227); scene.add(l); });
+    pipe(V(x - .2, y + ch / 2, .06), V(x - .2, DY - .14, .06), .025); pipe(V(x + .15, y - ch / 2, .06), V(x + .15, G4, .06), .025); }
+  // EDGE's site on a pasted paper poster, wet glue, a torn corner; the wall's bumps show through
+  const posterImg = new Image(); posterImg.src = "assets/edge_poster.jpg";
+  const pcv4 = document.createElement("canvas"); pcv4.width = 1152; pcv4.height = 720; const posterTex = new THREE.CanvasTexture(pcv4); posterTex.encoding = THREE.sRGBEncoding; posterTex.anisotropy = maxAniso;
+  posterImg.onload = () => { const g = pcv4.getContext("2d"), W = pcv4.width, H = pcv4.height; g.drawImage(posterImg, 0, 0, W, H);
+    g.fillStyle = "rgba(233,226,208,.12)"; g.fillRect(0, 0, W, H); // printed on paper: a little washed out
+    for (let i = 0; i < 4; i++) { const yy = H * (.15 + Math.random() * .7), gr = g.createLinearGradient(0, yy - 6, 0, yy + 6); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(.5, `rgba(${i % 2 ? "255,255,255,.18" : "0,0,0,.22"})`); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.save(); g.translate(0, yy); g.rotate((Math.random() - .5) * .08); g.fillRect(0, -6, W, 12); g.restore(); } // creases
+    const eg = g.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, W * .62); eg.addColorStop(0, "rgba(30,20,10,0)"); eg.addColorStop(1, "rgba(30,20,10,.35)"); g.fillStyle = eg; g.fillRect(0, 0, W, H); // glue soaked at the edges
+    g.globalCompositeOperation = "destination-out"; g.beginPath(); g.moveTo(W, H * .52); let px = W, py = H * .52; while (py < H) { px -= 8 + Math.random() * 22; py += 10 + Math.random() * 26; g.lineTo(Math.max(W * .66, px + (Math.random() - .5) * 18), Math.min(H, py)); } g.lineTo(W, H); g.closePath(); g.fill(); // a torn corner
+    g.globalCompositeOperation = "source-over"; posterTex.needsUpdate = true; };
+  const poster = (cx, cy, w) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * .625), new THREE.MeshStandardMaterial({ map: posterTex, transparent: true, roughness: .5, envMapIntensity: .5,
+      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, w * .625 / TILE, (cx - w / 2 + 21) / TILE, (cy - w * .3125 - GROUND) / TILE), normalScale: new THREE.Vector2(.35, .35), polygonOffset: true, polygonOffsetFactor: -2 }));
+    m.position.set(cx, cy, .003); m.rotation.z = .012; scene.add(m); return m; };
+  const HSV = __HAND_SERVER__, HTL = __HAND_TOOLS__, HRN = __HAND_RUN__, HASK = __HAND_ASK__, HSIG = __HAND_SIGN__;
+  const GHUB = "https://github.com/tlxq/";
+  // where each one stands (laptop / phone): the three pieces, then the exit. key: the scroll (vh) where the camera has arrived; the camera stops in front.
+  const N_ = NARROW, U4 = [
+    { x: 41, key: 640, name: "Self-hosted platform", links: [], tagH: HSV, tag: N_ ? [41.3, G4 + .55, 1.9] : [42.1, G4 + 1.45, 2.1], board: N_ ? [39.9, G4 + 3.05, 2.4, .55, 300] : [40.25, G4 + 2.75, 3.4, .62, 400], o: { nameS: N_ ? .4 : .44 }, cab: N_ ? [41.7, G4 + 1.75] : [39.4, G4 + 1.35],
+      plate: "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool.<br>About ten services in Docker, running day and night; close to 300 pull requests<br>Built alone<br><span>TypeScript &middot; Next.js &middot; Hono &middot; SQLite &middot; Java &middot; Docker &middot; Caddy &middot; Tailscale</span>" },
+    { x: 48.5, key: 715, name: "ttoolbox", links: [{ t: "Code for ttoolbox", href: GHUB + "ttoolbox", gh: 1 }, { t: "Code for dot", href: GHUB + "dot", gh: 1 }], tagH: HTL, tag: N_ ? [48.5, G4 + .55, 1.9] : [50.6, G4 + .95, 1.8], board: N_ ? [47.35, G4 + 2.95, 2.4, 1.5, 300] : [46.3, G4 + 2.6, 3.6, 1.5, 400], o: { nameS: N_ ? .4 : .44, linkS: N_ ? .17 : .15, gap: N_ ? .12 : .08 },
+      plate: "<b>ttoolbox</b>Claude Code plugins and a CLI that keep my two PCs the same.<br>The dot CLI: 2,302 lines of Bash, 92 bats tests<br>Built and used daily by me<br><span>Claude Code &middot; Bash &middot; bats &middot; GNU Stow &middot; mise</span>" },
+    { x: 56, key: 790, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }], tagH: HRN,
+      tag: N_ ? [56.55, G4 + 1.55, 1.15] : [57.5, G4 + .95, 1.9], board: N_ ? [54.8, G4 + 3.12, 2.45, .36, 300] : [53.5, G4 + 2.95, 3.2, .42, 400], links2: N_ ? [54.8, G4 + 1.2, 2.45, .78, 300] : [56.2, G4 + 2.2, 2.8, .72, 400], o: { nameS: N_ ? .25 : .32, linkS: N_ ? .15 : .14, gap: N_ ? .1 : .07 },
+      poster: N_ ? [56, G4 + 2.15, 1.95] : [54.7, G4 + 1.62, 2.3],
+      plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base.<br>51 pull requests, from the first sketch to live<br>Work project, built alone<br><span>Astro &middot; TypeScript</span>" },
+    { x: 69, key: 880, exit: 1, name: null, links: [{ t: "Write to me", href: "https://ttdevs.com/#write" }, { t: "GitHub", href: GHUB.slice(0, -1) }, { t: "LinkedIn", href: "https://linkedin.com/in/tlxq" }],
+      tagH: HASK, tag: N_ ? [68.25, G4 + 2.15, 1.05] : [70.6, G4 + 2.75, 1.3], board: N_ ? [68.85, G4 + 2.45, 1.75, 1.35, 300] : [71.1, G4 + 2.2, 2.4, 1.25, 400], o: { linkS: N_ ? .19 : .17, gap: N_ ? .1 : .08 }, sig: N_ ? [69, G4 + 3.35, 2.5] : [67.4, G4 + 2.6, 3.4] } ];
+  U4.forEach((u, i) => { u.T = tag4(u.tagH, u.tag[0], u.tag[1], u.tag[2], u.exit ? .9 : 1.1); u.B = board(...u.board); if (u.links2) u.B2 = board(...u.links2);
+    if (u.sig) u.S = tag4(HSIG, u.sig[0], u.sig[1], u.sig[2], 1.3); if (u.cab) cabinet(...u.cab); if (u.poster) poster(...u.poster); u.start = 0;
+    u.hots = u.links.map((l, j) => { const a = document.createElement("a"); a.className = "hot"; a.href = l.href; a.target = "_blank"; a.rel = "noopener"; a.setAttribute("aria-label", l.t); a.tabIndex = -1; a.style.display = "none"; document.querySelector(".hud").append(a); return a; });
+    if (u.plate) { const el = document.createElement("div"); el.className = "tag facts"; el.innerHTML = u.plate; document.querySelector(".hud").append(el); u.el = el;
+      svg.insertAdjacentHTML("beforeend", `<line id="lu${i}"/><circle id="cu${i}" r="4"/>`); u.l = svg.querySelector("#lu" + i); u.c = svg.querySelector("#cu" + i); } });
+  document.querySelector(".hud").insertAdjacentHTML("beforeend", '<p class="head">Self-hosted platform: my own server with web apps, a TV app and a job tool. ttoolbox: Claude Code plugins and a CLI that keep my two PCs the same. app-utveckling.se: two landing pages for EDGE Associates. Ask me: write to me, GitHub, LinkedIn.</p>');
+  let endDrawn = false;
+  function drawEnd() { const F = '40px "Saira Stencil One"'; if (!document.fonts.check(F)) { document.fonts.load(F); return; }
+    U4.forEach(u => { if (u.links2) { drawBoard(u.B, u.name, [], u.o); drawBoard(u.B2, null, u.links, u.o); } else drawBoard(u.B, u.name, u.links, u.o); }); endDrawn = true; }
+  const linkBoard = u => u.B2 || u.B;
+  function placeHot(el, B, box, on) { if (on) { const [ax, ay] = proj(B.at(box.x0, box.y0)), [bx, by] = proj(B.at(box.x1, box.y1));
+      if (bx > 0 && ax < innerWidth && by > 0 && ay < innerHeight) { const h = Math.max(48, by - ay), w = Math.max(48, bx - ax + 8), cy = (ay + by) / 2;
+        Object.assign(el.style, { display: "block", left: ax - 4 + "px", top: cy - h / 2 + "px", width: w + "px", height: h + "px" }); el.tabIndex = 0; return; } }
+    el.style.display = "none"; el.tabIndex = -1; }
+  // the camera's way: off the street, down the stairs, under the deck, a stop in front of each piece, out into the dawn, a step back
+  const KEYS = NARROW
+    ? [[548, 612, V(31.8, G3 + 2, 11), V(33, G3 + .2, 0)], [590, 640, V(41, G4 + 1.55, 7), V(41, G4 + 1.55, 0)], [665, 715, V(48.5, G4 + 1.55, 7), V(48.5, G4 + 1.55, 0)],
+       [740, 790, V(56, G4 + 1.6, 7), V(56, G4 + 1.6, 0)], [815, 880, V(69, G4 + 2.3, 8.6), V(69, G4 + 2.4, 0)], [900, 930, V(69, G4 + 3.1, 12.5), V(69, G4 + 3.3, 0)]]
+    : [[548, 612, V(31.5, G3 + 1.9, 9.6), V(32.8, G3 + .3, 0)], [590, 640, V(41.1, G4 + 1.3, 7.6), V(41, G4 + 1.75, 0)], [665, 715, V(48.6, G4 + 1.3, 7.6), V(48.5, G4 + 1.75, 0)],
+       [740, 790, V(56.1, G4 + 1.3, 7.6), V(56, G4 + 1.75, 0)], [815, 880, V(69.1, G4 + 2.1, 9.6), V(69, G4 + 2.5, 0)], [900, 930, V(69.6, G4 + 3, 14), V(69.6, G4 + 3.5, 0)]];
+  function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
+  function endAt(now, sv, cx) {
+    const under = sm(cl((cx - DX0 + .5) / 2.5)) * (1 - sm(cl((cx - DX1 + .5) / 3))), dawn = sm(cl((sv - 790) / 90));
+    tubeLight.intensity = 5.5 * under; tubeLight.position.set(cx, DY - .1, 1.6); tubeLight.target.position.set(cx, G4 + .9, 0);
+    tubeBad.emissiveIntensity = Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4;
+    skyU.uDawn.value = dawn; cityFar.material.color.setScalar(.25 + .75 * dawn); dawnL.intensity = 3.2 * dawn; lens.uniforms.uAper.value *= 1 - .85 * dawn; /* far roofs stay sharp at the exit */ scene.fog.color.copy(FOG0).lerp(FOG1, dawn); sky.intensity = sky.intensity * (1 - .55 * under) + .3 * dawn; sky.color.copy(SKY0).lerp(SKYW, dawn * .6);
+    if (!endDrawn && sv > 540) drawEnd(); /* reduced motion skips the bucket's wait, where they are drawn otherwise */
+    if (!endDrawn) return;
+    U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && (u.exit || sv < KEYS[i + 2][0] + 15);
+      if (introOver && sv > u.key - 14 && !u.start) u.start = now; // once per visit
+      const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1;
+      u.T.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1; if (u.S) u.S.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1;
+      const t0 = u.exit ? 1.1 : .35; u.B.R.uE.value = sec < 0 ? -1 : sec - t0; if (u.B2) u.B2.R.uE.value = sec < 0 ? -1 : sec - t0 - u.B.end;
+      const lb = linkBoard(u), done = sec - t0 - (u.B2 ? u.B.end : 0) > lb.end;
+      u.hots.forEach((h, j) => placeHot(h, lb, u.links[j].box, done && near && here));
+      if (u.el) { const show = here && near && sec > t0 + u.B.end + (u.B2 ? u.B2.end : 0) + .2; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0);
+        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, G4 + .05, .3) : u.cab ? V(u.cab[0] - .25, u.cab[1] - .42, .2) : u.poster ? V(u.poster[0] - u.poster[2] * .4, u.poster[1] - u.poster[2] * .28, 0) : V(u.board[0] + .3, u.board[1] - u.board[3] + .1, 0), NARROW ? 10 : -20, NARROW ? 40 : 70); } // phone: on the floor below the wall, where nothing is sprayed
+      if (u.cab) { ledM[0].emissiveIntensity = sec > .2 ? 3 : 0; /* the box powers up as you arrive: steady, network, now and then */ ledM[1].emissiveIntensity = sec > .45 && Math.sin(now / 90) + Math.sin(now / 37) > .3 ? 3 : 0; ledM[2].emissiveIntensity = sec > .7 && Math.sin(now / 900) > .85 ? 2.5 : 0; } }); }
+
+  svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
+  const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");
+  const BAND0 = band.material.color.clone(), CAP0 = capMat.color.clone();
+  const lerpV = (a, b, t) => a.clone().lerp(b, t);
+  const CAM = NARROW
+    ? { A: [V(.4, .9, 13.5), V(0, .9, 0)], B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX, EY + 2, 19.5), V(EX, EY + 1.9, 0)], D: [V(EX + .2, EY + 1.9, 18.5), V(EX, EY + 1.8, 0)], E: [V(RX, .3 - 2 * DROP, 15), V(RX, -.4 - 2 * DROP, 0)], F: [V(RX + .2, .1 - 2 * DROP, 13), V(RX, -.6 - 2 * DROP, -1)] } // phone: the sticker and the tags above the stencil (the ground is close below)
+    : { A: [V(1.3, .5, 11), V(.1, .6, 0)], B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + 1.9, EY + .2, 12.2), V(EX + 1.6, EY, 0)], D: [V(EX + 2.2, EY + .1, 11), V(EX + 1.7, EY - .1, 0)], E: [V(RX + .4, .1 - 2 * DROP, 11.5), V(RX + .3, -.6 - 2 * DROP, 0)], F: [V(RX + .6, -.1 - 2 * DROP, 9.6), V(RX + .4, -.8 - 2 * DROP, -1)] }; // room right of the stencil for the tags and the sticker
+  let lastP = 0, stencilAt = 0;
+  let mx = 0, my = 0; addEventListener("pointermove", e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; });
+  // render size follows the machine: weak graphics (T14s, Intel UHD: 46-57 ms a frame at full size, 12 ms at half, 11-16) draw fewer pixels
+  // until frames are smooth; strong ones keep full sharpness. Median of the last 30 frames, so one slow frame (a shader, a texture) changes nothing.
+  const PR_MAX = Math.min(devicePixelRatio, 2), PR_MIN = Math.min(PR_MAX, .5); let pr = PR_MAX, prCap = PR_MAX, prWin = [], prFast = 0; // prCap: a size that was too slow is not tried again for a while
+  function autoRes(ms) { if (!readyAt || ms > 100 || document.hidden) return; prWin.push(ms); if (prWin.length < 30) return;
+    const med = prWin.slice().sort((a, b) => a - b)[15]; prWin = [];
+    let next = pr; if (med > 21 && pr > PR_MIN) { prCap = Math.min(prCap, pr * .92); next = Math.max(PR_MIN, pr * (med > 40 ? .6 : .8)); prFast = 0; } // keeping up with the screen (60 Hz frames can't measure under 16.7 ms): try a little sharper after 2 s
+    else if (med < 18.5) { prCap = Math.min(PR_MAX, prCap * 1.02); if (pr < prCap && (prCap >= PR_MAX || prCap - pr > PR_MAX * .25) && ++prFast >= 6) { next = prCap; prFast = 0; } } else prFast = 0; // the ceiling comes back slowly; the size climbs in one step to it (each change costs a frame on a phone)
+    if (next !== pr) { pr = next; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); fit(); } }
+  const START = 1600, t0 = performance.now(); let last = t0, si = 0, cmx = 0, cmy = 0;
+  const PARK = V(EX - EW / 2 - 1, G2, 1.9), canPos = PARK.clone(), canAim = V(); let canOn = 0;
+  renderer.setAnimationLoop(now => {
+    const raw = now - last, dt = Math.min(.05, raw / 1000); last = now; const t = now - t0 - START;
+    autoRes(raw);
+    const H2 = document.documentElement.scrollHeight - innerHeight, sv = H2 > 0 ? cl(scrollY / H2) * 930 : 0, pAll = cl(sv / 540), p = cl(sv / 320); // sv: the scroll in vh (the page is 1030vh); the first three scenes keep the scroll they had
+    const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
+    // scroll moves the camera only: step back (0-.12), walk right to the second wall (.18-.38), step back to look (.75-.95).
+    // The stencils play by themselves from the moment the wall is reached, and keep going if the visitor scrolls on (Tom 11-16)
+    const back = sm(cl(p / .12)), pan = sm(cl((p - .18) / .2)), end = sm(cl((p - .75) / .2));
+    // the clock starts only after the intro (a reload may put the old scroll place back for a frame)
+    if (introOver && pan > .5 && !stencilAt) stencilAt = now; // paints once per visit; scrolling back and forth leaves it as it is (Tom 11-16)
+    const Lf = !stencilAt ? 0 : REDUCED ? NL : Math.min(NL, (now - stencilAt) / 1000 / LAYER_S);
+    const stencilOn = pan > .5, dp = Math.abs(p - lastP); lastP = p;
+    const k = Math.min(NL - 1, Math.floor(Lf)), u = Lf - k, slide = sm(cl(u / .14)), q = cl((u - .16) / .66), peel = sm(cl((u - .86) / .13));
+    for (let i = 0; i < NL; i++) uQ.value[i] = cl((Lf - i - .16) / .66);
+    cardU.uK.value = k; cardU.uCQ.value = q; cardU.uMode.value = MODES[k]; cardU.uC.value.copy(COLS[k]);
+    const cardVis = Lf > 0 && Lf < NL && peel < .99;
+    card.visible = cardVis; card.position.set(EX - EW / 2 - MG + (1 - slide) * 9 - peel * 2.5, EY + (1 - slide) * .4, .035 + (1 - slide) * 1.4 + peel * 1.2);
+    card.rotation.set(0, -peel * 1.9, (1 - slide) * .12);
+    const cs = onWall(V(EX, EY, card.position.z), lamp2.position), kk = lamp2.position.z / (lamp2.position.z - card.position.z);
+    cardSh.visible = cardVis; cardSh.position.set(cs.x - (EW / 2 + MG) * kk, cs.y, .004); cardSh.scale.set(kk, kk, 1); cardSh.rotation.z = card.rotation.z;
+    cardShMat.opacity = .5 * (1 - peel) * sm(cl((lamp2.intensity - 1) / 4));
+    head.style.opacity = 1 - pan;
+    // the light comes on, then the paint pours
+    const ic = intro(now, dt);
+    if (pourReady) { uTnow = ic < 0 ? -1 : Math.min(TMAX * .99, ic); pourU.uT.value = uTnow;
+      if (ic < 30) { for (const g of grounds) if (uTnow > g.land && uTnow < g.feed) splashGround(V(g.x, GROUND + .01, 0), uTnow < g.land + .25 ? 4 : 1);
+        let lit_ = 0; for (const s of streams) if (uTnow > s.land && uTnow < s.end) { splash(V(s.x, s.y, 0), 2); if (!lit_++) { bounce.position.set(s.x, s.y, .4); bounce.intensity = 1.2; } } } }
+    if (creep) { const ct = ic - creep.at; creepU.uFront.value = ct < 0 ? -1 : REDUCED ? creep.L : Math.min(creep.L, .2 + .26 * ct + .045 * Math.sin(ct * 2.3)); }
+    const on2 = sm(cl((p - .15) / .07)); lamp2.intensity = 6.2 * on2 * (on2 > 0 && on2 < 1 && Math.random() < .35 ? .15 : 1);
+    // paint everything the pen reached since the last frame
+    const done0 = si >= samples.length;
+    let pen = null, pressing = false;
+    while (si < samples.length && samples[si].t <= t) {
+      const s = samples[si], prev = si > 0 && !s.first ? samples[si - 1] : null;
+      if (prev) { const d = Math.hypot(s.x - prev.x, s.y - prev.y), n = Math.max(1, Math.ceil(d / 2.5)), slow = cl(1 - d / Math.max(1, (s.t - prev.t)) / 2.2, .25, 1);
+        for (let k = 1; k <= n; k++) { const f = k / n; spray(prev.x + (s.x - prev.x) * f, prev.y + (s.y - prev.y) * f, prev.p + (s.p - prev.p) * f, .6 + slow * .6); }
+        if (dripsLeft > 0 && s.p > .55 && slow > .8 && Math.random() < .09) { dripsLeft--; drips.push({ x: s.x + gauss() * 3, y: s.y + 4, v: 34 + Math.random() * 30, w: 1.6 + s.p * 2.2 }); }
+      } else spray(s.x, s.y, s.p, .9);
+      si++;
+    }
+    if (si > 0 && si < samples.length) { const a = samples[si - 1], b = samples[si], f = cl((t - a.t) / Math.max(1, b.t - a.t)); pressing = !b.first; pen = toWorld(a.x + (b.x - a.x) * f, a.y + (b.y - a.y) * f); }
+    // drips run down and slow as they dry
+    for (const d of drips) { if (d.v < 2) continue; if (d.wait > 0) { d.wait -= dt; continue; } const ny = d.y + d.v * dt; g.fillStyle = `rgba(${SPRAY},.9)`; g.beginPath(); g.ellipse(d.x, (d.y + ny) / 2, d.w, (ny - d.y) / 2 + d.w, 0, 0, 6.283); g.fill(); d.y = ny; d.v *= .988; if (d.v < 2) { g.beginPath(); g.arc(d.x, d.y + 1, d.w * 1.5, 0, 6.283); g.fill(); } }
+    if (si > 0 && !done0 || drips.some(d => d.v >= 2)) paintTex.needsUpdate = true;
+    // the can follows the pen, nozzle a hand's width from the wall; after the last stroke it steps back
+    const done = si >= samples.length;
+    let sprayAt = null;
+    if (stencilOn) {
+      if (Lf >= NL && pieceFront) { sprayAt = pieceFront; canAim.copy(pieceFront).add(V(0, 0, REACH)).sub(NOZZLE); }
+      else if (Lf >= NL) canAim.set(EX - EW / 2 + (NARROW ? .6 : .9), G2, 2.2); // parked under the picture's left side, clear of the tags and links
+      else if (q > 0 && q < 1) { const [nx, ny] = nozzleUV(MODES[k], q); sprayAt = V(EX - EW / 2 + nx * EW, EY - EH / 2 + ny * EH, .04); canAim.copy(sprayAt).add(V(0, 0, REACH)).sub(NOZZLE); }
+      else canAim.set(EX + EW / 2 + .9, EY - .6, 1.3);
+      band.material.color.copy(COLS[k]); capMat.color.copy(COLS[k]);
+    } else { band.material.color.copy(BAND0); capMat.color.copy(CAP0); }
+    if (stencilOn) {}
+    else if (pen) { canAim.copy(pen).add(V(0, 0, REACH)).sub(NOZZLE); canOn = 1; }
+    else if (done) canAim.copy(PARK);
+    else if (t < 0) canAim.set(3.6, -1.4, 2.2);
+    canPos.lerp(canAim, Math.min(1, (sprayAt ? 9 : pen && !stencilOn ? 21 : stencilOn ? 2.4 : 2.4) * dt)); // per second, so the can moves the same on 60 and 120 Hz screens
+    const rest = stencilOn ? Lf >= NL : done, moving = stencilOn ? !!sprayAt : !!pen;
+    can.position.copy(canPos); can.rotation.set(rest ? 0 : -.08 + (moving ? .05 : 0), rest ? -.5 : -.12, moving ? (canAim.x - canPos.x) * -.6 : rest ? 0 : .06);
+    capMat.emissive.setRGB(pressing && !stencilOn ? .25 : 0, pressing && !stencilOn ? .05 : 0, 0);
+    if (sprayAt && dp > 1e-5) { mistCol = PAL[k].map(v => .25 + v * 1.1); emit(can.localToWorld(NOZZLE.clone()), sprayAt, Math.min(60, 8 + dp * 9000)); }
+    else mistCol = [1, .36, .12];
+    if (pen && pressing && !stencilOn) { emit(can.localToWorld(NOZZLE.clone()), pen.clone().add(V(0, 0, .01)), 26); bounce.position.copy(pen).add(V(0, 0, .3)); bounce.intensity = 1.6; } else bounce.intensity *= .9;
+    for (let i = 0; i < MN; i++) { if (ml[i] <= 0) continue; mp[i * 3] += mv[i * 3] * dt; mp[i * 3 + 1] += mv[i * 3 + 1] * dt; mp[i * 3 + 2] += mv[i * 3 + 2] * dt; if (mp[i * 3 + 2] < .02) { mp[i * 3 + 2] = .02; mv[i * 3] *= .1; mv[i * 3 + 1] = -.05 + gauss() * .05; mv[i * 3 + 2] = .1 + Math.random() * .2; } mv[i * 3 + 1] -= .2 * dt; ml[i] -= dt * (mp[i * 3 + 2] < .05 ? 1.6 : .9); }
+    mg.attributes.position.needsUpdate = true; mg.attributes.life.needsUpdate = true; mg.attributes.col.needsUpdate = true;
+    // camera: a slow handheld drift, the pointer leans it, scrolling steps back to show the place
+    cmx += (mx - cmx) * .04; cmy += (my - cmy) * .04;
+    const drift = now / 1000, sway = stencilOn && Lf < NL ? Math.sin(Lf * 1.3) : 0;
+    const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
+    endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x);
+    cp.x += sway * (NARROW ? .5 : 1.1); cp.z -= stencilOn && Lf < NL ? Math.sin(Math.PI * q) * .5 : 0;
+    if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
+    camera.position.set(cp.x + cmx * .5 + Math.sin(drift * .31) * .06, cp.y - cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
+    camera.lookAt(cl_);
+    lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
+    // shadow from the can's bottom to its top, as the light throws it on the wall
+    const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);
+    shadow.position.set((sa.x + sb.x) / 2, (sa.y + sb.y) / 2, .006); shadow.rotation.z = Math.atan2(sb.y - sa.y, sb.x - sa.x); shadow.scale.set(sl * 1.25, .7 * (1 + can.position.z * .25), 1);
+    shadow.material.opacity = .62 * cl(LL.intensity / 5) * cl(1.6 - can.position.z * .4);
+    // labels
+    const showCan = t > -600 && !done && !stencilOn, showHand = !!muralPin && uTnow > pourDone && pan < .3;
+    tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
+    // tags, then the sprayed facts and links
+    const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
+    TAGS.forEach(T => T.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - T.at); // the shader shows what is painted by now
+    const pe = sec - NL * LAYER_S - .3; if (sec >= 0) pieceAt(pe); else pieceFront = null; // prepared on arrival, shown from pe = 0
+    const factsOn = sec > NL * LAYER_S + 1.6 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn);
+    pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .2, EY - EH / 2 + .15, 0) : V(EX - EW * .3, EY + EH / 2 - .12, 0), NARROW ? 18 : 24, NARROW ? 46 : -122);
+    hots.forEach((h, i) => { const l = links[i]; if (!linkOn(i) || sv > 360) { h.style.display = "none"; h.tabIndex = -1; return; }
+      const a = facts.localToWorld(V(l.box.x0 / PPX - SW / 2, SH / 2 - l.box.y0 / PPX, 0)), b = facts.localToWorld(V(l.box.x1 / PPX - SW / 2, SH / 2 - l.box.y1 / PPX, 0)), [ax, ay] = proj(a), [bx, by] = proj(b);
+      const hgt = Math.max(48, by - ay), cy = (ay + by) / 2; Object.assign(h.style, { display: "block", left: ax - 4 + "px", top: cy - hgt / 2 + "px", width: bx - ax + 8 + "px", height: hgt + "px" }); h.tabIndex = 0; });
+    const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
+    [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);
+    pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);
+    if (muralPin) pin(tagHand, l2, c2, muralPin, NARROW ? 30 : 50, NARROW ? -70 : -60);
+    composer.render();
+  });
+})();
+</script>

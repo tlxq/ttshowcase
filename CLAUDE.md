@@ -1,6 +1,6 @@
 # ttshowcase
 
-Tom's portfolio, the `tlxq` site. Becomes ttdevs.com at launch; not live yet.
+Tom's portfolio, the `tlxq` site, live at ttdevs.com since 2026-11-15.
 
 Read `brief.md` for what it is and `docs/design.md` for how it looks and moves.
 
@@ -21,4 +21,4 @@ Read `brief.md` for what it is and `docs/design.md` for how it looks and moves.
 - Run it: `mise run open`. Browser checks: `mise run walk`.
 - Plan and never-public list: `~/.claude/plans/ttshowcase.md`, private.
 - Logo and brand: `~/.1dot/kit/brand`.
-- Deploy: not set up yet.
+- Deploy: merging a PR into `master` deploys to ttdevs.com (Vercel). Nothing deploys from the terminal.

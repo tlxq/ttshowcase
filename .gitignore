@@ -5,7 +5,11 @@ next-env.d.ts
 *.tsbuildinfo
 .cache/
 .venv/
-.claude/
+# Claude Code: the shared setup is in git (docs/ai.md); worktrees and personal settings stay out.
+.claude/*
+!.claude/commands/
+!.claude/hooks/
+!.claude/settings.json
 .playwright-cli/
 __pycache__/
 # Settings that stay out of the code, like the contact address.
