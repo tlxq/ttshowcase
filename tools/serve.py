@@ -1,6 +1,8 @@
-"""Serves out/ like http.server, but browsers always check for a newer build. Usage: serve.py <host> <port>"""
+"""Serves a folder (SERVE_DIR, default out/) like http.server, but browsers always check for a newer build.
+Usage: serve.py <host> <port>"""
 
 import functools
+import os
 import http.server
 import sys
 
@@ -12,5 +14,5 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
 
 
 host, port = sys.argv[1], int(sys.argv[2])
-handler = functools.partial(NoStale, directory="out")
+handler = functools.partial(NoStale, directory=os.environ.get("SERVE_DIR", "out"))
 http.server.ThreadingHTTPServer((host, port), handler).serve_forever()

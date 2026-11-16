@@ -8,3 +8,5 @@ package-lock.json
 src/design/tokens.css
 tools/walk/
 tools/pictures/
+pitch/paint.src.html
+tools/pitch/checks/

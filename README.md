@@ -22,6 +22,8 @@ mise run open
 - The words are in `src/content/look.ts`. The handwritten ones are strokes I wrote with a pen on my phone
   (`mise run write`), saved in `src/content/hand`.
 - `docs/design.md` has the rules for how it looks and moves.
+- `pitch/` is the next look, a painted street, built on its own first (`mise run pitch`).
+- `docs/workflow.md` is how a change gets made and checked; `docs/ai.md` the Claude Code setup in `.claude/`.
 
 ## Licence
 
