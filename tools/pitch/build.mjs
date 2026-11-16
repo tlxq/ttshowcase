@@ -81,7 +81,6 @@ const parts = {
   __HAND_TRY__: hand("try-it"),
   __HAND_SERVER__: hand("my-own-server"),
   __HAND_TOOLS__: hand("my-daily-tools"),
-  __HAND_RUN__: hand("still-running"),
   __HAND_ASK__: hand("ask-me"),
   __HAND_SIGN__: hand("signature"),
   __PAL__: readFileSync(join(root, "pitch/assets/epa_pal.json"), "utf8").trim(),
