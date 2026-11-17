@@ -15,7 +15,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     await page.mouse.click(W / 2, H / 2);
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
     await page.waitForTimeout(1500);
-    const go = sv => page.evaluate(sv => scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * sv / +document.documentElement.dataset.svEnd), sv);
+    const go = sv => page.evaluate(sv => scrollTo(0, svY(sv)), sv);
     for (const sv of [60, 128, 300, 432, 540, 700, 910, 1180]) { await go(sv); await page.waitForTimeout(900); }
     const F = await page.evaluate(() => window.__F.slice(1)), after = await at();
     const r = { ready: after.ready, wall: after.wall, frames: F.length, worst: Math.round(Math.max(...F)), over50: F.filter(v => v > 50).length };

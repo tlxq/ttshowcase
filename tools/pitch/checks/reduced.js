@@ -9,7 +9,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (res.scrollFree > 1.5) errs.push('scroll held ' + res.scrollFree + ' s after the tap');
   const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
   for (const [name, sv, ids] of [['epaRadar', 128, [0, 1]], ['raddavarfruberga', 432, [3]]]) {
-    await page.evaluate(y => scrollTo(0, y), Math.round(H2 * sv / END)); await page.waitForTimeout(1200);
+    await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(1200);
     if (!(await page.evaluate(ids => ids.every(i => document.getElementById('hot' + i).style.display === 'block'), ids))) errs.push(name + ': links not shown 1.2 s after arriving');
     await page.screenshot({ path: '__SHOTS__pitch-reduced-' + W + '-' + sv + '.png' }); }
   return JSON.stringify(res); }
