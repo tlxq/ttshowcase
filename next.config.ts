@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const config: NextConfig = {
-  output: "export",
+  // The real build is a static export. `next dev` skips export mode, because export mode turns off
+  // middleware.ts there, and the dev server must guard /next like Vercel does.
+  output: process.env.NODE_ENV === "production" ? "export" : undefined,
   images: { unoptimized: true },
   reactStrictMode: true,
   agentRules: false,
