@@ -1,23 +1,25 @@
 /**
- * The visitor wall's tags. A visitor draws a tag and sends it; it waits until Tom approves it from the mail he
- * gets, then it shows on the wall from the next visit. No accounts: a device id from the page and a hashed
- * address limit sends to 3 a day.
+ * The visitor wall's tags. A visitor picks a spot, draws one tag and sends it. Their own browser keeps the tag
+ * and shows it on their wall at once, as if it were up; everyone else sees it only after Tom approves it from
+ * the mail he gets. While it waits, it holds its spot: nobody else can tag over it. Tom's Remove deletes it,
+ * which frees the spot and lets that visitor tag again. No accounts: one tag per device id, and a scrambled
+ * address stops robots (a few a day per address).
  *
- *   GET    /api/tags                      the approved tags, oldest first (the newest ones paint over them)
- *   GET    /api/tags?ids=a,b              where the visitor's own tags stand: waiting, up or removed
- *   POST   /api/tags                      send a tag → { id, removeKey }; Tom gets a mail with a review link
- *   DELETE /api/tags                      { id, removeKey }: the visitor takes their own tag down
- *   GET    /api/tags?review=<id>&sig=…    Tom's review page: the tag drawn, Approve and Remove
- *   POST   /api/tags?review=<id>&sig=…&do=approve|remove
+ *   GET  /api/tags                      approved tags (oldest first, the newest paint over them) + held spots
+ *   GET  /api/tags?ids=a                whether the visitor's own tag is still there: waiting or up
+ *   POST /api/tags                      send a tag → { id }; Tom gets a mail with a review link
+ *   GET  /api/tags?review=<id>&sig=…    Tom's review page: the tag drawn, Approve and Remove
+ *   POST /api/tags?review=<id>&sig=…&do=approve|remove
  *
  * The review link is signed (TAG_SECRET), so only the mail opens it. Approving needs a button press: mail
  * scanners open links but never press buttons. Settings in Vercel: DATABASE_URL (Neon), TAG_SECRET,
  * RESEND_API_KEY, CONTACT_TO, CONTACT_FROM. Table: tools/tags/schema.sql. Tests: src/tags/tags.test.ts.
  */
 import { neon } from "@neondatabase/serverless";
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
-export const PER_DAY = 3;
+/** Tags one address may send in a day: a family or an office on one Wi-Fi still fits, a robot doesn't. */
+export const PER_ADDRESS = 5;
 /** Waiting tags Tom hasn't looked at yet; past this, sending stops until he does, so his inbox can't flood. */
 export const MOST_WAITING = 50;
 /** Approved tags the wall gets: more than the visitor area fits (40), the oldest are painted over anyway. */
@@ -26,20 +28,28 @@ const MOST_POINTS = 4000;
 const MOST_STROKES = 80;
 const NAME_LONGEST = 24;
 
-export type Status = "waiting" | "up" | "removed";
-export type Spot = { x: number; y: number; w: number; turn: number };
+export type Status = "waiting" | "up";
+/** Where the tag sits on the wall, in metres: its middle, its size, and how far it is turned. */
+export type Spot = { x: number; y: number; w: number; h: number; turn: number };
 export type NewTag = { name: string; pen: string; color: string; strokes: number[][] } & Spot;
 export type Tag = NewTag & { id: string; created_at: string };
 
 /** Everything the handlers need from the outside, so the tests can run them without a database or mail. */
 export type Deps = {
   db: {
-    sentSince(device: string, ipHash: string, hours: number): Promise<number>;
+    /** Tags this device has on the wall or waiting (a removed tag is deleted, so it doesn't count). */
+    byDevice(device: string): Promise<number>;
+    /** Tags sent from this address in the last day, removed ones included. */
+    byAddress(ipHash: string): Promise<number>;
     waiting(): Promise<number>;
-    insert(tag: NewTag & { device: string; ip_hash: string; remove_hash: string }): Promise<string>;
+    /** Spots taken by waiting tags and by the approved tags the wall shows. */
+    taken(): Promise<Spot[]>;
+    held(): Promise<Spot[]>;
+    /** The new tag's id, or null when this device already has one (two sends at the same moment). */
+    insert(tag: NewTag & { device: string; ip_hash: string }): Promise<string | null>;
     drop(id: string): Promise<void>;
-    get(id: string): Promise<(Tag & { status: Status; remove_hash: string }) | null>;
-    setStatus(id: string, status: Status): Promise<void>;
+    get(id: string): Promise<(Tag & { status: Status }) | null>;
+    approve(id: string): Promise<void>;
     up(most: number): Promise<Tag[]>;
     statuses(ids: string[]): Promise<{ id: string; status: Status }[]>;
   };
@@ -64,6 +74,11 @@ export function signed(secret: string, id: string, sig: string | null): boolean 
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** Two spots overlap when their boxes do (the small turn is left out: a tag's box already has air around it). */
+export function overlaps(a: Spot, b: Spot): boolean {
+  return Math.abs(a.x - b.x) < (a.w + b.w) / 2 && Math.abs(a.y - b.y) < (a.h + b.h) / 2;
+}
+
 const num = (v: unknown, lo: number, hi: number) =>
   typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
 
@@ -84,6 +99,7 @@ export function readTag(body: Record<string, unknown>): NewTag | { error: string
     !num(spot.x, -50, 50) ||
     !num(spot.y, 0, 20) ||
     !num(spot.w, 0.2, 6) ||
+    !num(spot.h, 0.2, 4) ||
     !num(spot.turn, -45, 45)
   ) {
     return { error: "spot" };
@@ -117,14 +133,16 @@ export function readTag(body: Record<string, unknown>): NewTag | { error: string
     strokes.push(out);
   }
   if (points > MOST_POINTS) return { error: "strokes" };
-  const { x, y, w, turn } = spot as Spot;
-  return { name, pen: body.pen, color, strokes, x, y, w, turn };
+  const { x, y, w, h, turn } = spot as Spot;
+  return { name, pen: body.pen, color, strokes, x, y, w, h, turn };
 }
 
 function address(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
   return (forwarded?.split(",")[0] || request.headers.get("x-real-ip") || "unknown").trim();
 }
+
+const spotOf = ({ x, y, w, h, turn }: Spot): Spot => ({ x, y, w, h, turn });
 
 export function handlers(deps: () => Deps | null) {
   async function GET(request: Request): Promise<Response> {
@@ -138,27 +156,28 @@ export function handlers(deps: () => Deps | null) {
       const list = ids
         .split(",")
         .filter((id) => UUID.test(id))
-        .slice(0, 20);
-      return json({ tags: list.length ? await d.db.statuses(list) : [] });
+        .slice(0, 5);
+      return Response.json(
+        { tags: list.length ? await d.db.statuses(list) : [] },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
     }
-    // Only these fields leave the server: never the device, the address hash or the remove key's hash.
+    // Only these fields leave the server: never the device or the address hash. Held spots carry no tag.
     const tags = (await d.db.up(LIST_MOST)).map(
-      ({ id, created_at, name, pen, color, strokes, x, y, w, turn }) => ({
+      ({ id, created_at, name, pen, color, strokes, ...spot }) => ({
         id,
         created_at,
         name,
         pen,
         color,
         strokes,
-        x,
-        y,
-        w,
-        turn,
+        ...spotOf(spot),
       }),
     );
+    const held = (await d.db.held()).map(spotOf);
     return Response.json(
-      { tags },
-      { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=600" } },
+      { tags, held },
+      { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=300" } },
     );
   }
 
@@ -180,12 +199,14 @@ export function handlers(deps: () => Deps | null) {
     if (!/^[\w-]{16,64}$/.test(device)) return json({ error: "device" }, 400);
     const tag = readTag(body);
     if ("error" in tag) return json(tag, 400);
+    if ((await d.db.byDevice(device)) > 0) return json({ error: "one-tag" }, 409);
     const ipHash = sha(d.secret + address(request));
-    if ((await d.db.sentSince(device, ipHash, 24)) >= PER_DAY)
-      return json({ error: "too-many" }, 429);
+    if ((await d.db.byAddress(ipHash)) >= PER_ADDRESS) return json({ error: "too-many" }, 429);
     if ((await d.db.waiting()) >= MOST_WAITING) return json({ error: "wall-busy" }, 503);
-    const removeKey = randomBytes(18).toString("base64url");
-    const id = await d.db.insert({ ...tag, device, ip_hash: ipHash, remove_hash: sha(removeKey) });
+    if ((await d.db.taken()).some((s) => overlaps(s, tag)))
+      return json({ error: "spot-taken" }, 409);
+    const id = await d.db.insert({ ...tag, device, ip_hash: ipHash });
+    if (!id) return json({ error: "one-tag" }, 409);
     const link = `${url.origin}/api/tags?review=${id}&sig=${sign(d.secret, id)}`;
     const who = tag.name || "someone without a name";
     const sent = await d.mail(
@@ -196,30 +217,10 @@ export function handlers(deps: () => Deps | null) {
       await d.db.drop(id);
       return json({ error: "mail-service" }, 502);
     }
-    return json({ id, removeKey });
+    return json({ id });
   }
 
-  async function DELETE(request: Request): Promise<Response> {
-    const d = deps();
-    if (!d) return json({ error: "not-set-up" }, 503);
-    let body: { id?: unknown; removeKey?: unknown };
-    try {
-      body = (await request.json()) as typeof body;
-    } catch {
-      return json({ error: "bad-request" }, 400);
-    }
-    const id = typeof body.id === "string" && UUID.test(body.id) ? body.id : "";
-    const key = typeof body.removeKey === "string" ? body.removeKey : "";
-    const tag = id ? await d.db.get(id) : null;
-    if (!tag || !key) return json({ error: "not-found" }, 404);
-    const a = Buffer.from(sha(key)),
-      b = Buffer.from(tag.remove_hash);
-    if (a.length !== b.length || !timingSafeEqual(a, b)) return json({ error: "not-found" }, 404);
-    await d.db.setStatus(id, "removed");
-    return json({ removed: true });
-  }
-
-  return { GET, POST, DELETE };
+  return { GET, POST };
 }
 
 const esc = (s: string) =>
@@ -248,21 +249,23 @@ function page(title: string, body: string, status = 200): Response {
   );
 }
 
+const gone = () => page("Not found", "<p>This tag is gone.</p>", 404);
+const badLink = () => page("Not found", "<p>This link doesn't open anything.</p>", 404);
+
 async function reviewPage(d: Deps, id: string, sig: string | null): Promise<Response> {
-  if (!signed(d.secret, id, sig))
-    return page("Not found", "<p>This link doesn't open anything.</p>", 404);
+  if (!signed(d.secret, id, sig)) return badLink();
   const tag = await d.db.get(id);
-  if (!tag) return page("Not found", "<p>This tag is gone.</p>", 404);
+  if (!tag) return gone();
   const action = (what: string, label: string, cls: string) =>
     `<form method="post" action="/api/tags?review=${id}&amp;sig=${esc(sig!)}&amp;do=${what}"><button class="${cls}">${label}</button></form>`;
-  const now = { waiting: "Waiting for you", up: "On the wall", removed: "Removed" }[tag.status];
+  const now = tag.status === "up" ? "On the wall" : "Waiting for you";
   const draw = JSON.stringify({ strokes: tag.strokes, color: tag.color }).replace(/</g, "\\u003c");
   return page(
     `Tag from ${tag.name || "no name"}`,
     `<h1>${esc(tag.name || "No name")}</h1><p>${now} · sent ${esc(new Date(tag.created_at).toUTCString())}</p>` +
       `<canvas width="1200" height="600"></canvas>` +
-      (tag.status !== "up" ? action("approve", "Approve", "ok") : "") +
-      (tag.status !== "removed" ? action("remove", "Remove", "no") : "") +
+      (tag.status === "waiting" ? action("approve", "Approve", "ok") : "") +
+      action("remove", "Remove", "no") +
       `<script>(()=>{const t=${draw},c=document.querySelector("canvas"),g=c.getContext("2d");` +
       `let a=1/0,b=1/0,e=-1/0,f=-1/0;for(const s of t.strokes)for(let i=0;i<s.length;i+=4){a=Math.min(a,s[i]);b=Math.min(b,s[i+1]);e=Math.max(e,s[i]);f=Math.max(f,s[i+1])}` +
       `const k=Math.min((c.width-80)/Math.max(e-a,1),(c.height-80)/Math.max(f-b,1)),ox=(c.width-(e-a)*k)/2,oy=(c.height-(f-b)*k)/2;` +
@@ -277,15 +280,16 @@ async function reviewDo(
   sig: string | null,
   what: string | null,
 ): Promise<Response> {
-  if (!signed(d.secret, id, sig))
-    return page("Not found", "<p>This link doesn't open anything.</p>", 404);
+  if (!signed(d.secret, id, sig)) return badLink();
   if (what !== "approve" && what !== "remove")
     return page("Not found", "<p>Nothing to do.</p>", 400);
-  if (!(await d.db.get(id))) return page("Not found", "<p>This tag is gone.</p>", 404);
-  await d.db.setStatus(id, what === "approve" ? "up" : "removed");
-  return what === "approve"
-    ? page("Approved", "<p>Approved. It shows on the wall from the next visit.</p>")
-    : page("Removed", "<p>Removed. It won't show on the wall.</p>");
+  if (!(await d.db.get(id))) return gone();
+  if (what === "approve") {
+    await d.db.approve(id);
+    return page("Approved", "<p>Approved. Everyone sees it on the wall from their next visit.</p>");
+  }
+  await d.db.drop(id);
+  return page("Removed", "<p>Removed. The spot is free again.</p>");
 }
 
 function liveDeps(): Deps | null {
@@ -295,37 +299,62 @@ function liveDeps(): Deps | null {
     to = process.env.CONTACT_TO;
   if (!url || !secret || secret.length < 32 || !key || !to) return null;
   const sql = neon(url);
-  const COLS = "id, created_at, name, pen, color, strokes, x, y, w, turn";
+  const COLS = "id, created_at, name, pen, color, strokes, x, y, w, h, turn";
   return {
     secret,
     db: {
-      async sentSince(device, ipHash, hours) {
+      async byDevice(device) {
+        const r = await sql`select count(*)::int as n from tags where device = ${device}`;
+        return r[0]!.n as number;
+      },
+      async byAddress(ipHash) {
         const r =
-          await sql`select count(*)::int as n from tags where created_at > now() - make_interval(hours => ${hours}) and (device = ${device} or ip_hash = ${ipHash})`;
+          await sql`select count(*)::int as n from sends where ip_hash = ${ipHash} and at > now() - interval '1 day'`;
         return r[0]!.n as number;
       },
       async waiting() {
         const r = await sql`select count(*)::int as n from tags where status = 'waiting'`;
         return r[0]!.n as number;
       },
+      async taken() {
+        const r = await sql.query(
+          `select x, y, w, h, turn from tags where status = 'waiting'
+           union all select x, y, w, h, turn from (select * from tags where status = 'up' order by created_at desc limit $1) t`,
+          [LIST_MOST],
+        );
+        return r as Spot[];
+      },
+      async held() {
+        const r = await sql`select x, y, w, h, turn from tags where status = 'waiting'`;
+        return r as Spot[];
+      },
       async insert(t) {
-        const r =
-          await sql`insert into tags (name, pen, color, strokes, x, y, w, turn, device, ip_hash, remove_hash)
-          values (${t.name}, ${t.pen}, ${t.color}, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}, ${t.y}, ${t.w}, ${t.turn}, ${t.device}, ${t.ip_hash}, ${t.remove_hash})
-          returning id`;
-        return r[0]!.id as string;
+        // The address count lives in its own table, so a removed tag still counts for the day; rows older than
+        // a day are cleared on every send.
+        let r;
+        try {
+          [, , r] = await sql.transaction([
+            sql`delete from sends where at < now() - interval '1 day'`,
+            sql`insert into sends (ip_hash) values (${t.ip_hash})`,
+            sql`insert into tags (name, pen, color, strokes, x, y, w, h, turn, device)
+              values (${t.name}, ${t.pen}, ${t.color}, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}, ${t.y}, ${t.w}, ${t.h}, ${t.turn}, ${t.device})
+              returning id`,
+          ]);
+        } catch (e) {
+          if ((e as { code?: string }).code === "23505") return null; // tags_one_per_device
+          throw e;
+        }
+        return r![0]!.id as string;
       },
       async drop(id) {
         await sql`delete from tags where id = ${id}`;
       },
       async get(id) {
-        const r = await sql.query(`select ${COLS}, status, remove_hash from tags where id = $1`, [
-          id,
-        ]);
-        return (r[0] as (Tag & { status: Status; remove_hash: string }) | undefined) ?? null;
+        const r = await sql.query(`select ${COLS}, status from tags where id = $1`, [id]);
+        return (r[0] as (Tag & { status: Status }) | undefined) ?? null;
       },
-      async setStatus(id, status) {
-        await sql`update tags set status = ${status} where id = ${id}`;
+      async approve(id) {
+        await sql`update tags set status = 'up' where id = ${id}`;
       },
       async up(most) {
         const r = await sql.query(
@@ -365,7 +394,4 @@ export function GET(request: Request) {
 }
 export function POST(request: Request) {
   return live.POST(request);
-}
-export function DELETE(request: Request) {
-  return live.DELETE(request);
 }

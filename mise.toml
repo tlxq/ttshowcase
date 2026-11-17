@@ -94,10 +94,6 @@ run = "bash -c 'npx prettier --write --ignore-unknown \"${@:-.}\"' --"
 description = "Outdated packages (runs locally instead of Dependabot)"
 run = "npm outdated || true"
 
-[tasks."tags:db"]
-description = "Make the visitor tags' table in the site's Neon database (tools/tags/schema.sql); safe to run again"
-run = "tools/tags/db.sh"
-
 [tasks."tags:live"]
-description = "One real tag round on a deployment: send, approve, list, take down, delete (Tom gets one test mail); default ttdevs.com, or name a preview address"
+description = "One real tag round on a deployment: send, held spot, approve, on the wall, remove (Tom gets one test mail); default ttdevs.com, or name a preview address"
 run = "tools/tags/live.sh"
