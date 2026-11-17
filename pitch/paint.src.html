@@ -48,7 +48,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 <div class="track"></div>
 <div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map. Only friends see where you are.<br>Degree project, built by me<br><span>React Native &middot; Expo &middot; Supabase &middot; Postgres &middot; pgTAP</span></div></div>
 <div class="white" id="white"></div>
-<div class="head" id="head"><span>Tom Larsson &middot; Fullstack engineer</span><h1>I build and run things myself.</h1></div>
+<div class="head" id="head"><span>Tom Larsson &middot; a collection of builds</span><h1>I build and run things myself.</h1></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
@@ -566,7 +566,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   function fallsAt(ic) { const free = t => WALL_TOP - .05 - 4.9 * Math.pow(Math.max(0, t) / TS, 2);
     const cu = curtain.u, on = ic > CUR.c0 && ic < CUR.tailLand + .1; curtain.me.visible = on;
     if (on) { cu.uFront.value = Math.max(GROUND - .1, free(ic - CUR.c0)); cu.uTail.value = ic < CUR.c1 ? WALL_TOP + .1 : free(ic - CUR.c1); cu.uW.value = .06 + .17 * left(Math.min(ic, CUR.c1)); cu.uTm.value = ic; }
-    LRUNS.forEach(r => { const on = ic > r.t0; r.f.me.visible = on; if (on) { r.f.u.uTop.value = WALL_TOP - .1; r.f.u.uFront.value = Math.max(GROUND - .05, WALL_TOP - .12 - r.v * (ic - r.t0)); r.f.u.uTail.value = WALL_TOP - .1; r.f.u.uTm.value = ic; } }); }
+    LRUNS.forEach(r => { const on = ic > r.t0; r.f.me.visible = on; if (on) { r.f.u.uTop.value = WALL_TOP - .1; r.f.u.uFront.value = Math.max(GROUND - .05, WALL_TOP - .12 - r.v * (ic - r.t0)); r.f.u.uTail.value = WALL_TOP - .1; r.f.u.uTm.value = ic < r.land ? ic : r.land + .8 * (1 - Math.exp(-(ic - r.land) / .8)); } }); } // the flow slows to a stop once the run reaches the floor (it ran forever: Tom 11-17)
   const column = (m, a, b, r) => { const d = b.clone().sub(a), L = d.length(); m.position.copy(a); m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); m.scale.set(r, L, r); };
   // the wall's cap: the bucket stands on it (ledge), the paint floods along it
   const capNor = tex("assets/wall4_nor_gl.jpg", false, WW / TILE, .5 / TILE);
@@ -614,7 +614,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
   function intro(now, dt) {
-    const since = (now - t0) / 1000;
+    const since = (now - t0) / 1000; wallStep(!!goAt || REDUCED);
     if (!goAt) {
       const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 2.2);
       level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 3.5);
@@ -660,7 +660,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     // while it fills: the paint level as a number (nothing in the first second); when full: what to do (signum L1, L2)
     const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000);
     const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
-    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>${txt}</b>`; }
+    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>${txt}</b>Tom Larsson &middot; a collection of builds`; }
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -125 : -60); // phone: no room at the side, so above
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
@@ -750,7 +750,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   // labels pinned to the can and to the writing, with real facts from the hand file
   const tagCan = document.getElementById("tagCan"), tagHand = document.getElementById("tagHand"), svg = document.getElementById("lines");
   tagCan.innerHTML = `<b>${HAND.pen}</b>written ${HAND.written}`;
-  tagHand.innerHTML = "<b>Tom Larsson</b>Fullstack engineer";
+  tagHand.innerHTML = "<b>Tom Larsson</b>A collection of builds";
   svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/><line id="l2"/><circle id="c2" r="4"/>');
   const proj = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight, p.z < 1]; };
   function pin(el, line, dot, world, dx, dy) {
@@ -862,7 +862,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (x0 - (WX - WW / 2)) / TILE, (y0 - GROUND) / TILE), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 });
     const R = reveal(mat, cv.width, cv.height);
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, .003); scene.add(mesh);
-    return { R, cv, g: cv.getContext("2d"), tx, tg: R.tg, tt: R.tt, uE: R.uE, uTT: R.uTT, toTag: (x, y) => [(x - x0) * TPX, (y1 - y) * TPX] }; }
+    return { R, cv, g: cv.getContext("2d"), tx, mesh, tg: R.tg, tt: R.tt, uE: R.uE, uTT: R.uTT, toTag: (x, y) => [(x - x0) * TPX, (y1 - y) * TPX], toWorld: (x, y) => [x0 + x / TPX, y1 - y / TPX] }; }
   // a tag: Tom's pen samples placed at a world centre and width; pauses between strokes cut to 0.18 s so it reads as one gesture
   function tagPath(H, cx, cy, wW, maxDur) {
     let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; H.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); } });
@@ -876,22 +876,24 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     ? [{ h: HW, at: .6, c: [EX - .9, EY + EH / 2 + 3.75], w: 2.6, d: 2.4 }, { h: HT2, at: NL * LAYER_S + 2.4, c: [EX + 1.8, EY + EH / 2 + 3.7], w: 1.4, d: 1.1 }]
     : [{ h: HW, at: .6, c: [EX + EW / 2 + MG + 1.75, EY + 1.2], w: 2.6, d: 2.4 }, { h: HT2, at: NL * LAYER_S + 2.4, c: [EX + EW / 2 + MG + 1.05, EY - 2.25], w: 1.2, d: 1.1 }]; // the signature, last: after the picture, the title and the links
   TAGS.forEach(T => T.path = tagPath(T.h, T.c[0], T.c[1], T.w, T.d));
-  function tagDot(tg, x, y, p, stamp) { const rc = TPX * (.011 + .016 * p); if (stamp) stamp.push([x, y, rc * 1.8]);
-    const gr = tg.createRadialGradient(x, y, 0, x, y, rc * 1.8); gr.addColorStop(0, `rgba(${SPRAY},.95)`); gr.addColorStop(.45, `rgba(${SPRAY},.8)`); gr.addColorStop(1, `rgba(${SPRAY},0)`);
+  function tagDot(tg, x, y, p, stamp, C = SPRAY) { const rc = TPX * (.011 + .016 * p); if (stamp) stamp.push([x, y, rc * 1.8]);
+    const gr = tg.createRadialGradient(x, y, 0, x, y, rc * 1.8); gr.addColorStop(0, `rgba(${C},.95)`); gr.addColorStop(.45, `rgba(${C},.8)`); gr.addColorStop(1, `rgba(${C},0)`);
     tg.fillStyle = gr; tg.beginPath(); tg.arc(x, y, rc * 1.8, 0, 6.283); tg.fill();
-    if (Math.random() < .5) { tg.fillStyle = `rgba(${SPRAY},.5)`; const a = Math.random() * 6.283, r = rc * (2 + Math.random() * 2.5); tg.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, 1, 1); } }
+    if (Math.random() < .5) { tg.fillStyle = `rgba(${C},.5)`; const a = Math.random() * 6.283, r = rc * (2 + Math.random() * 2.5); tg.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, 1, 1); } }
   // paint each tag once, whole, and its time map: the time each spot gets painted (Tom's pen rhythm), drips after it; the shader shows what is due
-  function tagBake(T) { const P = T.path, st = [], tm = [];
+  function tagBake(T) { const P = T.path, st = [], tm = [], C = T.col || SPRAY;
     for (let i = 0; i < P.pts.length; i++) { const a = P.pts[i], b = P.pts[i - 1];
-      if (b && !a.first) { const n = Math.max(1, Math.ceil(Math.hypot(a.x - b.x, a.y - b.y) / 1.2)); for (let k = 1; k <= n; k++) { tagDot(P.g, b.x + (a.x - b.x) * k / n, b.y + (a.y - b.y) * k / n, b.p + (a.p - b.p) * k / n, st); tm.push(b.t + (a.t - b.t) * k / n); } }
-      else { tagDot(P.g, a.x, a.y, a.p, st); tm.push(a.t); } }
+      if (b && !a.first) { const n = Math.max(1, Math.ceil(Math.hypot(a.x - b.x, a.y - b.y) / 1.2)); for (let k = 1; k <= n; k++) { tagDot(P.g, b.x + (a.x - b.x) * k / n, b.y + (a.y - b.y) * k / n, b.p + (a.p - b.p) * k / n, st, C); tm.push(b.t + (a.t - b.t) * k / n); } }
+      else { tagDot(P.g, a.x, a.y, a.p, st, C); tm.push(a.t); } }
     const low = P.pts.slice().sort((u, v) => v.y - u.y).slice(0, 24), drips = [];
     for (let k = 0; k < 3; k++) { const q = low[(Math.random() * low.length) | 0]; drips.push({ x: q.x, y: q.y, L: TPX * (.12 + Math.random() * .3), at: P.dur + Math.random() * .6 }); }
-    P.g.strokeStyle = `rgba(${SPRAY},.85)`; P.g.lineWidth = TPX * .012; drips.forEach(d => { P.g.beginPath(); P.g.moveTo(d.x, d.y); P.g.lineTo(d.x, d.y + d.L * .98); P.g.stroke(); });
+    P.g.strokeStyle = `rgba(${C},.85)`; P.g.lineWidth = TPX * .012; drips.forEach(d => { P.g.beginPath(); P.g.moveTo(d.x, d.y); P.g.lineTo(d.x, d.y + d.L * .98); P.g.stroke(); });
     const TT = P.dur + 3.6, v = t => P.R.v(t, TT), tg = P.tg; P.uTT.value = TT;
     // drips: a run slows as it dries, so each step down comes later (length L at time at + -ln(1 - d/L) / 1.6)
     drips.forEach(d => { for (let dy = d.L * .98; dy >= 0; dy -= 1) { tg.fillStyle = v(d.at - Math.log(1 - dy / d.L) / 1.6); tg.fillRect(d.x - TPX * .008, d.y + dy, TPX * .016, 1.5); } });
     for (let i = st.length - 1; i >= 0; i--) { const [x, y, r] = st[i]; tg.fillStyle = v(tm[i]); tg.beginPath(); tg.arc(x, y, r, 0, 6.283); tg.fill(); }
+    let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, by1 = -1e9; st.forEach(([x, y, r]) => { bx0 = Math.min(bx0, x - r); bx1 = Math.max(bx1, x + r); by0 = Math.min(by0, y - r); by1 = Math.max(by1, y + r); });
+    drips.forEach(d => { by1 = Math.max(by1, d.y + d.L); }); P.box = [bx0, by0, bx1, by1]; // the paint's own box on its canvas, drips included
     P.tx.needsUpdate = P.tt.needsUpdate = true; }
   TAGS.forEach(tagBake);
   // the facts and links, sprayed through stencils onto the wall when the picture is done (Tom 11-16: no paper box; logos as the links).
@@ -903,6 +905,30 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     normalMap: tex("assets/wall4_nor_gl.jpg", false, SW / TILE, SH / TILE, (SX - SW / 2 - (WX - WW / 2)) / TILE, (SY - SH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 }));
   facts.position.set(SX, SY, .004); scene.add(facts); const factsR = reveal(facts.material, pcv.width, pcv.height);
   const CREAM = "236,230,216", GH = new Path2D("M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z");
+  // ---- the opening wall is already full of tags when you arrive (storyboard 1, Tom 11-17): names and handles, old ones faded, some painted over.
+  // The work light on the bucket catches the ones under the ledge; after the tip it follows the paint along the top and passes over them, then the street light shows the rest.
+  // Stand-ins from the tag alphabet (tools/write/tag.mjs) until the tag tool makes real ones. One settings block; the checks read the clear zone.
+  // A tag: [word, centre x, centre y, width (m), turn (degrees), strength (0-1, old = faint), colour]. Clear: the title's box plus a margin, no tag paint inside it.
+  const WALL_TAGS = { clear: .3, tags: NARROW
+    ? [["tom", -3.2, 7.15, .9, -6, .9, SPRAY], ["tt", -.3, 7, .6, 5, .7, CREAM], ["ttdevs", 1.1, 6, 1.8, 3, .8, SPRAY], ["larsson", -1.2, 5.3, 1.8, -4, .55, CREAM],
+       ["tom", -1.6, 4.35, .8, 7, .45, CREAM]]
+    : [["tom", -6.4, 7.15, 1.2, -6, .9, SPRAY], ["tt", -4.2, 7.05, .7, 4, .75, CREAM], ["larsson", -1.6, 7.1, 1.8, -3, .5, CREAM], // under the ledge: the first screen
+       ["ttdevs", 2.4, 6.4, 2.2, 3, .8, SPRAY], ["tom", 5.8, 6.9, 1.3, -4, .6, CREAM], ["larsson", -4.4, 5.6, 2, 5, .6, SPRAY], ["tt", 0, 5.6, 1, -8, .55, CREAM], // high: seen while the camera comes down
+       ["tom", -5.2, 3.8, 1.2, -6, .9, SPRAY], ["larsson", -2.6, 4, 2, 4, .6, CREAM], ["ttdevs", .6, 3.75, 2, -2, .85, SPRAY], ["tom", 5.2, 4.3, .9, 5, .5, CREAM], // above the line
+       ["tt", -5.6, 1.2, .7, 0, .8, CREAM], ["tom", -5.6, -.5, .8, 8, .55, SPRAY], // beside it
+       ["tt", -2.4, -1.85, .55, 4, .6, SPRAY], ["larsson", 3.2, -1.75, 1.3, -3, .5, CREAM]] }; // under it
+  const WALL_HAND = __HAND_WALL__;
+  // each tag is painted on its own frame while the bucket waits, the first screen's first: all at once was 123 ms of a stalled load (desk, 11-17)
+  const wallTags = WALL_TAGS.tags.map(([word, x, y, w, turn, k, col]) => { const T = { path: tagPath(WALL_HAND[word], x, y, w, 1), col, k, turn }; T.path.mesh.visible = false; return T; }), wallQ = wallTags.slice();
+  function wallBake(T) { tagBake(T); const P = T.path; P.uE.value = 1e3; P.mesh.material.opacity = T.k; P.mesh.rotation.z = T.turn * Math.PI / 180; P.mesh.position.z = .002;
+    P.mesh.renderOrder = -1; P.mesh.visible = true; // under everything else on the wall: the poured line, the runs (sorted by distance they swapped places as the camera moved: flicker, Tom 11-17)
+    const c = P.mesh.position, a = P.mesh.rotation.z, [bx0, by0, bx1, by1] = P.box;
+    T.corners = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]].map(([u, v]) => { const [wx, wy] = P.toWorld(u, v), dx = wx - c.x, dy = wy - c.y; return [c.x + dx * Math.cos(a) - dy * Math.sin(a), c.y + dx * Math.sin(a) + dy * Math.cos(a)]; }); }
+  function wallStep(all) { while (wallQ.length) { wallBake(wallQ.shift()); if (!all) break; } }
+  // for the checks: each tag's painted corners on the screen, and the title's clear box
+  window.wallTagsOnScreen = () => { const s = q => { const v = q.clone().project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, m = WALL_TAGS.clear;
+    const Q = TQ.path, [qx0, qy0, qx1, qy1] = Q.box, tq = [Q.toWorld(qx0, qy0), Q.toWorld(qx1, qy1)].map(([x, y]) => s(V(x, y, 0)));
+    return { tlxq: tq, tags: wallTags.filter(T => T.corners).map(T => T.corners.map(([x, y]) => s(V(x, y, 0)))), clear: [s(V(-PW / 2 - m, PCY + PH / 2 + m, 0)), s(V(PW / 2 + m, PCY - PH / 2 - m, 0))] }; };
   const epaImg = new Image(); epaImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><mask id=\"cut\"><rect width=\"64\" height=\"64\" fill=\"#fff\"/><path d=\"M16.8 11.4h30.4l3.6 12.8H13.2Z\" fill=\"#000\"/><rect x=\"7.6\" y=\"32.6\" width=\"14\" height=\"5.6\" rx=\".6\" fill=\"#000\"/><rect x=\"42.4\" y=\"32.6\" width=\"14\" height=\"5.6\" rx=\".6\" fill=\"#000\"/><path d=\"M32 25.6 42 41.6H22Z\" fill=\"#000\" stroke=\"#000\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></mask><mask id=\"tri\"><rect width=\"64\" height=\"64\" fill=\"#fff\"/><path d=\"M32 32.4 36 39H28Z\" fill=\"#000\"/></mask></defs><g fill=\"currentColor\"><g mask=\"url(#cut)\"><rect x=\"6.6\" y=\"22.8\" width=\"3.4\" height=\"3.4\" rx=\".9\"/><rect x=\"54\" y=\"22.8\" width=\"3.4\" height=\"3.4\" rx=\".9\"/><path d=\"M15.6 9.2h32.8q1.7 0 2.2 1.6L54.6 26H9.4l4-15.2q.5-1.6 2.2-1.6Z\"/><path d=\"M8.6 25.6h46.8l1.6 2.2V40H7V27.8Z\"/><rect x=\"4\" y=\"40.4\" width=\"56\" height=\"5.4\" rx=\"1.6\"/><rect x=\"9\" y=\"45\" width=\"8\" height=\"6.2\" rx=\"1.6\"/><rect x=\"47\" y=\"45\" width=\"8\" height=\"6.2\" rx=\"1.6\"/></g><path mask=\"url(#tri)\" d=\"M32 27.6 40.4 41H23.6Z\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></g></svg>".replace(/currentColor/g, `rgb(${SPRAY})`));
   const links = [{ t: "Open the site", href: "https://eparadar.se" }, { t: "Code for epaRadar", href: "https://github.com/tlxq/eparadar" }];
   let parts = null; const target = pcv; // drawn once, whole; factsR shows it part by part
