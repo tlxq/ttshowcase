@@ -47,6 +47,6 @@ phone speed on the S23.
 ## Pull request
 
 - One branch and one PR per change. Commits: one line, Conventional Commits, lowercase, no AI attribution.
-- GitHub CI is off: the PR says which checks passed on the desk (`Tested:`).
+- GitHub runs `mise run check` on every PR; the PR says which desk checks passed (`Tested:`).
 - A change in what you see waits for Tom on the T14s and the S23. Then squash merge.
 - Merging into `master` deploys to ttdevs.com (Vercel). Nothing deploys from the terminal.
