@@ -1,4 +1,5 @@
-# Repo kit (~/.1dot/kit, applied by `dot kit`). No GitHub CI: these hooks are the checks.
+# Repo kit (~/.1dot/kit, applied by `dot kit`). Private repo: these hooks are the checks.
+# Public repo (.public-repo): GitHub runs `mise run check` on every PR (.github/workflows/check.yml), so pre-push skips it.
 pre-commit:
   parallel: true
   jobs:
@@ -19,3 +20,5 @@ pre-push:
   jobs:
     - name: check
       run: mise run check
+      skip:
+        - run: test -f .public-repo

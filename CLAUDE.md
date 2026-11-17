@@ -6,7 +6,7 @@ Read `brief.md` for what it is and `docs/design.md` for how it looks and moves.
 
 ## Rules
 - One branch and one PR per change. GitHub runs `mise run check` on every PR (Tom 11-17); the GPU walks stay on the desk. Before merge: the PR's check is green and `tools/walk/run.sh` passes on the desk; the PR says so. Squash merge.
-- `mise run check` is the whole check (pre-push runs it). `mise run format` formats.
+- `mise run check` is the whole check (GitHub runs it on every PR; pre-push skips it). `mise run format` formats.
 - Colours, sizes, spacing and speeds come from `src/design/tokens.css`. Nothing outside it. A new value goes there first, with Tom's OK.
 - Visible text follows `workflow:signum`'s word and logic rules; `docs/design.md` says which rules this site replaces.
 - No `.md` file in this repo changes without Tom reading its text.
