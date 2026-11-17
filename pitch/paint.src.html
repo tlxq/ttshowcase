@@ -9,7 +9,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
 .track { height: 1320vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP + SV_END + 100 */
 html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall: pulling further must not reload it on a phone */
-.tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a gap on the wall (UP_AT) */
+.tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a spot on the wall (UP_AT) */
 .hud { position: fixed; inset: 0; pointer-events: none; }
 .hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .hud line { stroke: rgba(239, 233, 220, .55); stroke-width: 1; }
@@ -875,11 +875,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   const lamp2 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp2.position.set(EX - 6.5, 3.8 - DROP, 3.4); lamp2.target.position.set(EX + 1.2, NARROW ? EY + 2.6 : EY - .3, 0); scene.add(lamp2, lamp2.target); // phone: the tags and sticker sit above the stencil, so the light aims higher
   const head = document.getElementById("head");
 
-  // ---- Tom's tags sprayed on the wall around the stencil, then the facts and the logo links sprayed through stencils (Tom 11-16).
-  // Stand-in tags until Tom writes the real ones: "work in progress" while it paints, "try it" by the links
-  // each tag paints on its own small canvas, cut to its own box: the whole canvas is sent to the graphics card on every frame it changes,
-  // and one shared canvas for all tags (~1000x1200 on a phone) made the S23 drop to 31 fps while a tag was sprayed (11-16)
-  const TPX = 128;
+  // ---- the facts and the logo links sprayed through stencils (Tom 11-16). No tags on the walls: visitors' and Tom's own come with the tag tool (Tom 11-17).
   // paint once, reveal by time: a second canvas holds when each pixel gets painted (white = never), the shader shows what is due by uE seconds.
   // Nothing is sent to the graphics card while it plays: re-sending a big canvas every frame cost the S23 30 fps (11-16)
   function reveal(mat, w, h) { const tcv = document.createElement("canvas"); tcv.width = w; tcv.height = h; const tg = tcv.getContext("2d"); tg.fillStyle = "#fff"; tg.fillRect(0, 0, w, h);
@@ -892,47 +888,6 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     const parts = out => { const TT = Math.max(...out.map(o => o.at + o.dur)) + .1; uTT.value = TT;
       out.forEach(o => { const gr = tg.createLinearGradient(o.x, 0, o.x + o.w, 0); gr.addColorStop(0, v(o.at, TT)); gr.addColorStop(1, v(o.at + o.dur, TT)); tg.fillStyle = gr; tg.fillRect(o.x - 2, o.y - 2, o.w + 4, o.h + 4); }); tt.needsUpdate = true; };
     return { tcv, tg, tt, uE, uTT, v, parts }; }
-  function tagSheet(cx, cy, wW, hW) { const x0 = cx - wW / 2 - .15, x1 = cx + wW / 2 + .15, y0 = cy - hW / 2 - .6, y1 = cy + hW / 2 + .15, w = x1 - x0, h = y1 - y0; // room below for the drips
-    const cv = document.createElement("canvas"); cv.width = Math.round(w * TPX); cv.height = Math.round(h * TPX);
-    const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding; tx.anisotropy = maxAniso;
-    const mat = new THREE.MeshPhysicalMaterial({ map: tx, transparent: true, depthWrite: false, roughness: .25, clearcoat: .8, clearcoatRoughness: .15,
-      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (x0 - (WX - WW / 2)) / TILE, (y0 - GROUND) / TILE), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 });
-    const R = reveal(mat, cv.width, cv.height);
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); mesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, .003); scene.add(mesh);
-    return { R, cv, g: cv.getContext("2d"), tx, mesh, tg: R.tg, tt: R.tt, uE: R.uE, uTT: R.uTT, toTag: (x, y) => [(x - x0) * TPX, (y1 - y) * TPX], toWorld: (x, y) => [x0 + x / TPX, y1 - y / TPX] }; }
-  // a tag: Tom's pen samples placed at a world centre and width; pauses between strokes cut to 0.18 s so it reads as one gesture
-  function tagPath(H, cx, cy, wW, maxDur) {
-    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; H.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); } });
-    const sheet = tagSheet(cx, cy, wW, wW * (y1 - y0) / (x1 - x0)), sc = wW * TPX / (x1 - x0), [px, py] = sheet.toTag(cx, cy), ox = px - (x1 - x0) * sc / 2, oy = py - (y1 - y0) * sc / 2, pts = []; let shift = 0, lastEnd = null;
-    H.strokes.forEach(s => { if (lastEnd !== null) shift += Math.max(0, s[2] - lastEnd - 180); for (let i = 0; i < s.length; i += 4) pts.push({ x: ox + (s[i] - x0) * sc, y: oy + (s[i + 1] - y0) * sc, t: (s[i + 2] - shift) / 1000, p: s[i + 3], first: i === 0 }); lastEnd = s[s.length - 2]; });
-    const f = Math.min(1, maxDur / pts[pts.length - 1].t); pts.forEach(q => q.t *= f); // Tom's rhythm, sped up to fit the moment
-    return { pts, dur: pts[pts.length - 1].t, i: 0, drips: [], ...sheet };
-  }
-  const HW = __HAND_WIP__, HT2 = __HAND_TRY__;
-  const TAGS = NARROW
-    ? [{ h: HW, at: .6, c: [EX - .9, EY + EH / 2 + 3.75], w: 2.6, d: 2.4 }, { h: HT2, at: NL * LAYER_S + 2.4, c: [EX + 1.8, EY + EH / 2 + 3.7], w: 1.4, d: 1.1 }]
-    : [{ h: HW, at: .6, c: [EX + EW / 2 + MG + 1.75, EY + 1.2], w: 2.6, d: 2.4 }, { h: HT2, at: NL * LAYER_S + 2.4, c: [EX + EW / 2 + MG + 1.05, EY - 2.25], w: 1.2, d: 1.1 }]; // the signature, last: after the picture, the title and the links
-  TAGS.forEach(T => T.path = tagPath(T.h, T.c[0], T.c[1], T.w, T.d));
-  function tagDot(tg, x, y, p, stamp, C = SPRAY) { const rc = TPX * (.011 + .016 * p); if (stamp) stamp.push([x, y, rc * 1.8]);
-    const gr = tg.createRadialGradient(x, y, 0, x, y, rc * 1.8); gr.addColorStop(0, `rgba(${C},.95)`); gr.addColorStop(.45, `rgba(${C},.8)`); gr.addColorStop(1, `rgba(${C},0)`);
-    tg.fillStyle = gr; tg.beginPath(); tg.arc(x, y, rc * 1.8, 0, 6.283); tg.fill();
-    if (Math.random() < .5) { tg.fillStyle = `rgba(${C},.5)`; const a = Math.random() * 6.283, r = rc * (2 + Math.random() * 2.5); tg.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, 1, 1); } }
-  // paint each tag once, whole, and its time map: the time each spot gets painted (Tom's pen rhythm), drips after it; the shader shows what is due
-  function tagBake(T) { const P = T.path, st = [], tm = [], C = T.col || SPRAY;
-    for (let i = 0; i < P.pts.length; i++) { const a = P.pts[i], b = P.pts[i - 1];
-      if (b && !a.first) { const n = Math.max(1, Math.ceil(Math.hypot(a.x - b.x, a.y - b.y) / 1.2)); for (let k = 1; k <= n; k++) { tagDot(P.g, b.x + (a.x - b.x) * k / n, b.y + (a.y - b.y) * k / n, b.p + (a.p - b.p) * k / n, st, C); tm.push(b.t + (a.t - b.t) * k / n); } }
-      else { tagDot(P.g, a.x, a.y, a.p, st, C); tm.push(a.t); } }
-    const low = P.pts.slice().sort((u, v) => v.y - u.y).slice(0, 24), drips = [];
-    for (let k = 0; k < 3; k++) { const q = low[(Math.random() * low.length) | 0]; drips.push({ x: q.x, y: q.y, L: TPX * (.12 + Math.random() * .3), at: P.dur + Math.random() * .6 }); }
-    P.g.strokeStyle = `rgba(${C},.85)`; P.g.lineWidth = TPX * .012; drips.forEach(d => { P.g.beginPath(); P.g.moveTo(d.x, d.y); P.g.lineTo(d.x, d.y + d.L * .98); P.g.stroke(); });
-    const TT = P.dur + 3.6, v = t => P.R.v(t, TT), tg = P.tg; P.uTT.value = TT;
-    // drips: a run slows as it dries, so each step down comes later (length L at time at + -ln(1 - d/L) / 1.6)
-    drips.forEach(d => { for (let dy = d.L * .98; dy >= 0; dy -= 1) { tg.fillStyle = v(d.at - Math.log(1 - dy / d.L) / 1.6); tg.fillRect(d.x - TPX * .008, d.y + dy, TPX * .016, 1.5); } });
-    for (let i = st.length - 1; i >= 0; i--) { const [x, y, r] = st[i]; tg.fillStyle = v(tm[i]); tg.beginPath(); tg.arc(x, y, r, 0, 6.283); tg.fill(); }
-    let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, by1 = -1e9; st.forEach(([x, y, r]) => { bx0 = Math.min(bx0, x - r); bx1 = Math.max(bx1, x + r); by0 = Math.min(by0, y - r); by1 = Math.max(by1, y + r); });
-    drips.forEach(d => { by1 = Math.max(by1, d.y + d.L); }); P.box = [bx0, by0, bx1, by1]; // the paint's own box on its canvas, drips included
-    P.tx.needsUpdate = P.tt.needsUpdate = true; }
-  TAGS.forEach(tagBake);
   // the facts and links, sprayed through stencils onto the wall when the picture is done (Tom 11-16: no paper box; logos as the links).
   // Words from the live site (src/content/look.ts). epaRadar's icon from its repo (packages/theme/assets/icon.svg); GitHub's mark links to the code.
   const SK = NARROW ? 1.3 : 1, SW = NARROW ? 4.4 : 2.9, SH = NARROW ? 2.6 : 1.7, SX = NARROW ? EX : EX + EW / 2 + MG + 1.75, SY = NARROW ? EY + EH / 2 + MG + 1 : EY - 1, PPX = NARROW ? 300 : 400;
@@ -942,18 +897,9 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     normalMap: tex("assets/wall4_nor_gl.jpg", false, SW / TILE, SH / TILE, (SX - SW / 2 - (WX - WW / 2)) / TILE, (SY - SH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 }));
   facts.position.set(SX, SY, .004); scene.add(facts); const factsR = reveal(facts.material, pcv.width, pcv.height);
   const CREAM = "236,230,216", GH = new Path2D("M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z");
-  // ---- the opening wall is already full of tags when you arrive (storyboard 1, Tom 11-17): names and handles, old ones faded, some painted over.
-  // The work light on the bucket catches the ones under the ledge; after the tip it follows the paint along the top and passes over them, then the street light shows the rest.
-  // Stand-ins from the tag alphabet (tools/write/tag.mjs) until the tag tool makes real ones. One settings block; the checks read the clear zone.
-  // A tag: [word, centre x, centre y, width (m), turn (degrees), strength (0-1, old = faint), colour]. Clear: the title's box plus a margin, no tag paint inside it.
-  const WALL_TAGS = { clear: .3, tags: NARROW
-    ? [["tom", -3.2, 7.15, .9, -6, .9, SPRAY], ["tt", -.3, 7, .6, 5, .7, CREAM], ["ttdevs", 1.1, 6, 1.8, 3, .8, SPRAY], ["larsson", -1.2, 5.3, 1.8, -4, .55, CREAM],
-       ["tom", -1.6, 4.35, .8, 7, .45, CREAM]]
-    : [["tom", -6.4, 7.15, 1.2, -6, .9, SPRAY], ["tt", -4.2, 7.05, .7, 4, .75, CREAM], ["larsson", -1.6, 7.1, 1.8, -3, .5, CREAM], // under the ledge: the first screen
-       ["ttdevs", 2.4, 6.4, 2.2, 3, .8, SPRAY], ["tom", 5.8, 6.9, 1.3, -4, .6, CREAM], ["larsson", -4.4, 5.6, 2, 5, .6, SPRAY], ["tt", 0, 5.6, 1, -8, .55, CREAM], // high: seen while the camera comes down
-       ["tom", -5.2, 3.8, 1.2, -6, .9, SPRAY], ["larsson", -2.6, 4, 2, 4, .6, CREAM], ["ttdevs", .6, 3.75, 2, -2, .85, SPRAY], ["tom", 5.2, 4.3, .9, 5, .5, CREAM], // above the line
-       ["tt", -5.6, 1.2, .7, 0, .8, CREAM], ["tom", -5.6, -.5, .8, 8, .55, SPRAY], // beside it
-       ["tt", -2.4, -1.85, .55, 4, .6, SPRAY], ["larsson", 3.2, -1.75, 1.3, -3, .5, CREAM]] }; // under it
+  // The wall's tags: [word, centre x, centre y, width (m), turn (degrees), strength (0-1, old = faint), colour]. None today (Tom 11-17):
+  // visitors' tags and Tom's own come from the tag tool; ?tags=full fills the visitor wall to test the speed.
+  const WALL_TAGS = { tags: [] };
   const WALL_HAND = __HAND_WALL__;
   // Visitors' tags go left of the opening (Tom 11-17): their own stretch of the same wall, so Tom's tags and the title stay clean.
   // How many fit follows from the space: about one tag per 1.5 m2; when it's full a new tag paints over the oldest.
@@ -969,7 +915,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   function* wallPaint(J, mk, emit) { const { hands, tags, L } = J, PXM = L.px; let seed = 11; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647, sprites = {};
     const sprite = C => { if (sprites[C]) return sprites[C]; const c = mk(64, 64), g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
       gr.addColorStop(0, `rgba(${C},.95)`); gr.addColorStop(.45, `rgba(${C},.8)`); gr.addColorStop(1, `rgba(${C},0)`); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return sprites[C] = c; };
-    // one tag on its own sheet, the way tagBake paints it (the same dots, specks and three drips), so its strength applies to it as a whole
+    // one tag on its own sheet: spray dots, specks and three drips, so its strength applies to it as a whole
     const sheet = T => { const H = hands[T.word]; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
       H.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); } });
       const wW = T.w, hW = wW * (y1 - y0) / (x1 - x0), W = Math.round((wW + .3) * PXM), Hh = Math.round((hW + .75) * PXM), c = mk(W, Hh), g = c.getContext("2d"), sp = sprite(T.col), sc = wW * PXM / (x1 - x0);
@@ -1012,7 +958,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
       const me = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); me.position.set(L.x0 + (i + .5) * sw / px, (WALL_TOP + GROUND) / 2, .002); me.scale.set(.01, .01, 1);
       me.renderOrder = -1; scene.add(me); return me; }); // under everything else on the wall: the poured line, the runs (sorted by distance they swapped places as the camera moved: flicker, Tom 11-17)
     return { L, tags, meshes, up: [], done: 0, want: L.st.filter(S => S.tags.length).length }; })();
-  const wallTags = WL.tags; // the checks read each tag's corners from here
+  const wallTags = WL.tags;
   function wallGot(i, bmp, [x, y, w, h], boxes) { // a finished stretch: its painted part goes on its mesh, sized and placed to match
     boxes.forEach(([ti, c]) => wallTags[ti].corners = c);
     const t = new THREE.Texture(bmp); t.flipY = false; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.generateMipmaps = true; t.needsUpdate = true;
@@ -1030,10 +976,6 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     function here() { const it = wallPaint(J, (w, h) => Object.assign(document.createElement("canvas"), { width: w, height: h }), (i, c, b, x) => pic(c, b).then(p => wallGot(i, p, b, x)));
       (function step() { const s = performance.now(); while (performance.now() - s < 4) if (it.next().done) return; requestAnimationFrame(step); })(); }
     if (!wk) here(); }
-  // for the checks: each tag's painted corners on the screen, and the title's clear box
-  window.wallTagsOnScreen = () => { const s = q => { const v = q.clone().project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, m = WALL_TAGS.clear;
-    const Q = TQ.path, [qx0, qy0, qx1, qy1] = Q.box, tq = [Q.toWorld(qx0, qy0), Q.toWorld(qx1, qy1)].map(([x, y]) => s(V(x, y, 0)));
-    return { tlxq: tq, tags: wallTags.filter(T => T.corners).map(T => T.corners.map(([x, y]) => s(V(x, y, 0)))), clear: [s(V(-PW / 2 - m, PCY + PH / 2 + m, 0)), s(V(PW / 2 + m, PCY - PH / 2 - m, 0))] }; };
   const epaImg = new Image(); epaImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><mask id=\"cut\"><rect width=\"64\" height=\"64\" fill=\"#fff\"/><path d=\"M16.8 11.4h30.4l3.6 12.8H13.2Z\" fill=\"#000\"/><rect x=\"7.6\" y=\"32.6\" width=\"14\" height=\"5.6\" rx=\".6\" fill=\"#000\"/><rect x=\"42.4\" y=\"32.6\" width=\"14\" height=\"5.6\" rx=\".6\" fill=\"#000\"/><path d=\"M32 25.6 42 41.6H22Z\" fill=\"#000\" stroke=\"#000\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></mask><mask id=\"tri\"><rect width=\"64\" height=\"64\" fill=\"#fff\"/><path d=\"M32 32.4 36 39H28Z\" fill=\"#000\"/></mask></defs><g fill=\"currentColor\"><g mask=\"url(#cut)\"><rect x=\"6.6\" y=\"22.8\" width=\"3.4\" height=\"3.4\" rx=\".9\"/><rect x=\"54\" y=\"22.8\" width=\"3.4\" height=\"3.4\" rx=\".9\"/><path d=\"M15.6 9.2h32.8q1.7 0 2.2 1.6L54.6 26H9.4l4-15.2q.5-1.6 2.2-1.6Z\"/><path d=\"M8.6 25.6h46.8l1.6 2.2V40H7V27.8Z\"/><rect x=\"4\" y=\"40.4\" width=\"56\" height=\"5.4\" rx=\"1.6\"/><rect x=\"9\" y=\"45\" width=\"8\" height=\"6.2\" rx=\"1.6\"/><rect x=\"47\" y=\"45\" width=\"8\" height=\"6.2\" rx=\"1.6\"/></g><path mask=\"url(#tri)\" d=\"M32 27.6 40.4 41H23.6Z\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></g></svg>".replace(/currentColor/g, `rgb(${SPRAY})`));
   const links = [{ t: "Open the site", href: "https://eparadar.se" }, { t: "Code for epaRadar", href: "https://github.com/tlxq/eparadar" }];
   let parts = null; const target = pcv; // drawn once, whole; factsR shows it part by part
@@ -1191,8 +1133,8 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   // ---- the ending (storyboard 11-16): past raddavarfruberga a hatch in the pavement, steps down along the wall into a workshop under the street.
   // In it Tom's own tools in a row, biggest first: the self-hosted platform, ttoolbox, dot, tthermal. Steps up at the far end climb out to EDGE,
   // on its own clean wall (a printed sheet, no tag); then dawn comes up over the city, its light grows to white, and out of the white you stand at the
-  // opening wall the next morning (storyboard 7 + 8): the poured line, the tipped bucket, my tlxq tag and the form to write to me.
-  // Words from src/content/look.ts and the repos' own descriptions, tags from src/content/hand. Signs are drawn once and shown by time (reveal).
+  // opening wall the next morning (storyboard 7 + 8): the poured line, the tipped bucket and the form to write to me.
+  // Words from src/content/look.ts and the repos' own descriptions. Signs are drawn once and shown by time (reveal).
   const conc = (w, h, x0, y0, col) => new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE),
     normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE), color: col, roughness: .92, envMapIntensity: .2 });
   const slab = (x0, x1, y0, y1, z0, z1, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m); b.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); scene.add(b); return b; };
@@ -1290,7 +1232,6 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
       out.push({ x, y: y + rh / 2 - o.linkS * .7 * P, w: lw, h: o.linkS * 1.4 * P, col: CREAM, dur: .28, link: 1 });
       l.box = { x0: m - .04 * P, y0: y - .04 * P, x1: x + lw + .04 * P, y1: y + rh + .04 * P }; y += rh + o.gap * P; });
     speckle(g, B.c); let at = 0; out.forEach(p => { p.at = at; at += p.dur + .05; }); B.R.parts(out); B.t.needsUpdate = true; B.parts = out; B.end = at; }
-  const tag4 = (H, cx, cy, w, d) => { const T = { path: tagPath(H, cx, cy, w, d) }; tagBake(T); return T; };
   // the self-hosted platform's box on the wall: a metal cabinet, its lights come on as you arrive
   const cabTex = (() => { const c = document.createElement("canvas"); c.width = 256; c.height = 348; const g = c.getContext("2d");
     g.fillStyle = "#8b8f86"; g.fillRect(0, 0, 256, 348); for (let i = 0; i < 9000; i++) { g.fillStyle = `rgba(${Math.random() < .5 ? "40,40,36" : "220,220,210"},${Math.random() * .08})`; g.fillRect(Math.random() * 256, Math.random() * 348, 2, 1); }
@@ -1330,7 +1271,6 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     links.forEach(l => { const s = l.t + " \u2192", lw = g.measureText(s).width; g.fillText(s, M, y + 50); g.fillRect(M, y + 62, lw, 3); l.box = { x0: M - 8, y0: y, x1: M + lw + 8, y1: y + 72 }; y += 86; });
     const eg = g.createRadialGradient(W / 2, H / 2, H * .42, W / 2, H / 2, W * .78); eg.addColorStop(0, "rgba(60,45,25,0)"); eg.addColorStop(1, "rgba(60,45,25,.22)"); g.fillStyle = eg; g.fillRect(0, 0, W, H); // glue soaked at the edges
     S.t.needsUpdate = true; }
-  const HSV = __HAND_SERVER__, HTL = __HAND_TOOLS__, HTQ = __HAND_TLXQ__;
   const GHUB = "https://github.com/tlxq/";
   // where each one stands (laptop / phone): four tools in the workshop, then EDGE. key: the scroll (vh) where the camera has arrived,
   // leave: where it starts to go on. The camera stops in front of each.
@@ -1339,15 +1279,14 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     board: N_ ? [x - 1.15, WF + 2.75, ROOM[0][0], 1.1, ROOM[0][1]] : [x - 1.8, WF + 2.5, ROOM[0][0], 1.05, ROOM[0][1]], o: ROOM[1], plate }, more);
   const U4 = [
     tool(41, 700, "Self-hosted platform", null, "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool.<br>About ten services in Docker, running day and night; close to 300 pull requests<br>Built alone<br><span>TypeScript &middot; Next.js &middot; Hono &middot; SQLite &middot; Java &middot; Docker &middot; Caddy &middot; Tailscale</span>",
-      { tagH: HSV, tag: N_ ? [41.3, WF + .55, 1.9] : [42.1, WF + 1.45, 2.1], board: N_ ? [39.9, WF + 2.85, 2.4, .55, 300] : [40.25, WF + 2.6, 3.4, .62, 400], o: { nameS: N_ ? .4 : .44 }, cab: N_ ? [41.7, WF + 1.75] : [39.4, WF + 1.35] }),
-    tool(47.5, 770, "ttoolbox", "ttoolbox", "<b>ttoolbox</b>Claude Code plugin: skills and agents to plan, build, review and prove work the same careful way every time.<br>Built and used daily by me<br><span>Claude Code &middot; Python &middot; Bash</span>",
-      { tagH: HTL, tag: N_ ? [47.5, WF + .55, 1.9] : [49.6, WF + .95, 1.8] }),
+      { board: N_ ? [39.9, WF + 2.85, 2.4, .55, 300] : [40.25, WF + 2.6, 3.4, .62, 400], o: { nameS: N_ ? .4 : .44 }, cab: N_ ? [41.7, WF + 1.75] : [39.4, WF + 1.35] }),
+    tool(47.5, 770, "ttoolbox", "ttoolbox", "<b>ttoolbox</b>Claude Code plugin: skills and agents to plan, build, review and prove work the same careful way every time.<br>Built and used daily by me<br><span>Claude Code &middot; Python &middot; Bash</span>"),
     tool(54, 840, "dot", "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC: dot push on one, dot pull on the other.<br>2,302 lines of Bash, 92 bats tests<br>Built and used daily by me<br><span>Bash &middot; bats &middot; GNU Stow &middot; mise</span>"),
     tool(60.5, 910, "tthermal", "tthermal", "<b>tthermal</b>Omarchy bar plugin: keeps an Intel laptop under one temperature you choose, and shows CPU, GPU and fans on a desktop.<br>Built for my machines<br><span>JavaScript &middot; QML &middot; Shell</span>", { leave: 935 }),
     { x: 75, key: 1045, leave: 1070, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       print: N_ ? [75, G3 + 3.35, 2.5] : [75, G3 + 3.55, 3] /* the sheet: centre x, top, width */,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base.<br>51 pull requests, from the first sketch to live<br>Work project, built alone<br><span>Astro &middot; TypeScript</span>" } ];
-  U4.forEach((u, i) => { if (u.tagH) u.T = tag4(u.tagH, u.tag[0], u.tag[1], u.tag[2], 1.1); if (u.board) u.B = board(...u.board); if (u.print) u.P = printSheet(...u.print);
+  U4.forEach((u, i) => { if (u.board) u.B = board(...u.board); if (u.print) u.P = printSheet(...u.print);
     if (u.cab) cabinet(...u.cab); u.start = 0;
     u.hots = u.links.map((l, j) => { const a = document.createElement("a"); a.className = "hot"; a.href = l.href; a.target = "_blank"; a.rel = "noopener"; a.setAttribute("aria-label", l.t); a.tabIndex = -1; a.style.display = "none"; document.querySelector(".hud").append(a); return a; });
     if (u.plate) { const el = document.createElement("div"); el.className = "tag facts"; el.innerHTML = u.plate; document.querySelector(".hud").append(el); u.el = el;
@@ -1355,12 +1294,11 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   document.querySelector(".hud").insertAdjacentHTML("beforeend", '<p class="head">Self-hosted platform: my own server with web apps, a TV app and a job tool. ttoolbox: a Claude Code plugin to plan, build, review and prove work. dot: keeps one dotfiles repo the same on every Linux PC. tthermal: an Omarchy bar plugin that keeps an Intel laptop under a temperature you choose. app-utveckling.se: two landing pages for EDGE Associates. Write to me: the form at the end, or GitHub and LinkedIn.</p>');
   // ---- the morning (storyboard 7 + 8, Tom 11-17): past EDGE the dawn's light grows until all is white (the exposure climbs, then a white sheet);
   // under the white the camera is back at the opening wall and it is day: the street light off, a low sun from the right, a pale sky.
-  // The white clears; my tlxq tag is sprayed beside the poured line, then the form fades in. No fly-back (a strip of walls from above looks like a set).
+  // The white clears, then the form fades in. No fly-back (a strip of walls from above looks like a set).
   const WHITE_IN = 1080, CUT = 1125, WHITE_OUT = 1150; // the scroll (vh): the white starts, the cut under it, clear again
   const white = document.getElementById("white"), EXPO = renderer.toneMappingExposure;
   const sun = new THREE.DirectionalLight(0xffe4c8, 0); sun.position.set(14, 7, 9); sun.target.position.set(0, .5, 0); scene.add(sun, sun.target);
   const BG0 = scene.background.clone(), BGM = new THREE.Color(0xb9c3cf), FOGM = new THREE.Color(0xa7adb5), SKYM = new THREE.Color(0xdfe6ef), GND0 = sky.groundColor.clone(), GNDM = new THREE.Color(0x6d6862);
-  const TQ = tag4(HTQ, ...(NARROW ? [.9, 4, 1.5] : [3.4, 3.35, 1.7]), 1.2); // above the line's right end, clear of the form
   const MCAM = NARROW ? [V(0, -.6, 16.2), V(0, -.7, 15), V(0, -1.1, 0)] : [V(2.2, 1.5, 16.6), V(2.2, 1.4, 15), V(2.2, .5, 0)]; // from, to (a small step in), look
   // the form: the same fields and words as the live site's (src/look/MailForm.tsx), sent by the server (api/contact.ts); signum W3, W5, W6
   document.querySelector(".hud").insertAdjacentHTML("beforeend", `<form class="mail" id="mail" inert><b>Write to me</b><div class="fields" style="display: contents">
@@ -1378,7 +1316,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
       why = WHY[((await a.json().catch(() => ({}))).error) || ""] || "The mail service didn't answer."; } catch (_) { why = "The page couldn't reach the server."; }
     mailErr.textContent = "Couldn't send your message. " + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
   // Back to the start (Tom 11-17, the loop): on the same wall the sun goes down, the street light flickers on and the camera steps in to the
-  // night view; then the scroll jumps to the park (svY(0)), which shows the same picture. The scroll is held while it happens. The tlxq tag stays: ink stays.
+  // night view; then the scroll jumps to the park (svY(0)), which shows the same picture. The scroll is held while it happens.
   const DUSK_S = 2.6, again = document.getElementById("again"); let duskAt = 0, looped = false;
   again.addEventListener("click", e => { e.preventDefault(); if (duskAt) return; duskAt = performance.now() - (REDUCED ? 1e5 : 0); root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
   // Leave your tag (Tom 11-17, PR5 pick the spot): from the form the camera steps back to a wide shot of the whole wall a visitor may tag:
@@ -1473,8 +1411,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     else { sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); }
     if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
     const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
-    TQ.path.uE.value = looped ? 1e3 : !day || sec < 0 ? -1 : REDUCED ? 1e3 : sec - .2; // the tag belongs to the morning; walking back up the night wall is as it was
-    const on = day && !dusk && !pick.mode && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : TQ.path.dur + .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
+    const on = day && !dusk && !pick.mode && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
     if (on !== mail.classList.contains("on")) { mail.classList.toggle("on", on); mail.inert = !on; } }
   let endDrawn = false;
   function drawEnd() { const F = '40px "Saira Stencil One"', F2 = '600 40px "Clash Display"'; if (!document.fonts.check(F) || !document.fonts.check(F2) || !(posterImg.naturalWidth > 0)) { document.fonts.load(F); document.fonts.load(F2); return; }
@@ -1506,7 +1443,6 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && sv < u.leave + 15;
       if (introOver && sv > u.key - 14 && !u.start) u.start = now; // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1;
-      if (u.T) u.T.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1;
       const t0 = .35; let shown;
       if (u.P) { const k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / PASTE)), wet = sec < 0 ? 1 : REDUCED ? 0 : cl((sec - t0 - PASTE) / 2.5);
         u.P.m.visible = k > 0; u.P.m.scale.y = Math.max(.001, k); u.P.m.material.roughness = .25 + .4 * wet; shown = sec - t0 - PASTE > 0; }
@@ -1537,6 +1473,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     else if (med < 18.5) { prCap = Math.min(PR_MAX, prCap * 1.02); if (pr < prCap && (prCap >= PR_MAX || prCap - pr > PR_MAX * .25) && ++prFast >= 6) { next = prCap; prFast = 0; } } else prFast = 0; // the ceiling comes back slowly; the size climbs in one step to it (each change costs a frame on a phone)
     if (next !== pr) { pr = next; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); fit(); } }
   const START = 1600, t0 = performance.now(); let last = t0, si = 0, cmx = 0, cmy = 0;
+  if (!WL.want) document.documentElement.dataset.wallAt = 1; // no tags on the wall: nothing to wait for (the checks read 0 as never)
   const PARK = V(EX - EW / 2 - 1, G2, 1.9), canPos = PARK.clone(), canAim = V(); let canOn = 0;
   renderer.setAnimationLoop(now => {
     const raw = now - last, dt = Math.min(.05, raw / 1000); last = now; const t = now - t0 - START;
@@ -1629,11 +1566,10 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     // labels
     const showCan = t > -600 && !done && !stencilOn, showHand = !!muralPin && uTnow > pourDone && pan < .3 && lft < .1;
     tagUp.style.opacity = introOver && lft < .1 && sv < 15 ? 1 : 0; // parked at the opening: something is up there
-    if (introOver && sv < 15) tagUp.style.top = cl(proj(UP_AT)[1], 60, innerHeight - 60) + "px"; // in the wall's gap between the "tt" beside the line and the "tom" under it, so no tag is covered
+    if (introOver && sv < 15) tagUp.style.top = cl(proj(UP_AT)[1], 60, innerHeight - 60) + "px"; // beside the line, low on the wall
     tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
     // tags, then the sprayed facts and links
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
-    TAGS.forEach(T => T.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - T.at); // the shader shows what is painted by now
     const pe = sec - NL * LAYER_S - .3; if (sec >= 0) pieceAt(pe); else pieceFront = null; // prepared on arrival, shown from pe = 0
     const factsOn = sec > NL * LAYER_S + 1.6 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn);
     pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .2, EY - EH / 2 + .15, 0) : V(EX - EW * .3, EY + EH / 2 - .12, 0), NARROW ? 18 : 24, NARROW ? 46 : -122);

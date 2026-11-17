@@ -77,11 +77,6 @@ const embed =
 const parts = {
   __EMBED__: embed,
   __HAND__: hand("hi-i-m-tom"),
-  __HAND_WIP__: hand("work-in-progress"),
-  __HAND_TRY__: hand("try-it"),
-  __HAND_SERVER__: hand("my-own-server"),
-  __HAND_TOOLS__: hand("my-daily-tools"),
-  __HAND_TLXQ__: hand("tlxq"),
   __HAND_WALL__: `{${["tom", "ttdevs", "larsson", "tt"].map((w) => `"${w}": ${hand(w)}`).join(", ")}}`,
   __PAL__: readFileSync(join(root, "pitch/assets/epa_pal.json"), "utf8").trim(),
 };
