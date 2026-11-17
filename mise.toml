@@ -73,9 +73,17 @@ depends = ["pitch:build"]
 run = "tools/pitch/run.sh"
 
 [tasks.check]
-description = "Everything pre-push runs: typecheck, lint, the guard hook's tests, build, no high/critical holes in shipped packages"
+description = "The whole check (GitHub runs it on every PR): typecheck, lint, unit tests, build, /next closed without its key, no high/critical holes in shipped packages"
 depends = ["install"]
-run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs'", "npm run lint", "npm run build", "tools/osv-gate"]
+run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts'", "npm run lint", "npm run build", "tools/next-check.sh", "tools/osv-gate"]
+
+[tasks.next]
+description = "Open the new site behind its secret link: live (default) or dev (this PC's Tailscale dev server); --print prints it for the phone"
+run = "tools/next.sh"
+
+[tasks.release]
+description = "Name what's live: tag + GitHub Release, notes from the PR titles since the last one (major|minor|patch|vX.Y.Z, --dry-run)"
+run = "tools/release.sh"
 
 [tasks.format]
 description = "Format the files given (pre-commit passes the staged ones and restages them), or all"

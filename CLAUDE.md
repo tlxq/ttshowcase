@@ -19,6 +19,7 @@ Read `brief.md` for what it is and `docs/design.md` for how it looks and moves.
 
 ## Pointers
 - Run it: `mise run open`. Browser checks: `mise run walk`.
+- New site before it goes live: `mise run next` (live) or `mise run next dev` (Tailscale dev server); the key is in Pass (Dev › ttshowcase next key). Name a release: `mise run release minor` (or major, patch).
 - Plan and never-public list: `~/.claude/plans/ttshowcase.md`, private.
 - Logo and brand: `~/.1dot/kit/brand`.
 - Deploy: merging a PR into `master` deploys to ttdevs.com (Vercel). Nothing deploys from the terminal.
