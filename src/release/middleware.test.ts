@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { gate, cookieValue, sameKey } from "../../middleware.ts";
+import { gate, cookieValue, sameKey, cleanPath, config } from "../../middleware.ts";
 
 const K = "s3cret-key";
 const u = (p: string) => new URL("https://ttdevs.com" + p);
@@ -68,4 +68,40 @@ test("a key with symbols (Pass makes them) works through the link and the cookie
 test("a broken cookie is no cookie, not a crash", () => {
   assert.equal(cookieValue("next_key=%E0%A4%A", "next_key"), null);
   assert.equal(gate(u("/next"), "next_key=%E0%A4%A", K).kind, "not-found");
+});
+
+test("encoded or dotted addresses for /next are /next (Vercel serves files by the decoded path)", () => {
+  for (const p of [
+    "/%6Eext",
+    "/%6eext",
+    "/n%65xt.txt",
+    "/%6E%65%78%74/",
+    "/%256Eext",
+    "/a/../next",
+    "/%2e/next.html",
+    "/next%2Ehtml",
+  ]) {
+    assert.equal(gate(u(p), null, K).kind, "not-found", p);
+  }
+  assert.equal(cleanPath("/%6Eext"), "/next");
+  assert.equal(gate(u("/%6Eext"), "next_key=" + K, K).kind, "pass");
+  assert.equal(gate(u("/%E0%A4%A"), null, K).kind, "pass");
+});
+
+test("the matcher sends every page and page-data request through the gate, but not plain assets", () => {
+  const re = new RegExp("^" + config.matcher[0]!.replace("/(", "/(") + "$");
+  for (const p of [
+    "/",
+    "/next",
+    "/%6Eext",
+    "/next.txt",
+    "/n%65xt.txt",
+    "/next.html",
+    "/next/__next._tree.txt",
+  ]) {
+    assert.ok(re.test(p), p);
+  }
+  for (const p of ["/_next/static/chunks/a.js", "/share.jpg", "/icon.svg", "/fonts/a.woff2"]) {
+    assert.ok(!re.test(p), p);
+  }
 });
