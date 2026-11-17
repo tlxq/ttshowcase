@@ -7,7 +7,9 @@ __EMBED__
 html, body { background: var(--bg); color: var(--fg); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 1280vh; } /* bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; SV_END + 100 */
+.track { height: 1320vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP + SV_END + 100 */
+html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall: pulling further must not reload it on a phone */
+.tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a gap on the wall (UP_AT) */
 .hud { position: fixed; inset: 0; pointer-events: none; }
 .hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .hud line { stroke: rgba(239, 233, 220, .55); stroke-width: 1; }
@@ -46,7 +48,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 
 <canvas id="c"></canvas>
 <div class="track"></div>
-<div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map. Only friends see where you are.<br>Degree project, built by me<br><span>React Native &middot; Expo &middot; Supabase &middot; Postgres &middot; pgTAP</span></div></div>
+<div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag edge" id="tagUp"><b>Scroll up</b>Visitors' tags</div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map. Only friends see where you are.<br>Degree project, built by me<br><span>React Native &middot; Expo &middot; Supabase &middot; Postgres &middot; pgTAP</span></div></div>
 <div class="white" id="white"></div>
 <div class="head" id="head"><span>Tom Larsson &middot; a collection of builds</span><h1>I build and run things myself.</h1></div>
 
@@ -96,6 +98,11 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   // pavement by the wall at MX_IN slides aside, a ladder goes down a shaft into it; at MX_OUT a second shaft climbs out. MR: the shaft's radius,
   // MZ: its centre from the wall. DY: the room's ceiling (the ground above is 1.5 m deep), WF: its floor. The street stays at G3 from here on.
   const SV_END = 1180; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it
+  // the walk is a loop (Tom 11-17): after the pour the page parks UP vh down; scrolling up from there turns the camera left to the visitor wall.
+  // upPx: the park in pixels, from the track's own height (a phone's vh and innerHeight differ while its address bar moves)
+  const UP = 40, track = document.querySelector(".track"), upPx = () => track.offsetHeight * UP / (UP + SV_END + 100);
+  let up0 = 0; // the park at the last frame
+  window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * sv / SV_END; // the checks scroll with this
   const HX0 = 35, CX1 = 66, MX_IN = 36.8, MX_OUT = 64, MZ = 1.1, MR = .42, RZ = 9, DY = G3 - 1.5, WF = G3 - 4.5, END_X = 104;
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
   const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + 2 * TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
@@ -602,9 +609,9 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   const CAM_IN = [.4, 0], FREE_AT = 3.2; // camera starts moving, finishes (set when the pour is known); FREE_AT: on the pour clock the scroll is free here, ~4 s after the tap, while the paint still runs
   // the visitor tips the bucket: one click or tap, or Enter/Space. Until then it waits, rocking a little now and then.
   let goAt = 0, level = 0, skipped = false, introOver = false, coatMax = 0, readyAt = 0, tilt = 0, tiltV = 0, tilt0 = 0, slosh = 0, sloshV = 0, rocks = 0;
-  try { history.scrollRestoration = "manual"; } catch (e) {} scrollTo(0, 0);
+  try { history.scrollRestoration = "manual"; } catch (e) {} scrollTo(0, upPx());
   // a reload starts at the top: some hosts put the old scroll place back after load, so hold the top until the intro ends
-  addEventListener("pageshow", () => { if (!introOver) scrollTo(0, 0); });
+  addEventListener("pageshow", () => { if (!introOver) scrollTo(0, upPx()); });
   const root = document.documentElement; root.style.overflow = "hidden"; root.style.touchAction = "none";
   const go = () => { if (!goAt) { goAt = performance.now(); tilt0 = tilt; } };
   addEventListener("pointerdown", () => { if (goAt && !introOver) skipped = true; else if (readyAt) go(); });
@@ -626,8 +633,8 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     } else if (skipped && now - goAt < 60000) goAt = now - 60000;
     const ic = goAt ? (now - goAt) / 1000 * TS : -1; // the pour clock: 0.8 of real time, so the whole pour is calmer
     if (pourReady && !CAM_IN[1]) CAM_IN[1] = Math.min(FREE_AT - .3, Math.max(CAM_IN[0] + 1.5, pourDone - .7));
-    if (!introOver && (scrollX || scrollY)) scrollTo(0, 0);
-    if (!introOver && ic > Math.min(pourDone + .3, FREE_AT)) { scrollTo(0, 0); introOver = true; root.style.overflow = ""; root.style.touchAction = ""; document.body.style.cursor = ""; }
+    if (!introOver && (scrollX || Math.abs(scrollY - upPx()) > 1)) scrollTo(0, upPx());
+    if (!introOver && ic > Math.min(pourDone + .3, FREE_AT)) { scrollTo(0, upPx()); introOver = true; root.style.overflow = ""; root.style.touchAction = ""; document.body.style.cursor = ""; }
     if (!goAt) document.body.style.cursor = readyAt ? "pointer" : "";
     // the bucket fills
     const fillL = goAt ? Math.max(.03, left(ic)) : level; coatMax = Math.max(coatMax, fillL);
@@ -1401,6 +1408,8 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   const CAM = NARROW
     ? { A: [V(.4, .9, 13.5), V(0, .9, 0)], B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX, EY + 2, 19.5), V(EX, EY + 1.9, 0)], D: [V(EX + .2, EY + 1.9, 18.5), V(EX, EY + 1.8, 0)], E: [V(RX, .3 - 2 * DROP, 15), V(RX, -.4 - 2 * DROP, 0)], F: [V(RX + .2, .1 - 2 * DROP, 13), V(RX, -.6 - 2 * DROP, -1)] } // phone: the sticker and the tags above the stencil (the ground is close below)
     : { A: [V(1.3, .5, 11), V(.1, .6, 0)], B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + 1.9, EY + .2, 12.2), V(EX + 1.6, EY, 0)], D: [V(EX + 2.2, EY + .1, 11), V(EX + 1.7, EY - .1, 0)], E: [V(RX + .4, .1 - 2 * DROP, 11.5), V(RX + .3, -.6 - 2 * DROP, 0)], F: [V(RX + .6, -.1 - 2 * DROP, 9.6), V(RX + .4, -.8 - 2 * DROP, -1)] }; // room right of the stencil for the tags and the sticker
+  // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street; phone: closer, the middle of it
+  const VISIT = NARROW ? [V(-12, 3.2, 15), V(-12, 3.4, 0)] : [V(-12, 3.4, 13.5), V(-12, 3.4, 0)], tagUp = document.getElementById("tagUp"), UP_AT = V(-6, .2, 0);
   let lastP = 0, stencilAt = 0;
   let mx = 0, my = 0; addEventListener("pointermove", e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; });
   // render size follows the machine: weak graphics (T14s, Intel UHD: 46-57 ms a frame at full size, 12 ms at half, 11-16) draw fewer pixels
@@ -1416,7 +1425,10 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   renderer.setAnimationLoop(now => {
     const raw = now - last, dt = Math.min(.05, raw / 1000); last = now; const t = now - t0 - START;
     autoRes(raw);
-    const H2 = document.documentElement.scrollHeight - innerHeight, sv = H2 > 0 ? cl(scrollY / H2) * SV_END : 0, pAll = cl(sv / 540), p = cl(sv / 320); // sv: the scroll in vh (the page is SV_END + 100 vh); the first three scenes keep the scroll they had
+    if (introOver && up0 && upPx() !== up0 && Math.abs(scrollY - up0) < 2) scrollTo(0, upPx()); // a resize or a turned phone while parked: stay parked, not half turned
+    const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? cl((scrollY - up) / H2) * SV_END : 0,
+      lft = introOver && up > 0 ? cl(1 - scrollY / up) : 0, lookL = sm(cl(lft / .6)), goL = sm(cl((lft - .25) / .75)), // up the page: the head turns first, then the camera walks left
+      pAll = cl(sv / 540), p = cl(sv / 320); // sv: the scroll in vh below the park (the page is UP + SV_END + 100 vh); the first three scenes keep the scroll they had
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
     // scroll moves the camera only: step back (0-.12), walk right to the second wall (.18-.38), step back to look (.75-.95).
     // The stencils play by themselves from the moment the wall is reached, and keep going if the visitor scrolls on (Tom 11-16)
@@ -1486,6 +1498,9 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
     endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp); morning(now, sv, cp, cl_);
     cp.x += sway * (NARROW ? .5 : 1.1); cp.z -= stencilOn && Lf < NL ? Math.sin(Math.PI * q) * .5 : 0;
+    if (lft > 0) { cp.lerp(VISIT[0], goL); cl_.lerp(VISIT[1], lookL); }
+    // the opening's street light swings round to graze the visitor wall from the right (no extra light: every light costs a frame on the T14s)
+    lamp.position.set(-8.5 + 2.5 * lookL, 4.2 + .6 * lookL, 1.6 + .8 * lookL); lamp.target.position.set(.5 - 12.5 * lookL, .2 + 2.4 * lookL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = 1 - inShaft(cp); camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
     camera.lookAt(cl_);
@@ -1495,7 +1510,9 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     shadow.position.set((sa.x + sb.x) / 2, (sa.y + sb.y) / 2, .006); shadow.rotation.z = Math.atan2(sb.y - sa.y, sb.x - sa.x); shadow.scale.set(sl * 1.25, .7 * (1 + can.position.z * .25), 1);
     shadow.material.opacity = .62 * cl(LL.intensity / 5) * cl(1.6 - can.position.z * .4);
     // labels
-    const showCan = t > -600 && !done && !stencilOn, showHand = !!muralPin && uTnow > pourDone && pan < .3;
+    const showCan = t > -600 && !done && !stencilOn, showHand = !!muralPin && uTnow > pourDone && pan < .3 && lft < .1;
+    tagUp.style.opacity = introOver && lft < .1 && sv < 15 ? 1 : 0; // parked at the opening: something is up there
+    if (introOver && sv < 15) tagUp.style.top = cl(proj(UP_AT)[1], 60, innerHeight - 60) + "px"; // in the wall's gap between the "tt" beside the line and the "tom" under it, so no tag is covered
     tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
     // tags, then the sprayed facts and links
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
