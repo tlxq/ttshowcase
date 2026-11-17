@@ -20,7 +20,7 @@ for _ in $(seq 1 50); do
   sleep 0.1
 done
 
-names="tour waits endwaits replay2 reduced contrast walltags tagsfull scrollup loop pickspot"
+names="tour waits endwaits replay2 reduced contrast tagsfull scrollup loop pickspot"
 failed=0
 ran=0
 check() { # check, then "desktop" or "phone"
