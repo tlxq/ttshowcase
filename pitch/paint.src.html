@@ -42,6 +42,8 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .mail nav { display: flex; gap: 16px; }
 .mail nav a { color: var(--fg); min-height: 48px; display: inline-flex; align-items: center; text-decoration: none; }
 .mail nav a:hover { color: var(--spray); }
+.mail nav .again { margin-left: auto; font: inherit; color: var(--fg); background: none; border: 0; padding: 0; min-height: 48px; cursor: pointer; } /* the loop: a button (it acts here, it opens nothing), dressed as the links, apart from the two outside ones */
+.mail nav .again:hover { color: var(--spray); background: none; }
 @media (max-aspect-ratio: 4/5) { .mail { right: 16px; left: 16px; width: auto; top: auto; bottom: 16px; transform: none; padding: 12px 16px; gap: 4px; } .mail textarea { min-height: 72px; } }
 .nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); font: 16px system-ui; }
 </style>
@@ -615,7 +617,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   const root = document.documentElement; root.style.overflow = "hidden"; root.style.touchAction = "none";
   const go = () => { if (!goAt) { goAt = performance.now(); tilt0 = tilt; } };
   addEventListener("pointerdown", () => { if (goAt && !introOver) skipped = true; else if (readyAt) go(); });
-  addEventListener("keydown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } });
+  addEventListener("keydown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && !goAt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } }); // only while the bucket waits: later Enter and Space belong to the form and its links
   addEventListener("wheel", () => { if (goAt && !introOver) skipped = true; }, { passive: true });
   const tagBucket = document.getElementById("tagBucket"); let tagText = "";
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
@@ -1339,7 +1341,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     <label>Message<textarea name="message" rows="3" required maxlength="4000"></textarea></label>
     <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
     <p class="err" role="alert" hidden></p><button>Send</button></div>
-    <nav><a href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener">GitHub \u203a</a><a href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener">LinkedIn \u203a</a></nav></form>`);
+    <nav><a href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener">GitHub \u203a</a><a href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener">LinkedIn \u203a</a><button type="button" class="again" id="again">Back to the start</button></nav></form>`);
   const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
   const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
   mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true; let why;
@@ -1347,18 +1349,29 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
       if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
       why = WHY[((await a.json().catch(() => ({}))).error) || ""] || "The mail service didn't answer."; } catch (_) { why = "The page couldn't reach the server."; }
     mailErr.textContent = "Couldn't send your message. " + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
+  // Back to the start (Tom 11-17, the loop): on the same wall the sun goes down, the street light flickers on and the camera steps in to the
+  // night view; then the scroll jumps to the park (svY(0)), which shows the same picture. The scroll is held while it happens. The tlxq tag stays: ink stays.
+  const DUSK_S = 2.6, again = document.getElementById("again"); let duskAt = 0, looped = false;
+  again.addEventListener("click", e => { e.preventDefault(); if (duskAt) return; duskAt = performance.now() - (REDUCED ? 1e5 : 0); root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
   let mornAt = 0;
   function morning(now, sv, cp, look) { // after endCam: the white, the cut, the day light; returns nothing
+    const dusk = duskAt; // the dusk's last frame clears duskAt; the form must not show for that frame
     const wIn = sm(cl((sv - WHITE_IN) / (CUT - WHITE_IN))), wOut = 1 - sm(cl((sv - CUT) / (WHITE_OUT - CUT))), w = sv < CUT ? wIn : wOut, day = sv >= CUT;
     white.style.opacity = cl((w - .45) / .5); renderer.toneMappingExposure = EXPO * (1 + 5 * w * w);
     if (day) { const k = sm(cl((sv - CUT) / (SV_END - CUT))); cp.lerpVectors(MCAM[0], MCAM[1], k); look.copy(MCAM[2]);
       lamp.intensity = pool.intensity = bulbM.emissiveIntensity = lamp2.intensity = work.intensity = stairLight.intensity = manL.intensity = dawnL.intensity = 0;
-      sky.color.copy(SKYM); sky.groundColor.copy(GNDM); sky.intensity = .75; sun.intensity = 2.1; scene.background.copy(BGM); scene.fog.color.copy(FOGM); lens.uniforms.uAper.value = .5; }
+      sky.color.copy(SKYM); sky.groundColor.copy(GNDM); sky.intensity = .75; sun.intensity = 2.1; scene.background.copy(BGM); scene.fog.color.copy(FOGM); lens.uniforms.uAper.value = .5;
+      if (duskAt) { const dk = cl((now - duskAt) / 1000 / DUSK_S), sunK = sm(cl(dk / .7)), lampK = sm(cl((dk - .35) / .4)), flick = lampK > 0 && lampK < .6 && Math.random() < .3 ? .2 : 1, camK = sm(cl((dk - .15) / .85));
+        sun.intensity = 2.1 * (1 - sunK); sky.color.lerp(SKY0, sunK); sky.groundColor.lerp(GND0, sunK); sky.intensity = .75 + (.35 - .75) * sunK; scene.background.lerp(BG0, sunK); scene.fog.color.lerp(FOG0, sunK);
+        skyU.uDawn.value = 0; dawnL.intensity = 0; cityFar.material.color.setScalar(1 - .75 * sunK); lens.uniforms.uAper.value = .5 + (1 - .5) * sunK;
+        lamp.intensity = 5.5 * lampK * flick; pool.intensity = 9 * lampK * flick; bulbM.emissiveIntensity = 2.2 * lampK * flick; work.intensity = 4.2 * .3 * lampK;
+        cp.lerp(CAM.A[0], camK); look.lerp(CAM.A[1], camK);
+        if (dk >= 1) { duskAt = 0; looped = true; scrollTo(0, svY(0)); root.style.overflow = ""; root.style.touchAction = ""; } } }
     else { sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); }
     if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
     const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
-    TQ.path.uE.value = !day || sec < 0 ? -1 : REDUCED ? 1e3 : sec - .2; // the tag belongs to the morning; walking back up the night wall is as it was
-    const on = day && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : TQ.path.dur + .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
+    TQ.path.uE.value = looped ? 1e3 : !day || sec < 0 ? -1 : REDUCED ? 1e3 : sec - .2; // the tag belongs to the morning; walking back up the night wall is as it was
+    const on = day && !dusk && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : TQ.path.dur + .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
     if (on !== mail.classList.contains("on")) { mail.classList.toggle("on", on); mail.inert = !on; } }
   let endDrawn = false;
   function drawEnd() { const F = '40px "Saira Stencil One"', F2 = '600 40px "Clash Display"'; if (!document.fonts.check(F) || !document.fonts.check(F2) || !(posterImg.naturalWidth > 0)) { document.fonts.load(F); document.fonts.load(F2); return; }

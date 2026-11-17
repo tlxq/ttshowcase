@@ -8,7 +8,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     const box = q => { const xs = q.map(p => p[0]), ys = q.map(p => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
     const cross = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
     const onScreen = b => b[2] > 0 && b[0] < innerWidth && b[3] > 0 && b[1] < innerHeight;
-    const shows = e => +getComputedStyle(e).opacity > .05 && e.getBoundingClientRect().width > 0;
+    const shows = e => { for (let n = e; n && n !== document.body; n = n.parentElement) if (+getComputedStyle(n).opacity <= .05) return false; return e.getBoundingClientRect().width > 0; }; // a link in a hidden form is hidden too
     const plates = [...document.querySelectorAll('.hud .tag, .hud a, .mail')].filter(shows).map(e => { const r = e.getBoundingClientRect(); return { name: e.id || e.textContent.trim().slice(0, 24), b: [r.left, r.top, r.right, r.bottom] }; });
     const line = box(clear);
     tags.forEach((q, i) => { const b = box(q); if (!onScreen(b)) return;
