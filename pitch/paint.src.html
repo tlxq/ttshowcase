@@ -7,7 +7,7 @@ __EMBED__
 html, body { background: var(--bg); color: var(--fg); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 1280vh; } /* bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, the exit; SV_END + 100 */
+.track { height: 1280vh; } /* bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; SV_END + 100 */
 .hud { position: fixed; inset: 0; pointer-events: none; }
 .hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .hud line { stroke: rgba(239, 233, 220, .55); stroke-width: 1; }
@@ -24,12 +24,30 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 .hot { cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
 .hot:hover { background: radial-gradient(closest-side, rgba(255, 110, 60, .16), transparent); }
 .head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* the end (storyboard 8): the morning light, then a form on a dark plate beside the opening wall; same plate as the facts */
+.white { position: fixed; inset: 0; background: #fff6ea; opacity: 0; pointer-events: none; }
+.mail { position: absolute; right: max(24px, 4vw); top: 50%; transform: translateY(-50%); width: min(360px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 8px; padding: 16px; background: rgba(8, 9, 12, .9); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; font: 500 14px/1.5 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); opacity: 0; transition: opacity 300ms cubic-bezier(.2, 0, 0, 1); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .mail { transition: none; } }
+.mail.on { opacity: 1; pointer-events: auto; }
+.mail b { font-weight: 500; color: var(--spray); text-transform: uppercase; letter-spacing: .08em; }
+.mail label { display: grid; gap: 2px; color: var(--soft); font-size: 12px; letter-spacing: .04em; }
+.mail input, .mail textarea { font: inherit; font-size: 15px; color: var(--fg); background: transparent; border: 0; border-bottom: 1px solid rgba(239, 233, 220, .35); border-radius: 0; padding: 10px 0; min-height: 48px; box-sizing: border-box; resize: none; }
+.mail input:focus-visible, .mail textarea:focus-visible, .mail button:focus-visible, .mail a:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+.mail .trap { position: absolute; left: -9999px; }
+.mail button { font: inherit; color: var(--fg); background: transparent; border: 1px solid var(--spray); border-radius: 2px; min-height: 48px; cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
+.mail button:hover { background: rgba(255, 79, 26, .16); }
+.mail .err { margin: 0; color: var(--fg); }
+.mail nav { display: flex; gap: 16px; }
+.mail nav a { color: var(--fg); min-height: 48px; display: inline-flex; align-items: center; text-decoration: none; }
+.mail nav a:hover { color: var(--spray); }
+@media (max-aspect-ratio: 4/5) { .mail { right: 16px; left: 16px; width: auto; top: auto; bottom: 16px; transform: none; padding: 12px 16px; gap: 4px; } .mail textarea { min-height: 72px; } }
 .nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); font: 16px system-ui; }
 </style>
 
 <canvas id="c"></canvas>
 <div class="track"></div>
 <div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map. Only friends see where you are.<br>Degree project, built by me<br><span>React Native &middot; Expo &middot; Supabase &middot; Postgres &middot; pgTAP</span></div></div>
+<div class="white" id="white"></div>
 <div class="head" id="head"><span>Tom Larsson &middot; Fullstack engineer</span><h1>I build and run things myself.</h1></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
@@ -1041,7 +1059,8 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 
   // ---- the ending (storyboard 11-16): past raddavarfruberga a hatch in the pavement, steps down along the wall into a workshop under the street.
   // In it Tom's own tools in a row, biggest first: the self-hosted platform, ttoolbox, dot, tthermal. Steps up at the far end climb out to EDGE,
-  // on its own clean wall (a printed sheet, no tag); then dawn comes up over the city, and the last wall carries the signature, "ask me" and the ways to reach Tom.
+  // on its own clean wall (a printed sheet, no tag); then dawn comes up over the city, its light grows to white, and out of the white you stand at the
+  // opening wall the next morning (storyboard 7 + 8): the poured line, the tipped bucket, my tlxq tag and the form to write to me.
   // Words from src/content/look.ts and the repos' own descriptions, tags from src/content/hand. Signs are drawn once and shown by time (reveal).
   const conc = (w, h, x0, y0, col) => new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE),
     normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE), color: col, roughness: .92, envMapIntensity: .2 });
@@ -1180,9 +1199,9 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     links.forEach(l => { const s = l.t + " \u2192", lw = g.measureText(s).width; g.fillText(s, M, y + 50); g.fillRect(M, y + 62, lw, 3); l.box = { x0: M - 8, y0: y, x1: M + lw + 8, y1: y + 72 }; y += 86; });
     const eg = g.createRadialGradient(W / 2, H / 2, H * .42, W / 2, H / 2, W * .78); eg.addColorStop(0, "rgba(60,45,25,0)"); eg.addColorStop(1, "rgba(60,45,25,.22)"); g.fillStyle = eg; g.fillRect(0, 0, W, H); // glue soaked at the edges
     S.t.needsUpdate = true; }
-  const HSV = __HAND_SERVER__, HTL = __HAND_TOOLS__, HASK = __HAND_ASK__, HSIG = __HAND_SIGN__;
+  const HSV = __HAND_SERVER__, HTL = __HAND_TOOLS__, HTQ = __HAND_TLXQ__;
   const GHUB = "https://github.com/tlxq/";
-  // where each one stands (laptop / phone): four tools in the workshop, EDGE, then the exit. key: the scroll (vh) where the camera has arrived,
+  // where each one stands (laptop / phone): four tools in the workshop, then EDGE. key: the scroll (vh) where the camera has arrived,
   // leave: where it starts to go on. The camera stops in front of each.
   const N_ = NARROW, ROOM = [N_ ? [2.4, 300] : [3.6, 400], { nameS: N_ ? .4 : .44, linkS: N_ ? .17 : .15, gap: N_ ? .12 : .08 }];
   const tool = (x, key, name, link, plate, more) => Object.assign({ x, key, leave: key + 25, floor: WF, name, links: link ? [{ t: "Code for " + link, href: GHUB + link, gh: 1 }] : [],
@@ -1196,15 +1215,50 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     tool(60.5, 910, "tthermal", "tthermal", "<b>tthermal</b>Omarchy bar plugin: keeps an Intel laptop under one temperature you choose, and shows CPU, GPU and fans on a desktop.<br>Built for my machines<br><span>JavaScript &middot; QML &middot; Shell</span>", { leave: 935 }),
     { x: 75, key: 1045, leave: 1070, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       print: N_ ? [75, G3 + 3.35, 2.5] : [75, G3 + 3.55, 3] /* the sheet: centre x, top, width */,
-      plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base.<br>51 pull requests, from the first sketch to live<br>Work project, built alone<br><span>Astro &middot; TypeScript</span>" },
-    { x: 84, key: 1135, exit: 1, floor: G3, name: null, links: [{ t: "Write to me", href: "https://ttdevs.com/#write" }, { t: "GitHub", href: GHUB.slice(0, -1) }, { t: "LinkedIn", href: "https://linkedin.com/in/tlxq" }],
-      tagH: HASK, tag: N_ ? [83.25, G3 + 2.15, 1.05] : [85.6, G3 + 2.75, 1.3], board: N_ ? [83.85, G3 + 2.45, 1.75, 1.35, 300] : [86.1, G3 + 2.2, 2.4, 1.25, 400], o: { linkS: N_ ? .19 : .17, gap: N_ ? .1 : .08 }, sig: N_ ? [84, G3 + 3.35, 2.5] : [82.4, G3 + 2.6, 3.4] } ];
-  U4.forEach((u, i) => { if (u.tagH) u.T = tag4(u.tagH, u.tag[0], u.tag[1], u.tag[2], u.exit ? .9 : 1.1); if (u.board) u.B = board(...u.board); if (u.print) u.P = printSheet(...u.print);
-    if (u.sig) u.S = tag4(HSIG, u.sig[0], u.sig[1], u.sig[2], 1.3); if (u.cab) cabinet(...u.cab); u.start = 0;
+      plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base.<br>51 pull requests, from the first sketch to live<br>Work project, built alone<br><span>Astro &middot; TypeScript</span>" } ];
+  U4.forEach((u, i) => { if (u.tagH) u.T = tag4(u.tagH, u.tag[0], u.tag[1], u.tag[2], 1.1); if (u.board) u.B = board(...u.board); if (u.print) u.P = printSheet(...u.print);
+    if (u.cab) cabinet(...u.cab); u.start = 0;
     u.hots = u.links.map((l, j) => { const a = document.createElement("a"); a.className = "hot"; a.href = l.href; a.target = "_blank"; a.rel = "noopener"; a.setAttribute("aria-label", l.t); a.tabIndex = -1; a.style.display = "none"; document.querySelector(".hud").append(a); return a; });
     if (u.plate) { const el = document.createElement("div"); el.className = "tag facts"; el.innerHTML = u.plate; document.querySelector(".hud").append(el); u.el = el;
       svg.insertAdjacentHTML("beforeend", `<line id="lu${i}"/><circle id="cu${i}" r="4"/>`); u.l = svg.querySelector("#lu" + i); u.c = svg.querySelector("#cu" + i); } });
-  document.querySelector(".hud").insertAdjacentHTML("beforeend", '<p class="head">Self-hosted platform: my own server with web apps, a TV app and a job tool. ttoolbox: a Claude Code plugin to plan, build, review and prove work. dot: keeps one dotfiles repo the same on every Linux PC. tthermal: an Omarchy bar plugin that keeps an Intel laptop under a temperature you choose. app-utveckling.se: two landing pages for EDGE Associates. Ask me: write to me, GitHub, LinkedIn.</p>');
+  document.querySelector(".hud").insertAdjacentHTML("beforeend", '<p class="head">Self-hosted platform: my own server with web apps, a TV app and a job tool. ttoolbox: a Claude Code plugin to plan, build, review and prove work. dot: keeps one dotfiles repo the same on every Linux PC. tthermal: an Omarchy bar plugin that keeps an Intel laptop under a temperature you choose. app-utveckling.se: two landing pages for EDGE Associates. Write to me: the form at the end, or GitHub and LinkedIn.</p>');
+  // ---- the morning (storyboard 7 + 8, Tom 11-17): past EDGE the dawn's light grows until all is white (the exposure climbs, then a white sheet);
+  // under the white the camera is back at the opening wall and it is day: the street light off, a low sun from the right, a pale sky.
+  // The white clears; my tlxq tag is sprayed beside the poured line, then the form fades in. No fly-back (a strip of walls from above looks like a set).
+  const WHITE_IN = 1080, CUT = 1125, WHITE_OUT = 1150; // the scroll (vh): the white starts, the cut under it, clear again
+  const white = document.getElementById("white"), EXPO = renderer.toneMappingExposure;
+  const sun = new THREE.DirectionalLight(0xffe4c8, 0); sun.position.set(14, 7, 9); sun.target.position.set(0, .5, 0); scene.add(sun, sun.target);
+  const BG0 = scene.background.clone(), BGM = new THREE.Color(0xb9c3cf), FOGM = new THREE.Color(0xa7adb5), SKYM = new THREE.Color(0xdfe6ef), GND0 = sky.groundColor.clone(), GNDM = new THREE.Color(0x6d6862);
+  const TQ = tag4(HTQ, ...(NARROW ? [.9, 4, 1.5] : [3.4, 3.35, 1.7]), 1.2); // above the line's right end, clear of the form
+  const MCAM = NARROW ? [V(0, -.6, 16.2), V(0, -.7, 15), V(0, -1.1, 0)] : [V(2.2, 1.5, 16.6), V(2.2, 1.4, 15), V(2.2, .5, 0)]; // from, to (a small step in), look
+  // the form: the same fields and words as the live site's (src/look/MailForm.tsx), sent by the server (api/contact.ts); signum W3, W5, W6
+  document.querySelector(".hud").insertAdjacentHTML("beforeend", `<form class="mail" id="mail" inert><b>Write to me</b><div class="fields" style="display: contents">
+    <label>Name<input name="name" autocomplete="name" required maxlength="100" enterkeyhint="next"></label>
+    <label>Email<input name="email" type="email" autocomplete="email" required maxlength="200" enterkeyhint="next"></label>
+    <label>Message<textarea name="message" rows="3" required maxlength="4000"></textarea></label>
+    <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+    <p class="err" role="alert" hidden></p><button>Send</button></div>
+    <nav><a href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener">GitHub \u203a</a><a href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener">LinkedIn \u203a</a></nav></form>`);
+  const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
+  const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
+  mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true; let why;
+    try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
+      if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
+      why = WHY[((await a.json().catch(() => ({}))).error) || ""] || "The mail service didn't answer."; } catch (_) { why = "The page couldn't reach the server."; }
+    mailErr.textContent = "Couldn't send your message. " + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
+  let mornAt = 0;
+  function morning(now, sv, cp, look) { // after endCam: the white, the cut, the day light; returns nothing
+    const wIn = sm(cl((sv - WHITE_IN) / (CUT - WHITE_IN))), wOut = 1 - sm(cl((sv - CUT) / (WHITE_OUT - CUT))), w = sv < CUT ? wIn : wOut, day = sv >= CUT;
+    white.style.opacity = cl((w - .45) / .5); renderer.toneMappingExposure = EXPO * (1 + 5 * w * w);
+    if (day) { const k = sm(cl((sv - CUT) / (SV_END - CUT))); cp.lerpVectors(MCAM[0], MCAM[1], k); look.copy(MCAM[2]);
+      lamp.intensity = pool.intensity = bulbM.emissiveIntensity = lamp2.intensity = work.intensity = stairLight.intensity = manL.intensity = dawnL.intensity = 0;
+      sky.color.copy(SKYM); sky.groundColor.copy(GNDM); sky.intensity = .75; sun.intensity = 2.1; scene.background.copy(BGM); scene.fog.color.copy(FOGM); lens.uniforms.uAper.value = .5; }
+    else { sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); }
+    if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
+    const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
+    TQ.path.uE.value = !day || sec < 0 ? -1 : REDUCED ? 1e3 : sec - .2; // the tag belongs to the morning; walking back up the night wall is as it was
+    const on = day && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : TQ.path.dur + .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
+    if (on !== mail.classList.contains("on")) { mail.classList.toggle("on", on); mail.inert = !on; } }
   let endDrawn = false;
   function drawEnd() { const F = '40px "Saira Stencil One"', F2 = '600 40px "Clash Display"'; if (!document.fonts.check(F) || !document.fonts.check(F2) || !(posterImg.naturalWidth > 0)) { document.fonts.load(F); document.fonts.load(F2); return; }
     U4.forEach(u => { if (u.P) drawPrint(u.P, u.links); else drawBoard(u.B, u.name, u.links, u.o); }); endDrawn = true; }
@@ -1214,14 +1268,14 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
         Object.assign(el.style, { display: "block", left: ax - 4 + "px", top: cy - h / 2 + "px", width: w + "px", height: h + "px" }); el.tabIndex = 0; return; } }
     el.style.display = "none"; el.tabIndex = -1; }
   // the camera's way: over the cover, straight down the shaft, back into the room and a stop in front of each tool, under the far shaft,
-  // straight up it, out to EDGE, on to the exit, a step back. In a shaft it stays on its centre line, so it never touches the concrete.
+  // straight up it, out to EDGE, on towards the sunrise (then morning() cuts to the opening wall). In a shaft it stays on its centre line, so it never touches the concrete.
   const stop = (x, y, z, ly) => [V(x + .1, y, z), V(x, ly, 0)];
   const KEYS = [[548, 590, V(MX_IN - 1.7, G3 + 2.1, MZ + 1.6), V(MX_IN + .1, G3, MZ)], [590, 615, V(MX_IN, G3 + 1.3, MZ), V(MX_IN + .35, G3 - 3, MZ)],
     [615, 655, V(MX_IN, WF + 1.6, MZ), V(MX_IN + 4, WF + 1.1, MZ + 1)],
     ...U4.slice(0, 4).map((u, i) => [i ? u.key - 45 : 665, u.key, ...(N_ ? stop(u.x, WF + 1.55, 7, WF + 1.55) : stop(u.x, WF + 1.3, 7.6, WF + 1.75))]),
     [935, 960, V(MX_OUT, WF + 1.6, MZ), V(MX_OUT + .35, WF + 6, MZ)], [960, 995, V(MX_OUT, G3 + 1.5, MZ), V(MX_OUT + .6, G3, MZ + .1)] /* up, then a look at the hole and the cover you pushed aside */,
-    [995, 1045, ...(N_ ? stop(75, G3 + 1.9, 8.4, G3 + 1.9) : stop(75, G3 + 1.7, 9.2, G3 + 2))], [1070, 1135, ...(N_ ? stop(84, G3 + 2.3, 8.6, G3 + 2.4) : stop(84, G3 + 2.1, 9.6, G3 + 2.5))],
-    [1155, SV_END, ...(N_ ? stop(84, G3 + 3.1, 12.5, G3 + 3.3) : [V(84.6, G3 + 3, 14), V(84.6, G3 + 3.5, 0)])]];
+    [995, 1045, ...(N_ ? stop(75, G3 + 1.9, 8.4, G3 + 1.9) : stop(75, G3 + 1.7, 9.2, G3 + 2))],
+    [1070, CUT, V(88, G3 + 4.4, 13), V(100, G3 + 3.5, -70)] /* on past the last wall, looking up into the sunrise as it whites out */];
   const inShaft = p => (1 - sm(cl((Math.min(Math.hypot(p.x - MX_IN, p.z - MZ), Math.hypot(p.x - MX_OUT, p.z - MZ)) - .3) / 1.2))) * (1 - sm(cl((p.y - G3 - 1) / 1.2))); // 1 in a shaft, 0 away from it: the hand sway fades out as you near one
   function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cx) {
@@ -1232,11 +1286,11 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     coversAt(now, sv);
     if (!endDrawn && sv > 540) drawEnd(); /* reduced motion skips the bucket's wait, where they are drawn otherwise */
     if (!endDrawn) return;
-    U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && (u.exit || sv < u.leave + 15);
+    U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && sv < u.leave + 15;
       if (introOver && sv > u.key - 14 && !u.start) u.start = now; // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1;
-      if (u.T) u.T.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1; if (u.S) u.S.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1;
-      const t0 = u.exit ? 1.1 : .35; let shown;
+      if (u.T) u.T.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1;
+      const t0 = .35; let shown;
       if (u.P) { const k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / PASTE)), wet = sec < 0 ? 1 : REDUCED ? 0 : cl((sec - t0 - PASTE) / 2.5);
         u.P.m.visible = k > 0; u.P.m.scale.y = Math.max(.001, k); u.P.m.material.roughness = .25 + .4 * wet; shown = sec - t0 - PASTE > 0; }
       else { u.B.R.uE.value = sec < 0 ? -1 : sec - t0; shown = sec - t0 > u.B.end; }
@@ -1336,7 +1390,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     cmx += (mx - cmx) * .04; cmy += (my - cmy) * .04;
     const drift = now / 1000, sway = stencilOn && Lf < NL ? Math.sin(Lf * 1.3) : 0;
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
-    endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp);
+    endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp); morning(now, sv, cp, cl_);
     cp.x += sway * (NARROW ? .5 : 1.1); cp.z -= stencilOn && Lf < NL ? Math.sin(Math.PI * q) * .5 : 0;
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = 1 - inShaft(cp); camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);

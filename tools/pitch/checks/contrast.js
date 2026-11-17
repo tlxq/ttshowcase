@@ -29,7 +29,8 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   all.push(...await look('opening'));
   const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
-  for (const sv of [128, 432, 540, 700, 770, 840, 910, 1045, 1135, 1180]) { await page.evaluate(y => scrollTo(0, y), Math.round(H2 * sv / END)); await page.waitForTimeout(sv === 128 || sv === 432 ? 9000 : 4000); all.push(...await look('stop ' + sv)); }
+  for (const sv of [128, 432, 540, 700, 770, 840, 910, 1045, 1180]) { await page.evaluate(y => scrollTo(0, y), Math.round(H2 * sv / END)); await page.waitForTimeout(sv === 128 || sv === 432 ? 9000 : 4000); if (sv === 1180) { let on = false; for (let i = 0; i < 80 && !on; i++) { on = await page.evaluate(() => { const f = document.getElementById('mail'); return !!f && f.classList.contains('on') && getComputedStyle(f).opacity > .9; }); if (!on) await page.waitForTimeout(100); } if (!on) errs.push('the morning form never showed, so its text was not checked'); }
+    all.push(...await look('stop ' + sv)); }
   const bad = new Map();
   for (const t of all) { res.checked++; res.smallest = res.smallest === null ? t.size : Math.min(res.smallest, t.size);
     const need = t.large ? 3 : 4.5;
