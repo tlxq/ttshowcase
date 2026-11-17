@@ -32,8 +32,13 @@ export function sameKey(a: string, b: string): boolean {
 export function cookieValue(header: string | null, name: string): string | null {
   for (const part of (header ?? "").split(";")) {
     const i = part.indexOf("=");
-    if (i > 0 && part.slice(0, i).trim() === name)
-      return decodeURIComponent(part.slice(i + 1).trim());
+    if (i > 0 && part.slice(0, i).trim() === name) {
+      try {
+        return decodeURIComponent(part.slice(i + 1).trim());
+      } catch {
+        return null; // a broken cookie is no cookie: the normal 404, never a 500
+      }
+    }
   }
   return null;
 }
@@ -81,9 +86,19 @@ export default async function middleware(request: Request): Promise<Response | u
     const v = request.headers.get(h);
     if (v) pass.set(h, v);
   }
-  const page = await fetch(new URL("/404", url), { headers: pass });
-  return new Response(page.body, {
+  const html = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" };
+  try {
+    const page = await fetch(new URL("/404", url), {
+      headers: pass,
+      signal: AbortSignal.timeout(3000),
+    });
+    if (page.ok || page.status === 404)
+      return new Response(page.body, { status: 404, headers: html });
+  } catch {
+    // the page didn't load: a plain 404 below
+  }
+  return new Response("<!doctype html><title>Page not found</title><p>Page not found.</p>", {
     status: 404,
-    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+    headers: html,
   });
 }

@@ -64,3 +64,8 @@ test("a key with symbols (Pass makes them) works through the link and the cookie
   if (g.kind !== "redirect") return;
   assert.deepEqual(gate(u("/next"), g.setCookie.split(";")[0] ?? null, k), { kind: "pass" });
 });
+
+test("a broken cookie is no cookie, not a crash", () => {
+  assert.equal(cookieValue("next_key=%E0%A4%A", "next_key"), null);
+  assert.equal(gate(u("/next"), "next_key=%E0%A4%A", K).kind, "not-found");
+});

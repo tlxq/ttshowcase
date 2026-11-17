@@ -8,6 +8,7 @@ import hmac
 import http.cookies
 import http.server
 import os
+import posixpath
 import sys
 import urllib.parse
 
@@ -16,8 +17,24 @@ KEY = os.environ.get("PREVIEW_KEY", "")
 DIR = os.environ.get("SERVE_DIR", "out")
 
 
+def clean(path):
+    """The path as the file server will see it: decoded and normalised until it stops changing (/%6Eext, /x/../next)."""
+    while True:
+        new = posixpath.normpath(urllib.parse.unquote(path))
+        new = "/" + new.lstrip("/")
+        if new == path:
+            return path
+        path = new
+
+
 def is_next(path):
+    path = clean(path)
     return path == "/next" or path.startswith("/next/") or path.startswith("/next.")
+
+
+def same(a, b):
+    """Constant-time compare that also takes non-ASCII input."""
+    return hmac.compare_digest(a.encode("utf-8", "surrogateescape"), b.encode("utf-8", "surrogateescape"))
 
 
 class NoStale(http.server.SimpleHTTPRequestHandler):
@@ -39,7 +56,7 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
             return True
         query = urllib.parse.parse_qs(url.query, keep_blank_values=True)
         if KEY and "key" in query:
-            if hmac.compare_digest(query["key"][0], KEY):
+            if same(query["key"][0], KEY):
                 rest = urllib.parse.urlencode([(k, v) for k, vs in query.items() if k != "key" for v in vs])
                 self.send_response(303)
                 self.send_header("Location", url.path + ("?" + rest if rest else ""))
@@ -48,7 +65,7 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
                 return False
         elif KEY:
             jar = http.cookies.SimpleCookie(self.headers.get("Cookie", ""))
-            if COOKIE in jar and hmac.compare_digest(urllib.parse.unquote(jar[COOKIE].value), KEY):
+            if COOKIE in jar and same(urllib.parse.unquote(jar[COOKIE].value), KEY):
                 return True
         body = open(os.path.join(DIR, "404.html"), "rb").read()
         self.send_response(404)

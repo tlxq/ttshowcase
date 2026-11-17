@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
-# Names what's live on ttdevs.com: a git tag vX.Y.Z on master and a GitHub Release whose notes are the merged PR
+# Names what's on master (live once Vercel's deploy of it is done): a git tag vX.Y.Z on master and a GitHub Release whose notes are the merged PR
 # titles since the last release (each squash commit is one PR, so its subject is the PR title with its number).
 #   tools/release.sh major|minor|patch   the next version after the last tag
 #   tools/release.sh vX.Y.Z              an exact version (the first one, or going live = v2.0.0)
 # Add --dry-run to print the version and notes without making anything.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-want="${1:-}"; dry="${2:-}"
+want=""; dry=""
+for a in "$@"; do if [ "$a" = --dry-run ]; then dry=--dry-run; else want="$a"; fi; done
 [ -n "$want" ] || { echo "Usage: tools/release.sh major|minor|patch|vX.Y.Z [--dry-run]" >&2; exit 2; }
 
 git fetch -q --tags origin master
 head=$(git rev-parse origin/master)
-last=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$head" 2>/dev/null || true)
+# the newest plain vX.Y.Z tag in master's history (a tag like v2.0.0-rc1 is skipped)
+last=$(git tag --merged "$head" --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
 case "$want" in
   major|minor|patch)
     [ -n "$last" ] || { echo "No release yet: give the first version, e.g. tools/release.sh v1.0.0" >&2; exit 2; }

@@ -19,7 +19,8 @@ fail=0
 no() { echo "next-check: $*" >&2; fail=1; }
 code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 
-for p in /next /next/ /next.html /next.txt "/next?key=wrong" "/next?key="; do
+for p in /next /next/ /next.html /next.txt "/next?key=wrong" "/next?key=" "/next?key=%C3%A9" \
+  /%6Eext /%6Eext.html /%6Eext.txt /./next.html /a/../next.html /%2e/next.html "/next%2Ehtml"; do
   [ "$(code "$base$p")" = 404 ] || no "$p should be 404 without the key"
 done
 curl -s "$base/next" | grep -q 'Nothing painted here' || no "/next without the key should show the site's 404 page"
