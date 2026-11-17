@@ -198,6 +198,47 @@ export const LETTERS = {
       [320, 0],
     ],
   },
+  // Bowl like the a, then the stem goes up tall and comes back down over itself.
+  d: {
+    w: 320,
+    path: [
+      [240, -500],
+      [120, -570],
+      [10, -400],
+      [30, -100],
+      [130, 0],
+      [245, -220],
+      [275, -1000, S],
+      [250, -60],
+      [330, 0],
+    ],
+  },
+  // The n with a second arch.
+  m: {
+    w: 470,
+    path: [
+      [0, -560, S],
+      [10, 0, S],
+      [25, -380],
+      [120, -560],
+      [210, -440],
+      [215, 0, S],
+      [235, -380],
+      [330, -560],
+      [420, -440],
+      [410, -60],
+      [480, 0],
+    ],
+  },
+  v: {
+    w: 300,
+    path: [
+      [0, -560, S],
+      [140, 0, S],
+      [270, -560, S],
+      [320, -540],
+    ],
+  },
   // Capitals: the first letter stands tall.
   A: {
     w: 470,
@@ -248,4 +289,11 @@ const underline = (at) => [
   [-80, 210, S],
 ];
 
-export const WORDS = [{ name: "tlxq", text: "tlxq", bar: underline, style: { space: -10 } }];
+export const WORDS = [
+  { name: "tlxq", text: "tlxq", bar: underline, style: { space: -10 } },
+  // Stand-ins for the opening wall's tags (names and handles, Tom 11-17) until the tag tool makes real ones.
+  { name: "tom", text: "tom", bar: underline, style: { space: -20 } },
+  { name: "ttdevs", text: "ttdevs", style: { space: -15, slant: 0.38 } },
+  { name: "larsson", text: "larsson", bar: underline, style: { space: -25, squeeze: 1.5 } },
+  { name: "tt", text: "tt", style: { space: -40, slant: 0.2 } },
+];
