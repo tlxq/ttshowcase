@@ -614,11 +614,11 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
   function intro(now, dt) {
-    const since = (now - t0) / 1000; wallStep(!!goAt || REDUCED);
+    const since = (now - t0) / 1000; wallUpload();
     if (!goAt) {
       const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 2.2);
       level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 3.5);
-      if (pourReady && level > .975 && !readyAt) { readyAt = now; warmUp(); } else warmStep();
+      if (pourReady && level > .975 && !readyAt) { readyAt = now; root.dataset.readyAt = Math.round(now - t0); warmUp(); } else warmStep();
       if (readyAt && !parts) pieceAt(-1); else if (readyAt && !parts3) sign3At(-99); else if (readyAt && !endDrawn) drawEnd(); // draw both sprayed signs once while the bucket waits, not on arrival (S23: 67 ms)
       if (pourReady && REDUCED) goAt = now - 60000;
       // a small rock now and then shows it can move
@@ -918,13 +918,81 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
        ["tt", -5.6, 1.2, .7, 0, .8, CREAM], ["tom", -5.6, -.5, .8, 8, .55, SPRAY], // beside it
        ["tt", -2.4, -1.85, .55, 4, .6, SPRAY], ["larsson", 3.2, -1.75, 1.3, -3, .5, CREAM]] }; // under it
   const WALL_HAND = __HAND_WALL__;
-  // each tag is painted on its own frame while the bucket waits, the first screen's first: all at once was 123 ms of a stalled load (desk, 11-17)
-  const wallTags = WALL_TAGS.tags.map(([word, x, y, w, turn, k, col]) => { const T = { path: tagPath(WALL_HAND[word], x, y, w, 1), col, k, turn }; T.path.mesh.visible = false; return T; }), wallQ = wallTags.slice();
-  function wallBake(T) { tagBake(T); const P = T.path; P.uE.value = 1e3; P.mesh.material.opacity = T.k; P.mesh.rotation.z = T.turn * Math.PI / 180; P.mesh.position.z = .002;
-    P.mesh.renderOrder = -1; P.mesh.visible = true; // under everything else on the wall: the poured line, the runs (sorted by distance they swapped places as the camera moved: flicker, Tom 11-17)
-    const c = P.mesh.position, a = P.mesh.rotation.z, [bx0, by0, bx1, by1] = P.box;
-    T.corners = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]].map(([u, v]) => { const [wx, wy] = P.toWorld(u, v), dx = wx - c.x, dy = wy - c.y; return [c.x + dx * Math.cos(a) - dy * Math.sin(a), c.y + dx * Math.sin(a) + dy * Math.cos(a)]; }); }
-  function wallStep(all) { while (wallQ.length) { wallBake(wallQ.shift()); if (!all) break; } }
+  // Visitors' tags go left of the opening (Tom 11-17): their own stretch of the same wall, so Tom's tags and the title stay clean.
+  // How many fit follows from the space: about one tag per 1.5 m2; when it's full a new tag paints over the oldest.
+  const VISITOR_WALL = { x0: -17, x1: -7, y0: .6, y1: 6.6 }; VISITOR_WALL.fits = Math.floor((VISITOR_WALL.x1 - VISITOR_WALL.x0) * (VISITOR_WALL.y1 - VISITOR_WALL.y0) / 1.5);
+  // ?tags=full: the speed test for the tag tool (PR1): the visitor wall full, plus half again painted over the oldest. Same seed every run.
+  if (new URLSearchParams(location.search).get("tags") === "full") { let s = 7; const r = () => (s = s * 16807 % 2147483647) / 2147483647, words = Object.keys(WALL_HAND), V_ = VISITOR_WALL;
+    for (let i = 0; i < Math.round(V_.fits * 1.5); i++) { const w = .7 + r() * 1.1, old = i < V_.fits * .5; // the first half: old, faint, under the newer ones
+      WALL_TAGS.tags.push([words[(r() * words.length) | 0], V_.x0 + w / 2 + r() * (V_.x1 - V_.x0 - w), V_.y0 + r() * (V_.y1 - V_.y0), w, (r() - .5) * 16, old ? .35 + r() * .2 : .7 + r() * .25, r() < .5 ? SPRAY : CREAM]); } }
+  // The wall's tags live in a few wide stretches of the wall, each one picture: one draw and one upload per stretch, not one per tag
+  // (15 tags as their own meshes, painted here: 123 ms of a stalled load; 200 would be seconds). A worker paints them off the page's own
+  // thread; each finished stretch is sent to the graphics card on its own frame. Only the painted part of a stretch is kept.
+  // Runs in the worker (or here, a tag a frame, where a page has no worker canvas): paints every tag on its own sheet, then onto each stretch it reaches.
+  function* wallPaint(J, mk, emit) { const { hands, tags, L } = J, PXM = L.px; let seed = 11; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647, sprites = {};
+    const sprite = C => { if (sprites[C]) return sprites[C]; const c = mk(64, 64), g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, `rgba(${C},.95)`); gr.addColorStop(.45, `rgba(${C},.8)`); gr.addColorStop(1, `rgba(${C},0)`); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return sprites[C] = c; };
+    // one tag on its own sheet, the way tagBake paints it (the same dots, specks and three drips), so its strength applies to it as a whole
+    const sheet = T => { const H = hands[T.word]; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      H.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); } });
+      const wW = T.w, hW = wW * (y1 - y0) / (x1 - x0), W = Math.round((wW + .3) * PXM), Hh = Math.round((hW + .75) * PXM), c = mk(W, Hh), g = c.getContext("2d"), sp = sprite(T.col), sc = wW * PXM / (x1 - x0);
+      const ox = .15 * PXM, oy = .15 * PXM, pts = []; H.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) pts.push([ox + (s[i] - x0) * sc, oy + (s[i + 1] - y0) * sc, s[i + 3], i === 0]); });
+      let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, by1 = -1e9;
+      const dot = (x, y, p) => { const R = PXM * (.011 + .016 * p) * 1.8; g.drawImage(sp, x - R, y - R, R * 2, R * 2); bx0 = Math.min(bx0, x - R); bx1 = Math.max(bx1, x + R); by0 = Math.min(by0, y - R); by1 = Math.max(by1, y + R);
+        if (rnd() < .5) { const a = rnd() * 6.283, r = R / 1.8 * (2 + rnd() * 2.5); g.fillRect(x + Math.cos(a) * r, y + Math.sin(a) * r, 1, 1); } };
+      g.fillStyle = `rgba(${T.col},.5)`;
+      for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[i - 1];
+        if (b && !a[3]) { const n = Math.max(1, Math.ceil(Math.hypot(a[0] - b[0], a[1] - b[1]) / 1.2)); for (let k = 1; k <= n; k++) dot(b[0] + (a[0] - b[0]) * k / n, b[1] + (a[1] - b[1]) * k / n, b[2] + (a[2] - b[2]) * k / n); }
+        else dot(a[0], a[1], a[2]); }
+      const low = pts.slice().sort((u, v) => v[1] - u[1]).slice(0, 24); g.strokeStyle = `rgba(${T.col},.85)`; g.lineWidth = PXM * .012;
+      for (let k = 0; k < 3; k++) { const q = low[(rnd() * low.length) | 0], Ld = PXM * (.12 + rnd() * .3); g.beginPath(); g.moveTo(q[0], q[1]); g.lineTo(q[0], q[1] + Ld * .98); g.stroke(); by1 = Math.max(by1, q[1] + Ld); }
+      // its centre on the wall (the middle of the sheet, as the old meshes turned) and the painted box's corners, turned
+      const cx = T.x, cy = T.y - .225, a = T.turn * Math.PI / 180, corners = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]].map(([u, v]) => {
+        const dx = (u - W / 2) / PXM, dy = (Hh / 2 - v) / PXM; return [cx + dx * Math.cos(a) - dy * Math.sin(a), cy + dx * Math.sin(a) + dy * Math.cos(a)]; });
+      return { c, W, Hh, cx, cy, a, corners }; };
+    const sheets = {}, left = tags.map(T => T.st.length);
+    for (const i of L.order) { const S = L.st[i]; if (!S.tags.length) continue;
+      const c = mk(L.sw, L.sh), g = c.getContext("2d"), boxes = []; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (const ti of S.tags) { const T = tags[ti], sh = sheets[ti] || (sheets[ti] = sheet(T)); yield;
+        // wall pixels: x from the wall's left end, y down from its top; this stretch starts L.sw * i to the right
+        const px = (sh.cx - L.x0) * PXM - L.sw * i, py = (L.y1 - sh.cy) * PXM;
+        g.save(); g.globalAlpha = T.k; g.translate(px, py); g.rotate(-sh.a); g.drawImage(sh.c, -sh.W / 2, -sh.Hh / 2); g.restore();
+        sh.corners.forEach(([wx, wy]) => { const u = (wx - L.x0) * PXM - L.sw * i, v = (L.y1 - wy) * PXM; x0 = Math.min(x0, u); x1 = Math.max(x1, u); y0 = Math.min(y0, v); y1 = Math.max(y1, v); });
+        boxes.push([ti, sh.corners]); if (!--left[ti]) delete sheets[ti]; }
+      x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0)); x1 = Math.min(L.sw, Math.ceil(x1)); y1 = Math.min(L.sh, Math.ceil(y1));
+      if (!(x1 > x0 && y1 > y0)) { x0 = y0 = 0; x1 = y1 = 1; } yield emit(i, c, [x0, y0, x1 - x0, y1 - y0], boxes); } } // every stretch reports, even one whose paint fell off it
+  const WL = (() => { const px = NARROW ? 96 : 128, n = 12, sw = Math.round(WW / n * px); // 12 stretches of 7.5 m, the wall's full height
+    const L = { px, sw, sh: Math.round(WH * px), x0: WX - WW / 2, y1: WALL_TOP, st: [...Array(n)].map(() => ({ tags: [] })) };
+    const tags = WALL_TAGS.tags.map(([word, x, y, w, turn, k, col]) => ({ word, x, y, w, turn, k, col, st: [] }));
+    tags.forEach((T, ti) => { const r = T.w / 2 + .8, a = Math.floor(((T.x - r) - L.x0) * px / sw), b = Math.floor(((T.x + r) - L.x0) * px / sw);
+      for (let i = Math.max(0, a); i <= Math.min(n - 1, b); i++) { L.st[i].tags.push(ti); T.st.push(i); } });
+    L.order = L.st.map((_, i) => i).sort((i, j) => Math.abs(L.x0 + (i + .5) * sw / px) - Math.abs(L.x0 + (j + .5) * sw / px)); // the first screen's first
+    // a mesh per stretch that has tags, with an empty picture until its own arrives: the shader is the same before and after, so warmUp builds it
+    const empty = new THREE.DataTexture(new Uint8Array(4), 1, 1); empty.encoding = THREE.sRGBEncoding; empty.needsUpdate = true;
+    const meshes = L.st.map((S, i) => { if (!S.tags.length) return null;
+      const mat = new THREE.MeshPhysicalMaterial({ map: empty, transparent: true, depthWrite: false, alphaTest: .004, roughness: .25, clearcoat: .8, clearcoatRoughness: .15, // alphaTest: bare wall stops before the light is worked out
+        normalMap: tex("assets/wall4_nor_gl.jpg", false, 1, 1), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 });
+      const me = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); me.position.set(L.x0 + (i + .5) * sw / px, (WALL_TOP + GROUND) / 2, .002); me.scale.set(.01, .01, 1);
+      me.renderOrder = -1; scene.add(me); return me; }); // under everything else on the wall: the poured line, the runs (sorted by distance they swapped places as the camera moved: flicker, Tom 11-17)
+    return { L, tags, meshes, up: [], done: 0, want: L.st.filter(S => S.tags.length).length }; })();
+  const wallTags = WL.tags; // the checks read each tag's corners from here
+  function wallGot(i, bmp, [x, y, w, h], boxes) { // a finished stretch: its painted part goes on its mesh, sized and placed to match
+    boxes.forEach(([ti, c]) => wallTags[ti].corners = c);
+    const t = new THREE.Texture(bmp); t.flipY = false; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.generateMipmaps = true; t.needsUpdate = true;
+    WL.up.push({ i, t, x, y, w, h }); }
+  function wallUpload() { const u = WL.up.shift(); if (!u) return; const { L } = WL, me = WL.meshes[u.i], m = me.material, ww = u.w / L.px, hh = u.h / L.px;
+    const x0 = L.x0 + (L.sw * u.i + u.x) / L.px, y1 = L.y1 - u.y / L.px; me.scale.set(ww, hh, 1); me.position.set(x0 + ww / 2, y1 - hh / 2, .002);
+    m.normalMap.repeat.set(ww / TILE, hh / TILE); m.normalMap.offset.set((x0 - L.x0) / TILE, (y1 - hh - GROUND) / TILE);
+    m.map = u.t; renderer.initTexture(u.t); // sent now, on a frame with nothing else to send, not on the first frame it shows
+    if (++WL.done === WL.want) document.documentElement.dataset.wallAt = Math.round(performance.now() - t0); }
+  { const J = { hands: WALL_HAND, tags: WL.tags, L: WL.L }, pic = (c, [x, y, w, h]) => createImageBitmap(c, x, y, w, h, { imageOrientation: "flipY", premultiplyAlpha: "none" });
+    let wk = null; try { if (typeof OffscreenCanvas === "function" && new OffscreenCanvas(1, 1).getContext("2d")) {
+      const src = `${wallPaint};onmessage=async e=>{const J=e.data,mk=(w,h)=>new OffscreenCanvas(w,h),out=[];for(const _ of wallPaint(J,mk,(i,c,b,x)=>out.push([i,c,b,x])))while(out.length){const[i,c,b,x]=out.shift();const p=await createImageBitmap(c,b[0],b[1],b[2],b[3],{imageOrientation:"flipY",premultiplyAlpha:"none"});postMessage([i,p,b,x],[p]);}};`;
+      wk = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" }))); wk.onmessage = e => wallGot(...e.data);
+      wk.onerror = wk.onmessageerror = () => { wk.terminate(); WL.up.length = 0; here(); }; wk.postMessage(J); } } catch (e) { wk = null; } // a worker that fails paints here instead
+    function here() { const it = wallPaint(J, (w, h) => Object.assign(document.createElement("canvas"), { width: w, height: h }), (i, c, b, x) => pic(c, b).then(p => wallGot(i, p, b, x)));
+      (function step() { const s = performance.now(); while (performance.now() - s < 4) if (it.next().done) return; requestAnimationFrame(step); })(); }
+    if (!wk) here(); }
   // for the checks: each tag's painted corners on the screen, and the title's clear box
   window.wallTagsOnScreen = () => { const s = q => { const v = q.clone().project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, m = WALL_TAGS.clear;
     const Q = TQ.path, [qx0, qy0, qx1, qy1] = Q.box, tq = [Q.toWorld(qx0, qy0), Q.toWorld(qx1, qy1)].map(([x, y]) => s(V(x, y, 0)));
