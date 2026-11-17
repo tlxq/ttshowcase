@@ -3,7 +3,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 __EMBED__
-:root { --bg: #07080a; --fg: #efe9dc; --soft: #9a958c; --spray: #ff4f1a; color-scheme: dark; }
+:root { --bg: #07080a; --fg: #efe9dc; --soft: #9a958c; --spray: #ff4f1a; --ask: #f1c25a; /* a spot that stays clear (the tag tool pitch) */ color-scheme: dark; }
 html, body { background: var(--bg); color: var(--fg); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
@@ -44,6 +44,33 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .mail nav a:hover { color: var(--spray); }
 .mail nav .again { margin-left: auto; font: inherit; color: var(--fg); background: none; border: 0; padding: 0; min-height: 48px; cursor: pointer; } /* the loop: a button (it acts here, it opens nothing), dressed as the links, apart from the two outside ones */
 .mail nav .again:hover { color: var(--spray); background: none; }
+.mail nav { flex-wrap: wrap; column-gap: 16px; row-gap: 0; }
+.mail nav .leave { margin-left: 0; color: var(--spray); } /* Leave your tag (PR5): the way to the visitor wall; first look, its place comes with Back to the start's design pitch */
+/* pick the spot (PR5): the wall dims round a work light on the spot; the frame is the tag's size on the wall */
+.pick { position: fixed; inset: 0; user-select: none; -webkit-user-select: none; pointer-events: none; opacity: 0; transition: opacity 300ms cubic-bezier(.2, 0, 0, 1); touch-action: none; }
+.pick.on { opacity: 1; pointer-events: auto; }
+.pick .dim { position: absolute; left: 0; top: 0; width: 400vmax; height: 400vmax; margin: -200vmax 0 0 -200vmax; background: radial-gradient(circle, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) var(--r0, 200px), rgba(0, 0, 0, .8) var(--r1, 420px)); will-change: transform; }
+.pick .frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 2px dashed rgba(239, 233, 220, .9); border-radius: 3px; display: grid; place-items: center; text-align: center; padding: 4px; font: 500 13px/1.4 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); text-shadow: 0 1px 3px #000; cursor: grab; will-change: transform; }
+.pick .frame:active { cursor: grabbing; }
+.pick .frame.taken { border-color: var(--ask); }
+.pick .frame.small { border-style: solid; border-color: var(--spray); cursor: pointer; }
+.pick .ov { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+.pick .ov path { fill: rgba(0, 0, 0, .62); }
+.pick[data-mode="1"] .ov { display: block; }
+.pick[data-mode="1"] .dim { display: none; }
+.pick .bar button[hidden] { display: none; }
+.pick .frame.locked { border-style: solid; border-color: var(--spray); cursor: default; }
+.pick .frame:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+.pick .top, .pick .bar { position: absolute; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; background: rgba(8, 9, 12, .9); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; font: 500 14px/1.5 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); }
+.pick .top { top: 16px; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; } /* Cancel ends tagging from any step, so it sits with the words, apart from the step's own buttons */
+.pick .hint { margin: 0; flex: 1 1 auto; min-width: 0; }
+.pick .bar[hidden] { display: none; }
+.pick .bar { bottom: 16px; display: flex; justify-content: space-between; gap: 8px; padding: 6px; }
+.pick .bar button, .pick .top button { font: inherit; color: var(--fg); background: transparent; border: 1px solid transparent; border-radius: 2px; min-height: 48px; padding: 0 14px; cursor: pointer; }
+.pick .bar .go { border-color: var(--spray); }
+.pick .bar .go:disabled { opacity: .45; cursor: default; }
+.pick .top button { flex: none; }
+.pick .bar button:focus-visible, .pick .top button:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
 @media (max-aspect-ratio: 4/5) { .mail { right: 16px; left: 16px; width: auto; top: auto; bottom: 16px; transform: none; padding: 12px 16px; gap: 4px; } .mail textarea { min-height: 72px; } }
 .nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); font: 16px system-ui; }
 </style>
@@ -51,6 +78,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 <canvas id="c"></canvas>
 <div class="track"></div>
 <div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag edge" id="tagUp"><b>Scroll up</b>Visitors' tags</div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map. Only friends see where you are.<br>Degree project, built by me<br><span>React Native &middot; Expo &middot; Supabase &middot; Postgres &middot; pgTAP</span></div></div>
+<div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"></div><div class="bar" id="pickBar"><button type="button" id="pickMove">Move spot</button><button type="button" id="pickWide">See the whole wall</button><button type="button" class="go" id="pickLock">Lock spot</button></div></div>
 <div class="white" id="white"></div>
 <div class="head" id="head"><span>Tom Larsson &middot; a collection of builds</span><h1>I build and run things myself.</h1></div>
 
@@ -1341,7 +1369,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     <label>Message<textarea name="message" rows="3" required maxlength="4000"></textarea></label>
     <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
     <p class="err" role="alert" hidden></p><button>Send</button></div>
-    <nav><a href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener">GitHub \u203a</a><a href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener">LinkedIn \u203a</a><button type="button" class="again" id="again">Back to the start</button></nav></form>`);
+    <nav><a href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener">GitHub \u203a</a><a href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener">LinkedIn \u203a</a><button type="button" class="again leave" id="leave">Leave your tag</button><button type="button" class="again" id="again">Back to the start</button></nav></form>`);
   const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
   const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
   mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true; let why;
@@ -1353,6 +1381,81 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   // night view; then the scroll jumps to the park (svY(0)), which shows the same picture. The scroll is held while it happens. The tlxq tag stays: ink stays.
   const DUSK_S = 2.6, again = document.getElementById("again"); let duskAt = 0, looped = false;
   again.addEventListener("click", e => { e.preventDefault(); if (duskAt) return; duskAt = performance.now() - (REDUCED ? 1e5 : 0); root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
+  // Leave your tag (Tom 11-17, PR5 pick the spot): from the form the camera steps back to a wide shot of the whole wall a visitor may tag:
+  // the visitor stretch left of the opening and the opening wall itself, where the bucket pours, so the tags greet everyone who arrives.
+  // Lit = may be tagged; dark = kept clear (the title, the line's run to the drain, the bucket's ledge). Tap a lit part: the camera flies in close,
+  // the wall dims round a work light on the spot (one dark sheet with a hole, no extra light: every light costs a frame on the T14s); drag or tap
+  // to fine-tune, then Lock spot. One frame size for everyone. Tags are never removed: a new tag may go over an approved one, which stays
+  // visible under it (Tom 11-17), so only kept-clear areas turn the frame yellow (a waiting tag's held area joins them with the store, PR7).
+  const FRAME = { w: 1.6, h: .9 }, AREA = { x0: VISITOR_WALL.x0, x1: 8.5, y0: GROUND + .4, y1: WALL_TOP - 1 }; // x1: short of the step down to the epaRadar wall
+  let CLEAR = []; // kept-clear boxes [x0, y0, x1, y1], made when the pour is done (the line's run is known then)
+  function clearBoxes() { const m = .3, b = [[-PW / 2 - m, PCY - PH / 2 - m, PW / 2 + m, PCY + PH / 2 + m], [LEDGE.x - 1.2, WALL_TOP - 2, LEDGE.x + 1.6, WALL_TOP]];
+    if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); } return b; }
+  const inArea = (x, y) => [cl(x, AREA.x0 + FRAME.w / 2, AREA.x1 - FRAME.w / 2), cl(y, AREA.y0 + FRAME.h / 2, AREA.y1 - FRAME.h / 2)];
+  const kept = (x, y) => CLEAR.some(c => x + FRAME.w / 2 > c[0] && x - FRAME.w / 2 < c[2] && y + FRAME.h / 2 > c[1] && y - FRAME.h / 2 < c[3]);
+  const pickEl = document.getElementById("pick"), pickDim = pickEl.querySelector(".dim"), pickOv = pickEl.querySelector(".ov"), pickFrame = document.getElementById("pickFrame"), pickHint = document.getElementById("pickHint"),
+    pickLock = document.getElementById("pickLock"), pickWide = document.getElementById("pickWide"), pickCancel = document.getElementById("pickCancel"), pickMove = document.getElementById("pickMove"), pickBar = document.getElementById("pickBar");
+  const pick = { mode: 0, from: null, t0: 0, dur: 1, k: 0, fog: 0, x: 0, y: 0, cx: 0, cy: 0, ox: 0, drag: null, pan: null, locked: false, ui: false, r: 0, last: [V(), V()] };
+  const th = () => Math.tan(camera.fov * Math.PI / 360);
+  const ovD = () => Math.min(30, Math.max((AREA.x1 - AREA.x0 + 1.5) / (2 * th() * camera.aspect), (AREA.y1 - AREA.y0 + 1.5) / (2 * th()))); // the whole area on a laptop; a phone sees ~11 m and swipes
+  const ovHalf = () => ovD() * th() * camera.aspect; // half the width the wide shot sees on the wall
+  const ovX = x => { const h = ovHalf(), a = AREA.x0 + h - .75, b = AREA.x1 - h + .75; return a > b ? (AREA.x0 + AREA.x1) / 2 : cl(x, a, b); };
+  const closeD = () => Math.max(FRAME.w / ((NARROW ? .7 : .36) * 2 * th() * camera.aspect), FRAME.h / (.42 * 2 * th())); // the frame fills ~a third of a laptop screen, most of a phone's width
+  function pickShow() { const t = kept(pick.x, pick.y), m = pick.mode; if (m < 0) return; /* on the way back the last words stay while they fade */ pickFrame.classList.toggle("taken", t); pickFrame.classList.toggle("locked", pick.locked); pickFrame.classList.toggle("small", m === 1);
+    pickFrame.textContent = pick.locked || m === 1 ? "" : t ? "This part stays clear. Move it a little." : "Your tag here"; pickFrame.setAttribute("aria-valuetext", t ? "kept clear" : "free");
+    pickLock.hidden = pickWide.hidden = m !== 2 || pick.locked; pickLock.disabled = t; pickMove.hidden = !pick.locked; pickBar.hidden = m !== 2; // wide: tapping the wall is the step, no buttons
+    pickHint.textContent = pick.locked ? "Spot locked." : m === 1 ? "Tap a lit part of the wall where your tag goes." + (ovHalf() * 2 < AREA.x1 - AREA.x0 ? " Swipe to see more of it." : "")
+      : "Drag the frame to fine-tune, or tap the wall."; }
+  function pickGo(m, dur) { pick.from = [pick.last[0].clone(), pick.last[1].clone()]; pick.t0 = performance.now(); pick.mode = m; pick.dur = dur; pick.drag = pick.pan = null;
+    pick.ui = false; pickEl.classList.remove("on"); pickEl.setAttribute("aria-hidden", true); pickEl.inert = true; pickFrame.tabIndex = -1; pickShow(); }
+  function pickAt(x, y) { [pick.x, pick.y] = inArea(x, y); pickShow(); }
+  document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); if (pick.mode || duskAt) return; CLEAR = clearBoxes();
+    let best = null, bd = 1e9; for (let x = AREA.x0 + FRAME.w / 2; x <= AREA.x1 - FRAME.w / 2; x += .25) for (let y = AREA.y0 + FRAME.h / 2; y <= AREA.y1 - FRAME.h / 2; y += .25) { const d = Math.hypot(x + 6.5, y - 3.5); if (d < bd && !kept(x, y)) { bd = d; best = [x, y]; } }
+    [pick.x, pick.y] = best || [-12, 3]; pick.ox = ovX(NARROW ? pick.x : 0); pick.locked = false; pickGo(1, 1.4); // the first spot offered: free, beside the opening, where the first screen looks
+    root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
+  const pickIn = () => { [pick.cx, pick.cy] = [pick.x, pick.y]; pickGo(2, .9); };
+  const pickWideGo = () => { pick.locked = false; pick.ox = ovX(pick.x); pickGo(1, .9); }, pickQuit = () => { if (pick.mode > 0) pickGo(-1, 1.2); }; // Cancel: back to the form from any step
+  const pickBack = () => pick.mode === 2 ? pickWideGo() : pickQuit(); // Esc: one step back (close in -> the wide shot -> the form)
+  pickCancel.addEventListener("click", pickQuit); pickWide.addEventListener("click", pickWideGo);
+  pickLock.addEventListener("click", () => { if (pickLock.disabled) return; pick.locked = true; pickShow(); pickMove.focus({ preventScroll: true }); });
+  pickMove.addEventListener("click", () => { pick.locked = false; pickShow(); pickFrame.focus({ preventScroll: true }); });
+  const mpp = () => FRAME.w / Math.max(1, pickFrame.offsetWidth); // metres per pixel on the wall, at the frame's distance
+  const wallAt = (px, py) => { const r = V(px / innerWidth * 2 - 1, 1 - py / innerHeight * 2, .5).unproject(camera).sub(camera.position), k = -camera.position.z / r.z; return k > 0 ? [camera.position.x + r.x * k, camera.position.y + r.y * k] : null; };
+  pickFrame.addEventListener("pointerdown", e => { if (pick.locked || pick.mode !== 2) return; e.stopPropagation(); pickFrame.setPointerCapture(e.pointerId); pick.drag = { px: e.clientX, py: e.clientY, x: pick.x, y: pick.y, m: mpp() }; });
+  pickFrame.addEventListener("pointermove", e => { const d = pick.drag; if (d) pickAt(d.x + (e.clientX - d.px) * d.m, d.y - (e.clientY - d.py) * d.m); });
+  pickFrame.addEventListener("pointerup", () => pick.drag = null); pickFrame.addEventListener("pointercancel", () => pick.drag = null);
+  pickEl.addEventListener("pointerdown", e => { if (pick.locked || !pick.ui || pick.drag || e.target.closest(".bar, .top")) return; pickEl.setPointerCapture(e.pointerId); pick.pan = { px: e.clientX, py: e.clientY, ox: pick.ox, moved: false }; });
+  pickEl.addEventListener("pointermove", e => { const p = pick.pan; if (!p) return; const dx = e.clientX - p.px; if (Math.hypot(dx, e.clientY - p.py) > 8) p.moved = true; // a swipe is never a tap; in the wide shot on a phone it moves along the wall
+    if (p.moved && pick.mode === 1) pick.ox = ovX(p.ox - dx * ovHalf() * 2 / innerWidth); });
+  pickEl.addEventListener("pointerup", e => { const p = pick.pan; pick.pan = null; if (!p || p.moved) return; const w = wallAt(e.clientX, e.clientY); if (!w) return; // a tap: the frame goes there (wide: and the camera flies in)
+    const [x, y] = w; if (x < AREA.x0 || x > AREA.x1 || y < AREA.y0 || y > AREA.y1) return; pickAt(x, y); if (pick.mode === 1) pickIn(); });
+  pickEl.addEventListener("pointercancel", () => pick.pan = null);
+  pickFrame.addEventListener("keydown", e => { if (pick.locked) return; if (e.key === "Enter" && pick.mode === 1) { e.preventDefault(); pickIn(); return; }
+    const st = pick.mode === 1 ? .5 : .1, a = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, st], ArrowDown: [0, -st] }[e.key]; if (!a) return; e.preventDefault(); pickAt(pick.x + a[0], pick.y + a[1]); if (pick.mode === 1) pick.ox = ovX(pick.x); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && pick.mode > 0) pickBack(); });
+  function pickCam(now, dt, cp, look) { // after the morning set the form's view: from there to the wide shot, or in close to the spot, or back
+    skyMesh.visible = !pick.mode; // the dawn sky ends above the opening: the wide shot would show its edge, and by day the plain sky is right
+    if (!pick.mode) { pick.last[0].copy(cp); pick.last[1].copy(look); if (pick.refocus && !mail.inert) { pick.refocus = false; document.getElementById("leave").focus({ preventScroll: true }); } return; } // after Cancel the keyboard is back where it left
+    const tk = REDUCED ? 1 : sm(cl((now - pick.t0) / 1000 / pick.dur));
+    if (!pick.drag) { const f = Math.min(1, (REDUCED ? 60 : 3) * dt); pick.cx += (pick.x - pick.cx) * f; pick.cy += (pick.y - pick.cy) * f; } // the camera follows the spot once it is let go
+    let P, L; if (pick.mode === 1) { const oy = (AREA.y0 + AREA.y1) / 2; P = V(pick.ox, oy, ovD()); L = V(pick.ox, oy, 0); } else if (pick.mode === 2) { P = V(pick.cx, pick.cy, closeD()); L = V(pick.cx, pick.cy, 0); } else { P = cp.clone(); L = look.clone(); }
+    cp.lerpVectors(pick.from[0], P, tk); look.lerpVectors(pick.from[1], L, tk); pick.last[0].copy(cp); pick.last[1].copy(look);
+    pick.k = pick.mode < 0 ? 1 - tk : 1; pick.fog += ((pick.mode === 1 ? 1 : 0) - pick.fog) * Math.min(1, (REDUCED ? 60 : 3) * dt); scene.fog.density = .04 - .03 * pick.fog; // the wide shot sees 30 m: thin the haze
+    const ui = pick.mode > 0 && tk > .97; if (ui !== pick.ui) { pick.ui = ui; pickEl.classList.toggle("on", ui); pickEl.dataset.mode = pick.mode; pickEl.setAttribute("aria-hidden", !ui); pickEl.inert = !ui; pickFrame.tabIndex = ui ? 0 : -1; if (ui && !pick.locked) pickFrame.focus({ preventScroll: true }); }
+    if (pick.mode < 0 && tk >= 1) { pick.mode = 0; pick.refocus = true; pick.k = 0; pick.fog = 0; scene.fog.density = .04; root.style.overflow = ""; root.style.touchAction = ""; } }
+  function pickPlace() { if (!pick.ui) return; camera.updateMatrixWorld(); // after the camera moved: the frame, and the work light (close) or the lit area (wide)
+    const [ax, ay] = proj(V(pick.x - FRAME.w / 2, pick.y + FRAME.h / 2, 0)), [bx, by] = proj(V(pick.x + FRAME.w / 2, pick.y - FRAME.h / 2, 0)), w = bx - ax, h = by - ay;
+    pickFrame.style.width = w + "px"; pickFrame.style.height = h + "px"; pickFrame.style.transform = `translate(${ax}px, ${ay}px)`;
+    if (pick.mode === 2) { pickDim.style.transform = `translate(${(ax + bx) / 2}px, ${(ay + by) / 2}px)`;
+      const r = Math.round(Math.hypot(w, h) * .5); if (Math.abs(r - pick.r) > 2) { pick.r = r; pickDim.style.setProperty("--r0", r * .75 + "px"); pickDim.style.setProperty("--r1", r * 1.6 + "px"); } } // lit to just past the frame's corners, dark a frame further out
+    else { const box = (x0, y0, x1, y1) => { const [a, b] = proj(V(x0, y1, 0)), [c, d] = proj(V(x1, y0, 0)); return `M${a.toFixed(1)} ${b.toFixed(1)}H${c.toFixed(1)}V${d.toFixed(1)}H${a.toFixed(1)}Z`; };
+      pickOv.firstChild.setAttribute("d", `M-9 -9H${innerWidth + 9}V${innerHeight + 9}H-9Z` + box(AREA.x0, AREA.y0, AREA.x1, AREA.y1)); // dark outside the area
+      pickOv.lastChild.setAttribute("d", CLEAR.map(c => box(Math.max(c[0], AREA.x0), Math.max(c[1], AREA.y0), Math.min(c[2], AREA.x1), Math.min(c[3], AREA.y1))).join("")); } } // and over what stays clear
+  window.pickTest = { // for the pickspot check: where things are on the screen now
+    clearOnScreen: () => { const c = CLEAR[0], [px, py] = proj(V(c[0] + .4, c[3] - .2, 0)); return { x: px, y: py }; }, // the title's top left corner
+    freeOnScreen: () => { for (let y = AREA.y1 - 1; y > AREA.y0 + 1; y -= .4) for (let x = AREA.x0 + 1; x < AREA.x1 - 1; x += .4) { if (kept(x, y) || Math.hypot(x - pick.x, y - pick.y) < 1) continue; const [px, py] = proj(V(x, y, 0)); if (px > 80 && px < innerWidth - 80 && py > 140 && py < innerHeight - 140) return { x: px, y: py }; } return null; },
+    restored: () => scene.fog.density === .04 && skyMesh.visible && root.style.touchAction === "",
+    spotOnScreen: () => { const [px, py] = proj(V(pick.x, pick.y, 0)); return { x: px, y: py }; } };
   let mornAt = 0;
   function morning(now, sv, cp, look) { // after endCam: the white, the cut, the day light; returns nothing
     const dusk = duskAt; // the dusk's last frame clears duskAt; the form must not show for that frame
@@ -1371,7 +1474,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
     const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
     TQ.path.uE.value = looped ? 1e3 : !day || sec < 0 ? -1 : REDUCED ? 1e3 : sec - .2; // the tag belongs to the morning; walking back up the night wall is as it was
-    const on = day && !dusk && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : TQ.path.dur + .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
+    const on = day && !dusk && !pick.mode && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : TQ.path.dur + .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
     if (on !== mail.classList.contains("on")) { mail.classList.toggle("on", on); mail.inert = !on; } }
   let endDrawn = false;
   function drawEnd() { const F = '40px "Saira Stencil One"', F2 = '600 40px "Clash Display"'; if (!document.fonts.check(F) || !document.fonts.check(F2) || !(posterImg.naturalWidth > 0)) { document.fonts.load(F); document.fonts.load(F2); return; }
@@ -1512,11 +1615,12 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp); morning(now, sv, cp, cl_);
     cp.x += sway * (NARROW ? .5 : 1.1); cp.z -= stencilOn && Lf < NL ? Math.sin(Math.PI * q) * .5 : 0;
     if (lft > 0) { cp.lerp(VISIT[0], goL); cl_.lerp(VISIT[1], lookL); }
+    pickCam(now, dt, cp, cl_);
     // the opening's street light swings round to graze the visitor wall from the right (no extra light: every light costs a frame on the T14s)
     lamp.position.set(-8.5 + 2.5 * lookL, 4.2 + .6 * lookL, 1.6 + .8 * lookL); lamp.target.position.set(.5 - 12.5 * lookL, .2 + 2.4 * lookL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
-    const hand = 1 - inShaft(cp); camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    camera.lookAt(cl_);
+    const hand = (1 - inShaft(cp)) * (1 - pick.k); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
+    camera.lookAt(cl_); pickPlace();
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);
