@@ -75,7 +75,13 @@ export default async function middleware(request: Request): Promise<Response | u
     });
   }
   // the site's own 404 page, with a 404 status
-  const page = await fetch(new URL("/404", url));
+  // the visitor's own cookies and bypass header go along, so a protected Vercel preview answers too
+  const pass = new Headers();
+  for (const h of ["cookie", "x-vercel-protection-bypass"]) {
+    const v = request.headers.get(h);
+    if (v) pass.set(h, v);
+  }
+  const page = await fetch(new URL("/404", url), { headers: pass });
   return new Response(page.body, {
     status: 404,
     headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
