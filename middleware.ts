@@ -16,9 +16,30 @@ export type Gate =
   | { kind: "not-found" }
   | { kind: "redirect"; location: string; setCookie: string };
 
+/**
+ * The path as Vercel's file server sees it: decoded and normalised until it stops changing. Vercel matches
+ * middleware against the raw address but serves files by the decoded one, so /%6Eext would reach next.html.
+ */
+export function cleanPath(pathname: string): string {
+  let path = pathname;
+  for (let i = 0; i < 5; i++) {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(path);
+    } catch {
+      return path;
+    }
+    const next = new URL(decoded.replace(/[?#]/g, encodeURIComponent), "https://x").pathname;
+    if (next === path) return path;
+    path = next;
+  }
+  return path;
+}
+
 export function isNextPath(pathname: string): boolean {
+  const path = cleanPath(pathname);
   // the export also writes next.html and next.txt (the page data) beside the next/ folder
-  return pathname === "/next" || pathname.startsWith("/next/") || pathname.startsWith("/next.");
+  return path === "/next" || path.startsWith("/next/") || path.startsWith("/next.");
 }
 
 /** Compares in the same time whatever the guess, so the key can't be found one letter at a time. */
@@ -63,7 +84,12 @@ export function gate(url: URL, cookieHeader: string | null, key: string | undefi
   return cookie !== null && sameKey(cookie, key) ? { kind: "pass" } : { kind: "not-found" };
 }
 
-export const config = { matcher: ["/next", "/next/:path*", "/next.html", "/next.txt"] };
+// Every request but plain assets: an encoded address (/%6Eext) can't be listed here, so the gate decodes it itself.
+export const config = {
+  matcher: [
+    "/((?!_next/static/|.*\\.(?:js|css|png|jpe?g|webp|avif|gif|svg|ico|woff2?|mp4|webm|json|xml|webmanifest)$).*)",
+  ],
+};
 
 export default async function middleware(request: Request): Promise<Response | undefined> {
   const url = new URL(request.url);
