@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { gate, cookieValue, sameKey } from "./next-gate.ts";
+import { gate, cookieValue, sameKey } from "../../middleware.ts";
 
 const K = "s3cret-key";
 const u = (p: string) => new URL("https://ttdevs.com" + p);

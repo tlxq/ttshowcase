@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# /next's key (src/release/next-gate.ts), from Proton Pass via ttpass sync; without it /next stays closed
+# /next's key (middleware.ts), from Proton Pass via ttpass sync; without it /next stays closed
 key_file="$HOME/.config/ttdevs/ttshowcase-next.key"
 [ -z "${PREVIEW_KEY:-}" ] && [ -r "$key_file" ] && PREVIEW_KEY=$(<"$key_file") && export PREVIEW_KEY
 port="${PORT:-3000}"

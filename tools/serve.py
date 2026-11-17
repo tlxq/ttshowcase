@@ -1,5 +1,5 @@
 """Serves a folder (SERVE_DIR, default out/) like http.server, but browsers always check for a newer build.
-/next is guarded like on Vercel (src/release/next-gate.ts, same rules): `/next?key=<PREVIEW_KEY>` once sets a
+/next is guarded like on Vercel (middleware.ts, same rules): `/next?key=<PREVIEW_KEY>` once sets a
 cookie, without it /next is the site's 404 page. No PREVIEW_KEY: /next is closed.
 Usage: serve.py <host> <port>"""
 

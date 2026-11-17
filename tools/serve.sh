@@ -12,7 +12,7 @@ page="${SERVE_PAGE:-}"
 [ -f "$dir/${page:-index.html}" ] || { echo "Couldn't find the build in $dir/. Run: mise run ${SERVE_BUILD:-build}" >&2; exit 1; }
 export SERVE_DIR="$dir"
 
-# /next's key (src/release/next-gate.ts), from Proton Pass via ttpass sync; without it /next stays closed
+# /next's key (middleware.ts), from Proton Pass via ttpass sync; without it /next stays closed
 key_file="$HOME/.config/ttdevs/ttshowcase-next.key"
 [ -z "${PREVIEW_KEY:-}" ] && [ -r "$key_file" ] && PREVIEW_KEY=$(<"$key_file") && export PREVIEW_KEY
 port="${PORT:-8123}"
