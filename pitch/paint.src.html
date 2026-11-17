@@ -1080,7 +1080,8 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     const k = REDUCED ? 1 : Math.max(c.start ? cl((now - c.start) / 1300) : 0, sm(cl((sv - c.sv) / (c.shut - 10 - c.sv)))) /* by itself, or as fast as you scroll */, up = sm(cl(k / .25)), go = sm(cl((k - .2) / .8));
     c.cover.position.set(c.x + go * (2 * MR + .3), G3 + .02 + .07 * up * (1 - go) + .01 * go, MZ + .05 * go); c.cover.rotation.z = -.12 * up * (1 - go); } }
   function manAt(cp) { const c = Math.abs(cp.x - MX_IN) < Math.abs(cp.x - MX_OUT) ? MX_IN : MX_OUT, d = Math.abs(cp.x - c);
-    manL.position.set(c - 1.2, G3 + 4.2, MZ + 2.4); manL.target.position.set(c + .3, G3, MZ); manL.intensity = 9 * (1 - sm(cl((d - 1.5) / 5))) * sm(cl((cp.y - G3 + .5) / 1.2)) * (introOver ? 1 : 0); }
+    manL.position.set(c - 1.2, G3 + 4.2, MZ + 2.4); manL.target.position.set(c + .3, c === MX_OUT ? WF + 1 : G3, MZ); manL.distance = c === MX_OUT ? 13 : 9; const down = c === MX_OUT ? 1 : sm(cl((cp.y - G3 + .5) / 1.2)); // going down you leave it behind; the far one shines down its shaft once the cover is off
+    manL.intensity = 9 * (1 - sm(cl((d - 1.5) / 5))) * down * (introOver ? 1 : 0); }
   // tube lights under the ceiling, close to the wall; one of them flickers
   const fixM = new THREE.MeshStandardMaterial({ color: 0x2a2c2f, metalness: .5, roughness: .5 }), tubeM = new THREE.MeshStandardMaterial({ color: 0, emissive: 0xdfe9ff, emissiveIntensity: 2.4 }), tubeBad = tubeM.clone();
   const TUBES = [38.6, 44.5, 50.5, 56.5, 61.6];
@@ -1218,7 +1219,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   const KEYS = [[548, 590, V(MX_IN - 1.7, G3 + 2.1, MZ + 1.6), V(MX_IN + .1, G3, MZ)], [590, 615, V(MX_IN, G3 + 1.3, MZ), V(MX_IN + .35, G3 - 3, MZ)],
     [615, 655, V(MX_IN, WF + 1.6, MZ), V(MX_IN + 4, WF + 1.1, MZ + 1)],
     ...U4.slice(0, 4).map((u, i) => [i ? u.key - 45 : 665, u.key, ...(N_ ? stop(u.x, WF + 1.55, 7, WF + 1.55) : stop(u.x, WF + 1.3, 7.6, WF + 1.75))]),
-    [935, 960, V(MX_OUT, WF + 1.6, MZ), V(MX_OUT + .35, WF + 6, MZ)], [960, 995, V(MX_OUT, G3 + 1.5, MZ), V(MX_OUT + 1.3, G3, MZ + .2)] /* up, then a look at the cover you pushed aside */,
+    [935, 960, V(MX_OUT, WF + 1.6, MZ), V(MX_OUT + .35, WF + 6, MZ)], [960, 995, V(MX_OUT, G3 + 1.5, MZ), V(MX_OUT + .6, G3, MZ + .1)] /* up, then a look at the hole and the cover you pushed aside */,
     [995, 1045, ...(N_ ? stop(75, G3 + 1.9, 8.4, G3 + 1.9) : stop(75, G3 + 1.7, 9.2, G3 + 2))], [1070, 1135, ...(N_ ? stop(84, G3 + 2.3, 8.6, G3 + 2.4) : stop(84, G3 + 2.1, 9.6, G3 + 2.5))],
     [1155, SV_END, ...(N_ ? stop(84, G3 + 3.1, 12.5, G3 + 3.3) : [V(84.6, G3 + 3, 14), V(84.6, G3 + 3.5, 0)])]];
   const inShaft = p => (1 - sm(cl((Math.min(Math.hypot(p.x - MX_IN, p.z - MZ), Math.hypot(p.x - MX_OUT, p.z - MZ)) - .3) / 1.2))) * (1 - sm(cl((p.y - G3 - 1) / 1.2))); // 1 in a shaft, 0 away from it: the hand sway fades out as you near one
