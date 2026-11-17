@@ -7,7 +7,7 @@ __EMBED__
 html, body { background: var(--bg); color: var(--fg); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 1030vh; } /* bucket, epaRadar, raddavarfruberga, then the underpass and the exit */
+.track { height: 1280vh; } /* bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, the exit; SV_END + 100 */
 .hud { position: fixed; inset: 0; pointer-events: none; }
 .hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .hud line { stroke: rgba(239, 233, 220, .55); stroke-width: 1; }
@@ -71,12 +71,17 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   const tex = (u, srgb, rx, ry, ox = 0, oy = 0) => { let c = texCache[u];
     if (!c) { c = texCache[u] = { all: [] }; c.base = tl.load(u, () => { c.all.forEach(t => t.needsUpdate = true); renderer.initTexture(c.base); }); }
     const t = c.all.length ? c.base.clone() : c.base; c.all.push(t); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.offset.set(ox, oy); t.anisotropy = maxAniso; if (srgb) t.encoding = THREE.sRGBEncoding; return t; };
-  const WW = 83, WX = 20.5, WH = 10, GROUND = -2.2, TILE = 6;
+  const WW = 90, WX = 24, WH = 10, GROUND = -2.2, TILE = 6;
   // downhill (Tom 11-16: scrolling down should go down): the street steps down 1.8 m twice, between the scenes
-  const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, G4 = GROUND - 3 * DROP, STAIRS = [[5, 8, GROUND, G2], [19.3, 22.3, G2, G3], [31, 34, G3, G4]], NSTEP = 12; // the third flight goes down under the road deck
-  const wallGeo = new THREE.PlaneGeometry(WW, WH + TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
-  const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
-  wall.position.set(WX, GROUND - TILE + (WH + TILE) / 2, 0); wall.receiveShadow = true; scene.add(wall);
+  const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, STAIRS = [[5, 8, GROUND, G2], [19.3, 22.3, G2, G3]], NSTEP = 12;
+  // the workshop (storyboard 5; Tom 11-17: you go in like a "brunn", a manhole). A room under the street from HX0 to CX1; a round cover on the
+  // pavement by the wall at MX_IN slides aside, a ladder goes down a shaft into it; at MX_OUT a second shaft climbs out. MR: the shaft's radius,
+  // MZ: its centre from the wall. DY: the room's ceiling (the ground above is 1.5 m deep), WF: its floor. The street stays at G3 from here on.
+  const SV_END = 1180; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it
+  const HX0 = 35, CX1 = 66, MX_IN = 36.8, MX_OUT = 64, MZ = 1.1, MR = .42, RZ = 9, DY = G3 - 1.5, WF = G3 - 4.5, END_X = 104;
+  const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
+  const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + 2 * TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
+  wall.position.set(WX, GROUND - 2 * TILE + (WH + 2 * TILE) / 2, 0); wall.receiveShadow = true; scene.add(wall); // reaches down to the workshop floor
   // the hole for moment 3 (Tom 11-16: the wall falls apart and the preschool shows behind it). Its edge: r(a) below, the same in JS (holeR)
   const holeU = { uHC: { value: new THREE.Vector2(0, 0) }, uHR: { value: new THREE.Vector2(1, 1) }, uOpen: { value: 0 }, uCrack: { value: 0 } };
   wall.material.onBeforeCompile = sh => { Object.assign(sh.uniforms, holeU);
@@ -104,8 +109,9 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
         float rim = uOpen > .01 ? 1. - smoothstep(uOpen, uOpen + .09, hd) : 0.;
         diffuseColor.rgb *= 1. - .8 * ck;
         diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.18, 1.14, 1.08) * (.75 + .5 * hn(vWP.xy * 30.)), rim);`); };
+  const MANHOLE_CUT = `if (vWP.y > ${(G3 - 1.6).toFixed(2)} && min(length(vWP.xz - vec2(${MX_IN.toFixed(2)}, ${MZ.toFixed(2)})), length(vWP.xz - vec2(${MX_OUT.toFixed(2)}, ${MZ.toFixed(2)}))) < ${MR.toFixed(3)}) discard;`; // the two shafts through the street and the ceiling
   const PROF = (() => { const pts = [[-28, GROUND]]; for (const [a, b, h0, h1] of STAIRS) { const t = (b - a) / NSTEP, r = (h0 - h1) / NSTEP;
-      pts.push([a, h0]); for (let k = 0; k < NSTEP; k++) { pts.push([a + k * t, h0 - (k + 1) * r], [a + (k + 1) * t, h0 - (k + 1) * r]); } } pts.push([96, G4]); return pts; })();
+      pts.push([a, h0]); for (let k = 0; k < NSTEP; k++) { pts.push([a + k * t, h0 - (k + 1) * r], [a + (k + 1) * t, h0 - (k + 1) * r]); } } pts.push([END_X, G3]); return pts; })();
   const groundAt = x => { let h = GROUND; for (const [a, b, h0, h1] of STAIRS) { if (x >= b) h = h1; else if (x >= a) h = h0 - (Math.floor((x - a) / ((b - a) / NSTEP)) + 1) * (h0 - h1) / NSTEP; } return h; };
   const groundGeo = (() => { const P = [], N = [], U = []; for (let i = 0; i < PROF.length - 1; i++) { const [x0, y0] = PROF[i], [x1, y1] = PROF[i + 1]; if (x0 === x1 && y0 === y1) continue;
       const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy), n = [-dy / l, dx / l, 0], u0 = (x0 + 28 + (GROUND - y0)) / 64, u1 = (x1 + 28 + (GROUND - y1)) / 64;
@@ -125,6 +131,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       float gn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(gh(i), gh(i + vec2(1, 0)), f.x), mix(gh(i + vec2(0, 1)), gh(i + vec2(1, 1)), f.x), f.y); }
       float gf(vec2 p) { float a = .5, s = 0.; for (int i = 0; i < 5; i++) { s += a * gn(p); p = p * 2.03 + 11.7; a *= .5; } return s; }`)
       .replace("#include <map_fragment>", `#include <map_fragment>
+        ${MANHOLE_CUT}
         float jx = abs(fract((vWP.x - .13) / 1.2 + .5) - .5) * 1.2, jz = abs(fract(vWP.z / 1.2 + .5) - .5) * 1.2, aw = fwidth(vWP.x) + fwidth(vWP.z);
         gRoad = smoothstep(${CURB_Z.toFixed(2)} + .32, ${CURB_Z.toFixed(2)} + .36, vWP.z);
         gJoint = (1. - gRoad) * (1. - smoothstep(.012, .012 + aw, min(jx, jz))) * step(.15, vWP.z);
@@ -152,7 +159,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       .replace("#include <lights_fragment_maps>", "#include <lights_fragment_maps>\n#ifdef USE_ENVMAP\n radiance *= mix(1., .3, gRoad); // a night street mirrors the dark, not a bright sky\n#endif")
       .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, .95, gJoint); roughnessFactor = mix(roughnessFactor, mix(.6, 1., texture2D(tRR, gUV).r), gRoad); roughnessFactor = mix(roughnessFactor, .04, gWet); roughnessFactor = mix(roughnessFactor, .5, gGrate);"); };
   // the curb has a broken gap; the paint from one puddle finds it and runs along the gutter into the drain (Tom 11-16)
-  const GAP_X = NARROW ? .7 : 1.25, DRAIN_X = NARROW ? 1.55 : 2.3, X0 = WX - WW / 2, X1 = 96; // the curb runs on under the deck and past the exit
+  const GAP_X = NARROW ? .7 : 1.25, DRAIN_X = NARROW ? 1.55 : 2.3, X0 = WX - WW / 2, X1 = END_X; // the curb runs on over the workshop and past the exit
   const curbM = new THREE.MeshStandardMaterial({ color: 0x8a8c90, roughness: .85, map: tex("assets/wall4_diff.jpg", true, WW / TILE, .3), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, .3), envMapIntensity: .3 });
   for (let i = 0; i < PROF.length - 1; i++) { const [p0, h] = PROF[i], [p1, h1] = PROF[i + 1]; if (h !== h1 || p1 <= p0) continue; // each flat piece of ground
     for (const [a, b] of [[X0, GAP_X - .22], [GAP_X + .2, X1]]) { const x0 = Math.max(a, p0), x1 = Math.min(b, p1); if (x1 - x0 < .01) continue; const c = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, .16, .34), curbM); c.position.set((x0 + x1) / 2, h + .02, CURB_Z + .17); scene.add(c); } }
@@ -183,8 +190,8 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       const yTop = px <= a ? h0 + .9 : px >= b ? h1 + .9 : h0 + .9 + (h1 - h0) * (px - a) / (b - a), po = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, yTop - py, 8), postM); po.position.set(px, (yTop + py) / 2, .3); scene.add(po); }
     return { x, y: h1 + 2.4 }; });
   const stairLight = new THREE.SpotLight(0xffd9a8, 0, 7, .95, .8, 1.4); scene.add(stairLight, stairLight.target);
-  function stairsAt(cx) { const i = cx < 12 ? 0 : cx < 29 ? 1 : 2, s = stairLamps[i];
-    const w = i === 0 ? 1 - sm(cl((cx - 10) / 2)) : i === 1 ? sm(cl((cx - 12) / 2)) * (1 - sm(cl((cx - 27) / 2))) : sm(cl((cx - 29) / 2)) * (1 - sm(cl((cx - 38) / 3)));
+  function stairsAt(cx) { const i = cx < 12 ? 0 : 1, s = stairLamps[i];
+    const w = i === 0 ? 1 - sm(cl((cx - 10) / 2)) : sm(cl((cx - 12) / 2)) * (1 - sm(cl((cx - 27) / 2)));
     stairLight.position.set(s.x, s.y, .4); stairLight.target.position.set(s.x, s.y - 3, 1.6); stairLight.intensity = 7 * w * (introOver ? 1 : 0); }
   const pool = new THREE.SpotLight(0xffd2a0, 0, 14, .62, .85, 1.6); pool.position.set(POST.x, GROUND + 6.3, POST.z + 1.25); pool.target.position.set(POST.x + .3, GROUND, POST.z + 1.6); scene.add(pool, pool.target); // a curb stone at the pavement's edge; the darker band beyond is the road
   ground.receiveShadow = true; scene.add(ground);
@@ -1011,7 +1018,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   const hot3 = document.getElementById("hot3"), tagRvf = document.getElementById("tagRvf");
   svg.insertAdjacentHTML("beforeend", '<line id="l7"/><circle id="c7" r="4"/>'); const l7 = svg.querySelector("#l7"), c7 = svg.querySelector("#c7");
   let rvfStart = 0; const RVF_END = RIB0 + 2.9; // the tag and the facts come while the last ribbons are tied
-  let endK = 0; // how far the camera has left raddavarfruberga for the underpass
+  let endK = 0; // how far the camera has left raddavarfruberga for the manhole
   function rvfAt(now, walk3, end3) {
     lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3)); rU.uTm.value = now / 1000;
     if (introOver && walk3 > .5 && !rvfStart) rvfStart = now; // once per visit
@@ -1032,41 +1039,74 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       const h = Math.max(48, by - ay), cy = (ay + by) / 2; Object.assign(hot3.style, { display: "block", left: ax - 4 + "px", top: cy - h / 2 + "px", width: Math.max(48, bx - ax + 8) + "px", height: h + "px" }); hot3.tabIndex = 0; }
     else { hot3.style.display = "none"; hot3.tabIndex = -1; } }
 
-  // ---- the ending (Tom 11-16: downhill, then under): stairs down off the street into a low underpass under a road deck. On its wall two
-  // pieces, each with one of Tom's own pen tags: the self-hosted platform ("my own server"), ttoolbox ("my daily tools"). Past the deck, EDGE on its own
-  // clean wall (a printed sheet, no tag), then dawn comes up over the city, and the last wall carries the signature, "ask me" and the ways to reach Tom.
-  // Words from src/content/look.ts, tags from src/content/hand. Signs are drawn once and shown by time (reveal): nothing is re-sent per frame.
-  const DX0 = 35.8, DX1 = 62.3, DY = G4 + 3.2, DT = 1.3; // the deck: from, to, its underside, its thickness
+  // ---- the ending (storyboard 11-16): past raddavarfruberga a hatch in the pavement, steps down along the wall into a workshop under the street.
+  // In it Tom's own tools in a row, biggest first: the self-hosted platform, ttoolbox, dot, tthermal. Steps up at the far end climb out to EDGE,
+  // on its own clean wall (a printed sheet, no tag); then dawn comes up over the city, and the last wall carries the signature, "ask me" and the ways to reach Tom.
+  // Words from src/content/look.ts and the repos' own descriptions, tags from src/content/hand. Signs are drawn once and shown by time (reveal).
   const conc = (w, h, x0, y0, col) => new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE),
     normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE), color: col, roughness: .92, envMapIntensity: .2 });
-  { const deck = new THREE.Mesh(new THREE.BoxGeometry(DX1 - DX0, DT, 16.3), conc(DX1 - DX0, 16.3, DX0, 0, 0x6a6c70)); deck.material.emissive = new THREE.Color(0x0b0c0f); deck.position.set((DX0 + DX1) / 2, DY + DT / 2, 7.85); scene.add(deck);
-    const beamM = conc(DX1 - DX0, .55, DX0, 0, 0x74767a), beam = new THREE.Mesh(new THREE.BoxGeometry(DX1 - DX0, .55, .7), beamM); beam.position.set((DX0 + DX1) / 2, DY - .275, 3.3); scene.add(beam);
-    for (const x of [37.3, 44.75, 52.25, 59.75]) { const h = DY - .55 - G4, pl = new THREE.Mesh(new THREE.BoxGeometry(.7, h, .7), conc(.7, h, x, G4, 0x8d8f93)); pl.position.set(x, G4 + h / 2, 3.3); scene.add(pl); } }
-  // tube lights under the deck, close to the wall; one of them flickers
+  const slab = (x0, x1, y0, y1, z0, z1, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m); b.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); scene.add(b); return b; };
+  // the room: 1.5 m of ground above it, plain walls round it; the shafts cut through (MANHOLE_CUT)
+  { const ceil = conc(CX1 - HX0, RZ, HX0, 0, 0x55575b); ceil.emissive = new THREE.Color(0x0b0c0f);
+    ceil.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.)).xyz;");
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <map_fragment>", "#include <map_fragment>\n" + MANHOLE_CUT); };
+    slab(HX0, CX1, DY, G3 - .01, 0, RZ + .3, ceil);
+    const side = conc(RZ, G3 - WF, 0, WF, 0x8d8f93), h = G3 - WF;
+    for (const [x, ry] of [[HX0, Math.PI / 2], [CX1, -Math.PI / 2]]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(RZ + .3, h), side); m.rotation.y = ry; m.position.set(x, WF + h / 2, (RZ + .3) / 2); scene.add(m); }
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(CX1 - HX0, h), conc(CX1 - HX0, h, HX0, WF, 0x7d7f83)); front.rotation.y = Math.PI; front.position.set((HX0 + CX1) / 2, WF + h / 2, RZ); scene.add(front); }
+  const floorM = conc(CX1 - HX0, RZ, HX0, 0, 0x6c6e72); floorM.roughness = .7; floorM.envMapIntensity = .35;
+  slab(HX0, CX1, WF - .3, WF, 0, RZ, floorM);
+  // the manholes: a cast-iron cover in a ring on the pavement, a round concrete shaft, iron rungs down its wall side and on down into the room
+  const iron = new THREE.MeshStandardMaterial({ color: 0x2c2b29, metalness: .7, roughness: .6, envMapIntensity: .7 });
+  const coverTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d"); g.fillStyle = "#000"; g.fillRect(0, 0, 256, 256);
+    g.translate(128, 128); g.strokeStyle = "#fff"; g.lineWidth = 7; for (const r of [120, 92]) { g.beginPath(); g.arc(0, 0, r, 0, 6.283); g.stroke(); }
+    g.save(); g.beginPath(); g.arc(0, 0, 86, 0, 6.283); g.clip(); g.lineWidth = 6; for (let k = -88; k <= 88; k += 16) { g.beginPath(); g.moveTo(k, -90); g.lineTo(k, 90); g.stroke(); g.beginPath(); g.moveTo(-90, k); g.lineTo(90, k); g.stroke(); } g.restore(); // the raised grid of a street cover
+    for (let a = 0; a < 6.283; a += .2618) { g.save(); g.rotate(a); g.fillStyle = "#fff"; g.fillRect(96, -3, 20, 6); g.restore(); }
+    return new THREE.CanvasTexture(c); })();
+  const coverM = new THREE.MeshStandardMaterial({ color: 0x4a4440, metalness: .65, roughness: .55, bumpMap: coverTex, bumpScale: 2, envMapIntensity: .8 });
+  const rungM = new THREE.MeshStandardMaterial({ color: 0x6b5a48, metalness: .8, roughness: .5 }), shaftM = conc(2 * Math.PI * MR, G3 - DY, 0, DY, 0x5c5e62); shaftM.side = THREE.BackSide;
+  const covers = [MX_IN, MX_OUT].map((x, i) => {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(MR - .005, MR + .07, 40), iron); ring.rotation.x = -Math.PI / 2; ring.position.set(x, G3 + .006, MZ); scene.add(ring);
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(MR, MR, G3 - DY, 32, 1, true), shaftM); shaft.position.set(x, (G3 + DY) / 2, MZ); scene.add(shaft);
+    for (let y = G3 - .3; y > WF + .2; y -= .3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, .36, 8), rungM); r.rotation.z = Math.PI / 2; r.position.set(x, y, MZ - MR + .09); scene.add(r); }
+    for (const dx of [-.18, .18]) { const rl = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, DY - WF, 8), rungM); rl.position.set(x + dx, (DY + WF) / 2, MZ - MR + .09); scene.add(rl);
+      for (const y of [DY - .4, WF + 1.2]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, MZ - MR + .09, 8), rungM); st.rotation.x = Math.PI / 2; st.position.set(x + dx, y, (MZ - MR + .09) / 2); scene.add(st); } } // stays back to the wall
+    const cover = new THREE.Mesh(new THREE.CylinderGeometry(MR + .04, MR + .04, .05, 40), [coverM, coverM, coverM]); cover.position.set(x, G3 + .02, MZ); scene.add(cover);
+    return { x, cover, sv: i ? 945 : 560, shut: i ? 975 : 615, start: 0 }; });
+  // a street lamp's pool over the cover you are near, so you see it open; it fades as you go down or walk on
+  const manL = new THREE.SpotLight(0xffd9a8, 0, 9, .55, .7, 1.4); scene.add(manL, manL.target);
+  // a cover slides aside by itself once you reach it (once per visit; open at once if you are already going through)
+  function coversAt(now, sv) { for (const c of covers) { if (introOver && sv > c.sv && !c.start) c.start = now;
+    const k = REDUCED ? 1 : Math.max(c.start ? cl((now - c.start) / 1300) : 0, sm(cl((sv - c.sv) / (c.shut - 10 - c.sv)))) /* by itself, or as fast as you scroll */, up = sm(cl(k / .25)), go = sm(cl((k - .2) / .8));
+    c.cover.position.set(c.x + go * (2 * MR + .3), G3 + .02 + .07 * up * (1 - go) + .01 * go, MZ + .05 * go); c.cover.rotation.z = -.12 * up * (1 - go); } }
+  function manAt(cp) { const c = Math.abs(cp.x - MX_IN) < Math.abs(cp.x - MX_OUT) ? MX_IN : MX_OUT, d = Math.abs(cp.x - c);
+    manL.position.set(c - 1.2, G3 + 4.2, MZ + 2.4); manL.target.position.set(c + .3, G3, MZ); manL.intensity = 9 * (1 - sm(cl((d - 1.5) / 5))) * sm(cl((cp.y - G3 + .5) / 1.2)) * (introOver ? 1 : 0); }
+  // tube lights under the ceiling, close to the wall; one of them flickers
   const fixM = new THREE.MeshStandardMaterial({ color: 0x2a2c2f, metalness: .5, roughness: .5 }), tubeM = new THREE.MeshStandardMaterial({ color: 0, emissive: 0xdfe9ff, emissiveIntensity: 2.4 }), tubeBad = tubeM.clone();
-  const TUBES = [38.6, 43.6, 48.6, 53.6, 58.6];
+  const TUBES = [38.6, 44.5, 50.5, 56.5, 61.6];
   TUBES.forEach((x, i) => { const f = new THREE.Mesh(new THREE.BoxGeometry(1.3, .05, .13), fixM); f.position.set(x, DY - .03, 1.1); const t = new THREE.Mesh(new THREE.BoxGeometry(1.18, .026, .06), i === 3 ? tubeBad : tubeM); t.position.set(x, DY - .066, 1.1); scene.add(f, t); });
   const tubeLight = new THREE.SpotLight(0xdce8ff, 0, 10, 1.15, .75, 1.6); scene.add(tubeLight, tubeLight.target);
+  const roomFill = new THREE.PointLight(0xdce8ff, 0, 11, 1.6); scene.add(roomFill); // the tubes ahead light the room, so the steps and the floor show on the way down and up
   // a conduit along the wall under the ceiling, from piece to piece
   const pipeM = new THREE.MeshStandardMaterial({ color: 0x6f7377, metalness: .7, roughness: .45 });
   const pipe = (a, b, r = .022) => { const d = b.clone().sub(a), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 8), pipeM); m.position.copy(a).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); scene.add(m); return m; };
-  pipe(V(DX0 + .2, DY - .14, .06), V(DX1 - .2, DY - .14, .06));
-  // the last wall past the deck, lower, so the sky shows over it; the coping on top
-  const XW0 = DX1 - .3, XW1 = 96, XWT = G4 + 4.2;
-  { const w = XW1 - XW0, h = XWT - G4 + .6, m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), conc(w, h, XW0, G4 - .6, 0xc9ccd0)); m.position.set((XW0 + XW1) / 2, G4 - .6 + h / 2, 0); scene.add(m);
+  pipe(V(HX0 + .2, DY - .14, .06), V(CX1 - .2, DY - .14, .06));
+  // the last wall past the climb out, lower, so the sky shows over it; the coping on top
+  const XW0 = CX1 - .3, XW1 = END_X, XWT = G3 + 4.2;
+  { const w = XW1 - XW0, h = XWT - G3 + .6, m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), conc(w, h, XW0, G3 - .6, 0xc9ccd0)); m.position.set((XW0 + XW1) / 2, G3 - .6 + h / 2, 0); scene.add(m);
     const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, .5 / TILE), envMapIntensity: .3 })); cap.position.set((XW0 + XW1) / 2, XWT - .02, -.17); scene.add(cap); }
   // dawn: a sky that lightens from night, the city's roofs against it, a low warm light over the last wall
   const skyU = { uDawn: { value: 0 } };
   const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(220, 110), new THREE.ShaderMaterial({ uniforms: skyU, depthWrite: false, fog: false,
     vertexShader: "varying vec3 vP; void main(){ vP = (modelMatrix * vec4(position, 1.)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vP, 1.); }",
     fragmentShader: `varying vec3 vP; uniform float uDawn;
-      void main(){ float h = clamp((vP.y - ${(G4 + 1).toFixed(2)}) / 36., 0., 1.);
+      void main(){ float h = clamp((vP.y - ${(G3 + 1).toFixed(2)}) / 36., 0., 1.);
         vec3 night = mix(vec3(.012, .015, .026), vec3(.003, .004, .009), h);
         vec3 dawn = mix(mix(vec3(1.05, .46, .22), vec3(.5, .3, .45), smoothstep(.1, .4, h)), vec3(.05, .08, .19), smoothstep(.35, .95, h)); /* the warm band high enough to show over the last wall */
-        float sun = exp(-length((vP.xy - vec2(92., ${(G4 + 1.5).toFixed(2)})) * vec2(.05, .14)));
+        float sun = exp(-length((vP.xy - vec2(100., ${(G3 + 1.5).toFixed(2)})) * vec2(.05, .14)));
         dawn += vec3(1.4, .7, .32) * sun * .7;
         gl_FragColor = vec4(mix(night, dawn, uDawn), 1.); }` }));
-  skyMesh.position.set(95, G4 + 30, -80); scene.add(skyMesh);
+  skyMesh.position.set(103, G3 + 30, -80); scene.add(skyMesh);
   // the city against the sky: a hazy far row and a dark near row of roofs, a few windows still lit
   const roofs = (col, hMin, hMax, lit) => { const c = document.createElement("canvas"); c.width = 2048; c.height = 410; const g = c.getContext("2d"); let x = 0;
     while (x < c.width) { const w = 14 + Math.random() * 62, h = hMin + Math.pow(Math.random(), 1.6) * (hMax - hMin), y = c.height - h; g.fillStyle = col; g.fillRect(x, y, w, h);
@@ -1076,10 +1116,10 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       x += w + (Math.random() < .25 ? Math.random() * 20 : 0); }
     const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
   const cityFar = new THREE.Mesh(new THREE.PlaneGeometry(170, 34), new THREE.MeshBasicMaterial({ map: roofs("#3a3044", 60, 230, .01), transparent: true, depthWrite: false, fog: false }));
-  cityFar.position.set(95, G4 - 2 + 17, -70); scene.add(cityFar);
+  cityFar.position.set(103, G3 - 2 + 17, -70); scene.add(cityFar);
   const city = new THREE.Mesh(new THREE.PlaneGeometry(130, 26), new THREE.MeshBasicMaterial({ map: roofs("#0a0c11", 40, 300, .035), transparent: true, depthWrite: false, fog: false }));
-  city.position.set(95, G4 - 2 + 13, -40); scene.add(city);
-  const dawnL = new THREE.SpotLight(0xffc4a8, 0, 45, .65, .9, 1.1); dawnL.position.set(84, G4 + 9, 18); dawnL.target.position.set(68, G4 + 1, 0); scene.add(dawnL, dawnL.target);
+  city.position.set(103, G3 - 2 + 13, -40); scene.add(city);
+  const dawnL = new THREE.SpotLight(0xffc4a8, 0, 45, .65, .9, 1.1); dawnL.position.set(92, G3 + 9, 18); dawnL.target.position.set(76, G3 + 1, 0); scene.add(dawnL, dawnL.target);
   cityFar.material.color.setScalar(.6); const FOG0 = scene.fog.color.clone(), FOG1 = new THREE.Color(0x221c26), SKY0 = sky.color.clone(), SKYW = new THREE.Color(0xd69a86);
   // signs on this wall: drawn once, whole; each part shown by time from the left
   const speckle = (g, c) => { g.globalCompositeOperation = "destination-out"; for (let k = 0; k < c.width * c.height / 260; k++) { g.globalAlpha = .25 + Math.random() * .6; const r = Math.random() < .9 ? 1 : 2.5; g.fillRect(Math.random() * c.width, Math.random() * c.height, r, r); } g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; };
@@ -1112,15 +1152,15 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   function cabinet(x, y) { const cw = .62, ch = .84, g = THREE.RoundedBoxGeometry ? new THREE.RoundedBoxGeometry(cw, ch, .22, 3, .025) : new THREE.BoxGeometry(cw, ch, .22);
     const box = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: cabTex, metalness: .45, roughness: .55, envMapIntensity: .6 })); box.position.set(x, y, .115); scene.add(box);
     ledM.forEach((m, i) => { const l = new THREE.Mesh(new THREE.CircleGeometry(.011, 12), m); l.position.set(x + .2 - i * .045, y + ch / 2 - .09, .227); scene.add(l); });
-    pipe(V(x - .2, y + ch / 2, .06), V(x - .2, DY - .14, .06), .025); pipe(V(x + .15, y - ch / 2, .06), V(x + .15, G4, .06), .025); }
-  // EDGE (Tom 11-16, storyboard 6): client work stands apart from my own. Past the deck, in the open: a clean plastered wall, a lamp over it,
+    pipe(V(x - .2, y + ch / 2, .06), V(x - .2, DY - .14, .06), .025); pipe(V(x + .15, y - ch / 2, .06), V(x + .15, WF, .06), .025); }
+  // EDGE (Tom 11-16, storyboard 6): client work stands apart from my own. Up out of the workshop, in the open: a clean plastered wall, a lamp over it,
   // and one printed sheet pasted on it, "Delivered for EDGE Associates", the site, its two links. Printed, no spray, no pen tag.
-  const EDGE_X = 66, EDGE_W = NARROW ? 3.6 : 5.2, EDGE_H = 4;
+  const EDGE_X = 75, EDGE_W = NARROW ? 3.6 : 5.2, EDGE_H = 4;
   { const w = EDGE_W, h = EDGE_H, m = new THREE.Mesh(new THREE.BoxGeometry(w, h, .05), new THREE.MeshStandardMaterial({ color: 0x9c9a95, roughness: .78, envMapIntensity: .35,
       normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (EDGE_X - w / 2 + 21) / TILE, 0), normalScale: new THREE.Vector2(.12, .12) }));
-    m.position.set(EDGE_X, G4 + h / 2, .025); scene.add(m);
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(.05, .05, 1.1), fixM); arm.position.set(EDGE_X, G4 + h - .12, .55); const hood = new THREE.Mesh(new THREE.BoxGeometry(.7, .09, .22), fixM); hood.position.set(EDGE_X, G4 + h - .14, 1.1); hood.rotation.x = .35; scene.add(arm, hood); }
-  const edgeL = new THREE.SpotLight(0xfff0dc, 0, 12, 1.15, 1, 1.2); edgeL.position.set(EDGE_X, G4 + EDGE_H - .2, 1.15); edgeL.target.position.set(EDGE_X, G4 + 1.7, 0); scene.add(edgeL, edgeL.target);
+    m.position.set(EDGE_X, G3 + h / 2, .025); scene.add(m);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(.05, .05, 1.1), fixM); arm.position.set(EDGE_X, G3 + h - .12, .55); const hood = new THREE.Mesh(new THREE.BoxGeometry(.7, .09, .22), fixM); hood.position.set(EDGE_X, G3 + h - .14, 1.1); hood.rotation.x = .35; scene.add(arm, hood); }
+  const edgeL = new THREE.SpotLight(0xfff0dc, 0, 12, 1.15, 1, 1.2); edgeL.position.set(EDGE_X, G3 + EDGE_H - .2, 1.15); edgeL.target.position.set(EDGE_X, G3 + 1.7, 0); scene.add(edgeL, edgeL.target);
   const posterImg = new Image(); posterImg.src = "assets/edge_poster.jpg";
   // the sheet: hung from its top edge, so pasting it smooths it down the wall; wet glue shines, then dries
   function printSheet(cx, top, w) { const c = document.createElement("canvas"); c.width = 1200; c.height = 1130; const P = c.width / w, h = c.height / P;
@@ -1141,23 +1181,29 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     S.t.needsUpdate = true; }
   const HSV = __HAND_SERVER__, HTL = __HAND_TOOLS__, HASK = __HAND_ASK__, HSIG = __HAND_SIGN__;
   const GHUB = "https://github.com/tlxq/";
-  // where each one stands (laptop / phone): the three pieces, then the exit. key: the scroll (vh) where the camera has arrived; the camera stops in front.
-  const N_ = NARROW, U4 = [
-    { x: 41, key: 640, name: "Self-hosted platform", links: [], tagH: HSV, tag: N_ ? [41.3, G4 + .55, 1.9] : [42.1, G4 + 1.45, 2.1], board: N_ ? [39.9, G4 + 3.05, 2.4, .55, 300] : [40.25, G4 + 2.75, 3.4, .62, 400], o: { nameS: N_ ? .4 : .44 }, cab: N_ ? [41.7, G4 + 1.75] : [39.4, G4 + 1.35],
-      plate: "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool.<br>About ten services in Docker, running day and night; close to 300 pull requests<br>Built alone<br><span>TypeScript &middot; Next.js &middot; Hono &middot; SQLite &middot; Java &middot; Docker &middot; Caddy &middot; Tailscale</span>" },
-    { x: 48.5, key: 715, name: "ttoolbox", links: [{ t: "Code for ttoolbox", href: GHUB + "ttoolbox", gh: 1 }, { t: "Code for dot", href: GHUB + "dot", gh: 1 }], tagH: HTL, tag: N_ ? [48.5, G4 + .55, 1.9] : [50.6, G4 + .95, 1.8], board: N_ ? [47.35, G4 + 2.95, 2.4, 1.5, 300] : [46.3, G4 + 2.6, 3.6, 1.5, 400], o: { nameS: N_ ? .4 : .44, linkS: N_ ? .17 : .15, gap: N_ ? .12 : .08 },
-      plate: "<b>ttoolbox</b>Claude Code plugins and a CLI that keep my two PCs the same.<br>The dot CLI: 2,302 lines of Bash, 92 bats tests<br>Built and used daily by me<br><span>Claude Code &middot; Bash &middot; bats &middot; GNU Stow &middot; mise</span>" },
-    { x: 66, key: 790, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
-      print: N_ ? [66, G4 + 3.35, 2.5] : [66, G4 + 3.55, 3] /* the sheet: centre x, top, width */,
+  // where each one stands (laptop / phone): four tools in the workshop, EDGE, then the exit. key: the scroll (vh) where the camera has arrived,
+  // leave: where it starts to go on. The camera stops in front of each.
+  const N_ = NARROW, ROOM = [N_ ? [2.4, 300] : [3.6, 400], { nameS: N_ ? .4 : .44, linkS: N_ ? .17 : .15, gap: N_ ? .12 : .08 }];
+  const tool = (x, key, name, link, plate, more) => Object.assign({ x, key, leave: key + 25, floor: WF, name, links: link ? [{ t: "Code for " + link, href: GHUB + link, gh: 1 }] : [],
+    board: N_ ? [x - 1.15, WF + 2.75, ROOM[0][0], 1.1, ROOM[0][1]] : [x - 1.8, WF + 2.5, ROOM[0][0], 1.05, ROOM[0][1]], o: ROOM[1], plate }, more);
+  const U4 = [
+    tool(41, 700, "Self-hosted platform", null, "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool.<br>About ten services in Docker, running day and night; close to 300 pull requests<br>Built alone<br><span>TypeScript &middot; Next.js &middot; Hono &middot; SQLite &middot; Java &middot; Docker &middot; Caddy &middot; Tailscale</span>",
+      { tagH: HSV, tag: N_ ? [41.3, WF + .55, 1.9] : [42.1, WF + 1.45, 2.1], board: N_ ? [39.9, WF + 2.85, 2.4, .55, 300] : [40.25, WF + 2.6, 3.4, .62, 400], o: { nameS: N_ ? .4 : .44 }, cab: N_ ? [41.7, WF + 1.75] : [39.4, WF + 1.35] }),
+    tool(47.5, 770, "ttoolbox", "ttoolbox", "<b>ttoolbox</b>Claude Code plugin: skills and agents to plan, build, review and prove work the same careful way every time.<br>Built and used daily by me<br><span>Claude Code &middot; Python &middot; Bash</span>",
+      { tagH: HTL, tag: N_ ? [47.5, WF + .55, 1.9] : [49.6, WF + .95, 1.8] }),
+    tool(54, 840, "dot", "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC: dot push on one, dot pull on the other.<br>2,302 lines of Bash, 92 bats tests<br>Built and used daily by me<br><span>Bash &middot; bats &middot; GNU Stow &middot; mise</span>"),
+    tool(60.5, 910, "tthermal", "tthermal", "<b>tthermal</b>Omarchy bar plugin: keeps an Intel laptop under one temperature you choose, and shows CPU, GPU and fans on a desktop.<br>Built for my machines<br><span>JavaScript &middot; QML &middot; Shell</span>", { leave: 935 }),
+    { x: 75, key: 1045, leave: 1070, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
+      print: N_ ? [75, G3 + 3.35, 2.5] : [75, G3 + 3.55, 3] /* the sheet: centre x, top, width */,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base.<br>51 pull requests, from the first sketch to live<br>Work project, built alone<br><span>Astro &middot; TypeScript</span>" },
-    { x: 75, key: 880, exit: 1, name: null, links: [{ t: "Write to me", href: "https://ttdevs.com/#write" }, { t: "GitHub", href: GHUB.slice(0, -1) }, { t: "LinkedIn", href: "https://linkedin.com/in/tlxq" }],
-      tagH: HASK, tag: N_ ? [74.25, G4 + 2.15, 1.05] : [76.6, G4 + 2.75, 1.3], board: N_ ? [74.85, G4 + 2.45, 1.75, 1.35, 300] : [77.1, G4 + 2.2, 2.4, 1.25, 400], o: { linkS: N_ ? .19 : .17, gap: N_ ? .1 : .08 }, sig: N_ ? [75, G4 + 3.35, 2.5] : [73.4, G4 + 2.6, 3.4] } ];
+    { x: 84, key: 1135, exit: 1, floor: G3, name: null, links: [{ t: "Write to me", href: "https://ttdevs.com/#write" }, { t: "GitHub", href: GHUB.slice(0, -1) }, { t: "LinkedIn", href: "https://linkedin.com/in/tlxq" }],
+      tagH: HASK, tag: N_ ? [83.25, G3 + 2.15, 1.05] : [85.6, G3 + 2.75, 1.3], board: N_ ? [83.85, G3 + 2.45, 1.75, 1.35, 300] : [86.1, G3 + 2.2, 2.4, 1.25, 400], o: { linkS: N_ ? .19 : .17, gap: N_ ? .1 : .08 }, sig: N_ ? [84, G3 + 3.35, 2.5] : [82.4, G3 + 2.6, 3.4] } ];
   U4.forEach((u, i) => { if (u.tagH) u.T = tag4(u.tagH, u.tag[0], u.tag[1], u.tag[2], u.exit ? .9 : 1.1); if (u.board) u.B = board(...u.board); if (u.print) u.P = printSheet(...u.print);
     if (u.sig) u.S = tag4(HSIG, u.sig[0], u.sig[1], u.sig[2], 1.3); if (u.cab) cabinet(...u.cab); u.start = 0;
     u.hots = u.links.map((l, j) => { const a = document.createElement("a"); a.className = "hot"; a.href = l.href; a.target = "_blank"; a.rel = "noopener"; a.setAttribute("aria-label", l.t); a.tabIndex = -1; a.style.display = "none"; document.querySelector(".hud").append(a); return a; });
     if (u.plate) { const el = document.createElement("div"); el.className = "tag facts"; el.innerHTML = u.plate; document.querySelector(".hud").append(el); u.el = el;
       svg.insertAdjacentHTML("beforeend", `<line id="lu${i}"/><circle id="cu${i}" r="4"/>`); u.l = svg.querySelector("#lu" + i); u.c = svg.querySelector("#cu" + i); } });
-  document.querySelector(".hud").insertAdjacentHTML("beforeend", '<p class="head">Self-hosted platform: my own server with web apps, a TV app and a job tool. ttoolbox: Claude Code plugins and a CLI that keep my two PCs the same. app-utveckling.se: two landing pages for EDGE Associates. Ask me: write to me, GitHub, LinkedIn.</p>');
+  document.querySelector(".hud").insertAdjacentHTML("beforeend", '<p class="head">Self-hosted platform: my own server with web apps, a TV app and a job tool. ttoolbox: a Claude Code plugin to plan, build, review and prove work. dot: keeps one dotfiles repo the same on every Linux PC. tthermal: an Omarchy bar plugin that keeps an Intel laptop under a temperature you choose. app-utveckling.se: two landing pages for EDGE Associates. Ask me: write to me, GitHub, LinkedIn.</p>');
   let endDrawn = false;
   function drawEnd() { const F = '40px "Saira Stencil One"', F2 = '600 40px "Clash Display"'; if (!document.fonts.check(F) || !document.fonts.check(F2) || !(posterImg.naturalWidth > 0)) { document.fonts.load(F); document.fonts.load(F2); return; }
     U4.forEach(u => { if (u.P) drawPrint(u.P, u.links); else drawBoard(u.B, u.name, u.links, u.o); }); endDrawn = true; }
@@ -1166,21 +1212,26 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       if (bx > 0 && ax < innerWidth && by > 0 && ay < innerHeight) { const h = Math.max(48, by - ay), w = Math.max(48, bx - ax + 8), cy = (ay + by) / 2;
         Object.assign(el.style, { display: "block", left: ax - 4 + "px", top: cy - h / 2 + "px", width: w + "px", height: h + "px" }); el.tabIndex = 0; return; } }
     el.style.display = "none"; el.tabIndex = -1; }
-  // the camera's way: off the street, down the stairs, under the deck, a stop in front of each piece, out into the dawn, a step back
-  const KEYS = NARROW
-    ? [[548, 612, V(31.8, G3 + 2, 11), V(33, G3 + .2, 0)], [590, 640, V(41, G4 + 1.55, 7), V(41, G4 + 1.55, 0)], [665, 715, V(48.5, G4 + 1.55, 7), V(48.5, G4 + 1.55, 0)],
-       [740, 790, V(66, G4 + 1.9, 8.4), V(66, G4 + 1.9, 0)], [815, 880, V(75, G4 + 2.3, 8.6), V(75, G4 + 2.4, 0)], [900, 930, V(75, G4 + 3.1, 12.5), V(75, G4 + 3.3, 0)]]
-    : [[548, 612, V(31.5, G3 + 1.9, 9.6), V(32.8, G3 + .3, 0)], [590, 640, V(41.1, G4 + 1.3, 7.6), V(41, G4 + 1.75, 0)], [665, 715, V(48.6, G4 + 1.3, 7.6), V(48.5, G4 + 1.75, 0)],
-       [740, 790, V(66.1, G4 + 1.7, 9.2), V(66, G4 + 2, 0)], [815, 880, V(75.1, G4 + 2.1, 9.6), V(75, G4 + 2.5, 0)], [900, 930, V(75.6, G4 + 3, 14), V(75.6, G4 + 3.5, 0)]];
+  // the camera's way: over the cover, straight down the shaft, back into the room and a stop in front of each tool, under the far shaft,
+  // straight up it, out to EDGE, on to the exit, a step back. In a shaft it stays on its centre line, so it never touches the concrete.
+  const stop = (x, y, z, ly) => [V(x + .1, y, z), V(x, ly, 0)];
+  const KEYS = [[548, 590, V(MX_IN - 1.7, G3 + 2.1, MZ + 1.6), V(MX_IN + .1, G3, MZ)], [590, 615, V(MX_IN, G3 + 1.3, MZ), V(MX_IN + .35, G3 - 3, MZ)],
+    [615, 655, V(MX_IN, WF + 1.6, MZ), V(MX_IN + 4, WF + 1.1, MZ + 1)],
+    ...U4.slice(0, 4).map((u, i) => [i ? u.key - 45 : 665, u.key, ...(N_ ? stop(u.x, WF + 1.55, 7, WF + 1.55) : stop(u.x, WF + 1.3, 7.6, WF + 1.75))]),
+    [935, 960, V(MX_OUT, WF + 1.6, MZ), V(MX_OUT + .35, WF + 6, MZ)], [960, 995, V(MX_OUT, G3 + 1.5, MZ), V(MX_OUT + 1.3, G3, MZ + .2)] /* up, then a look at the cover you pushed aside */,
+    [995, 1045, ...(N_ ? stop(75, G3 + 1.9, 8.4, G3 + 1.9) : stop(75, G3 + 1.7, 9.2, G3 + 2))], [1070, 1135, ...(N_ ? stop(84, G3 + 2.3, 8.6, G3 + 2.4) : stop(84, G3 + 2.1, 9.6, G3 + 2.5))],
+    [1155, SV_END, ...(N_ ? stop(84, G3 + 3.1, 12.5, G3 + 3.3) : [V(84.6, G3 + 3, 14), V(84.6, G3 + 3.5, 0)])]];
+  const inShaft = p => (1 - sm(cl((Math.min(Math.hypot(p.x - MX_IN, p.z - MZ), Math.hypot(p.x - MX_OUT, p.z - MZ)) - .3) / 1.2))) * (1 - sm(cl((p.y - G3 - 1) / 1.2))); // 1 in a shaft, 0 away from it: the hand sway fades out as you near one
   function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cx) {
-    const under = sm(cl((cx - DX0 + .5) / 2.5)) * (1 - sm(cl((cx - DX1 + .5) / 3))), dawn = sm(cl((sv - 805) / 75));
-    tubeLight.intensity = 5.5 * under; edgeL.intensity = 6.5 * (1 - sm(cl((Math.abs(cx - EDGE_X) - 2) / 6))); tubeLight.position.set(cx, DY - .1, 1.6); tubeLight.target.position.set(cx, G4 + .9, 0);
+    const under = sm(cl((cx - HX0 - .5) / 1.5)) * (1 - sm(cl((cx - CX1 + 1) / 2))), dawn = sm(cl((sv - 1060) / 75));
+    tubeLight.intensity = 5.5 * under; roomFill.intensity = 6 * under; roomFill.position.set(cx + 2.5, DY - .25, 5.5); edgeL.intensity = 6.5 * (1 - sm(cl((Math.abs(cx - EDGE_X) - 2) / 6))); tubeLight.position.set(cx, DY - .1, 1.6); tubeLight.target.position.set(cx, WF + .9, 0);
     tubeBad.emissiveIntensity = Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4;
     skyU.uDawn.value = dawn; cityFar.material.color.setScalar(.25 + .75 * dawn); dawnL.intensity = 3.2 * dawn; lens.uniforms.uAper.value *= 1 - .85 * dawn; /* far roofs stay sharp at the exit */ scene.fog.color.copy(FOG0).lerp(FOG1, dawn); sky.intensity = sky.intensity * (1 - .55 * under) + .3 * dawn; sky.color.copy(SKY0).lerp(SKYW, dawn * .6);
+    coversAt(now, sv);
     if (!endDrawn && sv > 540) drawEnd(); /* reduced motion skips the bucket's wait, where they are drawn otherwise */
     if (!endDrawn) return;
-    U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && (u.exit || sv < KEYS[i + 2][0] + 15);
+    U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && (u.exit || sv < u.leave + 15);
       if (introOver && sv > u.key - 14 && !u.start) u.start = now; // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1;
       if (u.T) u.T.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1; if (u.S) u.S.path.uE.value = sec < 0 ? -1 : REDUCED ? 1e3 : sec - .1;
@@ -1191,7 +1242,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
       const lb = u.P || u.B;
       u.hots.forEach((h, j) => placeHot(h, lb, u.links[j].box, shown && endDrawn && near && here));
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + (u.P ? PASTE : u.B.end); [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0);
-        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, G4 + .05, .3) : u.cab ? V(u.cab[0] - .25, u.cab[1] - .42, .2) : u.P ? V(u.print[0] - u.print[2] * .42, u.print[1] - u.P.h + .15, .06) : V(u.board[0] + .3, u.board[1] - u.board[3] + .1, 0), NARROW ? 10 : -20, NARROW ? 40 : 70); } // phone: on the floor below the wall, where nothing is sprayed
+        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, .3) : u.cab ? V(u.cab[0] - .25, u.cab[1] - .42, .2) : u.P ? V(u.print[0] - u.print[2] * .42, u.print[1] - u.P.h + .15, .06) : V(u.board[0] + .3, u.board[1] - u.board[3] + .1, 0), NARROW ? 10 : -20, NARROW ? 40 : 70); } // phone: on the floor below the wall, where nothing is sprayed
       if (u.cab) { ledM[0].emissiveIntensity = sec > .2 ? 3 : 0; /* the box powers up as you arrive: steady, network, now and then */ ledM[1].emissiveIntensity = sec > .45 && Math.sin(now / 90) + Math.sin(now / 37) > .3 ? 3 : 0; ledM[2].emissiveIntensity = sec > .7 && Math.sin(now / 900) > .85 ? 2.5 : 0; } }); }
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
@@ -1216,7 +1267,7 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
   renderer.setAnimationLoop(now => {
     const raw = now - last, dt = Math.min(.05, raw / 1000); last = now; const t = now - t0 - START;
     autoRes(raw);
-    const H2 = document.documentElement.scrollHeight - innerHeight, sv = H2 > 0 ? cl(scrollY / H2) * 930 : 0, pAll = cl(sv / 540), p = cl(sv / 320); // sv: the scroll in vh (the page is 1030vh); the first three scenes keep the scroll they had
+    const H2 = document.documentElement.scrollHeight - innerHeight, sv = H2 > 0 ? cl(scrollY / H2) * SV_END : 0, pAll = cl(sv / 540), p = cl(sv / 320); // sv: the scroll in vh (the page is SV_END + 100 vh); the first three scenes keep the scroll they had
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
     // scroll moves the camera only: step back (0-.12), walk right to the second wall (.18-.38), step back to look (.75-.95).
     // The stencils play by themselves from the moment the wall is reached, and keep going if the visitor scrolls on (Tom 11-16)
@@ -1284,10 +1335,10 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
     cmx += (mx - cmx) * .04; cmy += (my - cmy) * .04;
     const drift = now / 1000, sway = stencilOn && Lf < NL ? Math.sin(Lf * 1.3) : 0;
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
-    endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x);
+    endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp);
     cp.x += sway * (NARROW ? .5 : 1.1); cp.z -= stencilOn && Lf < NL ? Math.sin(Math.PI * q) * .5 : 0;
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
-    camera.position.set(cp.x + cmx * .5 + Math.sin(drift * .31) * .06, cp.y - cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
+    const hand = 1 - inShaft(cp); camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
     camera.lookAt(cl_);
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
