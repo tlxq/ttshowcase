@@ -106,7 +106,9 @@ test("bad tags are refused with the field that is wrong", () => {
 });
 
 test("hidden characters are taken out of the name", () => {
-  const t = readTag(tag({ name: " Ho‮ll\u0000y " }));
+  const t = readTag(
+    tag({ name: ` Kas${String.fromCodePoint(0x202e)}pe${String.fromCodePoint(0)}r ` }),
+  );
   assert.ok(!("error" in t));
   assert.equal(t.name, "Kasper");
 });
