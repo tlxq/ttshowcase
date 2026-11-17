@@ -62,5 +62,5 @@ test("a key with symbols (Pass makes them) works through the link and the cookie
   const g = gate(u("/next?key=" + encodeURIComponent(k)), null, k);
   assert.equal(g.kind, "redirect");
   if (g.kind !== "redirect") return;
-  assert.deepEqual(gate(u("/next"), g.setCookie.split(";")[0], k), { kind: "pass" });
+  assert.deepEqual(gate(u("/next"), g.setCookie.split(";")[0] ?? null, k), { kind: "pass" });
 });
