@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import {
   handlers,
   overlaps,
@@ -9,6 +10,7 @@ import {
   signed,
   PER_ADDRESS,
   MOST_WAITING,
+  REVIEW_CSS,
   type Deps,
   type Status,
 } from "../../api/tags.ts";
@@ -257,4 +259,15 @@ test("not set up: every call says so instead of failing", async () => {
   const api = handlers(() => null);
   assert.equal((await api.GET(at("/api/tags"))).status, 503);
   assert.equal((await api.POST(send(tag()))).status, 503);
+});
+
+test("the review page takes every colour from tokens.css", async () => {
+  const { api, mails } = world();
+  await api.POST(send(tag()));
+  const html = await (await api.GET(at(reviewLink(mails[0]!.text)))).text();
+  const tokens = readFileSync("src/design/tokens.css", "utf8");
+  assert.ok(html.includes(tokens), "the token file is on the page");
+  const own = html.replace(tokens, "").replace("#e8452c", ""); // the tag's own paint colour is data
+  assert.deepEqual(own.match(/#[0-9a-f]{3,8}\b|rgba?\(/gi), null, "no colour of its own");
+  assert.equal(/\d+px/.test(REVIEW_CSS), false, "no sizes of its own");
 });

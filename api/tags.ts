@@ -17,6 +17,8 @@
  */
 import { neon } from "@neondatabase/serverless";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 /** Tags one address may send in a day: a family or an office on one Wi-Fi still fits, a robot doesn't. */
 export const PER_ADDRESS = 5;
@@ -229,14 +231,27 @@ const esc = (s: string) =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
   );
 
+/** The site's one token file, put on the review page as is; the page's own rules only use its values.
+ * vercel.json ships the file with this function. */
+let tokens: string | undefined;
+const tokenCss = () =>
+  (tokens ??= readFileSync(join(process.cwd(), "src/design/tokens.css"), "utf8"));
+
+/** The review page's look, built only from tokens.css. */
+export const REVIEW_CSS =
+  "body{font:var(--look-reading)/1.5 sans-serif;margin:0 auto;max-width:var(--look-form);" +
+  "padding:var(--s3) var(--gutter);background:var(--look-ground);color:var(--look-text)}" +
+  "h1{margin:0 0 var(--s1)}.quiet{color:var(--look-quiet)}" +
+  "canvas{display:block;width:100%;margin-top:var(--s2);background:var(--wall-bone)}form{display:inline}" +
+  "button{font:inherit;min-height:var(--tap);padding:0 var(--s3);margin:var(--s2) var(--s1) 0 0;cursor:pointer;" +
+  "background:none;color:var(--look-text);border:thin solid var(--look-rule)}" +
+  ".ok{background:var(--look-spray);border-color:var(--look-spray);color:var(--look-dark)}";
+
 function page(title: string, body: string, status = 200): Response {
   return new Response(
     `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
       `<meta name="robots" content="noindex"><title>${esc(title)}</title>` +
-      `<style>body{font:16px/1.5 system-ui,sans-serif;margin:0 auto;max-width:640px;padding:16px;background:#111;color:#eee}` +
-      `canvas{width:100%;background:#d8d2c4;border-radius:8px}form{display:inline}` +
-      `button{font:inherit;min-height:44px;padding:0 20px;margin:12px 8px 0 0;border:0;border-radius:8px;cursor:pointer}` +
-      `.ok{background:#3c7;color:#000}.no{background:#c33;color:#fff}</style>${body}</html>`,
+      `<style>${tokenCss()}</style><style>${REVIEW_CSS}</style><body class="lk">${body}</body></html>`,
     {
       status,
       headers: {
@@ -262,10 +277,10 @@ async function reviewPage(d: Deps, id: string, sig: string | null): Promise<Resp
   const draw = JSON.stringify({ strokes: tag.strokes, color: tag.color }).replace(/</g, "\\u003c");
   return page(
     `Tag from ${tag.name || "no name"}`,
-    `<h1>${esc(tag.name || "No name")}</h1><p>${now} · sent ${esc(new Date(tag.created_at).toUTCString())}</p>` +
+    `<h1>${esc(tag.name || "No name")}</h1><p class="quiet">${now} · sent ${esc(new Date(tag.created_at).toUTCString())}</p>` +
       `<canvas width="1200" height="600"></canvas>` +
       (tag.status === "waiting" ? action("approve", "Approve", "ok") : "") +
-      action("remove", "Remove", "no") +
+      action("remove", "Remove", "") +
       `<script>(()=>{const t=${draw},c=document.querySelector("canvas"),g=c.getContext("2d");` +
       `let a=1/0,b=1/0,e=-1/0,f=-1/0;for(const s of t.strokes)for(let i=0;i<s.length;i+=4){a=Math.min(a,s[i]);b=Math.min(b,s[i+1]);e=Math.max(e,s[i]);f=Math.max(f,s[i+1])}` +
       `const k=Math.min((c.width-80)/Math.max(e-a,1),(c.height-80)/Math.max(f-b,1)),ox=(c.width-(e-a)*k)/2,oy=(c.height-(f-b)*k)/2;` +

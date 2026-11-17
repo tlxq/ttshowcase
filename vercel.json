@@ -4,6 +4,11 @@
   "buildCommand": "npm run build",
   "outputDirectory": "out",
   "cleanUrls": true,
+  "functions": {
+    "api/tags.ts": {
+      "includeFiles": "src/design/tokens.css"
+    }
+  },
   "headers": [
     {
       "source": "/next(.*)",
