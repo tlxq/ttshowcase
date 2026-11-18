@@ -80,7 +80,7 @@ run = "tools/pitch/run.sh"
 [tasks.check]
 description = "The whole check (GitHub runs it on every PR): typecheck, lint, unit tests, build, /next closed without its key, no high/critical holes in shipped packages"
 depends = ["install"]
-run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts'", "npm run lint", "npm run build", "tools/next-check.sh", "tools/osv-gate"]
+run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts'", "npm run lint", "npm run build", "tools/next-check.sh", "tools/fn-check.sh", "tools/osv-gate"]
 
 [tasks.next]
 description = "Open the new site behind its secret link: live (default) or dev (this PC's Tailscale dev server); --print prints it for the phone"
