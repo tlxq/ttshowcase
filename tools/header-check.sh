@@ -16,8 +16,11 @@ for _ in $(seq 1 50); do curl -fs "$base/" >/dev/null 2>&1 && break; sleep 0.1; 
 
 fail=0
 no() { echo "header-check: $*" >&2; fail=1; }
-for p in / /admin /no-such-page; do
-  h=$(curl -sI "$base$p" | tr -d '\r')
+jar=$(mktemp)
+trap 'kill "$server" 2>/dev/null; rm -f "$jar"' EXIT
+curl -s -o /dev/null -c "$jar" "$base/next?key=$key"
+for p in / /admin /no-such-page /next; do
+  h=$(curl -sI -b "$jar" "$base$p" | tr -d '\r')
   csp=$(grep -i '^content-security-policy:' <<<"$h" || true)
   [ -n "$csp" ] || { no "$p has no Content-Security-Policy"; continue; }
   for want in "frame-ancestors 'none'" "object-src 'none'" "base-uri 'self'" "default-src 'self'"; do
@@ -39,6 +42,8 @@ named = set(re.findall(r"'(sha256-[^']+)'", rule.group(1)))
 inline = {"sha256-" + base64.b64encode(hashlib.sha256(s.encode()).digest()).decode() for s in re.findall(r"<script>([\s\S]*?)</script>", page)}
 if not inline or named != inline:
     sys.exit("header-check: /next's script rule doesn't match its inline scripts (tools/pitch/build.mjs)")
+if "url(data:font" in page and not re.search(r"font-src [^;]*data:", open("vercel.json", encoding="utf-8").read()):
+    sys.exit("header-check: /next embeds its fonts as data:, but the site's font-src doesn't allow data: (vercel.json)")
 if "'unsafe-inline'" in rule.group(1) or "'unsafe-eval'" in rule.group(1):
     sys.exit("header-check: /next's script rule allows any inline script")
 PY

@@ -24,8 +24,14 @@ TAGS_PORT = int(os.environ.get("TAGS_PORT") or 0)
 
 # vercel.json's header blocks; a block that depends on the host ("has"/"missing") is Vercel's own and left out here
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "vercel.json"), encoding="utf-8") as f:
-    HEADER_BLOCKS = [(re.compile(b["source"]), b["headers"]) for b in json.load(f).get("headers", [])
+    HEADER_BLOCKS = [(b["source"], b["headers"]) for b in json.load(f).get("headers", [])
                      if "has" not in b and "missing" not in b]
+# Only plain paths and a "(.*)" end mean the same here as in Vercel's path-to-regexp; anything else stops the server
+# instead of quietly matching something else.
+for source, _ in HEADER_BLOCKS:
+    if not re.fullmatch(r"/[A-Za-z0-9/_-]*(\(\.\*\))?", source):
+        sys.exit(f"serve.py: vercel.json header source {source} isn't a plain path or path(.*): teach serve.py how Vercel reads it")
+HEADER_BLOCKS = [(re.compile(re.escape(s.removesuffix("(.*)")) + (".*" if s.endswith("(.*)") else "")), h) for s, h in HEADER_BLOCKS]
 
 
 def clean(path):
