@@ -20,11 +20,11 @@ const SECRET = "x".repeat(40);
 /** The handlers on an in-memory table and a mail box that keeps what was sent. */
 function world(mailWorks = true) {
   const mails: { subject: string; text: string }[] = [];
-  const { rows, deps } = memoryDeps(SECRET, async (subject, text) => {
+  const { rows, sends, deps } = memoryDeps(SECRET, async (subject, text) => {
     mails.push({ subject, text });
     return mailWorks;
   });
-  return { rows, mails, api: handlers(() => deps) };
+  return { rows, sends, mails, api: handlers(() => deps) };
 }
 
 let devices = 0;
@@ -265,6 +265,45 @@ test("no mail = no tag kept, so the visitor can send again", async () => {
   const { api, rows } = world(false);
   assert.equal((await api.POST(send(tag()))).status, 502);
   assert.equal(rows.length, 0);
+});
+
+test("a failed mail doesn't use up the address's quota", async () => {
+  const { api, sends } = world(false);
+  for (let i = 0; i < PER_ADDRESS + 2; i++)
+    assert.equal((await api.POST(send(tag()))).status, 502, "retried again and again, still 502");
+  assert.equal(sends.length, 0);
+});
+
+test("a store that throws answers 500 store and logs why", async () => {
+  const { deps } = memoryDeps(SECRET, async () => true);
+  deps.db.insert = async () => {
+    throw Object.assign(new Error('null value in column "pen"'), { code: "23502" });
+  };
+  const api = handlers(() => deps);
+  const logged: unknown[][] = [];
+  const was = console.error;
+  console.error = (...a: unknown[]) => void logged.push(a);
+  try {
+    const r = await api.POST(send(tag()));
+    assert.equal(r.status, 500);
+    assert.deepEqual(await r.json(), { error: "store" });
+  } finally {
+    console.error = was;
+  }
+  assert.ok(JSON.stringify(logged).includes("23502") && JSON.stringify(logged).includes("pen"));
+});
+
+test("a tag holds at most dripsTotal drips, over all its strokes", () => {
+  const dr = (n: number) => Array.from({ length: n }, () => [0, 300, 0]);
+  const per = TAG_LIMITS.drips;
+  const strokes = (n: number) =>
+    Array.from({ length: Math.ceil(n / per) }, (_, i) =>
+      stroke({ dr: dr(Math.min(per, n - i * per)) }),
+    );
+  assert.ok(!("error" in readTag(tag({ strokes: strokes(TAG_LIMITS.dripsTotal) }))));
+  assert.deepEqual(readTag(tag({ strokes: strokes(TAG_LIMITS.dripsTotal + 1) })), {
+    error: "strokes",
+  });
 });
 
 test("not set up: every call says so instead of failing", async () => {

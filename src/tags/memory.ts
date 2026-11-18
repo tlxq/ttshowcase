@@ -36,6 +36,10 @@ export function memoryDeps(secret: string, mail: Deps["mail"]) {
         rows.push({ ...t, id, created_at: new Date().toISOString(), status: "waiting" });
         return id;
       },
+      async refund(ipHash) {
+        const i = sends.lastIndexOf(ipHash);
+        if (i >= 0) sends.splice(i, 1);
+      },
       async drop(id) {
         const i = rows.findIndex((r) => r.id === id);
         if (i >= 0) rows.splice(i, 1);

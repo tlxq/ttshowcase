@@ -35,6 +35,10 @@ run = "tools/dev.sh"
 description = "The writing page: Tom writes the site's words with the S Pen on the phone; each is saved into src/content/hand (port from PORT, default 3011)"
 run = "tools/write/write.sh"
 
+[tasks."tags:sql"]
+description = "Run tools/tags/schema.sql (or a .sql file you name) against the live tag store; safe to run again"
+run = "tools/tags/sql.sh"
+
 [tasks.tags]
 description = "Make the site's words as graffiti tags (tools/write/tag.mjs) into src/content/hand; name words to make only those, e.g. mise run tags Lab"
 run = "node tools/write/tag.mjs"

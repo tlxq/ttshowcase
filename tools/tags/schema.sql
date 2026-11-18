@@ -1,10 +1,10 @@
--- The visitor wall's tags (api/tags.ts). Paste into Neon's SQL editor (ttshowcase-tags); safe to run again.
+-- The visitor wall's tags (api/tags.ts). Run it with `mise run tags:sql` (or paste it into Neon's SQL editor, ttshowcase-tags); safe to run again.
 -- A removed tag is deleted, not kept: its spot is free and its device may tag again.
 --
 -- Moving to strokes that keep their own tool and colour (PR7) takes two runs, in this order:
---   1. Run this whole file now, BEFORE the deploy. It makes the old columns pen and color optional, so the old
+--   1. Run this whole file now (`mise run tags:sql`), BEFORE the deploy. It makes the old columns pen and color optional, so the old
 --      code (which still writes them) and the new code (which doesn't) both work.
---   2. Deploy. When the new code is live, run step 2 at the bottom (remove the two dashes in front of it).
+--   2. Deploy. When the new code is live, run step 2 at the bottom: remove the two dashes in front of it and run `mise run tags:sql` again.
 -- A table made new from this file never has pen or color, and step 1 skips what isn't there.
 create table if not exists tags (
   id          uuid primary key default gen_random_uuid(),

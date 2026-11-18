@@ -87,7 +87,14 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
         if path != "/api/tags" and self.client_address[0] not in ("127.0.0.1", "::1"):
             self.send_error(404)  # the checks' doors are for this PC only
             return True
-        size = int(self.headers.get("Content-Length") or 0)
+        # the loopback check above trusts the TCP peer: this server must never sit behind a local proxy (tailscale serve would make every peer look like loopback)
+        try:
+            size = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            size = -1
+        if size < 0 or size > 1_000_000:
+            self.send_error(413 if size > 0 else 400)
+            return True
         body = self.rfile.read(size) if size else None
         headers = {"Content-Type": self.headers.get("Content-Type", "application/json"),
                    "X-Forwarded-For": self.client_address[0], "Host": self.headers.get("Host", "")}

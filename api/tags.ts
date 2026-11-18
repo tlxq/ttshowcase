@@ -35,6 +35,7 @@ export const TAG_LIMITS = {
   strokes: 80,
   points: 4000,
   drips: 200,
+  dripsTotal: 400, // a whole tag: real drawing makes a few to a few dozen
   dripMm: 1000,
   dripSide: 50,
   name: 24,
@@ -68,6 +69,8 @@ export type Deps = {
     held(): Promise<Spot[]>;
     /** The new tag's id, or null when this device already has one (two sends at the same moment). */
     insert(tag: NewTag & { device: string; ip_hash: string }): Promise<string | null>;
+    /** Takes back the address's latest send: the tag never reached Tom (the mail failed), so it must not use up the day's quota. */
+    refund(ipHash: string): Promise<void>;
     drop(id: string): Promise<void>;
     get(id: string): Promise<(Tag & { status: Status }) | null>;
     approve(id: string): Promise<void>;
@@ -113,7 +116,8 @@ export function readStrokes(raw: unknown): Stroke[] | null {
   const L = TAG_LIMITS;
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > L.strokes) return null;
   const strokes: Stroke[] = [];
-  let points = 0;
+  let points = 0,
+    dripsAll = 0;
   for (const s of raw as Record<string, unknown>[]) {
     if (!s || typeof s !== "object") return null;
     if (typeof s.tool !== "string" || !L.tools.includes(s.tool)) return null;
@@ -144,6 +148,8 @@ export function readStrokes(raw: unknown): Stroke[] | null {
     const dr: number[][] = [];
     if (s.dr !== undefined) {
       if (!Array.isArray(s.dr) || s.dr.length > L.drips) return null;
+      dripsAll += s.dr.length;
+      if (dripsAll > L.dripsTotal) return null;
       for (const d of s.dr) {
         if (!Array.isArray(d) || d.length !== 3) return null;
         if (!whole(d[0], 0, pts.length - 1) || (d[0] as number) % 4) return null;
@@ -220,6 +226,17 @@ export function handlers(deps: () => Deps | null) {
   }
 
   async function POST(request: Request): Promise<Response> {
+    try {
+      return await post(request);
+    } catch (e) {
+      // e.g. the table still has the old NOT NULL columns (tools/tags/schema.sql step 1 not run): say so in the log, not just a bare 500
+      const err = e as { code?: string; message?: string };
+      console.error("tags: store failed", err.code, err.message);
+      return json({ error: "store" }, 500);
+    }
+  }
+
+  async function post(request: Request): Promise<Response> {
     const d = deps();
     if (!d) return json({ error: "not-set-up" }, 503);
     const url = new URL(request.url);
@@ -253,6 +270,7 @@ export function handlers(deps: () => Deps | null) {
     );
     if (!sent) {
       await d.db.drop(id);
+      await d.db.refund(ipHash);
       return json({ error: "mail-service" }, 502);
     }
     return json({ id });
@@ -394,6 +412,9 @@ function liveDeps(): Deps | null {
           throw e;
         }
         return r![0]!.id as string;
+      },
+      async refund(ipHash) {
+        await sql`delete from sends where ctid = (select ctid from sends where ip_hash = ${ipHash} order by at desc limit 1)`;
       },
       async drop(id) {
         await sql`delete from tags where id = ${id}`;
