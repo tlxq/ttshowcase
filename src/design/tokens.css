@@ -67,11 +67,16 @@
   /* Room after the last part, so what is at its foot can still reach the pen's tip */
   --look-tail: 45svh;
   --look-mark: 32px;
-  --look-label: 12px;
+  /* Small text's floor (Tom OK'd 11-18): labels are 13 px on a laptop and 14 px on a phone; nothing is smaller */
+  --look-label: 13px;
+  --look-label-phone: 14px;
+  /* The one plate every label, form, tag bar and menu sits on, and the colour of a spot that stays clear */
+  --look-plate: rgb(10 10 10 / 0.9);
+  --look-plate-edge: rgb(240 236 226 / 0.16);
+  --look-ask: #f1c25a;
   /* The mail form in Questions: its width and its key column (Tom OK'd 11-15) */
   --look-form: 64ch;
   --look-form-key: 8ch;
-  --look-small: 11px;
   --look-reading: clamp(13px, 1vw, 15px);
   /* The one line through the page: how thick, and its spray haze */
   --look-line: 3.5px;
