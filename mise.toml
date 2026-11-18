@@ -58,8 +58,7 @@ run = "tools/previews.sh"
 
 [tasks.walk]
 description = "Build, serve on localhost and walk the page in a headless browser; name one walk to run only that, e.g. mise run walk fill-phone"
-depends = ["build"]
-run = "tools/walk/run.sh"
+run = "tools/passes/build-first.sh walk build tools/walk/run.sh"
 
 [tasks.pictures]
 description = "Pictures of every part of the page and the 404 at 1440x900 and 390x844, at rest. On master they become the baseline (in .cache, never in git); on a branch they are compared with it and a before/after page is written. Options after --: --baseline saves this run as the baseline, --compare-only writes the page again from the last run"
@@ -78,8 +77,7 @@ run = "PORT=${PORT:-8124} SERVE_DIR=.cache/pitch SERVE_PAGE=paint.html SERVE_BUI
 
 [tasks."pitch:check"]
 description = "Build the paint pitch and walk it at 1440 x 900 and on a phone: the whole walk, the waits, paints once, reduced motion, text contrast; name one check to run only that, e.g. mise run pitch:check contrast-phone"
-depends = ["pitch:build"]
-run = "tools/pitch/run.sh"
+run = "tools/passes/build-first.sh pitch pitch:build tools/pitch/run.sh"
 
 [tasks.check]
 description = "The whole check (GitHub runs it on every PR): typecheck, lint, unit tests, build, /next closed without its key, no high/critical holes in shipped packages. Skipped when it already passed on this commit; --force runs it anyway"
