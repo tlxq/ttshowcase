@@ -26,7 +26,9 @@ done
 
 failed=0
 ran=0
+names=""
 walk() { # name, script, then "desktop" or "phone"
+  names="$names $1"
   [ -z "$only" ] || [ "$only" = "$1" ] || return 0
   ran=1
   local s="walk-$1" result script=".cache/walk/$2"
@@ -64,6 +66,6 @@ walk wall-phone wall.js phone
 walk a11y-desktop a11y.js desktop
 walk a11y-phone a11y.js phone
 walk speed-look speed.js desktop
-[ "$ran" = 1 ] || { echo "Couldn't find a walk named $only. Names: recordings opening-desktop opening-phone route-desktop route-phone lines-desktop lines-phone back-desktop back-phone fallback-phone look-desktop look-phone look-widths clearance a11y-desktop a11y-phone speed-look" >&2; exit 2; }
+[ "$ran" = 1 ] || { echo "Couldn't find a walk named $only. Names: recordings$names" >&2; exit 2; }
 [ -n "$only" ] || [ "$failed" != 0 ] || tools/passes/passes.sh save walk
 exit "$failed"

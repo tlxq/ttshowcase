@@ -6,6 +6,10 @@ node = "26.7.0"
 # tools/osv-gate needs it
 "aqua:google/osv-scanner" = "2.7.1"
 
+# `showcase` (bin/showcase) works anywhere inside the repo
+[env]
+_.path = ["{{config_root}}/bin"]
+
 [tasks.install]
 description = "Install the npm packages if they are missing"
 hide = true
@@ -85,7 +89,7 @@ run = "tools/check.sh"
 description = "The steps of the check, without the saved-pass skip"
 hide = true
 depends = ["install"]
-run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts'", "npm run lint", "npm run build", "tools/next-check.sh", "tools/fn-check.sh", "tools/osv-gate"]
+run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts' 'tools/showcase/*.test.mjs'", "npm run lint", "npm run build", "tools/next-check.sh", "tools/fn-check.sh", "tools/osv-gate"]
 
 [tasks.next]
 description = "Open the new site behind its secret link: live (default) or dev (this PC's Tailscale dev server); --print prints it for the phone; preview [PR#] prints a PR's preview link with a QR"

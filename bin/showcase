@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+// showcase: run, check and ship the tlxq site. mise puts bin/ on PATH inside the repo (mise.toml [env]).
+import { main } from "../tools/showcase/cli.mjs";
+process.exitCode = await main(process.argv.slice(2));
