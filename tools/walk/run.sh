@@ -3,10 +3,13 @@
 # The build (out/) is served on localhost, because a static export does not work from file://.
 # Runs on the graphics card (tools/walk/graphics.sh stops it otherwise): look and laptop frame speed.
 # Touch and phone speed are proven on the S23.
-# Usage: run.sh [walk-name]. With a name, only that walk runs, e.g. route-phone.
+# Usage: run.sh [walk-name] [--force]. With a name, only that walk runs, e.g. route-phone.
 set -u
-only="${1:-}"
+only=""
+for a in "$@"; do if [ "$a" = --force ]; then export FORCE=1; else only="$a"; fi; done
 cd "$(dirname "$0")/../.."
+# A whole run that already passed on this commit and these tool versions is skipped (tools/passes); --force runs it.
+[ -n "$only" ] || ! tools/passes/passes.sh skip walk || exit 0
 root="$PWD"
 [ -f out/index.html ] || { echo "Couldn't find the build in out/. Run: mise run build" >&2; exit 1; }
 mkdir -p .cache/shots .cache/walk
@@ -62,4 +65,5 @@ walk a11y-desktop a11y.js desktop
 walk a11y-phone a11y.js phone
 walk speed-look speed.js desktop
 [ "$ran" = 1 ] || { echo "Couldn't find a walk named $only. Names: recordings opening-desktop opening-phone route-desktop route-phone lines-desktop lines-phone back-desktop back-phone fallback-phone look-desktop look-phone look-widths clearance a11y-desktop a11y-phone speed-look" >&2; exit 2; }
+[ -n "$only" ] || [ "$failed" != 0 ] || tools/passes/passes.sh save walk
 exit "$failed"
