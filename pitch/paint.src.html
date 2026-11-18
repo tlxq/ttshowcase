@@ -933,14 +933,34 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   // The wall's tags live in a few wide stretches of the wall, each one picture: one draw and one upload per stretch, not one per tag
   // (15 tags as their own meshes, painted here: 123 ms of a stalled load; 200 would be seconds). A worker paints them off the page's own
   // thread; each finished stretch is sent to the graphics card on its own frame. Only the painted part of a stretch is kept.
+  // The tag renderer: one piece of a stroke and one drip, drawn on any 2D canvas g. It is plain functions of their arguments, so the tag tool (this thread)
+  // and the wall's worker (wallPaint, for the approved tags of other visitors) draw the very same marks. K: { tools, tpm, th, sprite(hex), grow(x, y, r) or null }.
+  function tagRng(seed) { let s = (seed % 2147483646) + 1; return () => (s = s * 16807 % 2147483647) / 2147483647; }
+  // one piece of a stroke: from its point j - 4 to point j (u, v, ms, pressure in tag pixels), with the stroke's own tool, colour and dice.
+  // A spray dab grows and darkens the slower the can moves (m/s from the points' own times), so the same stroke replays the same
+  function tagSegDraw(g, s, j, R, K) { const T = K.tools[s.tool], TPM = K.tpm, P = s.pts, i0 = j ? j - 4 : 0, a = [P[i0], P[i0 + 1], P[i0 + 3]], b = [P[j], P[j + 1], P[j + 3]], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+    const slow = j ? Math.min(1, Math.max(0, 1 - L / Math.max(1, P[j + 2] - P[i0 + 2]) * 1000 / TPM / 1.6)) : 1, st = Math.max(1, T.r * TPM * .3), n = Math.max(1, Math.ceil(L / st));
+    for (let i = 1; i <= n; i++) { const x = a[0] + dx * i / n, y = a[1] + dy * i / n, p = a[2] + (b[2] - a[2]) * i / n;
+      if (T.kind === "spray") { const r = T.r * TPM * (.55 + .5 * slow) * (.8 + .4 * p); g.globalAlpha = .3 + .6 * slow; g.drawImage(K.sprite(s.col), x - r * 1.8, y - r * 1.8, r * 3.6, r * 3.6);
+        g.globalAlpha = .45; g.fillStyle = s.col; const m = Math.round(T.mist * (.4 + .8 * slow)); for (let k = 0; k < m; k++) { const an = R() * 6.283, d = r * (1.4 + R() * 2); g.fillRect(x + Math.cos(an) * d, y + Math.sin(an) * d, 1.5, 1.5); }
+        if (K.grow) K.grow(x, y, r * 3.5 + 2); }
+      else { const r = T.r * TPM * (.8 + .4 * p); g.fillStyle = s.col;
+        if (T.kind === "mop") { g.globalAlpha = .85; g.beginPath(); g.arc(x, y, r * (.85 + R() * .3 + .2 * slow), 0, 6.283); g.fill(); }
+        else if (T.kind === "chisel") { g.globalAlpha = .92; g.save(); g.translate(x, y); g.rotate(-.7); g.fillRect(-r, -r * .18, r * 2, r * .36); g.restore(); }
+        else { g.globalAlpha = 1; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill(); } if (K.grow) K.grow(x, y, r * 1.6 + 2); } }
+    g.globalAlpha = 1; }
+  // A drip is [point, length mm, start left or right of the point, px]; it runs from `from` to `to` px below the pool's lower edge (and ends with a bead when `end`). Returns the part it touched.
+  function tagDripDraw(g, s, d, from, to, end, K) { const T = K.tools[s.tool], x = s.pts[d[0]] + d[2], y = s.pts[d[0] + 1] + T.r * K.tpm * .7 /* from the pool's lower edge */, w = Math.max(1.5, T.r * K.tpm * .22), L = d[1] / 1000 * K.tpm, a = Math.min(from, L), b = Math.min(to, L, K.th - 3 - y); if (b <= a && !end) return null;
+    g.globalAlpha = .88; g.fillStyle = s.col; const ya = Math.round(y + a), yb = Math.round(y + b); if (yb > ya) g.fillRect(Math.round(x - w / 2), ya, Math.round(w), yb - ya); // whole pixels: no edge is painted twice // a filled bar: tiny stroked pieces left a cleared line across the pool in Chrome (11-18)
+    if (end) { g.beginPath(); g.arc(x, y + b, w * .95, 0, 6.283); g.fill(); } g.globalAlpha = 1; return [x, y + (a + b) / 2, (b - a) / 2 + w * 2 + 2]; }
   // Runs in the worker (or here, a tag a frame, where a page has no worker canvas): paints every tag on its own sheet, then onto each stretch it reaches.
-  function* wallPaint(J, mk, emit) { const { hands, tags, L } = J, PXM = L.px; let seed = 11; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647, sprites = {};
-    const sprite = C => { if (sprites[C]) return sprites[C]; const c = mk(64, 64), g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  function* wallPaint(J, mk, emit) { const { hands, tags, L, K } = J, PXM = L.px; let seed = 11; const rnd = () => (seed = seed * 16807 % 2147483647) / 2147483647, sprites = {};
+    const sprite = C => { if (sprites[C]) return sprites[C]; const c = mk(64, 64), g = c.getContext("2d", { willReadFrequently: true }), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
       gr.addColorStop(0, `rgba(${C},.95)`); gr.addColorStop(.45, `rgba(${C},.8)`); gr.addColorStop(1, `rgba(${C},0)`); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return sprites[C] = c; };
     // one tag on its own sheet: spray dots, specks and three drips, so its strength applies to it as a whole
     const sheet = T => { const H = hands[T.word]; let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
       H.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); } });
-      const wW = T.w, hW = wW * (y1 - y0) / (x1 - x0), W = Math.round((wW + .3) * PXM), Hh = Math.round((hW + .75) * PXM), c = mk(W, Hh), g = c.getContext("2d"), sp = sprite(T.col), sc = wW * PXM / (x1 - x0);
+      const wW = T.w, hW = wW * (y1 - y0) / (x1 - x0), W = Math.round((wW + .3) * PXM), Hh = Math.round((hW + .75) * PXM), c = mk(W, Hh), g = c.getContext("2d", { willReadFrequently: true }), sp = sprite(T.col), sc = wW * PXM / (x1 - x0);
       const ox = .15 * PXM, oy = .15 * PXM, pts = []; H.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) pts.push([ox + (s[i] - x0) * sc, oy + (s[i + 1] - y0) * sc, s[i + 3], i === 0]); });
       let bx0 = 1e9, by0 = 1e9, bx1 = -1e9, by1 = -1e9;
       const dot = (x, y, p) => { const R = PXM * (.011 + .016 * p) * 1.8; g.drawImage(sp, x - R, y - R, R * 2, R * 2); bx0 = Math.min(bx0, x - R); bx1 = Math.max(bx1, x + R); by0 = Math.min(by0, y - R); by1 = Math.max(by1, y + R);
@@ -955,10 +975,21 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
       const cx = T.x, cy = T.y - .225, a = T.turn * Math.PI / 180, corners = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]].map(([u, v]) => {
         const dx = (u - W / 2) / PXM, dy = (Hh / 2 - v) / PXM; return [cx + dx * Math.cos(a) - dy * Math.sin(a), cy + dx * Math.sin(a) + dy * Math.cos(a)]; });
       return { c, W, Hh, cx, cy, a, corners }; };
+    // a visitor's tag (strokes with their own tools and colours) on its own sheet, drawn by the tag tool's own renderer at the wall's scale, then its name under it.
+    // The sheet is the tag tool's whole picture (the frame and the room for drips below it); its middle is placed so the frame's top edge sits on the spot's.
+    const strokeSheet = T => { const sc = T.w * PXM / K.tw, W = Math.round(T.w * PXM), Hh = Math.round(K.th * sc), c = mk(W, Hh), g = c.getContext("2d", { willReadFrequently: true });
+      const KK = { tools: K.tools, tpm: K.tpm, th: K.th, grow: null, sprite: hex => { const n = parseInt(hex.slice(1), 16); return sprite(`${n >> 16},${n >> 8 & 255},${n & 255}`); } };
+      g.scale(sc, sc); g.imageSmoothingQuality = "high";
+      for (const s of T.strokes) { const R = tagRng(s.seed); g.save(); g.beginPath(); g.rect(0, 0, K.tw, K.tfh); g.clip(); for (let j = 0; j < s.pts.length; j += 4) tagSegDraw(g, s, j, R, KK); g.restore(); } // paint stops at the frame
+      for (const s of T.strokes) for (const d of s.dr) tagDripDraw(g, s, d, 0, 1e9, true, KK); // the runs, finished
+      if (T.nameBmp) g.drawImage(T.nameBmp, K.tw - 8 - T.nameBmp.width, K.tfh + .05 * K.tpm);
+      const cx = T.x, cy = T.y + T.w * K.tfh / K.tw / 2 - Hh / PXM / 2, a = T.turn * Math.PI / 180, corners = [[0, 0], [W, 0], [W, Hh], [0, Hh]].map(([u, v]) => {
+        const dx = (u - W / 2) / PXM, dy = (Hh / 2 - v) / PXM; return [cx + dx * Math.cos(a) - dy * Math.sin(a), cy + dx * Math.sin(a) + dy * Math.cos(a)]; });
+      return { c, W, Hh, cx, cy, a, corners }; };
     const sheets = {}, left = tags.map(T => T.st.length);
     for (const i of L.order) { const S = L.st[i]; if (!S.tags.length) continue;
-      const c = mk(L.sw, L.sh), g = c.getContext("2d"), boxes = []; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-      for (const ti of S.tags) { const T = tags[ti], sh = sheets[ti] || (sheets[ti] = sheet(T)); yield;
+      const c = mk(L.sw, L.sh), g = c.getContext("2d", { willReadFrequently: true }), boxes = []; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (const ti of S.tags) { const T = tags[ti], sh = sheets[ti] || (sheets[ti] = T.strokes ? strokeSheet(T) : sheet(T)); yield;
         // wall pixels: x from the wall's left end, y down from its top; this stretch starts L.sw * i to the right
         const px = (sh.cx - L.x0) * PXM - L.sw * i, py = (L.y1 - sh.cy) * PXM;
         g.save(); g.globalAlpha = T.k; g.translate(px, py); g.rotate(-sh.a); g.drawImage(sh.c, -sh.W / 2, -sh.Hh / 2); g.restore();
@@ -966,38 +997,39 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
         boxes.push([ti, sh.corners]); if (!--left[ti]) delete sheets[ti]; }
       x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0)); x1 = Math.min(L.sw, Math.ceil(x1)); y1 = Math.min(L.sh, Math.ceil(y1));
       if (!(x1 > x0 && y1 > y0)) { x0 = y0 = 0; x1 = y1 = 1; } yield emit(i, c, [x0, y0, x1 - x0, y1 - y0], boxes); } } // every stretch reports, even one whose paint fell off it
-  const WL = (() => { const px = NARROW ? 96 : 128, n = 12, sw = Math.round(WW / n * px); // 12 stretches of 7.5 m, the wall's full height
+  // One layer is a set of tags painted into the wall's stretches. The hand words (and ?tags=full) are one layer; visitors' approved tags are another, made once the store has answered.
+  const WLS = [], wallLayer = (tags, z) => { const px = NARROW ? 96 : 128, n = 12, sw = Math.round(WW / n * px); // 12 stretches of 7.5 m, the wall's full height
     const L = { px, sw, sh: Math.round(WH * px), x0: WX - WW / 2, y1: WALL_TOP, st: [...Array(n)].map(() => ({ tags: [] })) };
-    const tags = WALL_TAGS.tags.map(([word, x, y, w, turn, k, col]) => ({ word, x, y, w, turn, k, col, st: [] }));
     tags.forEach((T, ti) => { const r = T.w / 2 + .8, a = Math.floor(((T.x - r) - L.x0) * px / sw), b = Math.floor(((T.x + r) - L.x0) * px / sw);
       for (let i = Math.max(0, a); i <= Math.min(n - 1, b); i++) { L.st[i].tags.push(ti); T.st.push(i); } });
     L.order = L.st.map((_, i) => i).sort((i, j) => Math.abs(L.x0 + (i + .5) * sw / px) - Math.abs(L.x0 + (j + .5) * sw / px)); // the first screen's first
     // a mesh per stretch that has tags, with an empty picture until its own arrives: the shader is the same before and after, so warmUp builds it
-    const empty = new THREE.DataTexture(new Uint8Array(4), 1, 1); empty.encoding = THREE.sRGBEncoding; empty.needsUpdate = true;
     const meshes = L.st.map((S, i) => { if (!S.tags.length) return null;
-      const mat = new THREE.MeshPhysicalMaterial({ map: empty, transparent: true, depthWrite: false, alphaTest: .004, roughness: .25, clearcoat: .8, clearcoatRoughness: .15, // alphaTest: bare wall stops before the light is worked out
+      const mat = new THREE.MeshPhysicalMaterial({ map: wallEmpty, transparent: true, depthWrite: false, alphaTest: .004, roughness: .25, clearcoat: .8, clearcoatRoughness: .15, // alphaTest: bare wall stops before the light is worked out
         normalMap: tex("assets/wall4_nor_gl.jpg", false, 1, 1), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 });
-      const me = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); me.position.set(L.x0 + (i + .5) * sw / px, (WALL_TOP + GROUND) / 2, .002); me.scale.set(.01, .01, 1);
+      const me = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); me.position.set(L.x0 + (i + .5) * sw / px, (WALL_TOP + GROUND) / 2, z); me.scale.set(.01, .01, 1);
       me.renderOrder = -1; scene.add(me); return me; }); // under everything else on the wall: the poured line, the runs (sorted by distance they swapped places as the camera moved: flicker, Tom 11-17)
-    return { L, tags, meshes, up: [], done: 0, want: L.st.filter(S => S.tags.length).length }; })();
-  const wallTags = WL.tags;
-  function wallGot(i, bmp, [x, y, w, h], boxes) { // a finished stretch: its painted part goes on its mesh, sized and placed to match
-    boxes.forEach(([ti, c]) => wallTags[ti].corners = c);
+    const W = { L, tags, meshes, up: [], done: 0, want: L.st.filter(S => S.tags.length).length }; WLS.push(W); return W; };
+  const wallEmpty = new THREE.DataTexture(new Uint8Array(4), 1, 1); wallEmpty.encoding = THREE.sRGBEncoding; wallEmpty.needsUpdate = true;
+  const WL = wallLayer(WALL_TAGS.tags.map(([word, x, y, w, turn, k, col]) => ({ word, x, y, w, turn, k, col, st: [] })), .002);
+  function wallGot(W, i, bmp, [x, y, w, h]) { // a finished stretch: its painted part goes on its mesh, sized and placed to match
     const t = new THREE.Texture(bmp); t.flipY = false; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.generateMipmaps = true; t.needsUpdate = true;
-    WL.up.push({ i, t, x, y, w, h }); }
-  function wallUpload() { const u = WL.up.shift(); if (!u) return; const { L } = WL, me = WL.meshes[u.i], m = me.material, ww = u.w / L.px, hh = u.h / L.px;
-    const x0 = L.x0 + (L.sw * u.i + u.x) / L.px, y1 = L.y1 - u.y / L.px; me.scale.set(ww, hh, 1); me.position.set(x0 + ww / 2, y1 - hh / 2, .002);
+    W.up.push({ i, t, x, y, w, h }); }
+  function wallUpload() { const W = WLS.find(W => W.up.length); if (!W) return; const u = W.up.shift(), { L } = W, me = W.meshes[u.i], m = me.material, ww = u.w / L.px, hh = u.h / L.px;
+    const x0 = L.x0 + (L.sw * u.i + u.x) / L.px, y1 = L.y1 - u.y / L.px; me.scale.set(ww, hh, 1); me.position.set(x0 + ww / 2, y1 - hh / 2, me.position.z);
     m.normalMap.repeat.set(ww / TILE, hh / TILE); m.normalMap.offset.set((x0 - L.x0) / TILE, (y1 - hh - GROUND) / TILE);
     m.map = u.t; renderer.initTexture(u.t); // sent now, on a frame with nothing else to send, not on the first frame it shows
-    if (++WL.done === WL.want) document.documentElement.dataset.wallAt = Math.round(performance.now() - t0); }
-  { const J = { hands: WALL_HAND, tags: WL.tags, L: WL.L }, pic = (c, [x, y, w, h]) => createImageBitmap(c, x, y, w, h, { imageOrientation: "flipY", premultiplyAlpha: "none" });
+    if (++W.done === W.want) document.documentElement.dataset[W === WL ? "wallAt" : "storeAt"] = Math.round(performance.now() - t0); }
+  // paints a layer: in a worker off the page's own thread when the browser has canvases there, else here a few ms a frame
+  function wallRun(W, J, xfer) { const pic = (c, [x, y, w, h]) => createImageBitmap(c, x, y, w, h, { imageOrientation: "flipY", premultiplyAlpha: "none" });
     let wk = null; try { if (typeof OffscreenCanvas === "function" && new OffscreenCanvas(1, 1).getContext("2d")) {
-      const src = `${wallPaint};onmessage=async e=>{const J=e.data,mk=(w,h)=>new OffscreenCanvas(w,h),out=[];for(const _ of wallPaint(J,mk,(i,c,b,x)=>out.push([i,c,b,x])))while(out.length){const[i,c,b,x]=out.shift();const p=await createImageBitmap(c,b[0],b[1],b[2],b[3],{imageOrientation:"flipY",premultiplyAlpha:"none"});postMessage([i,p,b,x],[p]);}};`;
-      wk = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" }))); wk.onmessage = e => wallGot(...e.data);
-      wk.onerror = wk.onmessageerror = () => { wk.terminate(); WL.up.length = 0; here(); }; wk.postMessage(J); } } catch (e) { wk = null; } // a worker that fails paints here instead
-    function here() { const it = wallPaint(J, (w, h) => Object.assign(document.createElement("canvas"), { width: w, height: h }), (i, c, b, x) => pic(c, b).then(p => wallGot(i, p, b, x)));
+      const src = `${tagRng};${tagSegDraw};${tagDripDraw};${wallPaint};onmessage=async e=>{const J=e.data,mk=(w,h)=>new OffscreenCanvas(w,h),out=[];for(const _ of wallPaint(J,mk,(i,c,b,x)=>out.push([i,c,b,x])))while(out.length){const[i,c,b,x]=out.shift();const p=await createImageBitmap(c,b[0],b[1],b[2],b[3],{imageOrientation:"flipY",premultiplyAlpha:"none"});postMessage([i,p,b,x],[p]);}};`;
+      wk = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" }))); wk.onmessage = e => wallGot(W, ...e.data);
+      wk.onerror = wk.onmessageerror = () => { wk.terminate(); W.up.length = 0; here(); }; wk.postMessage(J, xfer || []); } } catch (e) { wk = null; } // a worker that fails paints here instead
+    function here() { const it = wallPaint(J, (w, h) => Object.assign(document.createElement("canvas"), { width: w, height: h }), (i, c, b, x) => pic(c, b).then(p => wallGot(W, i, p, b)));
       (function step() { const s = performance.now(); while (performance.now() - s < 4) if (it.next().done) return; requestAnimationFrame(step); })(); }
     if (!wk) here(); }
+  wallRun(WL, { hands: WALL_HAND, tags: WL.tags, L: WL.L });
   const epaImg = new Image(); epaImg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><defs><mask id=\"cut\"><rect width=\"64\" height=\"64\" fill=\"#fff\"/><path d=\"M16.8 11.4h30.4l3.6 12.8H13.2Z\" fill=\"#000\"/><rect x=\"7.6\" y=\"32.6\" width=\"14\" height=\"5.6\" rx=\".6\" fill=\"#000\"/><rect x=\"42.4\" y=\"32.6\" width=\"14\" height=\"5.6\" rx=\".6\" fill=\"#000\"/><path d=\"M32 25.6 42 41.6H22Z\" fill=\"#000\" stroke=\"#000\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></mask><mask id=\"tri\"><rect width=\"64\" height=\"64\" fill=\"#fff\"/><path d=\"M32 32.4 36 39H28Z\" fill=\"#000\"/></mask></defs><g fill=\"currentColor\"><g mask=\"url(#cut)\"><rect x=\"6.6\" y=\"22.8\" width=\"3.4\" height=\"3.4\" rx=\".9\"/><rect x=\"54\" y=\"22.8\" width=\"3.4\" height=\"3.4\" rx=\".9\"/><path d=\"M15.6 9.2h32.8q1.7 0 2.2 1.6L54.6 26H9.4l4-15.2q.5-1.6 2.2-1.6Z\"/><path d=\"M8.6 25.6h46.8l1.6 2.2V40H7V27.8Z\"/><rect x=\"4\" y=\"40.4\" width=\"56\" height=\"5.4\" rx=\"1.6\"/><rect x=\"9\" y=\"45\" width=\"8\" height=\"6.2\" rx=\"1.6\"/><rect x=\"47\" y=\"45\" width=\"8\" height=\"6.2\" rx=\"1.6\"/></g><path mask=\"url(#tri)\" d=\"M32 27.6 40.4 41H23.6Z\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/></g></svg>".replace(/currentColor/g, `rgb(${SPRAY})`));
   const links = [{ t: "Open the site", href: "https://eparadar.se" }, { t: "Code for epaRadar", href: "https://github.com/tlxq/eparadar" }];
   let parts = null; const target = pcv; // drawn once, whole; factsR shows it part by part
@@ -1347,13 +1379,14 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   // tap = your spot, draw at once); the camera flies in close, the wall dims round a work light on it (one dark sheet with a hole, no extra light:
   // every light costs a frame on the T14s) and the drawing starts. Move it goes back to the wide shot, the paint kept. One frame size for everyone,
   // a real tag's size (Tom 11-18: 2.4 x 1.35 m, filling most of the screen close in). Tags are never removed: a new tag may go over an approved one, which stays
-  // visible under it (Tom 11-17), so only kept-clear areas turn the frame yellow (a waiting tag's held area joins them with the store, PR7).
+  // visible under it (Tom 11-17), so only kept-clear areas and the spots waiting tags hold (from the store) turn the frame yellow.
   const FRAME = { w: 2.4, h: 1.35 }, AREA = { x0: VISITOR_WALL.x0, x1: 8.5, y0: GROUND + .4, y1: WALL_TOP - 1 }; // x1: short of the step down to the epaRadar wall
   let CLEAR = []; // kept-clear boxes [x0, y0, x1, y1], made when the pour is done (the line's run is known then)
   function clearBoxes() { const m = .3, b = [[-PW / 2 - m, PCY - PH / 2 - m, PW / 2 + m, PCY + PH / 2 + m], [LEDGE.x - 1.2, WALL_TOP - 2, LEDGE.x + 1.6, WALL_TOP]];
     if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); } return b; }
   const inArea = (x, y) => [cl(x, AREA.x0 + FRAME.w / 2, AREA.x1 - FRAME.w / 2), cl(y, AREA.y0 + FRAME.h / 2, AREA.y1 - FRAME.h / 2)];
-  const kept = (x, y) => CLEAR.some(c => x + FRAME.w / 2 > c[0] && x - FRAME.w / 2 < c[2] && y + FRAME.h / 2 > c[1] && y - FRAME.h / 2 < c[3]);
+  const hits = (x, y) => c => x + FRAME.w / 2 > c[0] && x - FRAME.w / 2 < c[2] && y + FRAME.h / 2 > c[1] && y - FRAME.h / 2 < c[3];
+  const keptBy = (x, y) => CLEAR.some(hits(x, y)) ? "clear" : HELD.some(hits(x, y)) ? "held" : null, kept = (x, y) => !!keptBy(x, y); // HELD: where a waiting tag of someone else is (the store); it stays lit, only the frame turns yellow
   const pickEl = document.getElementById("pick"), pickDim = pickEl.querySelector(".dim"), pickOv = pickEl.querySelector(".ov"), pickFrame = document.getElementById("pickFrame"), pickHint = document.getElementById("pickHint"),
     pickCancel = document.getElementById("pickCancel"), tagMoveB = document.getElementById("tagMoveB");
   const pick = { mode: 0, from: null, t0: 0, dur: 1, k: 0, fog: 0, x: 0, y: 0, cx: 0, cy: 0, ox: 0, drag: null, pan: null, locked: false, ui: false, r: 0, last: [V(), V()] };
@@ -1362,15 +1395,15 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   const ovHalf = () => ovD() * th() * camera.aspect; // half the width the wide shot sees on the wall
   const ovX = x => { const h = ovHalf(), a = AREA.x0 + h - .75, b = AREA.x1 - h + .75; return a > b ? (AREA.x0 + AREA.x1) / 2 : cl(x, a, b); };
   const closeD = () => Math.max(FRAME.w / ((NARROW ? .92 : .8) * 2 * th() * camera.aspect), FRAME.h / (.7 * 2 * th())); // the frame fills ~a third of a laptop screen, most of a phone's width
-  function pickShow() { const t = kept(pick.x, pick.y), m = pick.mode; if (m < 0) return; /* on the way back the last words stay while they fade */ pickFrame.classList.toggle("taken", t); pickFrame.classList.toggle("locked", pick.locked); pickFrame.classList.toggle("small", m === 1);
-    pickFrame.setAttribute("aria-valuetext", t ? "kept clear" : "free"); tagMoveB.hidden = m !== 2 || tag.stage !== "draw";
+  function pickShow() { const why = keptBy(pick.x, pick.y), t = !!why, m = pick.mode; if (m < 0) return; /* on the way back the last words stay while they fade */ pickFrame.classList.toggle("taken", t); pickFrame.classList.toggle("locked", pick.locked); pickFrame.classList.toggle("small", m === 1);
+    pickFrame.setAttribute("aria-valuetext", why === "held" ? "someone is tagging here" : t ? "kept clear" : "free"); tagMoveB.hidden = m !== 2 || tag.stage !== "draw";
     tagBar.hidden = m !== 2 || tag.stage !== "draw"; tagSend.hidden = m !== 2 || tag.stage !== "send" || !!tag.play; if (tagBar.hidden) tagMenus(); // wide: tapping the wall is the step, no buttons
-    pickHint.textContent = tag.stage === "draw" ? (tag.full ? "That's all the paint one tag holds. Undo a stroke or press Done." : "Draw your tag inside the frame.") : tag.stage === "send" ? (tag.play ? "Your tag, once more." : tag.err ? "Couldn't keep your tag: this browser doesn't let the page save it. Try again, or Cancel." : "Add a name if you like, then put it on the wall.") : m === 1 && pick.nope && t ? "This part stays clear. Tap a lit part of the wall."
+    pickHint.textContent = tag.stage === "draw" ? (tag.full ? "That's all the paint one tag holds. Undo a stroke or press Done." : "Draw your tag inside the frame.") : tag.stage === "send" ? (tag.play ? "Your tag, once more." : tag.err ? "Couldn't keep your tag: this browser doesn't let the page save it. Try again, or Cancel." : "Add a name if you like, then put it on the wall.") : m === 1 && pick.nope && t ? (why === "held" ? "Someone's tagging here. Pick another spot." : "This part stays clear. Tap a lit part of the wall.")
       : "Tap a lit part of the wall where your tag goes." + (ovHalf() * 2 < AREA.x1 - AREA.x0 ? " Swipe to see more of it." : ""); }
   function pickGo(m, dur) { pick.from = [pick.last[0].clone(), pick.last[1].clone()]; pick.t0 = performance.now(); pick.mode = m; pick.dur = dur; pick.pan = null;
     pick.ui = false; pickEl.classList.remove("on"); pickEl.setAttribute("aria-hidden", true); pickEl.inert = true; pickFrame.tabIndex = -1; pickShow(); }
   function pickAt(x, y) { [pick.x, pick.y] = inArea(x, y); pickShow(); }
-  document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); if (pick.mode || duskAt) return; CLEAR = clearBoxes();
+  document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); if (pick.mode || duskAt) return; CLEAR = clearBoxes(); tagStore(false);
     let best = null, bd = 1e9; for (let x = AREA.x0 + FRAME.w / 2; x <= AREA.x1 - FRAME.w / 2; x += .25) for (let y = AREA.y0 + FRAME.h / 2; y <= AREA.y1 - FRAME.h / 2; y += .25) { const d = Math.hypot(x + 6.5, y - 3.5); if (d < bd && !kept(x, y)) { bd = d; best = [x, y]; } }
     [pick.x, pick.y] = best || [-12, 3]; pick.ox = ovX(NARROW ? pick.x : 0); pick.locked = false; pickGo(1, 1.4); // the first spot offered: free, beside the opening, where the first screen looks
     root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
@@ -1412,13 +1445,16 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
       pickOv.lastChild.setAttribute("d", CLEAR.map(c => box(Math.max(c[0], AREA.x0), Math.max(c[1], AREA.y0), Math.min(c[2], AREA.x1), Math.min(c[3], AREA.y1))).join("")); } } // and over what stays clear
   window.pickTest = { // for the pickspot check: where things are on the screen now
     clearOnScreen: () => { const c = CLEAR[0], [px, py] = proj(V(c[0] + .4, c[3] - .2, 0)); return { x: px, y: py }; }, // the title's top left corner
-    freeOnScreen: () => { for (let y = AREA.y1 - 1; y > AREA.y0 + 1; y -= .4) for (let x = AREA.x0 + 1; x < AREA.x1 - 1; x += .4) { if (kept(x, y) || Math.hypot(x - pick.x, y - pick.y) < 1) continue; const [px, py] = proj(V(x, y, 0)); if (px > 80 && px < innerWidth - 80 && py > 140 && py < innerHeight - 140) return { x: px, y: py }; } return null; },
+    freeOnScreen: () => { for (let y = AREA.y1 - 1; y > AREA.y0 + 1; y -= .4) for (let x = AREA.x0 + 1; x < AREA.x1 - 1; x += .4) { if (kept(...inArea(x, y)) || Math.hypot(x - pick.x, y - pick.y) < 1) continue; /* a tap puts the frame at inArea's place */ const [px, py] = proj(V(x, y, 0)); if (px > 80 && px < innerWidth - 80 && py > 140 && py < innerHeight - 140) return { x: px, y: py }; } return null; },
     restored: () => scene.fog.density === .04 && skyMesh.visible && root.style.touchAction === "",
+    heldOnScreen: () => { const h = HELD[0]; if (!h) return null; const [px, py] = proj(V((h[0] + h[2]) / 2, (h[1] + h[3]) / 2, 0)); return { x: px, y: py }; },
+    worldAt: (px, py) => wallAt(px, py),
     spotOnScreen: () => { const [px, py] = proj(V(pick.x, pick.y, 0)); return { x: px, y: py }; } };
   // ---- Tag it (Tom 11-17, PR6): after Lock spot the visitor draws in the frame with real graffiti tools; every stroke keeps its own tool
   // and colour. The paint goes on its own small surface on the wall, sent to the graphics card only on frames it changes. Paint stops at the
   // frame; only drips run below it. Done: the tag sprays itself once in the visitor's own rhythm, then a name (optional) and Put it on the wall.
-  // The tag stays in this browser (one per device, forever) and shows at its spot, full colour, on every visit; the store and Tom's OK come in PR7.
+  // The tag stays in this browser (one per device, forever) and shows at its spot, full colour, on every visit. It is also sent to the store (api/tags.ts), quietly:
+  // the visitor never sees it go, and a send that fails is tried again on a later visit. After Tom's OK everyone else's wall paints it too.
   const TPM = 320, DRIP = .4, TW = Math.round(FRAME.w * TPM), TFH = Math.round(FRAME.h * TPM), TH = Math.round((FRAME.h + DRIP) * TPM); // pixels a metre; the frame; room for drips
   const TCOLS = [["Black", "#151515"], ["White", "#f2f0ea"], ["Chrome", "#b9bcc2"], ["Gold", "#c9a03a"], ["Red", "#d42a2a"], ["Orange", "#ff4f1a"], ["Yellow", "#f5cf2b"],
     ["Green", "#2fa35a"], ["Sky blue", "#4fb3e8"], ["Deep blue", "#1f3fa6"], ["Purple", "#7a3fb0"], ["Pink", "#ef6fa8"]];
@@ -1433,7 +1469,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     { id: "mop", name: "Mop", note: "marker: wet, uneven, drips a lot", icon: "mop", kind: "mop", r: .028, flow: 3.2 },
     { id: "chisel", name: "Chisel", note: "marker: thick and thin by angle", icon: "chisel", kind: "chisel", r: .035, flow: .4 },
     { id: "pen", name: "Paint pen", note: "thin and solid", icon: "pen", kind: "pen", r: .006, flow: 0 }], TOOL = Object.fromEntries(TTOOLS.map(t => [t.id, t]));
-  const MOST_STROKES = 80, MOST_POINTS = 4000, TAG_KEY = "ttshowcase.tag", TAG_FONT = `${Math.round(.07 * TPM)}px "Saira Stencil One"`; // the store's own limits (api/tags.ts)
+  const LIM = __TAG_LIMITS__, MOST_STROKES = LIM.strokes, MOST_POINTS = LIM.points, TAG_KEY = "ttshowcase.tag", DEVICE_KEY = "ttshowcase.device", TAG_FONT = `${Math.round(.07 * TPM)}px "Saira Stencil One"`; // LIM: the store's own limits (api/tags.ts)
   const tagC = document.createElement("canvas"); tagC.width = TW; tagC.height = TH; const tgc = tagC.getContext("2d", { willReadFrequently: true });
   // Two pictures of the same canvas: while drawing (no smaller copies, and only the part that changed is sent to the graphics card: sending the
   // whole canvas and rebuilding its smaller copies every frame is what the T14s's graphics lagged on, Tom 11-18) and on the wall (with them: seen from afar)
@@ -1448,29 +1484,15 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   const tagBar = document.getElementById("tagBar"), tagSend = document.getElementById("tagSend"), tagToolB = document.getElementById("tagTool"), tagColB = document.getElementById("tagCol"),
     tagUndo = document.getElementById("tagUndo"), tagDone = document.getElementById("tagDone"), tagToolsM = document.getElementById("tagTools"), tagColsM = document.getElementById("tagCols"),
     tagName = document.getElementById("tagName"), tagPut = document.getElementById("tagPut"), leaveB = document.getElementById("leave");
-  const rng = seed => { let s = (seed % 2147483646) + 1; return () => (s = s * 16807 % 2147483647) / 2147483647; };
+  const rng = tagRng;
   const sprites = {}, sprite = hex => { if (sprites[hex]) return sprites[hex]; const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), n = parseInt(hex.slice(1), 16), C = `${n >> 16},${n >> 8 & 255},${n & 255}`;
     const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, `rgba(${C},.95)`); gr.addColorStop(.45, `rgba(${C},.8)`); gr.addColorStop(1, `rgba(${C},0)`); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return sprites[hex] = c; };
-  // one piece of a stroke: from its point j - 4 to point j (u, v, ms, pressure in tag pixels), with the stroke's own tool, colour and dice.
-  // A spray dab grows and darkens the slower the can moves (m/s from the points' own times), so the same stroke replays the same
-  function tagSeg(g, s, j, R) { const T = TOOL[s.tool], P = s.pts, i0 = j ? j - 4 : 0, a = [P[i0], P[i0 + 1], P[i0 + 3]], b = [P[j], P[j + 1], P[j + 3]], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
-    const slow = j ? cl(1 - L / Math.max(1, P[j + 2] - P[i0 + 2]) * 1000 / TPM / 1.6) : 1, st = Math.max(1, T.r * TPM * .3), n = Math.max(1, Math.ceil(L / st));
-    for (let i = 1; i <= n; i++) { const x = a[0] + dx * i / n, y = a[1] + dy * i / n, p = a[2] + (b[2] - a[2]) * i / n;
-      if (T.kind === "spray") { const r = T.r * TPM * (.55 + .5 * slow) * (.8 + .4 * p); g.globalAlpha = .3 + .6 * slow; g.drawImage(sprite(s.col), x - r * 1.8, y - r * 1.8, r * 3.6, r * 3.6);
-        g.globalAlpha = .45; g.fillStyle = s.col; const m = Math.round(T.mist * (.4 + .8 * slow)); for (let k = 0; k < m; k++) { const an = R() * 6.283, d = r * (1.4 + R() * 2); g.fillRect(x + Math.cos(an) * d, y + Math.sin(an) * d, 1.5, 1.5); }
-        tagGrow(x, y, r * 3.5 + 2); }
-      else { const r = T.r * TPM * (.8 + .4 * p); g.fillStyle = s.col;
-        if (T.kind === "mop") { g.globalAlpha = .85; g.beginPath(); g.arc(x, y, r * (.85 + R() * .3 + .2 * slow), 0, 6.283); g.fill(); }
-        else if (T.kind === "chisel") { g.globalAlpha = .92; g.save(); g.translate(x, y); g.rotate(-.7); g.fillRect(-r, -r * .18, r * 2, r * .36); g.restore(); }
-        else { g.globalAlpha = 1; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill(); } tagGrow(x, y, r * 1.6 + 2); } }
-    g.globalAlpha = 1; }
+  const TK = { tools: TOOL, tpm: TPM, tw: TW, tfh: TFH, th: TH, sprite, grow: tagGrow }; // what the stroke renderer (tagSegDraw, above the wall's painter) needs
+  const tagSeg = (g, s, j, R) => tagSegDraw(g, s, j, R, TK);
   function tagStep(s, j, R) { tgc.save(); tgc.beginPath(); tgc.rect(0, 0, TW, TFH); tgc.clip(); tagSeg(tgc, s, j, R); tgc.restore(); } // paint stops at the frame
   // Drips: paint pools where the can or marker moves slowly or stays, and a run starts there and creeps down, slowing as it dries.
   // Each is kept with its stroke ([point, length mm, start left or right of the point, px]) so a replay and the next visit show the same runs; they may run below the frame.
-  const tagDripW = s => Math.max(1.5, TOOL[s.tool].r * TPM * .22);
-  function tagDripTo(s, d, from, to, end) { const x = s.pts[d[0]] + d[2], y = s.pts[d[0] + 1] + TOOL[s.tool].r * TPM * .7 /* from the pool's lower edge */, w = tagDripW(s), L = d[1] / 1000 * TPM, a = Math.min(from, L), b = Math.min(to, L, TH - 3 - y); if (b <= a && !end) return;
-    tgc.globalAlpha = .88; tgc.fillStyle = s.col; const ya = Math.round(y + a), yb = Math.round(y + b); if (yb > ya) tgc.fillRect(Math.round(x - w / 2), ya, Math.round(w), yb - ya); // whole pixels: no edge is painted twice // a filled bar: tiny stroked pieces left a cleared line across the pool in Chrome (11-18)
-    if (end) { tgc.beginPath(); tgc.arc(x, y + b, w * .95, 0, 6.283); tgc.fill(); } tgc.globalAlpha = 1; tagGrow(x, y + (a + b) / 2, (b - a) / 2 + w * 2 + 2); }
+  function tagDripTo(s, d, from, to, end) { const r = tagDripDraw(tgc, s, d, from, to, end, TK); if (r) tagGrow(r[0], r[1], r[2]); } // whole pixels: no edge is painted twice
   function tagDripNew(s, j, now) { const P = s.pts; if (P[j] < 2 || P[j] > TW - 2 || P[j + 1] < 0 || P[j + 1] > TFH) return; // only from paint inside the frame
     const R = rng(s.seed * 31 + s.dr.length * 7 + 3), d = [j, Math.round((.1 + R() * .25) * (TOOL[s.tool].kind === "mop" ? 1.4 : 1) * 1000), Math.round((R() - .5) * 1.4 * TOOL[s.tool].r * TPM)]; // runs from one pool start side by side across the mark
     s.dr.push(d); tagRun(s, d, now); }
@@ -1540,28 +1562,58 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     if (P.si >= tag.strokes.length && el > 300 && !tag.runs.length) { tag.play = null; pickShow(); tagPut.focus({ preventScroll: true }); } }
   document.getElementById("tagBack").addEventListener("click", tagRedo);
   tagName.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); tagPut.click(); } });
-  // Put it on the wall: kept in this browser; the camera steps back out to the form while the wet paint dries
+  // Put it on the wall: kept in this browser and sent to the store without a word; the camera steps back out to the form while the wet paint dries
   tagPut.addEventListener("click", () => { if (tag.stage !== "send" || tag.play) return; tag.name = tagName.value.replace(/[\p{Cc}\p{Cf}]/gu, "").trim().slice(0, 24); tagRedraw();
     try { localStorage.setItem(TAG_KEY, JSON.stringify({ v: 1, x: tag.x, y: tag.y, w: FRAME.w, h: FRAME.h, turn: 0, name: tag.name, strokes: tag.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr })) })); }
     catch (_) { tag.err = true; pickShow(); return; } // nowhere to keep it: it stays here, and Leave your tag stays
-    tag.stage = null; tag.putAt = performance.now() - (REDUCED ? 1e5 : 0); leaveB.hidden = true; pick.locked = false; pickGo(-1, 1.2); });
+    tag.stage = null; tag.putAt = performance.now() - (REDUCED ? 1e5 : 0); leaveB.hidden = true; pick.locked = false; pickGo(-1, 1.2); tagSendOut(); });
   function tagTick(now) { if (tag.play) tagPlay(now);
     const c = tag.cur; if (c && TOOL[c.tool].flow && c.load + (now - c.lt) / 1000 * TOOL[c.tool].flow >= 1) tagPool(c, c.pts.length - 4, now, false); // held still: it pools and runs
     if (tag.runs.length) tagRuns(now);
     const w = tag.stage ? 1 : tag.putAt ? cl(1 - (now - tag.putAt) / 5000) : 0; // wet while you paint; dries over 5 s once it's on the wall
     if (Math.abs(w - tag.wet) > .01 || (w === 0 && tag.wet !== 0)) { tag.wet = w; const m = tagMesh.material; m.roughness = .6 - .48 * w; m.clearcoat = .25 + .75 * w; m.clearcoatRoughness = .3 - .25 * w; }
     if (tagBox.all || tagBox.x1 > tagBox.x0) tagUpload(); }
+  // a tag as the store or this browser keeps it: the same rules as api/tags.ts's readStrokes, so a broken one is skipped, never drawn
+  const tagOk = o => o && Number.isFinite(o.x) && Number.isFinite(o.y) && Array.isArray(o.strokes) && o.strokes.length && o.strokes.length <= MOST_STROKES && Math.abs(o.x) < 50 && o.y > -10 && o.y < 20 && o.strokes.reduce((n, s) => n + (s && Array.isArray(s.pts) ? s.pts.length / 4 : 1e9), 0) <= MOST_POINTS && o.strokes.every(s => s && Object.hasOwn(TOOL, s.tool) && /^#[0-9a-f]{6}$/.test(s.col) && Number.isInteger(s.seed) && Array.isArray(s.pts) && s.pts.length >= 4 && s.pts.length % 4 === 0 && s.pts.every(Number.isFinite)
+    && (s.dr === undefined || Array.isArray(s.dr) && s.dr.length <= LIM.drips && s.dr.every(d => Array.isArray(d) && d.length === 3 && Number.isInteger(d[0]) && d[0] >= 0 && d[0] < s.pts.length && d[0] % 4 === 0 && Number.isFinite(d[1]) && Number.isFinite(d[2]) && d[1] > 0 && d[1] < LIM.dripMm && Math.abs(d[2]) < LIM.dripSide)));
+  const tagSaved = () => { try { const o = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); return o && o.v === 1 && tagOk(o) ? o : null; } catch (_) { return null; } };
+  const tagSave = patch => { try { const o = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); if (o) localStorage.setItem(TAG_KEY, JSON.stringify({ ...o, ...patch })); } catch (_) {} };
+  // Sending: the saved tag and a random device id (kept here) go to the store. Nothing on the screen tells. sent: "yes" (and its id), or "stop" when the store will never take it
+  // (400 broken, 409 this device or the spot already has one, 429 too many from this address); a network failure or a 5xx (mail service, wall busy, not set up) leaves it unsent, and the next visit tries again.
+  let tagSending = false;
+  const tagDevice = () => { try { let d = localStorage.getItem(DEVICE_KEY); if (!/^[\w-]{16,64}$/.test(d || "")) { d = crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem(DEVICE_KEY, d); } return d; } catch (_) { return null; } };
+  async function tagSendOut() { const o = tagSaved(), device = o && !o.sent && !tagSending ? tagDevice() : null; if (!device) return; tagSending = true;
+    try { const r = await fetch("/api/tags", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: o.name, device, spot: { x: o.x, y: o.y, w: o.w, h: o.h, turn: o.turn }, strokes: o.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr })) }) });
+      if (r.ok) { const j = await r.json().catch(() => null); tagSave({ sent: "yes", id: j && typeof j.id === "string" ? j.id : null }); }
+      else if (r.status === 400 || r.status === 409 || r.status === 429) tagSave({ sent: "stop" }); } catch (_) {} // else: unsent, tried again next visit
+    tagSending = false; }
   // your own tag on every visit: at its spot, dry, and no second Leave your tag
-  { let o = null; try { o = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); } catch (_) {}
-    const ok = o && o.v === 1 && Number.isFinite(o.x) && Number.isFinite(o.y) && Array.isArray(o.strokes) && o.strokes.length && o.strokes.length <= MOST_STROKES && Math.abs(o.x) < 50 && o.y > -10 && o.y < 20 && o.strokes.reduce((n, s) => n + (s && Array.isArray(s.pts) ? s.pts.length / 4 : 1e9), 0) <= MOST_POINTS && o.strokes.every(s => Object.hasOwn(TOOL, s.tool) && /^#[0-9a-f]{6}$/.test(s.col) && Number.isInteger(s.seed) && Array.isArray(s.pts) && s.pts.length >= 4 && s.pts.length % 4 === 0 && s.pts.every(Number.isFinite)
-      && (s.dr === undefined || Array.isArray(s.dr) && s.dr.length <= 200 && s.dr.every(d => Array.isArray(d) && d.length === 3 && Number.isInteger(d[0]) && d[0] >= 0 && d[0] < s.pts.length && d[0] % 4 === 0 && Number.isFinite(d[1]) && Number.isFinite(d[2]) && d[1] > 0 && d[1] < 1000 && Math.abs(d[2]) < 50)));
-    if (ok) { tag.strokes = o.strokes; tag.strokes.forEach(s => s.dr = s.dr || []); tag.name = typeof o.name === "string" ? o.name.slice(0, 24) : ""; tagPlace(o.x, o.y); tagMesh.visible = true; tag.putAt = -1e6; leaveB.hidden = true;
-      tagRedraw(); if (tag.name) document.fonts.load(TAG_FONT).then(tagRedraw, () => {}); } }
+  { const o = tagSaved();
+    if (o) { tag.strokes = o.strokes; tag.strokes.forEach(s => s.dr = s.dr || []); tag.name = typeof o.name === "string" ? o.name.slice(0, 24) : ""; tagPlace(o.x, o.y); tagMesh.visible = true; tag.putAt = -1e6; leaveB.hidden = true;
+      tagRedraw(); if (tag.name) document.fonts.load(TAG_FONT).then(tagRedraw, () => {}); tagSendOut(); } }
+  // The wall's other tags: the store's approved ones (oldest first, so the newest paint over the older), each at its spot, drawn by the same renderer as the tag tool but on the wall's stretch pictures
+  // (one picture per stretch, painted in a worker): not a mesh a tag. Yours is not in it: it shows from this browser. The store also says which spots waiting tags hold: those join the kept-clear boxes.
+  let HELD = [], storeSeen = false, storeW = null;
+  const tagsHeld = list => { HELD = list.filter(h => [h.x, h.y, h.w, h.h].every(Number.isFinite)).map(h => [h.x - h.w / 2, h.y - h.h / 2, h.x + h.w / 2, h.y + h.h / 2]); pickShow(); };
+  async function tagStore(first) { let d = null; try { const r = await fetch("/api/tags"); if (r.ok) d = await r.json(); } catch (_) {}
+    if (!d) return; if (Array.isArray(d.held)) tagsHeld(d.held); if (!first || storeSeen) return; storeSeen = true;
+    const own = tagSaved(), list = (Array.isArray(d.tags) ? d.tags : []).filter(t => tagOk(t) && Number.isFinite(t.w) && Number.isFinite(t.turn) && t.w > .2 && t.w < 6 && (!own || !own.id || t.id !== own.id)).slice(-60);
+    if (!list.length) return;
+    // painted while the page loads, like the hand words: done long before the bucket is ready, so no frame after the tap pays for it
+    const tags = list.map(t => ({ strokes: t.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr: dr || [] })), x: t.x, y: t.y, w: t.w, turn: t.turn, k: 1, st: [], label: typeof t.name === "string" ? t.name.slice(0, 24) : "" }));
+    storeW = wallLayer(tags, .0025); storeW.meshes.forEach(m => m && (m.frustumCulled = false)); document.documentElement.dataset.storeTags = tags.length; storeStart(); }
+  async function storeStart() { const W = storeW, names = []; // names become small pictures on this thread (it has the font); the rest is the worker's
+    if (W.tags.some(T => T.label)) await document.fonts.load(TAG_FONT).catch(() => {});
+    for (const T of W.tags) if (T.label) { const c = document.createElement("canvas"), g = c.getContext("2d"), f = `${Math.round(.07 * TPM)}px "Saira Stencil One", sans-serif`; g.font = f; c.width = Math.ceil(g.measureText(T.label).width) + 4; c.height = Math.round(.07 * TPM * 1.5);
+      g.font = f; g.textBaseline = "top"; g.fillStyle = "rgba(236,230,216,.88)"; g.fillText(T.label, 2, 0); T.nameBmp = await createImageBitmap(c); names.push(T.nameBmp); }
+    wallRun(W, { hands: {}, tags: W.tags, L: W.L, K: { tools: TOOL, tpm: TPM, tw: TW, tfh: TFH, th: TH } }, names); }
+  tagStore(true);
   window.tagTest = { // for the tagit check
     frameBox: () => { const r = pickFrame.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
     state: () => ({ stage: tag.stage, strokes: tag.strokes.length, points: tagCount(), playing: !!tag.play, shown: tagMesh.visible, wet: +tag.wet.toFixed(2), name: tag.name,
-      saved: (() => { try { return !!localStorage.getItem(TAG_KEY); } catch (_) { return false; } })(), leave: !leaveB.hidden }),
-    paintAt: (u, v) => tgc.getImageData(u, v, 1, 1).data[3], size: [TW, TFH, TH], drips: () => tag.strokes.reduce((n, s) => n + s.dr.length, 0), running: () => tag.runs.length };
+      saved: (() => { try { return !!localStorage.getItem(TAG_KEY); } catch (_) { return false; } })(), leave: !leaveB.hidden,
+      sent: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).sent || null; } catch (_) { return null; } })(), id: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).id || null; } catch (_) { return null; } })() }),
+    held: () => HELD.length, layer: () => storeW && { stretches: storeW.want, up: storeW.done, shown: storeW.meshes.filter(m => m && m.material.map !== wallEmpty).length }, store: () => document.documentElement.dataset.storeTags || null, paintAt: (u, v) => tgc.getImageData(u, v, 1, 1).data[3], size: [TW, TFH, TH], drips: () => tag.strokes.reduce((n, s) => n + s.dr.length, 0), running: () => tag.runs.length };
   let mornAt = 0;
   function morning(now, sv, cp, look) { // after endCam: the white, the cut, the day light; returns nothing
     const dusk = duskAt; // the dusk's last frame clears duskAt; the form must not show for that frame

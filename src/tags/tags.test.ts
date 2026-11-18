@@ -11,77 +11,37 @@ import {
   PER_ADDRESS,
   MOST_WAITING,
   REVIEW_CSS,
-  type Deps,
-  type Status,
+  TAG_LIMITS,
 } from "../../api/tags.ts";
+import { memoryDeps } from "./memory.ts";
 
 const SECRET = "x".repeat(40);
-type Row = Parameters<Deps["db"]["insert"]>[0] & { id: string; created_at: string; status: Status };
 
 /** The handlers on an in-memory table and a mail box that keeps what was sent. */
 function world(mailWorks = true) {
-  const rows: Row[] = [];
-  const sends: string[] = [];
   const mails: { subject: string; text: string }[] = [];
-  const deps: Deps = {
-    secret: SECRET,
-    db: {
-      async byDevice(device) {
-        return rows.filter((r) => r.device === device).length;
-      },
-      async byAddress(ipHash) {
-        return sends.filter((s) => s === ipHash).length;
-      },
-      async waiting() {
-        return rows.filter((r) => r.status === "waiting").length;
-      },
-      async taken() {
-        return rows;
-      },
-      async held() {
-        return rows.filter((r) => r.status === "waiting");
-      },
-      async insert(t) {
-        if (rows.some((r) => r.device === t.device)) return null;
-        const id = randomUUID();
-        sends.push(t.ip_hash);
-        rows.push({ ...t, id, created_at: new Date().toISOString(), status: "waiting" });
-        return id;
-      },
-      async drop(id) {
-        const i = rows.findIndex((r) => r.id === id);
-        if (i >= 0) rows.splice(i, 1);
-      },
-      async get(id) {
-        return rows.find((r) => r.id === id) ?? null;
-      },
-      async approve(id) {
-        rows.find((r) => r.id === id)!.status = "up";
-      },
-      async up(most) {
-        return rows.filter((r) => r.status === "up").slice(-most);
-      },
-      async statuses(ids) {
-        return rows.filter((r) => ids.includes(r.id)).map(({ id, status }) => ({ id, status }));
-      },
-    },
-    async mail(subject, text) {
-      mails.push({ subject, text });
-      return mailWorks;
-    },
-  };
+  const { rows, deps } = memoryDeps(SECRET, async (subject, text) => {
+    mails.push({ subject, text });
+    return mailWorks;
+  });
   return { rows, mails, api: handlers(() => deps) };
 }
 
 let devices = 0;
 const newDevice = () => `device-${String(++devices).padStart(16, "0")}`;
 const spotAt = (x: number, y = 2, w = 1, h = 0.5) => ({ x, y, w, h, turn: 0 });
+const stroke = (extra: Record<string, unknown> = {}) => ({
+  tool: "fat",
+  col: "#E8452C",
+  seed: 12345,
+  pts: [0, 0, 0, 0.5, 10.4, 20.6, 16.2, 0.555],
+  dr: [[4, 300.4, -3.2]],
+  ...extra,
+});
 const tag = (extra: Record<string, unknown> = {}) => ({
   name: "Kasper",
-  pen: "graffiti",
-  color: "#E8452C",
   spot: { x: -12, y: 2, w: 1.4, h: 0.6, turn: -3 },
-  strokes: [[0, 0, 0, 0.5, 10.4, 20.6, 16.2, 0.555]],
+  strokes: [stroke()],
   device: newDevice(),
   ...extra,
 });
@@ -108,23 +68,69 @@ const wall = async (api: Api) =>
 const mine = async (api: Api, id: string) =>
   ((await (await api.GET(at(`/api/tags?ids=${id},nope`))).json()) as { tags: unknown[] }).tags;
 
-test("a tag is stored rounded and small", () => {
-  const t = readTag(tag());
+test("a tag is stored as the tool makes it, rounded and small", () => {
+  const t = readTag(
+    tag({ strokes: [stroke(), stroke({ tool: "pen", col: "#2fa35a", dr: undefined })] }),
+  );
   assert.ok(!("error" in t));
-  assert.deepEqual(t.strokes, [[0, 0, 0, 50, 10, 21, 16, 56]]);
-  assert.equal(t.color, "#e8452c");
+  assert.deepEqual(t.strokes[0], {
+    tool: "fat",
+    col: "#e8452c",
+    seed: 12345,
+    pts: [0, 0, 0, 0.5, 10, 21, 16, 0.56],
+    dr: [[4, 300, -3]],
+  });
+  assert.deepEqual(
+    t.strokes.map((s) => [s.tool, s.col]),
+    [
+      ["fat", "#e8452c"],
+      ["pen", "#2fa35a"],
+    ],
+    "each stroke keeps its own tool and colour",
+  );
+  assert.deepEqual(t.strokes[1]!.dr, []);
+  assert.equal("pen" in t || "color" in t, false, "no tag-level pen or colour");
 });
 
 test("bad tags are refused with the field that is wrong", () => {
-  assert.deepEqual(readTag(tag({ name: "x".repeat(25) })), { error: "name" });
-  assert.deepEqual(readTag(tag({ pen: "<b>" })), { error: "pen" });
-  assert.deepEqual(readTag(tag({ color: "red" })), { error: "color" });
-  assert.deepEqual(readTag(tag({ spot: spotAt(0, 2, 99) })), { error: "spot" });
-  assert.deepEqual(readTag(tag({ spot: { x: 0, y: 2, w: 1, turn: 0 } })), { error: "spot" });
-  assert.deepEqual(readTag(tag({ strokes: [] })), { error: "strokes" });
-  assert.deepEqual(readTag(tag({ strokes: [[0, 0, 0]] })), { error: "strokes" });
-  assert.deepEqual(readTag(tag({ strokes: [[0, 0, 0, 2]] })), { error: "strokes" });
-  assert.deepEqual(readTag(tag({ strokes: [Array(4004 * 4).fill(0)] })), { error: "strokes" });
+  const bad = (extra: Record<string, unknown>) => readTag(tag(extra));
+  assert.deepEqual(bad({ name: "x".repeat(25) }), { error: "name" });
+  assert.deepEqual(bad({ spot: spotAt(0, 2, 99) }), { error: "spot" });
+  assert.deepEqual(bad({ spot: { x: 0, y: 2, w: 1, turn: 0 } }), { error: "spot" });
+  assert.deepEqual(bad({ strokes: [] }), { error: "strokes" });
+  assert.deepEqual(bad({ strokes: [[0, 0, 0, 0.5]] }), { error: "strokes" }, "the old flat format");
+  const one = (s: Record<string, unknown>) => bad({ strokes: [stroke(s)] });
+  for (const s of [
+    { tool: "graffiti" },
+    { col: "red" },
+    { seed: 1.5 },
+    { seed: "7" },
+    { pts: [0, 0, 0] },
+    { pts: [0, 0, 0, 2] },
+    { pts: [0, 0, 0, 0.5, 1, 1, 1, 0.5, 2] },
+    { pts: Array(4004 * 4).fill(0) },
+    { dr: "x" },
+    { dr: [[2, 300, 0]] }, // not on a point
+    { dr: [[8, 300, 0]] }, // past the last point
+    { dr: [[0, 0, 0]] },
+    { dr: [[0, 1000, 0]] },
+    { dr: [[0, 300, 50]] },
+    { dr: [[0, 300]] },
+    { dr: Array(TAG_LIMITS.drips + 1).fill([0, 300, 0]) },
+  ]) {
+    assert.deepEqual(one(s), { error: "strokes" }, JSON.stringify(s).slice(0, 60));
+  }
+  assert.deepEqual(bad({ strokes: Array(TAG_LIMITS.strokes + 1).fill(stroke()) }), {
+    error: "strokes",
+  });
+  assert.ok(!("error" in bad({ strokes: Array(TAG_LIMITS.strokes).fill(stroke()) })));
+});
+
+test("the tool ids the pitch draws with are the ones the store takes", () => {
+  const page = readFileSync("pitch/paint.src.html", "utf8");
+  const ids = [...page.matchAll(/\{ id: "(\w+)", name: "[^"]+", note:/g)].map((m) => m[1]);
+  assert.deepEqual(ids, TAG_LIMITS.tools);
+  assert.ok(page.includes("__TAG_LIMITS__"), "the pitch gets its limits from the build");
 });
 
 test("hidden characters are taken out of the name", () => {
@@ -191,16 +197,22 @@ test("Remove deletes the tag: the spot is free and the device may tag again", as
   assert.equal((await api.POST(send(tag({ device }), "5.6.7.8"))).status, 200);
 });
 
-test("a spot that is waiting or on the wall can't be tagged over", async () => {
+test("only a waiting tag holds its spot: an approved one never blocks a new tag", async () => {
   const { api, mails } = world();
   await api.POST(send(tag()));
   const over = await api.POST(send(tag({ spot: spotAt(-11.5, 2.2, 1.4, 0.6) })));
   assert.equal(over.status, 409);
   assert.deepEqual(await over.json(), { error: "spot-taken" });
+  assert.equal((await wall(api)).held.length, 1);
   await decide(api, mails[0]!, "approve");
-  assert.equal((await api.POST(send(tag({ spot: spotAt(-12) })))).status, 409);
+  assert.deepEqual((await wall(api)).held, [], "approved: nothing is held any more");
+  const on = await api.POST(send(tag({ spot: spotAt(-12) })));
+  assert.equal(on.status, 200, "a new tag may go right over the approved one");
   const next = await api.POST(send(tag({ spot: spotAt(-9, 2, 1.4, 0.6) })));
   assert.equal(next.status, 200, "right next to it is fine");
+  assert.equal((await wall(api)).held.length, 2, "the new waiting tags hold theirs");
+  const again = await api.POST(send(tag({ spot: spotAt(-12) })));
+  assert.equal(again.status, 409, "but not over a waiting one");
 });
 
 test("boxes overlap only when they really do", () => {
@@ -261,13 +273,26 @@ test("not set up: every call says so instead of failing", async () => {
   assert.equal((await api.POST(send(tag()))).status, 503);
 });
 
+test("the review page draws each stroke in its own colour", async () => {
+  const { api, mails } = world();
+  const strokes = [stroke({ col: "#d42a2a" }), stroke({ tool: "pen", col: "#2fa35a" })];
+  await api.POST(send(tag({ strokes })));
+  const html = await (await api.GET(at(reviewLink(mails[0]!.text)))).text();
+  assert.ok(html.includes('"col":"#d42a2a"') && html.includes('"col":"#2fa35a"'));
+  assert.ok(
+    html.includes("g.strokeStyle=g.fillStyle=s.col"),
+    "the page paints with the stroke's own",
+  );
+  assert.equal(html.includes("t.color"), false);
+});
+
 test("the review page takes every colour from tokens.css", async () => {
   const { api, mails } = world();
   await api.POST(send(tag()));
   const html = await (await api.GET(at(reviewLink(mails[0]!.text)))).text();
   const tokens = readFileSync("src/design/tokens.css", "utf8");
   assert.ok(html.includes(tokens), "the token file is on the page");
-  const own = html.replace(tokens, "").replace("#e8452c", ""); // the tag's own paint colour is data
+  const own = html.replace(tokens, "").replace("#e8452c", ""); // the stroke's own paint colour is data
   assert.deepEqual(own.match(/#[0-9a-f]{3,8}\b|rgba?\(/gi), null, "no colour of its own");
   assert.equal(/\d+px/.test(REVIEW_CSS), false, "no sizes of its own");
 });

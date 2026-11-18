@@ -1,10 +1,12 @@
 """Serves a folder (SERVE_DIR, default out/) like http.server, but browsers always check for a newer build.
 /next is guarded like on Vercel (middleware.ts, same rules): `/next?key=<PREVIEW_KEY>` once sets a
 cookie, without it /next is the site's 404 page. No PREVIEW_KEY: /next is closed.
+/api/tags goes to the local tag store (tools/tags/local.mjs) when TAGS_PORT is set (the pitch); /api/tags-local only from this PC.
 Usage: serve.py <host> <port>"""
 
 import functools
 import hmac
+import http.client
 import http.cookies
 import http.server
 import os
@@ -15,6 +17,7 @@ import urllib.parse
 COOKIE = "next_key"
 KEY = os.environ.get("PREVIEW_KEY", "")
 DIR = os.environ.get("SERVE_DIR", "out")
+TAGS_PORT = int(os.environ.get("TAGS_PORT") or 0)
 
 
 def clean(path):
@@ -76,7 +79,42 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(body)
         return False
 
+    def tags(self):
+        """True when the request was for the tag store and is answered (or refused) here."""
+        path = urllib.parse.urlsplit(self.path).path
+        if not TAGS_PORT or not (path == "/api/tags" or path.startswith("/api/tags-local/")):
+            return False
+        if path != "/api/tags" and self.client_address[0] not in ("127.0.0.1", "::1"):
+            self.send_error(404)  # the checks' doors are for this PC only
+            return True
+        size = int(self.headers.get("Content-Length") or 0)
+        body = self.rfile.read(size) if size else None
+        headers = {"Content-Type": self.headers.get("Content-Type", "application/json"),
+                   "X-Forwarded-For": self.client_address[0], "Host": self.headers.get("Host", "")}
+        try:
+            link = http.client.HTTPConnection("127.0.0.1", TAGS_PORT, timeout=10)
+            link.request(self.command, self.path, body, headers)
+            answer = link.getresponse()
+            data = answer.read()
+        except OSError:
+            self.send_error(502, "The local tag store isn't running")
+            return True
+        self.send_response(answer.status)
+        for key in ("Content-Type", "Cache-Control"):
+            if answer.getheader(key):
+                self.send_header(key, answer.getheader(key))
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+        return True
+
+    def do_POST(self):
+        if not self.tags():
+            self.send_error(405)
+
     def do_GET(self):
+        if self.tags():
+            return
         if self.gate():
             super().do_GET()
 
