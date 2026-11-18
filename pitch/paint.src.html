@@ -6,8 +6,8 @@
 <title>Tom Larsson</title>
 <style>
 __EMBED__
-:root { --bg: #07080a; --fg: #efe9dc; --soft: #9a958c; --spray: #ff4f1a; --ask: #f1c25a; /* a spot that stays clear (the tag tool pitch) */ color-scheme: dark; }
-html, body { background: var(--bg); color: var(--fg); }
+__TOKENS__
+html, body { background: var(--look-ground); color: var(--look-text); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
 .track { height: 1320vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP + SV_END + 100 */
@@ -17,82 +17,85 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .hud line { stroke: rgba(239, 233, 220, .55); stroke-width: 1; }
 .hud circle { fill: none; stroke: rgba(239, 233, 220, .8); stroke-width: 1; }
-.tag { position: absolute; font: 500 13px/1.5 ui-monospace, "IBM Plex Mono", monospace; letter-spacing: .06em; background: rgba(8, 9, 12, .88); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; padding: 7px 10px; text-transform: uppercase; color: var(--fg); white-space: nowrap; opacity: 0; transition: opacity .6s; }
+/* the one plate (Tom 11-18): every label, the form, the tag bars and the menus sit on it, beside what they describe and never over a picture (the plate check) */
+.tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm { background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; color: var(--look-text); font-family: ui-monospace, "IBM Plex Mono", monospace; font-size: var(--look-label); }
+@media (max-aspect-ratio: 4/5) { .tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm, .mail label, .pick .menu small { font-size: var(--look-label-phone); } }
+.tag { position: absolute; font-weight: 500; line-height: 1.5; letter-spacing: .06em; padding: 7px 10px; text-transform: uppercase; white-space: nowrap; opacity: 0; transition: opacity .6s; }
 .tag.wrap { white-space: normal; width: min(300px, 70vw); }
 /* the facts label: the label word small and uppercase, the sentences in sentence case (signum K3) */
 .tag.facts { white-space: normal; width: min(330px, 74vw); text-transform: none; letter-spacing: .02em; }
 .tag.facts b { text-transform: uppercase; letter-spacing: .08em; }
-.tag.facts span { color: var(--fg); opacity: .78; }
-.tag b { display: block; font-weight: 500; color: var(--spray); }
+.tag.facts span { color: var(--look-quiet); }
+.tag b { display: block; font-weight: 500; color: var(--look-spray); }
 .hot { position: absolute; pointer-events: auto; display: block; border-radius: 2px; }
-.hot:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+.hot:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
 .hot { cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
 .hot:hover { background: radial-gradient(closest-side, rgba(255, 110, 60, .16), transparent); }
 .head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* the end (storyboard 8): the morning light, then a form on a dark plate beside the opening wall; same plate as the facts */
 .white { position: fixed; inset: 0; background: #fff6ea; opacity: 0; pointer-events: none; }
-.mail { position: absolute; right: max(24px, 4vw); top: 50%; transform: translateY(-50%); width: min(360px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 8px; padding: 16px; background: rgba(8, 9, 12, .9); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; font: 500 14px/1.5 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); opacity: 0; transition: opacity 300ms cubic-bezier(.2, 0, 0, 1); pointer-events: none; }
+.mail { position: absolute; right: max(24px, 4vw); top: 50%; transform: translateY(-50%); width: min(360px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 8px; padding: 16px; font-weight: 500; line-height: 1.5; opacity: 0; transition: opacity 300ms cubic-bezier(.2, 0, 0, 1); pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .mail { transition: none; } }
 .mail.on { opacity: 1; pointer-events: auto; }
-.mail b { font-weight: 500; color: var(--spray); text-transform: uppercase; letter-spacing: .08em; }
-.mail label { display: grid; gap: 2px; color: var(--soft); font-size: 12px; letter-spacing: .04em; }
-.mail input, .mail textarea { font: inherit; font-size: 15px; color: var(--fg); background: transparent; border: 0; border-bottom: 1px solid rgba(239, 233, 220, .35); border-radius: 0; padding: 10px 0; min-height: 48px; box-sizing: border-box; resize: none; }
-.mail input:focus-visible, .mail textarea:focus-visible, .mail button:focus-visible, .mail a:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+.mail b { font-weight: 500; color: var(--look-spray); text-transform: uppercase; letter-spacing: .08em; }
+.mail label { display: grid; gap: 2px; color: var(--look-soft); letter-spacing: .04em; }
+.mail input, .mail textarea { font: inherit; font-size: 15px; color: var(--look-text); background: transparent; border: 0; border-bottom: 1px solid rgba(239, 233, 220, .35); border-radius: 0; padding: 10px 0; min-height: 48px; box-sizing: border-box; resize: none; }
+.mail input:focus-visible, .mail textarea:focus-visible, .mail button:focus-visible, .mail a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
 .mail .trap { position: absolute; left: -9999px; }
-.mail button { font: inherit; color: var(--fg); background: transparent; border: 1px solid var(--spray); border-radius: 2px; min-height: 48px; cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
+.mail button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid var(--look-spray); border-radius: 2px; min-height: 48px; cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
 .mail button:hover { background: rgba(255, 79, 26, .16); }
-.mail .err { margin: 0; color: var(--fg); }
+.mail .err { margin: 0; color: var(--look-text); }
 .mail nav { display: flex; gap: 16px; }
-.mail nav a { color: var(--fg); min-height: 48px; display: inline-flex; align-items: center; text-decoration: none; }
-.mail nav a:hover { color: var(--spray); }
-.mail nav .again { margin-left: auto; font: inherit; color: var(--fg); background: none; border: 0; padding: 0; min-height: 48px; cursor: pointer; } /* the loop: a button (it acts here, it opens nothing), dressed as the links, apart from the two outside ones */
-.mail nav .again:hover { color: var(--spray); background: none; }
+.mail nav a { color: var(--look-text); min-height: 48px; display: inline-flex; align-items: center; text-decoration: none; }
+.mail nav a:hover { color: var(--look-spray); }
+.mail nav .again { margin-left: auto; font: inherit; color: var(--look-text); background: none; border: 0; padding: 0; min-height: 48px; cursor: pointer; } /* the loop: a button (it acts here, it opens nothing), dressed as the links, apart from the two outside ones */
+.mail nav .again:hover { color: var(--look-spray); background: none; }
 .mail nav { flex-wrap: wrap; column-gap: 16px; row-gap: 0; }
-.mail nav .leave { margin-left: 0; color: var(--spray); } /* Leave your tag (PR5): the way to the visitor wall; first look, its place comes with Back to the start's design pitch */
+.mail nav .leave { margin-left: 0; color: var(--look-spray); } /* Leave your tag (PR5): the way to the visitor wall; first look, its place comes with Back to the start's design pitch */
 /* pick the spot (PR5): the wall dims round a work light on the spot; the frame is the tag's size on the wall */
 .pick { position: fixed; inset: 0; user-select: none; -webkit-user-select: none; pointer-events: none; opacity: 0; transition: opacity 300ms cubic-bezier(.2, 0, 0, 1); touch-action: none; }
 .pick.on { opacity: 1; pointer-events: auto; }
 .pick .dim { position: absolute; left: 0; top: 0; width: 400vmax; height: 400vmax; margin: -200vmax 0 0 -200vmax; background: radial-gradient(circle, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) var(--r0, 200px), rgba(0, 0, 0, .8) var(--r1, 420px)); will-change: transform; }
-.pick .frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 2px dashed rgba(239, 233, 220, .9); border-radius: 3px; display: grid; place-items: center; text-align: center; padding: 4px; font: 500 13px/1.4 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); text-shadow: 0 1px 3px #000; cursor: grab; will-change: transform; }
+.pick .frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 2px dashed rgba(239, 233, 220, .9); border-radius: 3px; display: grid; place-items: center; text-align: center; padding: 4px; font: 500 13px/1.4 ui-monospace, "IBM Plex Mono", monospace; color: var(--look-text); text-shadow: 0 1px 3px #000; cursor: grab; will-change: transform; }
 .pick .frame:active { cursor: grabbing; }
-.pick .frame.taken { border-color: var(--ask); }
-.pick .frame.small { border-style: solid; border-color: var(--spray); cursor: pointer; }
+.pick .frame.taken { border-color: var(--look-ask); }
+.pick .frame.small { border-style: solid; border-color: var(--look-spray); cursor: pointer; }
 .pick .ov { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
 .pick .ov path { fill: rgba(0, 0, 0, .62); }
 .pick[data-mode="1"] .ov { display: block; }
 .pick[data-mode="1"] .dim { display: none; }
 .pick .bar button[hidden], .pick .top button[hidden] { display: none; }
-.pick .frame.locked { border-style: solid; border-color: var(--spray); cursor: default; }
-.pick .frame:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
-.pick .top, .pick .bar { position: absolute; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; background: rgba(8, 9, 12, .9); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; font: 500 14px/1.5 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); }
+.pick .frame.locked { border-style: solid; border-color: var(--look-spray); cursor: default; }
+.pick .frame:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
+.pick .top, .pick .bar { position: absolute; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; font-weight: 500; line-height: 1.5; }
 .pick .top { top: 16px; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; } /* Cancel ends tagging from any step, so it sits with the words, apart from the step's own buttons */
 .pick .hint { margin: 0; flex: 1 1 auto; min-width: 0; }
 .pick .bar[hidden] { display: none; }
 .pick .bar { bottom: 16px; display: flex; justify-content: space-between; gap: 8px; padding: 6px; }
-.pick .bar button, .pick .top button { font: inherit; color: var(--fg); background: transparent; border: 1px solid transparent; border-radius: 2px; min-height: 48px; padding: 0 14px; cursor: pointer; }
-.pick .bar .go { border-color: var(--spray); }
+.pick .bar button, .pick .top button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid transparent; border-radius: 2px; min-height: 48px; padding: 0 14px; cursor: pointer; }
+.pick .bar .go { border-color: var(--look-spray); }
 .pick .bar .go:disabled { opacity: .45; cursor: default; }
 .pick .top button { flex: none; }
-.pick .bar button:focus-visible, .pick .top button:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+.pick .bar button:focus-visible, .pick .top button:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
 /* Tom's wall (PR7b): only he ever sees these */
-.adm { position: fixed; left: 16px; bottom: 16px; z-index: 40; display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 14px; background: rgba(8, 9, 12, .9); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; font: 500 14px/1.5 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); }
+.adm { position: fixed; left: 16px; bottom: 16px; z-index: 40; display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 14px; font-weight: 500; line-height: 1.5; }
 .adm[hidden] { display: none; }
-.adm button, #admSel button, #admFrames button { font: inherit; color: var(--fg); background: transparent; border: 1px solid transparent; border-radius: 2px; min-height: 48px; padding: 0 14px; cursor: pointer; }
-.adm button:focus-visible, #admSel button:focus-visible, #admFrames button:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+.adm button, #admSel button, #admFrames button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid transparent; border-radius: 2px; min-height: 48px; padding: 0 14px; cursor: pointer; }
+.adm button:focus-visible, #admSel button:focus-visible, #admFrames button:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
 #admSel button[hidden] { display: none; }
-#admSel .go { border-color: var(--spray); }
+#admSel .go { border-color: var(--look-spray); }
 #admFrames { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 #admFrames[hidden] { display: none; }
 #admFrames .wrap { position: absolute; left: 0; top: 0; }
-#admFrames .wf { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1.5px solid var(--ask); border-radius: 2px; will-change: transform; }
+#admFrames .wf { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1.5px solid var(--look-ask); border-radius: 2px; will-change: transform; }
 #admFrames .wb { position: absolute; left: 0; top: 0; display: flex; gap: 4px; pointer-events: auto; will-change: transform; }
-#admFrames .wb button { background: rgba(8, 9, 12, .9); border-color: var(--ask); }
+#admFrames .wb button { background: var(--look-plate); border-color: var(--look-ask); }
 @media (max-width: 700px) { #admFrames .wb { display: none; } }
 .pick .frame .hs, .pick .frame .ht { position: absolute; width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; border: 2px solid #08090c; touch-action: none; }
 .pick .frame .hs[hidden], .pick .frame .ht[hidden] { display: none; }
-.pick .frame .hs { right: -13px; bottom: -13px; background: var(--spray); cursor: nwse-resize; }
-.pick .frame .ht { left: 50%; top: -46px; margin-left: -13px; background: var(--ask); cursor: grab; }
-.pick .frame .ht::before { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 20px; margin-left: -1px; background: var(--ask); }
+.pick .frame .hs { right: -13px; bottom: -13px; background: var(--look-spray); cursor: nwse-resize; }
+.pick .frame .ht { left: 50%; top: -46px; margin-left: -13px; background: var(--look-ask); cursor: grab; }
+.pick .frame .ht::before { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 20px; margin-left: -1px; background: var(--look-ask); }
 .pick .frame .hs::after, .pick .frame .ht::after { content: ""; position: absolute; inset: -12px; }
 /* Tag it (PR6): the tool you hold, its colour, Undo, Done; the menus open above the bar */
 .pick .bar button:disabled { opacity: .45; cursor: default; }
@@ -102,22 +105,22 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 #tagCol, #tagUndo { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 10px; min-width: 48px; flex: none; }
 .pick .chev { opacity: .6; font-size: 11px; }
 .pick .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(239, 233, 220, .3); box-sizing: border-box; flex: none; }
-.pick .menu { position: absolute; bottom: 82px; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 2px; padding: 6px; background: rgba(8, 9, 12, .95); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; font: 500 14px/1.3 ui-monospace, "IBM Plex Mono", monospace; }
+.pick .menu { position: absolute; bottom: 82px; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 2px; padding: 6px; font-weight: 500; line-height: 1.3; }
 .pick .menu[hidden] { display: none; }
-.pick .menu button { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 10px; font: inherit; text-align: left; color: var(--fg); background: transparent; border: 0; border-radius: 2px; cursor: pointer; }
+.pick .menu button { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 10px; font: inherit; text-align: left; color: var(--look-text); background: transparent; border: 0; border-radius: 2px; cursor: pointer; }
 .pick .menu button[aria-pressed="true"] { background: rgba(255, 79, 26, .16); }
-.pick .menu button:focus-visible { outline: 2px solid var(--spray); outline-offset: -2px; }
-.pick .menu small { display: block; color: var(--soft); font-size: 12px; }
+.pick .menu button:focus-visible { outline: 2px solid var(--look-spray); outline-offset: -2px; }
+.pick .menu small { display: block; color: var(--look-soft); }
 .pick .menu.cols { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .pick .menu.cols button { justify-content: center; padding: 0; }
 .pick .menu.cols button[aria-pressed="true"] { background: transparent; }
-.pick .menu.cols button[aria-pressed="true"] .dot { box-shadow: 0 0 0 2px #08090c, 0 0 0 4px var(--fg); }
+.pick .menu.cols button[aria-pressed="true"] .dot { box-shadow: 0 0 0 2px #08090c, 0 0 0 4px var(--look-text); }
 #tagSend { flex-wrap: wrap; }
-#tagName { flex: 1 1 100%; min-height: 48px; box-sizing: border-box; padding: 0 12px; font: 500 16px/1.3 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); background: rgba(239, 233, 220, .06); border: 1px solid rgba(239, 233, 220, .3); border-radius: 2px; user-select: text; -webkit-user-select: text; }
-#tagName::placeholder { color: var(--soft); opacity: 1; }
-#tagName:focus-visible { outline: 2px solid var(--spray); outline-offset: 2px; }
+#tagName { flex: 1 1 100%; min-height: 48px; box-sizing: border-box; padding: 0 12px; font: 500 16px/1.3 ui-monospace, "IBM Plex Mono", monospace; color: var(--look-text); background: rgba(239, 233, 220, .06); border: 1px solid rgba(239, 233, 220, .3); border-radius: 2px; user-select: text; -webkit-user-select: text; }
+#tagName::placeholder { color: var(--look-soft); opacity: 1; }
+#tagName:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 2px; }
 @media (max-aspect-ratio: 4/5) { .mail { right: 16px; left: 16px; width: auto; top: auto; bottom: 16px; transform: none; padding: 12px 16px; gap: 4px; } .mail textarea { min-height: 72px; } }
-.nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); font: 16px system-ui; }
+.nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--look-soft); font: 16px system-ui; }
 </style>
 
 <canvas id="c"></canvas>
@@ -142,6 +145,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   // as the light comes on. (The hand-written tag code stays but is off: no pen samples.)
   const HAND = __HAND__;
   const NARROW = innerWidth / innerHeight < .8;
+  const PROT = []; // what a plate must never cover: [name, one corner, the other corner (in the wall's own space), which plates ("" = all)]; the plates check reads them
   const canvas = document.getElementById("c");
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" }); }
@@ -443,6 +447,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     m.fillStyle = "#000"; m.fillRect(0, 0, W, H); m.fillStyle = "#fff"; m.font = font(size); m.textBaseline = "alphabetic";
     MURAL.forEach((l, i) => m.fillText(l, x0, top + i * lh));
     muralPin = toWorld(x0 + lw * (NARROW ? .55 : .985), top - size * .72);
+    PROT.push(["the mural", toWorld(x0, top - size * .74), toWorld(x0 + lw, top + (MURAL.length - 1) * lh + size * .2), ".tag"], ["the mural's first line", toWorld(x0, top - size * .74), toWorld(x0 + lw, top + size * .2), ".mail"]); // the form on a phone covers the lower lines, never the first
     // a half-size grid for the flow
     const full = m.getImageData(0, 0, W, H).data, w = W >> 1, h = H >> 1, N = w * h, PXH = PX / 2;
     const lit = new Uint8Array(N);
@@ -856,7 +861,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   const pieceMap = tex("assets/epa_wall.webp", true, 1, 1); pieceMap.wrapS = pieceMap.wrapT = THREE.ClampToEdgeWrapping;
   const piece = new THREE.Mesh(new THREE.PlaneGeometry(EW, EH), new THREE.MeshStandardMaterial({ map: pieceMap, transparent: true, depthWrite: false, roughness: .55,
     normalMap: tex("assets/wall4_nor_gl.jpg", false, EW / TILE, EH / TILE, (EX - EW / 2 - (WX - WW / 2)) / TILE, (EY - EH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.9, .9), polygonOffset: true, polygonOffsetFactor: -2 }));
-  piece.position.set(EX, EY, .002); scene.add(piece);
+  piece.position.set(EX, EY, .002); scene.add(piece); PROT.push(["epaRadar's painting", V(EX - EW / 2, EY + EH / 2 - 924 / 960 * EH, 0), V(EX + EW / 2, EY + EH / 2 - 98 / 960 * EH, 0)]); // the painted rows 98 to 924 of its 960: the rest is bare concrete
   // the painted signs, in the picture's pixels (left, top, right, bottom): "Open the site", "Code"
   const SIGNS = [[121, 567, 501, 662], [189, 672, 442, 762]].map(([x0, y0, x1, y1]) => [V(EX - EW / 2 + x0 / 1536 * EW, EY + EH / 2 - y0 / 960 * EH, 0), V(EX - EW / 2 + x1 / 1536 * EW, EY + EH / 2 - y1 / 960 * EH, 0)]);
   // the underpass (Tom 11-18): the street goes down its second flight under a bridge, from the painting's right edge to just short of
@@ -1023,7 +1028,8 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   // behind: the yard (gravel, daylight) and the preschool's own public photo (raddavarfruberga public/img/vardfruberga-entre.jpg), unlit and out of the fog
   const PW3 = NARROW ? 9 : 10.5, PH3 = PW3 * 900 / 1600, PZ = -6;
   const photo3 = new THREE.Mesh(new THREE.PlaneGeometry(PW3, PH3), new THREE.MeshBasicMaterial({ map: tex("assets/rvf_photo.jpg", true, 1, 1), fog: false, color: 0xf2f2f2 }));
-  photo3.material.map.wrapS = photo3.material.map.wrapT = THREE.ClampToEdgeWrapping; photo3.position.set(RX, G3 + PH3 / 2 - .35, PZ); photo3.visible = false; scene.add(photo3);
+  photo3.material.map.wrapS = photo3.material.map.wrapT = THREE.ClampToEdgeWrapping; photo3.position.set(RX, G3 + PH3 / 2 - .35, PZ); photo3.visible = false; scene.add(photo3); PROT.push(["the preschool photo", V(RX - HRX * .8, HC - HRY * .8, 0), V(RX + HRX * .8, HC + HRY * .8, 0)]); // what shows through the hole (its rough edge swings 12 %: the box is 80 % of it)
+
   const yard3 = new THREE.Mesh(new THREE.PlaneGeometry(PW3 + 2, -PZ), new THREE.MeshBasicMaterial({ map: tex("assets/road_diff.jpg", true, (PW3 + 2) / 3, -PZ / 3), color: 0xc9b493, fog: false }));
   yard3.rotation.x = -Math.PI / 2; yard3.position.set(RX, G3 + .004, PZ / 2); yard3.visible = false; scene.add(yard3);
   const sun3 = new THREE.SpotLight(0xffe0b0, 0, 24, .34, 1, 1.1); sun3.position.set(RX, G3 + 3.6, -5); sun3.target.position.set(RX, G3, 7); scene.add(sun3, sun3.target);
@@ -1276,7 +1282,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     { x: 75, key: 1045, leave: 1070, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       print: N_ ? [75, G3 + 3.35, 2.5] : [75, G3 + 3.55, 3] /* the sheet: centre x, top, width */,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base.<br>51 pull requests, from the first sketch to live<br>Work project, built alone<br><span>Astro &middot; TypeScript</span>" } ];
-  U4.forEach((u, i) => { if (u.board) u.B = board(...u.board); if (u.print) u.P = printSheet(...u.print);
+  U4.forEach((u, i) => { if (u.board) { u.B = board(...u.board); PROT.push([u.name + "'s board", V(u.board[0], u.board[1] - u.board[3], 0), V(u.board[0] + u.board[2], u.board[1], 0)]); } if (u.print) { u.P = printSheet(...u.print); PROT.push(["the EDGE sheet", V(u.print[0] - u.print[2] / 2, u.print[1] - u.P.h, 0), V(u.print[0] + u.print[2] / 2, u.print[1], 0)]); }
     if (u.cab) cabinet(...u.cab); u.start = 0;
     u.hots = u.links.map((l, j) => { const a = document.createElement("a"); a.className = "hot"; a.href = l.href; a.target = "_blank"; a.rel = "noopener"; a.setAttribute("aria-label", l.t); a.tabIndex = -1; a.style.display = "none"; document.querySelector(".hud").append(a); return a; });
     if (u.plate) { const el = document.createElement("div"); el.className = "tag facts"; el.innerHTML = u.plate; document.querySelector(".hud").append(el); u.el = el;
@@ -1381,6 +1387,8 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     else { const box = (x0, y0, x1, y1) => { const [a, b] = proj(V(x0, y1, 0)), [c, d] = proj(V(x1, y0, 0)); return `M${a.toFixed(1)} ${b.toFixed(1)}H${c.toFixed(1)}V${d.toFixed(1)}H${a.toFixed(1)}Z`; };
       pickOv.firstChild.setAttribute("d", `M-9 -9H${innerWidth + 9}V${innerHeight + 9}H-9Z` + box(AREA.x0, AREA.y0, AREA.x1, AREA.y1)); // dark outside the area
       pickOv.lastChild.setAttribute("d", CLEAR.map(c => box(Math.max(c[0], AREA.x0), Math.max(c[1], AREA.y0), Math.min(c[2], AREA.x1), Math.min(c[3], AREA.y1))).join("")); } } // and over what stays clear
+  window.plateTest = { // for the plates check: the pictures and the mural on the screen now, and every plate that shows
+    pictures: () => PROT.map(([name, a, b, only]) => { const [x0, y0, o0] = proj(a), [x1, y1, o1] = proj(b); return o0 && o1 ? { name, only, l: Math.min(x0, x1), t: Math.min(y0, y1), r: Math.max(x0, x1), b: Math.max(y0, y1) } : null; }).filter(Boolean) };
   window.pickTest = { // for the pickspot check: where things are on the screen now
     clearOnScreen: () => { const c = CLEAR[0], [px, py] = proj(V(c[0] + .4, c[3] - .2, 0)); return { x: px, y: py }; }, // the title's top left corner
     freeOnScreen: () => { for (let y = AREA.y1 - 1; y > AREA.y0 + 1; y -= .4) for (let x = AREA.x0 + 1; x < AREA.x1 - 1; x += .4) { if (kept(...inArea(x, y)) || Math.hypot(x - pick.x, y - pick.y) < 1) continue; /* a tap puts the frame at inArea's place */ const [px, py] = proj(V(x, y, 0)); if (px > 80 && px < innerWidth - 80 && py > 140 && py < innerHeight - 140) return { x: px, y: py }; } return null; },
@@ -1460,7 +1468,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     tagColB.querySelector(".dot").style.background = tag.col; tagColB.setAttribute("aria-label", "Colour: " + TCOLS.find(c => c[1] === tag.col)[0]);
     tagToolsM.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === tag.tool.id)); tagColsM.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.c === tag.col));
     tagUndo.disabled = tagDone.disabled = !tag.strokes.length; }
-  tagToolsM.innerHTML = TTOOLS.map(t => `<button type="button" data-t="${t.id}" aria-pressed="false"><span class="ic" style="color: var(--soft)">${TICON[t.icon]}</span><span>${t.name}<small>${t.note}</small></span></button>`).join("");
+  tagToolsM.innerHTML = TTOOLS.map(t => `<button type="button" data-t="${t.id}" aria-pressed="false"><span class="ic" style="color: var(--look-soft)">${TICON[t.icon]}</span><span>${t.name}<small>${t.note}</small></span></button>`).join("");
   tagColsM.innerHTML = TCOLS.map(([n, h]) => `<button type="button" data-c="${h}" aria-label="${n}" title="${n}" aria-pressed="false"><span class="dot" style="background: ${h}"></span></button>`).join("");
   tagToolB.addEventListener("click", () => { tagMenus(tagToolsM.hidden ? tagToolsM : null); if (!tagToolsM.hidden) tagToolsM.querySelector('[aria-pressed="true"]').focus({ preventScroll: true }); });
   tagColB.addEventListener("click", () => { tagMenus(tagColsM.hidden ? tagColsM : null); if (!tagColsM.hidden) tagColsM.querySelector('[aria-pressed="true"]').focus({ preventScroll: true }); });
@@ -1824,7 +1832,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     // the label and the links on the painted signs, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
     const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn);
-    pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .25, EY - EH / 2 + .3, 0) : V(EX - EW * .3, EY + EH / 2 - .25, 0), NARROW ? 18 : 24, NARROW ? 60 : -96); // phone: under the painting, on the empty floor
+    pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .25, EY - EH / 2 + .3, 0) : V(EX - EW * .3, EY + EH / 2 - .25, 0), NARROW ? 18 : 24, NARROW ? 60 : -112); // phone: under the painting, on the empty floor
     // the two signs hang one under the other: each tap area is at least 48 px tall, growing away from the line between them, so they never overlap
     const sgn = SIGNS.map(([a, b]) => [...proj(a), ...proj(b)]), seam = (sgn[0][4] + sgn[1][1]) / 2;
     const signsIn = sec >= .3 && pan > .5 && walk3 < .5 && sgn.every(b => b[2] && b[3] > 0 && b[0] < innerWidth && b[4] > 0 && b[1] < innerHeight); // at this wall, both signs in view

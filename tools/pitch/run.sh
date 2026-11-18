@@ -17,7 +17,7 @@ root="$PWD"
 mkdir -p .cache/shots .cache/walk
 . tools/walk/graphics.sh || exit 1
 
-names="tour waits endwaits replay2 reduced contrast tagsfull scrollup loop pickspot tagit tagstore admin"
+names="tour waits endwaits replay2 reduced contrast plates tagsfull scrollup loop pickspot tagit tagstore admin"
 FRAME_CHECKS=" waits endwaits tagsfull "
 JOBS="${JOBS:-4}"
 out=$(mktemp -d)
