@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
   colorOn,
+  cutLine,
   complete,
   misePins,
   painter,
@@ -66,4 +67,11 @@ test("reads the mise pins and the versions tools print", () => {
   assert.equal(versionIn("v26.7.0"), "26.7.0");
   assert.equal(versionIn("Vercel CLI 58.4.4"), "58.4.4");
   assert.equal(versionIn("nothing"), null);
+});
+
+test("cutLine cuts a huge line with a marker and leaves short ones", () => {
+  assert.equal(cutLine("short"), "short");
+  const cut = cutLine("x".repeat(1_600_000));
+  assert.equal(cut.length, 301);
+  assert.ok(cut.endsWith("…"));
 });

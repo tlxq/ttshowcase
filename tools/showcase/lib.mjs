@@ -202,3 +202,8 @@ export function versionIn(text) {
   const m = String(text).match(/(\d+\.\d+\.\d+)/);
   return m ? m[1] : null;
 }
+
+// A failed log line can be megabytes (inlined font data): print at most `max` characters, with a visible marker.
+export function cutLine(line, max = 300) {
+  return line.length > max ? line.slice(0, max) + "…" : line;
+}

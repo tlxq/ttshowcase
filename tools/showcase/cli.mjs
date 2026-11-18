@@ -29,6 +29,7 @@ import {
   tick,
   took,
   versionIn,
+  cutLine,
 } from "./lib.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -95,7 +96,7 @@ function step(name, cmd, args, { log, env } = {}) {
 }
 function showFailure(r) {
   const tail = r.out.trim().split("\n").slice(-20);
-  for (const l of tail) say(c.dim("  " + l));
+  for (const l of tail) say(c.dim("  " + cutLine(l)));
   say(c.dim(`  Full log: ${r.log}`));
 }
 

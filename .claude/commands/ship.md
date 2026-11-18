@@ -2,7 +2,7 @@
 description: Check, review, commit, push, PR and squash merge the current branch; a visual change merges only after Tom says it feels right.
 ---
 
-Ship the current branch. Rules: `CLAUDE.md`. GitHub CI is off, so the checks run here, on the desk.
+Ship the current branch. Rules: `CLAUDE.md`. GitHub runs `mise run check` on every PR; the pitch checks and walks run here, on the desk.
 
 1. Not on `master`. Nothing to ship: say so and stop.
 2. A `.md` file changed: Tom has read its text in this session. If not, show it to him and stop.
