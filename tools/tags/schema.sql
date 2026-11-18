@@ -20,7 +20,8 @@ create table if not exists tags (
 -- One tag per device, enforced by the database too (two sends at the same moment can't both get in).
 create unique index if not exists tags_one_per_device on tags (device);
 create index if not exists tags_up on tags (created_at) where status = 'up';
--- Sends per scrambled address in the last day (rows older than a day are deleted on every send).
+-- Sends per scrambled address in the last day (rows older than a day are deleted on every send). The mail form
+-- (api/contact.ts) counts here too, under its own scrambled address.
 create table if not exists sends (
   ip_hash text not null,
   at      timestamptz not null default now()
