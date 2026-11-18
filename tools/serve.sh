@@ -34,6 +34,9 @@ fi
 if [ -n "${SERVE_TAGS:-}" ]; then
   TAGS_PORT=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
   export TAGS_PORT
+  # Tom's key for the local store, when this PC has it (Proton Pass through ttpass); else a test key (tools/tags/local.mjs)
+  admin_file="$HOME/.config/ttdevs/ttshowcase-admin.key"
+  [ -z "${ADMIN_KEY:-}" ] && [ -r "$admin_file" ] && ADMIN_KEY=$(<"$admin_file") && export ADMIN_KEY
   node tools/tags/local.mjs "$TAGS_PORT" &
   tags=$!
   trap 'kill "$tags" 2>/dev/null' EXIT

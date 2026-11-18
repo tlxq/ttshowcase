@@ -74,6 +74,26 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .pick .bar .go:disabled { opacity: .45; cursor: default; }
 .pick .top button { flex: none; }
 .pick .bar button:focus-visible, .pick .top button:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+/* Tom's wall (PR7b): only he ever sees these */
+.adm { position: fixed; left: 16px; bottom: 16px; z-index: 40; display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 14px; background: rgba(8, 9, 12, .9); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; font: 500 14px/1.5 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); }
+.adm[hidden] { display: none; }
+.adm button, #admSel button, #admFrames button { font: inherit; color: var(--fg); background: transparent; border: 1px solid transparent; border-radius: 2px; min-height: 48px; padding: 0 14px; cursor: pointer; }
+.adm button:focus-visible, #admSel button:focus-visible, #admFrames button:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+#admSel button[hidden] { display: none; }
+#admSel .go { border-color: var(--spray); }
+#admFrames { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+#admFrames[hidden] { display: none; }
+#admFrames .wrap { position: absolute; left: 0; top: 0; }
+#admFrames .wf { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1.5px solid var(--ask); border-radius: 2px; will-change: transform; }
+#admFrames .wb { position: absolute; left: 0; top: 0; display: flex; gap: 4px; pointer-events: auto; will-change: transform; }
+#admFrames .wb button { background: rgba(8, 9, 12, .9); border-color: var(--ask); }
+@media (max-width: 700px) { #admFrames .wb { display: none; } }
+.pick .frame .hs, .pick .frame .ht { position: absolute; width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; border: 2px solid #08090c; touch-action: none; }
+.pick .frame .hs[hidden], .pick .frame .ht[hidden] { display: none; }
+.pick .frame .hs { right: -13px; bottom: -13px; background: var(--spray); cursor: nwse-resize; }
+.pick .frame .ht { left: 50%; top: -46px; margin-left: -13px; background: var(--ask); cursor: grab; }
+.pick .frame .ht::before { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 20px; margin-left: -1px; background: var(--ask); }
+.pick .frame .hs::after, .pick .frame .ht::after { content: ""; position: absolute; inset: -12px; }
 /* Tag it (PR6): the tool you hold, its colour, Undo, Done; the menus open above the bar */
 .pick .bar button:disabled { opacity: .45; cursor: default; }
 #tagTool { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 10px; text-align: left; }
@@ -103,7 +123,8 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 <canvas id="c"></canvas>
 <div class="track"></div>
 <div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag edge" id="tagUp"><b>Scroll up</b>Visitors' tags</div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map. Only friends see where you are.<br>Degree project, built by me<br><span>React Native &middot; Expo &middot; Supabase &middot; Postgres &middot; pgTAP</span></div></div>
-<div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="tagMoveB" hidden>Move it</button><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"></div><div class="menu" id="tagTools" role="group" aria-label="Tool" hidden></div><div class="menu cols" id="tagCols" role="group" aria-label="Colour" hidden></div><div class="bar" id="tagBar" hidden><button type="button" id="tagTool" aria-expanded="false" aria-controls="tagTools"><span class="ic"></span><span class="nm"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagCol" aria-expanded="false" aria-controls="tagCols" aria-label="Colour"><span class="dot"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagUndo" aria-label="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="go" id="tagDone" disabled>Done</button></div><div class="bar" id="tagSend" hidden><input id="tagName" maxlength="24" placeholder="Your name (optional)" aria-label="Your name, optional" autocomplete="nickname" enterkeyhint="done" spellcheck="false"><button type="button" id="tagBack">Back</button><button type="button" class="go" id="tagPut">Put it on the wall</button></div></div>
+<div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div id="admFrames" hidden></div><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="tagMoveB" hidden>Move it</button><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"><i class="hs" id="admSize" hidden aria-hidden="true"></i><i class="ht" id="admTurn" hidden aria-hidden="true"></i></div><div class="menu" id="tagTools" role="group" aria-label="Tool" hidden></div><div class="menu cols" id="tagCols" role="group" aria-label="Colour" hidden></div><div class="bar" id="admSel" hidden><button type="button" class="go" id="admApprove" hidden>Approve</button><button type="button" id="admRemove" hidden>Remove</button><button type="button" id="admUndo" hidden>Undo</button><button type="button" id="admDone">Done</button></div><div class="bar" id="tagBar" hidden><button type="button" id="tagTool" aria-expanded="false" aria-controls="tagTools"><span class="ic"></span><span class="nm"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagCol" aria-expanded="false" aria-controls="tagCols" aria-label="Colour"><span class="dot"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagUndo" aria-label="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="go" id="tagDone" disabled>Done</button></div><div class="bar" id="tagSend" hidden><input id="tagName" maxlength="24" placeholder="Your name (optional)" aria-label="Your name, optional" autocomplete="nickname" enterkeyhint="done" spellcheck="false"><button type="button" id="tagBack">Back</button><button type="button" class="go" id="tagPut">Put it on the wall</button></div></div>
+<div class="adm" id="adm" hidden><span id="admNote">Admin</span><button type="button" id="admOpen">Edit the wall</button></div>
 <div class="white" id="white"></div>
 <div class="head" id="head"><span>Tom Larsson &middot; a collection of builds</span><h1>I build and run things myself.</h1></div>
 
@@ -1392,7 +1413,9 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   const keptBy = (x, y) => CLEAR.some(hits(x, y)) ? "clear" : HELD.some(hits(x, y)) ? "held" : null, kept = (x, y) => !!keptBy(x, y); // HELD: where a waiting tag of someone else is (the store); it stays lit, only the frame turns yellow
   const pickEl = document.getElementById("pick"), pickDim = pickEl.querySelector(".dim"), pickOv = pickEl.querySelector(".ov"), pickFrame = document.getElementById("pickFrame"), pickHint = document.getElementById("pickHint"),
     pickCancel = document.getElementById("pickCancel"), tagMoveB = document.getElementById("tagMoveB");
-  const pick = { mode: 0, from: null, t0: 0, dur: 1, k: 0, fog: 0, x: 0, y: 0, cx: 0, cy: 0, ox: 0, drag: null, pan: null, locked: false, ui: false, r: 0, last: [V(), V()] };
+  const pick = { mode: 0, from: null, t0: 0, dur: 1, k: 0, fog: 0, x: 0, y: 0, cx: 0, cy: 0, ox: 0, drag: null, pan: null, locked: false, ui: false, r: 0, fw: FRAME.w, fh: FRAME.h, rot: 0, last: [V(), V()] }; // fw, fh, rot: the frame's own size and turn (Tom's wall picks a tag up in it)
+  // Tom's wall (PR7b): off for everyone. on: his cookie was answered by the server; view: the wide shot with every tag pickable; make: he is drawing a tag of his own (the tag tool, with no limits)
+  const adm = { on: false, view: false, make: false, map: new Map(), queue: [], sel: null, g: null, undo: null, note: "", fail: false, busy: false, ready: false, listed: false, link: new URLSearchParams(location.search).get("tag") };
   const th = () => Math.tan(camera.fov * Math.PI / 360);
   const ovD = () => Math.min(30, Math.max((AREA.x1 - AREA.x0 + 1.5) / (2 * th() * camera.aspect), (AREA.y1 - AREA.y0 + 1.5) / (2 * th()))); // the whole area on a laptop; a phone sees ~11 m and swipes
   const ovHalf = () => ovD() * th() * camera.aspect; // half the width the wide shot sees on the wall
@@ -1402,30 +1425,30 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     pickFrame.setAttribute("aria-valuetext", why === "held" ? "someone is tagging here" : t ? "kept clear" : "free"); tagMoveB.hidden = m !== 2 || tag.stage !== "draw";
     tagBar.hidden = m !== 2 || tag.stage !== "draw"; tagSend.hidden = m !== 2 || tag.stage !== "send" || !!tag.play; if (tagBar.hidden) tagMenus(); // wide: tapping the wall is the step, no buttons
     pickHint.textContent = tag.stage === "draw" ? (tag.full ? "That's all the paint one tag holds. Undo a stroke or press Done." : "Draw your tag inside the frame.") : tag.stage === "send" ? (tag.play ? "Your tag, once more." : tag.err ? "Couldn't keep your tag: this browser doesn't let the page save it. Try again, or Cancel." : "Add a name if you like, then put it on the wall.") : m === 1 && pick.nope && t ? (why === "held" ? "Someone's tagging here. Pick another spot." : "This part stays clear. Tap a lit part of the wall.")
-      : "Tap a lit part of the wall where your tag goes." + (ovHalf() * 2 < AREA.x1 - AREA.x0 ? " Swipe to see more of it." : ""); }
+      : "Tap a lit part of the wall where your tag goes." + (ovHalf() * 2 < AREA.x1 - AREA.x0 ? " Swipe to see more of it." : ""); admPaint(); }
   function pickGo(m, dur) { pick.from = [pick.last[0].clone(), pick.last[1].clone()]; pick.t0 = performance.now(); pick.mode = m; pick.dur = dur; pick.pan = null;
     pick.ui = false; pickEl.classList.remove("on"); pickEl.setAttribute("aria-hidden", true); pickEl.inert = true; pickFrame.tabIndex = -1; pickShow(); }
   function pickAt(x, y) { [pick.x, pick.y] = inArea(x, y); pickShow(); }
-  document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); if (pick.mode || duskAt) return; CLEAR = clearBoxes(); tagStore(false);
+  document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); if (pick.mode || duskAt) return; if (adm.on) { admOpen(); return; } CLEAR = clearBoxes(); tagStore(false);
     let best = null, bd = 1e9; for (let x = AREA.x0 + FRAME.w / 2; x <= AREA.x1 - FRAME.w / 2; x += .25) for (let y = AREA.y0 + FRAME.h / 2; y <= AREA.y1 - FRAME.h / 2; y += .25) { const d = Math.hypot(x + 6.5, y - 3.5); if (d < bd && !kept(x, y)) { bd = d; best = [x, y]; } }
     [pick.x, pick.y] = best || [-12, 3]; pick.ox = ovX(NARROW ? pick.x : 0); pick.locked = false; pickGo(1, 1.4); // the first spot offered: free, beside the opening, where the first screen looks
     root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
   const pickIn = () => { [pick.cx, pick.cy] = [pick.x, pick.y]; pickGo(2, .9); };
-  const pickWideGo = () => { pick.locked = false; pick.nope = false; pick.ox = ovX(pick.x); pickGo(1, .9); }, pickQuit = () => { if (pick.mode > 0) { tagStop(); pickGo(-1, 1.2); } }; // Cancel: back to the form from any step
+  const pickWideGo = () => { pick.locked = false; pick.nope = false; pick.ox = ovX(pick.x); pickGo(1, .9); }, pickQuit = () => { if (pick.mode > 0) { tagStop(); if (adm.make) { adm.make = false; adm.view = true; adm.fail = false; pickWideGo(); return; } if (adm.view) { adm.view = false; admSelect(null); } pickGo(-1, 1.2); } }; // Cancel: back to the form from any step
   // the spot chosen (a tap, or Enter on the frame): kept clear says so; else fly in and draw, with the paint so far if it was moved
-  const pickChoose = () => { if (kept(pick.x, pick.y)) { pick.nope = true; pickShow(); return; } pick.locked = true; pickIn(); tag.stage === "move" ? tagMoveTo() : tagStart(); };
-  const pickBack = () => { if (tagMenus()) return; if (tag.stage === "send") { if (!tag.play) tagRedo(); return; } if (tag.stage === "draw") { tagMove(); return; }
+  const pickChoose = () => { if (!adm.make && kept(pick.x, pick.y)) { pick.nope = true; pickShow(); return; } pick.locked = true; pickIn(); tag.stage === "move" ? tagMoveTo() : tagStart(); };
+  const pickBack = () => { if (tagMenus()) return; if (adm.view) { if (adm.sel || adm.undo) admSelect(null); else pickQuit(); return; } if (tag.stage === "send") { if (!tag.play) tagRedo(); return; } if (tag.stage === "draw") { tagMove(); return; }
     if (tag.stage === "move") { [pick.x, pick.y] = [tag.x, tag.y]; pickChoose(); return; } pickQuit(); };
   // Esc: one step back (a menu closes; the name -> drawing; drawing -> the wide shot to move it; moving -> back to where it was; the wide shot -> the form). Esc never throws paint away
   pickCancel.addEventListener("click", pickQuit); tagMoveB.addEventListener("click", () => tagMove());
   const wallAt = (px, py) => { const r = V(px / innerWidth * 2 - 1, 1 - py / innerHeight * 2, .5).unproject(camera).sub(camera.position), k = -camera.position.z / r.z; return k > 0 ? [camera.position.x + r.x * k, camera.position.y + r.y * k] : null; };
-  pickEl.addEventListener("pointerdown", e => { if (pick.locked || !pick.ui || e.target.closest(".bar, .top")) return; pickEl.setPointerCapture(e.pointerId); pick.pan = { px: e.clientX, py: e.clientY, ox: pick.ox, moved: false }; });
-  pickEl.addEventListener("pointermove", e => { const p = pick.pan; if (!p) { if (pick.mode === 1 && pick.ui && e.pointerType === "mouse" && !e.target.closest(".top")) { const w = wallAt(e.clientX, e.clientY); if (w) { pick.nope = false; pickAt(w[0], w[1]); } } return; } // a mouse shows where a click puts it const dx = e.clientX - p.px; if (Math.hypot(dx, e.clientY - p.py) > 8) p.moved = true; // a swipe is never a tap; in the wide shot on a phone it moves along the wall
+  pickEl.addEventListener("pointerdown", e => { if (adm.view || pick.locked || !pick.ui || e.target.closest(".bar, .top")) return; pickEl.setPointerCapture(e.pointerId); pick.pan = { px: e.clientX, py: e.clientY, ox: pick.ox, moved: false }; });
+  pickEl.addEventListener("pointermove", e => { const p = pick.pan; if (!p) { if (!adm.view && pick.mode === 1 && pick.ui && e.pointerType === "mouse" && !e.target.closest(".top")) { const w = wallAt(e.clientX, e.clientY); if (w) { pick.nope = false; pickAt(w[0], w[1]); } } return; } // a mouse shows where a click puts it const dx = e.clientX - p.px; if (Math.hypot(dx, e.clientY - p.py) > 8) p.moved = true; // a swipe is never a tap; in the wide shot on a phone it moves along the wall
     if (p.moved && pick.mode === 1) pick.ox = ovX(p.ox - dx * ovHalf() * 2 / innerWidth); });
   pickEl.addEventListener("pointerup", e => { const p = pick.pan; pick.pan = null; if (!p || p.moved) return; const w = wallAt(e.clientX, e.clientY); if (!w) return; // a tap: the frame goes there (wide: and the camera flies in)
     const [x, y] = w; if (pick.mode !== 1 || x < AREA.x0 || x > AREA.x1 || y < AREA.y0 || y > AREA.y1) return; pickAt(x, y); pickChoose(); });
   pickEl.addEventListener("pointercancel", () => pick.pan = null);
-  pickFrame.addEventListener("keydown", e => { if (pick.locked) return; if (e.key === "Enter" && pick.mode === 1) { e.preventDefault(); pickChoose(); return; }
+  pickFrame.addEventListener("keydown", e => { if (adm.view) return admKey(e); if (pick.locked) return; if (e.key === "Enter" && pick.mode === 1) { e.preventDefault(); pickChoose(); return; }
     pick.nope = false; const st = pick.mode === 1 ? .5 : .1, a = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, st], ArrowDown: [0, -st] }[e.key]; if (!a) return; e.preventDefault(); pickAt(pick.x + a[0], pick.y + a[1]); if (pick.mode === 1) pick.ox = ovX(pick.x); });
   addEventListener("keydown", e => { if (e.key === "Escape" && pick.mode > 0) pickBack(); });
   function pickCam(now, dt, cp, look) { // after the morning set the form's view: from there to the wide shot, or in close to the spot, or back
@@ -1439,8 +1462,8 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     const ui = pick.mode > 0 && tk > .97; if (ui !== pick.ui) { pick.ui = ui; pickEl.classList.toggle("on", ui); pickEl.dataset.mode = pick.mode; pickEl.setAttribute("aria-hidden", !ui); pickEl.inert = !ui; pickFrame.tabIndex = ui ? 0 : -1; if (ui) (pick.locked ? tagToolB : pickFrame).focus({ preventScroll: true }); }
     if (pick.mode < 0 && tk >= 1) { pick.mode = 0; pick.refocus = true; pick.k = 0; pick.fog = 0; scene.fog.density = .04; root.style.overflow = ""; root.style.touchAction = ""; } }
   function pickPlace() { if (!pick.ui) return; camera.updateMatrixWorld(); // after the camera moved: the frame, and the work light (close) or the lit area (wide)
-    const [ax, ay] = proj(V(pick.x - FRAME.w / 2, pick.y + FRAME.h / 2, 0)), [bx, by] = proj(V(pick.x + FRAME.w / 2, pick.y - FRAME.h / 2, 0)), w = bx - ax, h = by - ay;
-    pickFrame.style.width = w + "px"; pickFrame.style.height = h + "px"; pickFrame.style.transform = `translate(${ax}px, ${ay}px)`;
+    const [ax, ay] = proj(V(pick.x - pick.fw / 2, pick.y + pick.fh / 2, 0)), [bx, by] = proj(V(pick.x + pick.fw / 2, pick.y - pick.fh / 2, 0)), w = bx - ax, h = by - ay;
+    pickFrame.style.width = w + "px"; pickFrame.style.height = h + "px"; pickFrame.style.transform = `translate(${ax}px, ${ay}px)` + (pick.rot ? ` rotate(${-pick.rot}deg)` : "");
     if (pick.mode === 2) { pickDim.style.transform = `translate(${(ax + bx) / 2}px, ${(ay + by) / 2}px)`;
       const r = Math.round(Math.hypot(w, h) * .5); if (Math.abs(r - pick.r) > 2) { pick.r = r; pickDim.style.setProperty("--r0", r * .75 + "px"); pickDim.style.setProperty("--r1", r * 1.6 + "px"); } } // lit to just past the frame's corners, dark a frame further out
     else { const box = (x0, y0, x1, y1) => { const [a, b] = proj(V(x0, y1, 0)), [c, d] = proj(V(x1, y0, 0)); return `M${a.toFixed(1)} ${b.toFixed(1)}H${c.toFixed(1)}V${d.toFixed(1)}H${a.toFixed(1)}Z`; };
@@ -1566,11 +1589,11 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   document.getElementById("tagBack").addEventListener("click", tagRedo);
   tagName.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); tagPut.click(); } });
   // Put it on the wall: kept in this browser and sent to the store without a word; the camera steps back out to the form while the wet paint dries
-  tagPut.addEventListener("click", () => { if (tag.stage !== "send" || tag.play) return; tag.name = tagName.value.replace(/[\p{Cc}\p{Cf}]/gu, "").trim().slice(0, 24); tagRedraw();
+  tagPut.addEventListener("click", () => { if (tag.stage !== "send" || tag.play) return; if (adm.make) { admPut(); return; } tag.name = tagName.value.replace(/[\p{Cc}\p{Cf}]/gu, "").trim().slice(0, 24); tagRedraw();
     try { localStorage.setItem(TAG_KEY, JSON.stringify({ v: 1, x: tag.x, y: tag.y, w: FRAME.w, h: FRAME.h, turn: 0, name: tag.name, strokes: tag.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr })) })); }
     catch (_) { tag.err = true; pickShow(); return; } // nowhere to keep it: it stays here, and Leave your tag stays
     tag.stage = null; tag.putAt = performance.now() - (REDUCED ? 1e5 : 0); leaveB.hidden = true; pick.locked = false; pickGo(-1, 1.2); tagSendOut(); });
-  function tagTick(now) { if (tag.play) tagPlay(now);
+  function tagTick(now) { if (adm.on) admTick(); if (tag.play) tagPlay(now);
     const c = tag.cur; if (c && TOOL[c.tool].flow && c.load + (now - c.lt) / 1000 * TOOL[c.tool].flow >= 1) tagPool(c, c.pts.length - 4, now, false); // held still: it pools and runs
     if (tag.runs.length) tagRuns(now);
     const w = tag.stage ? 1 : tag.putAt ? cl(1 - (now - tag.putAt) / 5000) : 0; // wet while you paint; dries over 5 s once it's on the wall
@@ -1598,8 +1621,10 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   // (one picture per stretch, painted in a worker): not a mesh a tag. Yours is not in it: it shows from this browser. The store also says which spots waiting tags hold: those join the kept-clear boxes.
   let HELD = [], storeSeen = false, storeW = null;
   const tagsHeld = list => { HELD = list.filter(h => [h.x, h.y, h.w, h.h].every(Number.isFinite)).map(h => [h.x - h.w / 2, h.y - h.h / 2, h.x + h.w / 2, h.y + h.h / 2]); pickShow(); };
-  async function tagStore(first) { let d = null; try { const r = await fetch("/api/tags"); if (r.ok) d = await r.json(); } catch (_) {}
-    if (!d) return; if (Array.isArray(d.held)) tagsHeld(d.held); if (!first || storeSeen) return; storeSeen = true;
+  async function tagStore(first) { let d = null; const asked = adm.on || admHinted(); // asked: this browser has been signed in at /admin, so the server is asked for Tom's view; every other browser asks the public question
+    try { const r = await fetch(asked ? "/api/tags?admin=1" : "/api/tags", asked ? { cache: "no-store" } : undefined); if (r.ok) d = await r.json(); } catch (_) {}
+    if (!d) return; if (asked) { if (d.admin === true) { if (!adm.g) admSet(d.tags); if (!adm.on) admEnter(); return; } if (adm.on) return; admUnhint(); }
+    if (Array.isArray(d.held)) tagsHeld(d.held); if (!first || storeSeen) return; storeSeen = true;
     const own = tagSaved(), list = (Array.isArray(d.tags) ? d.tags : []).filter(t => tagOk(t) && Number.isFinite(t.w) && Number.isFinite(t.turn) && t.w > .2 && t.w < 6 && (!own || !own.id || t.id !== own.id)).slice(-60);
     if (!list.length) return;
     // painted while the page loads, like the hand words: done long before the bucket is ready, so no frame after the tap pays for it
@@ -1610,6 +1635,122 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     for (const T of W.tags) if (T.label) { const c = document.createElement("canvas"), g = c.getContext("2d"), f = `${Math.round(.07 * TPM)}px "Saira Stencil One", sans-serif`; g.font = f; c.width = Math.ceil(g.measureText(T.label).width) + 4; c.height = Math.round(.07 * TPM * 1.5);
       g.font = f; g.textBaseline = "top"; g.fillStyle = "rgba(236,230,216,.88)"; g.fillText(T.label, 2, 0); T.nameBmp = await createImageBitmap(c); names.push(T.nameBmp); }
     wallRun(W, { hands: {}, tags: W.tags, L: W.L, K: { tools: TOOL, tpm: TPM, tw: TW, tfh: TFH, th: TH } }, names); }
+  // ---- Tom's wall (PR7b, Tom 11-18). With his cookie (api/admin.ts) the server answers with every tag, waiting ones too. They are drawn one by one (a small picture and a mesh each, in place of the
+  // baked stretches) so each can be picked up, moved, sized and turned. Nothing here runs for a visitor: no extra request, no mesh, and the frame loop only asks one flag.
+  const admChip = document.getElementById("adm"), admNote = document.getElementById("admNote"), admSelBar = document.getElementById("admSel"), admFramesEl = document.getElementById("admFrames"),
+    admSizeH = document.getElementById("admSize"), admTurnH = document.getElementById("admTurn"), admApproveB = document.getElementById("admApprove"), admRemoveB = document.getElementById("admRemove"), admUndoB = document.getElementById("admUndo");
+  const ADM_HINT = "ttshowcase.admin", admGeo = new THREE.PlaneGeometry(FRAME.w, FRAME.h + DRIP), admKit = { tools: TOOL, tpm: TPM, tw: TW, tfh: TFH, th: TH, grow: null, sprite }, frameLabel = pickFrame.getAttribute("aria-label");
+  const admHinted = () => { try { return localStorage.getItem(ADM_HINT) === "1"; } catch (_) { return false; } }, admUnhint = () => { try { localStorage.removeItem(ADM_HINT); } catch (_) {} };
+  const admOkT = t => tagOk(t) && typeof t.id === "string" && Number.isFinite(t.w) && Number.isFinite(t.turn) && t.w > .2 && t.w < 6.01 && (t.status === "up" || t.status === "waiting");
+  const admSpot = t => ({ x: +t.x.toFixed(3), y: +t.y.toFixed(3), w: +t.w.toFixed(3), h: +(t.w * FRAME.h / FRAME.w).toFixed(3), turn: +t.turn.toFixed(1) });
+  function admBuild(t) { const c = document.createElement("canvas"); c.width = TW >> 1; c.height = TH >> 1; const tx = new THREE.CanvasTexture(c); tx.encoding = THREE.sRGBEncoding; tx.anisotropy = maxAniso; // half size: a hundred tags on the wall stay light
+    const mesh = new THREE.Mesh(admGeo, new THREE.MeshStandardMaterial({ map: tx, transparent: true, depthWrite: false, roughness: .7, metalness: 0, polygonOffset: true, polygonOffsetFactor: -3 })), grp = new THREE.Group();
+    mesh.position.y = -DRIP / 2; mesh.frustumCulled = false; grp.add(mesh); scene.add(grp); // the frame turns about its middle; the drip room hangs below
+    const A = { t, c, tx, mesh, grp, order: 0, drawn: false, f: null }; adm.map.set(t.id, A); adm.queue.push(A); return A; }
+  function admDraw(A) { const g = A.c.getContext("2d"), t = A.t; g.setTransform(.5, 0, 0, .5, 0, 0); g.clearRect(0, 0, TW, TH);
+    g.save(); g.beginPath(); g.rect(0, 0, TW, TFH); g.clip(); t.strokes.forEach(s => { const R = rng(s.seed); for (let j = 0; j < s.pts.length; j += 4) tagSegDraw(g, s, j, R, admKit); }); g.restore(); // paint stops at the frame
+    t.strokes.forEach(s => (s.dr || []).forEach(d => tagDripDraw(g, s, d, 0, 1e9, true, admKit)));
+    if (t.name) { g.font = `${Math.round(.07 * TPM)}px "Saira Stencil One", sans-serif`; g.textAlign = "right"; g.textBaseline = "top"; g.fillStyle = "rgba(236,230,216,.88)"; g.fillText(t.name, TW - 8, TFH + .05 * TPM); }
+    A.tx.needsUpdate = true; A.drawn = true; }
+  function admPose(A) { const t = A.t, k = t.w / FRAME.w; A.grp.position.set(t.x, t.y, .003); A.grp.rotation.z = t.turn * Math.PI / 180; A.grp.scale.set(k, k, 1); }
+  function admDispose(A) { scene.remove(A.grp); A.tx.dispose(); A.mesh.material.dispose(); if (A.f) A.f.remove(); adm.map.delete(A.t.id); adm.queue = adm.queue.filter(q => q !== A); }
+  function admSet(list) { const keep = new Set();
+    list.filter(admOkT).forEach((t, i) => { keep.add(t.id); let A = adm.map.get(t.id); t = { ...t, h: t.w * FRAME.h / FRAME.w }; if (!A) A = admBuild(t); else A.t = t; A.order = i; A.mesh.renderOrder = -1 + i * 1e-3; admPose(A); });
+    for (const A of [...adm.map.values()]) if (!keep.has(A.t.id)) { if (adm.sel === A.t.id) adm.sel = null; admDispose(A); }
+    adm.listed = true; admFrames(); admSelect(adm.sel && adm.map.has(adm.sel) ? adm.sel : null, true); }
+  function admFrames() { for (const A of adm.map.values()) { const w = A.t.status === "waiting";
+      if (w && !A.f) { const f = document.createElement("div"); f.className = "wrap"; f.dataset.id = A.t.id; f.innerHTML = '<div class="wf"></div><div class="wb"><button type="button" data-do="approve">Approve</button><button type="button" data-do="remove">Remove</button></div>'; admFramesEl.appendChild(f); A.f = f; }
+      else if (!w && A.f) { A.f.remove(); A.f = null; } } }
+  function admPlace() { const on = adm.view && pick.mode === 1 && pick.ui; admFramesEl.hidden = !on; if (!on) return; camera.updateMatrixWorld();
+    for (const A of adm.map.values()) { if (!A.f) continue; A.f.style.display = adm.sel === A.t.id ? "none" : ""; /* the picked one has its own frame and bar */ if (adm.sel === A.t.id) continue; const t = A.t, [cx, cy] = proj(V(t.x, t.y, 0)), [ax, ay] = proj(V(t.x - t.w / 2, t.y + t.h / 2, 0)), [bx, by] = proj(V(t.x + t.w / 2, t.y - t.h / 2, 0)), w = bx - ax, h = by - ay, f = A.f.firstChild;
+      f.style.width = w + "px"; f.style.height = h + "px"; f.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotate(${-t.turn}deg)`; A.f.lastChild.style.transform = `translate(${cx - 4}px, ${cy + h / 2 + 6}px)`; } }
+  function admEnter() { adm.on = true; const own = tagSaved();
+    if (own && own.id && adm.map.has(own.id)) { tag.strokes = []; tagMesh.visible = false; } // his own tag comes from the store like the rest, so it can be picked up
+    document.fonts.load(TAG_FONT).catch(() => {}).then(() => { adm.ready = true; });
+    admPaint(); }
+  function admSelect(id, keep) { const A = id && adm.map.get(id); if (!keep) { adm.undo = null; adm.note = ""; adm.fail = false; } adm.sel = A ? id : null;
+    if (A) { [pick.x, pick.y, pick.fw, pick.fh, pick.rot] = [A.t.x, A.t.y, A.t.w, A.t.h, A.t.turn]; } else { [pick.fw, pick.fh, pick.rot] = [FRAME.w, FRAME.h, 0]; } pickShow(); admPaint(); }
+  function admPaint() { if (!adm.on) return; const A = adm.sel && adm.map.get(adm.sel), v = adm.view, n = [...adm.map.values()].filter(a => a.t.status === "waiting").length;
+    admNote.textContent = n ? `Admin · ${n} waiting` : "Admin"; pickCancel.textContent = v ? "Close" : "Cancel";
+    admSelBar.hidden = !(v && pick.mode === 1 && (A || adm.undo)); admApproveB.hidden = !(A && A.t.status === "waiting"); admRemoveB.hidden = !A; admUndoB.hidden = !!A || !adm.undo;
+    pickFrame.style.display = v && !A ? "none" : ""; admSizeH.hidden = admTurnH.hidden = !(v && A); pickFrame.setAttribute("aria-label", v ? "The tag you picked. Move it with the arrow keys" : frameLabel);
+    if (v) { pickFrame.classList.toggle("taken", !!A && A.t.status === "waiting"); pickFrame.classList.remove("locked");
+      pickHint.textContent = adm.fail ? "Couldn't save the change. Try again." : adm.note || (A ? (A.t.status === "waiting" ? "Waiting for you. " : "On the wall. ") + "Drag to move. The corner sizes it, the dot turns it." : "Tap a tag to change it, or a bare part of the wall to tag."); }
+    else if (adm.make) { if (adm.fail) pickHint.textContent = "Couldn't put your tag on the wall. Try again."; else if (tag.stage === "draw" && !tag.full && kept(pick.x, pick.y)) pickHint.textContent = "Visitors can't tag here. You can."; } }
+  function admOpen() { if (pick.mode || duskAt || !adm.on) return; CLEAR = clearBoxes(); adm.view = true; adm.make = false; adm.sel = null; adm.undo = null; adm.note = ""; adm.fail = false; [pick.fw, pick.fh, pick.rot] = [FRAME.w, FRAME.h, 0];
+    [pick.x, pick.y] = [(AREA.x0 + AREA.x1) / 2, (AREA.y0 + AREA.y1) / 2]; pick.ox = ovX(NARROW ? pick.x : 0); pick.locked = false; pick.nope = false; pickGo(1, 1.4); tagStore(false);
+    root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); }
+  let admLit = false, admSaved = null;
+  function admTick() { const show = introOver && !pick.mode && !duskAt; if (admChip.hidden === show) admChip.hidden = !show;
+    // while Tom looks over the wall, it is lit evenly (by night too), so every tag can be seen; the light goes back as it was when he closes it
+    if (adm.view !== admLit) { admLit = adm.view; document.querySelector(".hud").style.visibility = admLit ? "hidden" : ""; if (admLit) admSaved = [sky.color.clone(), sky.intensity]; else if (admSaved) { sky.color.copy(admSaved[0]); sky.intensity = admSaved[1]; } }
+    if (admLit) { sky.color.set(0xc8ccd6); sky.groundColor.set(0xc8ccd6); sky.intensity = Math.max(sky.intensity, .9); }
+    if (adm.ready && adm.queue.length) { const A = adm.queue.shift(); if (adm.map.get(A.t.id) === A) admDraw(A); }
+    if (adm.link && adm.listed && introOver && !pick.mode && !duskAt) { const id = adm.link; adm.link = null; if (adm.map.has(id)) { admOpen(); admSelect(id); pick.ox = ovX(pick.x); } } } // the mail's link: walk to that tag and pick it
+  document.getElementById("admOpen").addEventListener("click", admOpen);
+  // the hit: the newest tag under the point (the frame, turned back to square)
+  function admIn(A, x, y) { const t = A.t, r = t.turn * Math.PI / 180, dx = x - t.x, dy = y - t.y, u = dx * Math.cos(r) + dy * Math.sin(r), v = -dx * Math.sin(r) + dy * Math.cos(r); return Math.abs(u) <= t.w / 2 && Math.abs(v) <= t.h / 2; }
+  function admHit(x, y) { let best = null; for (const A of adm.map.values()) if (admIn(A, x, y) && (!best || A.order > best.order)) best = A; return best; }
+  function admMove(A, patch) { Object.assign(A.t, patch); A.t.h = A.t.w * FRAME.h / FRAME.w; admPose(A); if (adm.sel === A.t.id) [pick.x, pick.y, pick.fw, pick.fh, pick.rot] = [A.t.x, A.t.y, A.t.w, A.t.h, A.t.turn]; }
+  async function admPost(body) { try { const r = await fetch("/api/tags?admin=1", { method: "POST", headers: { "Content-Type": "application/json", "X-Admin": "1" }, body: JSON.stringify(body) }); return { ok: r.ok, status: r.status, j: await r.json().catch(() => null) }; } catch (_) { return { ok: false, status: 0, j: null }; } }
+  async function admSave(A, was) { adm.undo = null; const sp = admSpot(A.t); admMove(A, sp); const r = await admPost({ do: "update", id: A.t.id, spot: sp });
+    if (!r.ok) { admMove(A, was); adm.fail = true; } else { adm.fail = false; adm.note = ""; } pickShow(); }
+  async function admAct(what, id) { const A = adm.map.get(id); if (!A || adm.busy) return; adm.busy = true; adm.fail = false; const t = A.t, snap = { name: t.name, spot: admSpot(t), strokes: t.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr: dr || [] })), status: t.status };
+    const r = await admPost({ do: what, id }); adm.busy = false;
+    if (!r.ok) { adm.fail = true; pickShow(); return; }
+    if (what === "approve") { t.status = "up"; adm.note = "Approved."; admFrames(); }
+    else { if (adm.sel === id) adm.sel = null; admDispose(A); adm.undo = snap; adm.note = "Removed."; [pick.fw, pick.fh, pick.rot] = [FRAME.w, FRAME.h, 0]; }
+    pickShow(); admPaint(); }
+  async function admUndo() { const u = adm.undo; if (!u || adm.busy) return; adm.busy = true; const r = await admPost({ do: "create", ...u }); adm.busy = false; if (!r.ok) { adm.fail = true; pickShow(); return; }
+    adm.undo = null; await admRefresh(); admSelect(r.j.id); adm.note = "Put back."; admPaint(); }
+  async function admRefresh() { try { const r = await fetch("/api/tags?admin=1", { cache: "no-store" }), d = r.ok ? await r.json() : null; if (d && d.admin === true && !adm.g) admSet(d.tags); } catch (_) {}
+    for (const A of adm.map.values()) if (!A.drawn && adm.ready) { admDraw(A); adm.queue = adm.queue.filter(q => q !== A); } }
+  admApproveB.addEventListener("click", () => adm.sel && admAct("approve", adm.sel)); admRemoveB.addEventListener("click", () => adm.sel && admAct("remove", adm.sel)); admUndoB.addEventListener("click", admUndo);
+  document.getElementById("admDone").addEventListener("click", () => admSelect(null));
+  admFramesEl.addEventListener("click", e => { const b = e.target.closest("button[data-do]"); if (b) admAct(b.dataset.do, b.closest(".wrap").dataset.id); });
+  // Tom's own tag: the tag tool as it is, no limits. Put it on the wall goes up at once, and the camera steps back to the wide shot with it picked
+  function admMake(x, y) { adm.view = false; adm.make = true; adm.sel = null; adm.undo = null; adm.note = ""; adm.fail = false; [pick.fw, pick.fh, pick.rot] = [FRAME.w, FRAME.h, 0]; pick.nope = false; [pick.x, pick.y] = inArea(x, y); pickChoose(); }
+  async function admPut() { if (tag.stage !== "send" || tag.play || adm.busy) return; adm.busy = true; adm.fail = false; const name = tagName.value.replace(/[\p{Cc}\p{Cf}]/gu, "").trim().slice(0, 24);
+    const r = await admPost({ do: "create", name, spot: { x: tag.x, y: tag.y, w: FRAME.w, h: FRAME.h, turn: 0 }, strokes: tag.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr })) }); adm.busy = false;
+    if (!r.ok) { adm.fail = true; pickShow(); return; }
+    tagName.value = ""; tagStop(); adm.make = false; adm.view = true; await admRefresh(); admSelect(r.j.id); pickWideGo(); }
+  // gestures in the wide shot: drag a picked tag, pull its corner (size), turn its dot, or pinch it; a tap picks the tag under it, or tags a bare part; a swipe on a phone moves along the wall
+  const admPtr = new Map();
+  pickEl.addEventListener("pointerdown", e => { if (!adm.view || pick.mode !== 1 || !pick.ui || e.button > 0 || e.target.closest(".bar, .top, #admFrames button")) return;
+    admPtr.set(e.pointerId, [e.clientX, e.clientY]); try { pickEl.setPointerCapture(e.pointerId); } catch (_) {}
+    const A = adm.sel && adm.map.get(adm.sel), w = wallAt(e.clientX, e.clientY), was = A && admSpot(A.t);
+    if (A && admPtr.size === 2) { const [p, q] = [...admPtr.values()]; adm.g = { k: "pinch", A, was, d0: Math.hypot(p[0] - q[0], p[1] - q[1]) || 1, w0: A.t.w, moved: false }; return; }
+    if (adm.g) return;
+    if (A && w && e.target === admSizeH) adm.g = { k: "size", A, was, d0: Math.hypot(w[0] - A.t.x, w[1] - A.t.y) || 1, w0: A.t.w, moved: false };
+    else if (A && w && e.target === admTurnH) adm.g = { k: "turn", A, was, a0: Math.atan2(w[1] - A.t.y, w[0] - A.t.x), t0: A.t.turn, moved: false };
+    else if (A && w && (admIn(A, w[0], w[1]) || e.target === pickFrame)) adm.g = { k: "move", A, was, dx: A.t.x - w[0], dy: A.t.y - w[1], px: e.clientX, py: e.clientY, moved: false };
+    else adm.g = { k: "pan", px: e.clientX, py: e.clientY, ox: pick.ox, moved: false }; });
+  pickEl.addEventListener("pointermove", e => { const g = adm.g; if (!adm.view || !g || !admPtr.has(e.pointerId)) return; admPtr.set(e.pointerId, [e.clientX, e.clientY]);
+    if (g.k === "pinch") { if (admPtr.size < 2) return; const [p, q] = [...admPtr.values()]; g.moved = true; admMove(g.A, { w: cl(g.w0 * Math.hypot(p[0] - q[0], p[1] - q[1]) / g.d0, .6, 6) }); return; }
+    if (g.k === "pan") { const dx = e.clientX - g.px; if (Math.hypot(dx, e.clientY - g.py) > 8) g.moved = true; if (g.moved) pick.ox = ovX(g.ox - dx * ovHalf() * 2 / innerWidth); return; }
+    if (g.k === "none") return; const w = wallAt(e.clientX, e.clientY); if (!w) return;
+    if (g.k === "move") { if (!g.moved && Math.hypot(e.clientX - g.px, e.clientY - g.py) < 5) return; g.moved = true; admMove(g.A, { x: cl(w[0] + g.dx, AREA.x0, AREA.x1), y: cl(w[1] + g.dy, GROUND + .2, WALL_TOP) }); }
+    else if (g.k === "size") { g.moved = true; admMove(g.A, { w: cl(g.w0 * Math.hypot(w[0] - g.A.t.x, w[1] - g.A.t.y) / g.d0, .6, 6) }); }
+    else if (g.k === "turn") { g.moved = true; let d = (Math.atan2(w[1] - g.A.t.y, w[0] - g.A.t.x) - g.a0) * 180 / Math.PI; d = ((d + 540) % 360) - 180; let tr = cl(g.t0 + d, -45, 45); if (Math.abs(tr) < 2) tr = 0; admMove(g.A, { turn: tr }); } });
+  const admUp = e => { if (!admPtr.delete(e.pointerId)) return; const g = adm.g; if (!g) return;
+    if (g.k === "pinch") { if (g.moved) admSave(g.A, g.was); adm.g = admPtr.size ? { k: "none" } : null; return; }
+    if (g.k === "none") { if (!admPtr.size) adm.g = null; return; }
+    adm.g = null;
+    if (g.k === "pan") { if (!g.moved && e.type === "pointerup") admTap(e); return; }
+    if (g.moved) admSave(g.A, g.was); };
+  pickEl.addEventListener("pointerup", admUp); pickEl.addEventListener("pointercancel", admUp);
+  function admTap(e) { const w = wallAt(e.clientX, e.clientY); if (!w) return; const A = admHit(w[0], w[1]); if (A) { admSelect(A.t.id); return; } if (adm.sel || adm.undo) { admSelect(null); return; }
+    if (w[0] < AREA.x0 || w[0] > AREA.x1 || w[1] < AREA.y0 || w[1] > AREA.y1) return; admMake(w[0], w[1]); }
+  let admKeyT = 0, admWas = null;
+  function admKey(e) { const A = adm.sel && adm.map.get(adm.sel), a = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key]; if (!A || !a) return; e.preventDefault(); const st = e.shiftKey ? .5 : .1;
+    admWas = admWas || admSpot(A.t); admMove(A, { x: cl(A.t.x + a[0] * st, AREA.x0, AREA.x1), y: cl(A.t.y + a[1] * st, GROUND + .2, WALL_TOP) }); clearTimeout(admKeyT); admKeyT = setTimeout(() => { const was = admWas; admWas = null; admSave(A, was); }, 600); }
+  window.admTest = { // for the admin check
+    state: () => ({ on: adm.on, view: adm.view, make: adm.make, sel: adm.sel, chip: !admChip.hidden, chipNote: admNote.textContent, bar: !admSelBar.hidden, buttons: [...admSelBar.querySelectorAll("button")].filter(b => !b.hidden).map(b => b.textContent), hint: pickHint.textContent, mode: pick.mode, ui: pick.ui, fail: adm.fail,
+      frames: admFramesEl.children.length, cancel: pickCancel.textContent, handles: !admSizeH.hidden && !admTurnH.hidden, own: tagMesh.visible, tags: [...adm.map.values()].map(A => ({ id: A.t.id, status: A.t.status, name: A.t.name, x: A.t.x, y: A.t.y, w: A.t.w, turn: A.t.turn, drawn: A.drawn, framed: !!A.f })) }),
+    at: id => { const A = adm.map.get(id); camera.updateMatrixWorld(); const [x, y] = proj(V(A.t.x, A.t.y, 0)); return { x, y }; },
+    bare: () => { camera.updateMatrixWorld(); for (let y = AREA.y1 - 1; y > AREA.y0 + 1; y -= .4) for (let x = AREA.x0 + 1; x < AREA.x1 - 1; x += .4) { if (admHit(x, y) || kept(...inArea(x, y))) continue; const [px, py] = proj(V(x, y, 0)); if (px > 80 && px < innerWidth - 80 && py > 140 && py < innerHeight - 140) return { x: px, y: py }; } return null; },
+    handle: which => { const r = (which === "size" ? admSizeH : admTurnH).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; },
+    look: id => { pick.ox = ovX(adm.map.get(id).t.x); }, open: admOpen, kept: () => kept(pick.x, pick.y), scene: () => scene.children.filter(c => c.type === "Group").length };
   tagStore(true);
   window.tagTest = { // for the tagit check
     frameBox: () => { const r = pickFrame.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
@@ -1780,7 +1921,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     lamp.position.set(-8.5 + 2.5 * lookL, 4.2 + .6 * lookL, 1.6 + .8 * lookL); lamp.target.position.set(.5 - 12.5 * lookL, .2 + 2.4 * lookL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = (1 - inShaft(cp)) * (1 - pick.k); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    camera.lookAt(cl_); pickPlace(); tagTick(now);
+    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now);
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);
