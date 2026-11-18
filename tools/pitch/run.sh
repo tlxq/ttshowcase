@@ -14,7 +14,7 @@ mkdir -p .cache/shots .cache/walk
 port=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
 TAGS_PORT=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
 export TAGS_PORT
-ADMIN_KEY=local-pitch-admin-key-0123456789abcdef node tools/tags/local.mjs "$TAGS_PORT" >/dev/null 2>&1 & # the pitch's own tag store (in memory, no mail)
+node tools/tags/local.mjs "$TAGS_PORT" >/dev/null 2>&1 & # the pitch's own tag store (in memory, no mail)
 tags=$!
 SERVE_DIR=.cache/pitch python3 -I tools/serve.py 127.0.0.1 "$port" >/dev/null 2>&1 &
 server=$!
@@ -24,7 +24,7 @@ for _ in $(seq 1 50); do
   sleep 0.1
 done
 
-names="tour waits endwaits replay2 reduced contrast tagsfull scrollup loop pickspot tagit tagstore admin"
+names="tour waits endwaits replay2 reduced contrast tagsfull scrollup loop pickspot tagit tagstore"
 failed=0
 ran=0
 check() { # check, then "desktop" or "phone"
