@@ -29,7 +29,6 @@ that would draw in software.
 | Words on the site | `src/content/look.ts`; handwritten ones with `mise run write` into `src/content/hand` |
 | The paint pitch | `pitch/paint.src.html`; pictures in `pitch/assets` (CC0 or Tom's own, listed in `CREDITS.txt`) |
 | A font | Never in git. `tools/pitch/build.mjs` fetches it into `.cache/fonts` |
-| The epaRadar stencil | `python3 pitch/prep_stencil.py <screenshot.png> pitch/assets` |
 
 ## Checks
 

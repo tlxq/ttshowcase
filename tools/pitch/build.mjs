@@ -85,7 +85,6 @@ const parts = {
   __HAND__: hand("hi-i-m-tom"),
   __HAND_WALL__: `{${["tom", "ttdevs", "larsson", "tt"].map((w) => `"${w}": ${hand(w)}`).join(", ")}}`,
   __TAG_LIMITS__: JSON.stringify(TAG_LIMITS), // what one tag may hold: the store's own numbers (api/tags.ts)
-  __PAL__: readFileSync(join(root, "pitch/assets/epa_pal.json"), "utf8").trim(),
 };
 let page = readFileSync(join(root, "pitch/paint.src.html"), "utf8");
 for (const [key, value] of Object.entries(parts)) {
