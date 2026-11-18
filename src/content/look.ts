@@ -2,7 +2,7 @@
 
 /** The address Tom picked (11-15). It is in the code, so local runs, walks and Vercel all show the same link. */
 
-export const lookWho = ["Tom Larsson", "Fullstack engineer", "Sweden"];
+export const lookWho = ["Tom Larsson", "Product engineer", "Sweden"];
 
 /** The four parts, one per letter of tlxq. */
 export const lookParts = [
@@ -26,7 +26,7 @@ export const lookParts = [
 
 export const lookHero = {
   lines: ["I build", "and run", "things", "myself."],
-  lead: "Fullstack engineer, from the data model to the server.",
+  lead: "Product engineer, from the data model to the server.",
   cue: "Scroll to follow the line",
 };
 

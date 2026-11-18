@@ -10,10 +10,10 @@ import { PaintSelect } from "@/look/PaintSelect";
 import { Tom } from "@/look/Tom";
 import { tagWritten } from "@/look/handPaint";
 
-const title = "Tom Larsson, fullstack engineer";
-/** What a shared link says under the title (Tom's words 11-14; LinkedIn wants 100 characters or more). */
+const title = "Tom Larsson, product engineer";
+/** What a shared link says under the title (Tom's words 11-14, role word 11-18; LinkedIn wants 100 characters or more). */
 const description =
-  "Tom Larsson, fullstack developer from Sweden. I believe in AI and build with it every day. Arch Linux, btw.";
+  "Tom Larsson, product engineer from Sweden. I believe in AI and build with it every day. Arch Linux, btw.";
 
 export const metadata: Metadata = {
   title,

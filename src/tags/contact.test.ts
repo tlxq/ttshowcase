@@ -1,0 +1,94 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { contact, mailHash, MAIL_PER_ADDRESS, type ContactDeps } from "../../api/contact.ts";
+
+const SECRET = "x".repeat(40);
+
+/** The handler on an in-memory sends table and a mail box that keeps what was sent. */
+function world(mailWorks = true) {
+  const sends: string[] = [];
+  const mails: Parameters<ContactDeps["mail"]>[0][] = [];
+  const deps: ContactDeps = {
+    secret: SECRET,
+    async sentToday(ipHash) {
+      return sends.filter((s) => s === ipHash).length;
+    },
+    async count(ipHash) {
+      sends.push(ipHash);
+    },
+    async mail(m) {
+      mails.push(m);
+      return mailWorks;
+    },
+  };
+  return { sends, mails, post: contact(() => deps) };
+}
+
+const send = (body: Record<string, unknown>, ip = "1.2.3.4") =>
+  new Request("https://ttdevs.com/api/contact", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-forwarded-for": ip },
+    body: JSON.stringify(body),
+  });
+const letter = { name: "Kasper", email: "k@example.com", message: "Hej Tom" };
+
+test("a message goes to Tom with the visitor as reply-to", async () => {
+  const w = world();
+  const r = await w.post(send(letter));
+  assert.equal(r.status, 200);
+  assert.deepEqual(w.mails, [
+    { replyTo: "k@example.com", subject: "Message from Kasper <k@example.com>", text: "Hej Tom" },
+  ]);
+});
+
+test(`${MAIL_PER_ADDRESS} messages a day per address, then too-many and no mail`, async () => {
+  const w = world();
+  for (let i = 0; i < MAIL_PER_ADDRESS; i++) assert.equal((await w.post(send(letter))).status, 200);
+  const r = await w.post(send(letter));
+  assert.equal(r.status, 429);
+  assert.deepEqual(await r.json(), { error: "too-many" });
+  assert.equal(w.mails.length, MAIL_PER_ADDRESS);
+  // Another address still gets through.
+  assert.equal((await w.post(send(letter, "5.6.7.8"))).status, 200);
+});
+
+test("a send the mail service turns down still counts", async () => {
+  const w = world(false);
+  for (let i = 0; i < MAIL_PER_ADDRESS; i++) assert.equal((await w.post(send(letter))).status, 502);
+  assert.equal((await w.post(send(letter))).status, 429);
+});
+
+test("robots, bad addresses and empty messages are never counted or mailed", async () => {
+  const w = world();
+  assert.equal((await w.post(send({ ...letter, website: "x" }))).status, 200);
+  assert.equal((await w.post(send({ ...letter, email: "nope" }))).status, 400);
+  assert.equal((await w.post(send({ ...letter, message: " " }))).status, 400);
+  assert.equal((await w.post(send({ ...letter, message: "x".repeat(4001) }))).status, 400);
+  assert.equal(w.sends.length, 0);
+  assert.equal(w.mails.length, 0);
+});
+
+test("mail and tags count apart, and no real address is stored", () => {
+  const r = send(letter);
+  const h = mailHash(r, SECRET);
+  assert.ok(!h.includes("1.2.3.4"));
+  assert.equal(h, mailHash(send(letter), SECRET));
+  assert.notEqual(h, mailHash(send(letter, "5.6.7.8"), SECRET));
+});
+
+test("no database, no mail", async () => {
+  let mailed = 0;
+  const post = contact(() => ({
+    secret: SECRET,
+    sentToday: () => Promise.reject(new Error("down")),
+    count: async () => {},
+    mail: async () => (mailed++, true),
+  }));
+  assert.equal((await post(send(letter))).status, 503);
+  assert.equal(mailed, 0);
+});
+
+test("not set up answers 503", async () => {
+  const r = await contact(() => null)(send(letter));
+  assert.equal(r.status, 503);
+});

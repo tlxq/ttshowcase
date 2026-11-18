@@ -13,6 +13,7 @@ const SHOW_LEFT = 400;
 const WHY: Record<string, string> = {
   email: "That email address doesn't look complete.",
   message: "The message is empty or longer than 4 000 characters.",
+  "too-many": "This address has sent all its messages for today. Try again tomorrow.",
 };
 
 /**
