@@ -1347,18 +1347,3 @@ html:has(.lk) body {
   flex-wrap: wrap;
   gap: var(--s2);
 }
-
-/* Tom's sign-in, /admin: one field and one button, nothing else on the page. */
-.lk-admin-page {
-  display: grid;
-  align-content: center;
-  padding: var(--s6) var(--gutter);
-}
-.lk-admin {
-  max-width: var(--look-form);
-  width: 100%;
-  margin-inline: auto;
-}
-.lk-admin-say {
-  margin: 0;
-}

@@ -11,7 +11,6 @@
 import { createServer } from "node:http";
 import { randomBytes } from "node:crypto";
 import { handlers } from "../../api/tags.ts";
-import { admin } from "../../api/admin.ts";
 import { memoryDeps } from "../../src/tags/memory.ts";
 
 const port = Number(process.argv[2] || process.env.TAGS_PORT);
@@ -20,31 +19,17 @@ if (!port) {
   process.exit(2);
 }
 const SECRET = "local-pitch-tag-secret-0123456789abcdef";
-// Tom's key for the local store: a test key, or ADMIN_KEY when one is given (tools/serve.sh passes the real one for a desk walk). POST /api/admin signs in.
-const ADMIN_KEY = process.env.ADMIN_KEY || "local-pitch-admin-key-0123456789abcdef";
-const wrongKeys = [];
 const mails = [];
-let world, api, signin;
+let world, api;
 let failing = { times: 0, status: 502 },
   posts = 0;
 const fresh = () => {
-  world = memoryDeps(
-    SECRET,
-    async (subject, text) => {
-      mails.push({ subject, text, link: text.match(/https?:\S+/)?.[0] ?? null });
-      console.log(`mail: ${subject}\n  ${mails.at(-1).link}`);
-      return true;
-    },
-    ADMIN_KEY,
-  );
+  world = memoryDeps(SECRET, async (subject, text) => {
+    mails.push({ subject, text, link: text.match(/https?:\S+/)?.[0] ?? null });
+    console.log(`mail: ${subject}\n  ${mails.at(-1).link}`);
+    return true;
+  });
   api = handlers(() => world.deps);
-  wrongKeys.length = 0;
-  signin = admin(() => ({
-    key: ADMIN_KEY,
-    secret: SECRET,
-    triedToday: async (h) => wrongKeys.filter((w) => w === h).length,
-    count: async (h) => void wrongKeys.push(h),
-  }));
   mails.length = 0;
   failing = { times: 0, status: 502 };
   posts = 0;
@@ -144,18 +129,9 @@ createServer(async (req, res) => {
       }
       return reply(res, { error: "unknown" }, 404);
     }
-    if (url.pathname === "/api/admin" && req.method === "POST") {
-      const answer = await signin(
-        new Request(url, { method: "POST", headers: req.headers, body: Buffer.concat(chunks) }),
-      );
-      res.writeHead(answer.status, Object.fromEntries(answer.headers));
-      return res.end(Buffer.from(await answer.arrayBuffer()));
-    }
     if (url.pathname !== "/api/tags") return reply(res, { error: "not-found" }, 404);
-    const visitor =
-      req.method === "POST" && !url.searchParams.has("review") && !url.searchParams.has("admin");
-    if (visitor) posts++;
-    if (visitor && failing.times > 0) {
+    if (req.method === "POST" && !url.searchParams.has("review")) posts++;
+    if (req.method === "POST" && !url.searchParams.has("review") && failing.times > 0) {
       failing.times--;
       return reply(res, { error: "local-failure" }, failing.status);
     }
