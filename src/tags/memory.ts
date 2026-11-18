@@ -11,11 +11,12 @@ export type Row = Parameters<Deps["db"]["insert"]>[0] & {
   status: Status;
 };
 
-export function memoryDeps(secret: string, mail: Deps["mail"]) {
+export function memoryDeps(secret: string, mail: Deps["mail"], adminKey: string | null = null) {
   const rows: Row[] = [];
   const sends: string[] = [];
   const deps: Deps = {
     secret,
+    adminKey,
     db: {
       async byDevice(device) {
         return rows.filter((r) => r.device === device).length;
@@ -49,6 +50,24 @@ export function memoryDeps(secret: string, mail: Deps["mail"]) {
       },
       async approve(id) {
         rows.find((r) => r.id === id)!.status = "up";
+      },
+      async everything(most) {
+        const up = rows.filter((r) => r.status === "up").slice(-most);
+        return rows.filter((r) => r.status === "waiting" || up.includes(r));
+      },
+      async update(id, spot) {
+        const r = rows.find((r) => r.id === id);
+        if (r) Object.assign(r, spot);
+      },
+      async insertUp(t) {
+        const id = t.id ?? randomUUID();
+        if (rows.some((r) => r.id === id || r.device === t.device))
+          throw Object.assign(new Error("duplicate"), { code: "23505" });
+        rows.push({ ...t, ip_hash: "", id, created_at: t.created_at ?? new Date().toISOString() });
+        return id;
+      },
+      async full(id) {
+        return rows.find((r) => r.id === id) ?? null;
       },
       async up(most) {
         return rows.filter((r) => r.status === "up").slice(-most);

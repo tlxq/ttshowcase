@@ -12,14 +12,18 @@
  *   GET  /api/tags?review=<id>&sig=…    Tom's review page: the tag drawn, Approve and Remove
  *   POST /api/tags?review=<id>&sig=…&do=approve|remove
  *
+ *   GET  /api/tags?admin=1              with Tom's cookie (api/admin.ts): every tag, waiting ones too, with its status; else the public answer
+ *   POST /api/tags?admin=1              with Tom's cookie, the header X-Admin: 1 and this site as Origin: { do: "approve" | "remove" | "update" | "create", ... }
+ *
  * The review link is signed (TAG_SECRET), so only the mail opens it. Approving needs a button press: mail
  * scanners open links but never press buttons. Settings in Vercel: DATABASE_URL (Neon), TAG_SECRET,
- * RESEND_API_KEY, CONTACT_TO, CONTACT_FROM. Table: tools/tags/schema.sql. Tests: src/tags/tags.test.ts.
+ * RESEND_API_KEY, CONTACT_TO, CONTACT_FROM, and ADMIN_KEY for Tom's own wall. Table: tools/tags/schema.sql. Tests: src/tags/tags.test.ts.
  */
 import { neon } from "@neondatabase/serverless";
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fromOurPage, isAdmin, usable } from "../src/tags/admin.ts";
 
 /** Tags one address may send in a day: a family or an office on one Wi-Fi still fits, a robot doesn't. */
 export const PER_ADDRESS = 5;
@@ -41,6 +45,18 @@ export const TAG_LIMITS = {
   name: 24,
   tools: ["skinny", "fat", "mop", "chisel", "pen"],
 };
+
+/** Where the wall is on the site: the mail's second link opens it on the wall itself. One constant, so the launch can move it. */
+export const WALL_PATH = "/next";
+
+/**
+ * How low a tag's middle may sit. A visitor's frame is kept inside the visitor area (the pitch's AREA: the wall's ground, -2.2 m, plus
+ * 0.4 m, so the middle is at least half a frame height above that); the floor is that with a margin. Tom may go lower, anywhere on the wall.
+ * src/tags/admin.test.ts checks the ground against the pitch's own.
+ */
+export const WALL_GROUND = -2.2;
+export const VISITOR_Y_MIN = WALL_GROUND + 0.4 - 1.35 / 2 - 0.1;
+export const ADMIN_Y_MIN = -5;
 
 export type Status = "waiting" | "up";
 /** Where the tag sits on the wall, in metres: its middle, its size, and how far it is turned. */
@@ -74,11 +90,23 @@ export type Deps = {
     drop(id: string): Promise<void>;
     get(id: string): Promise<(Tag & { status: Status }) | null>;
     approve(id: string): Promise<void>;
+    /** Tom's wall: every waiting tag and the newest approved ones, oldest first. */
+    everything(most: number): Promise<(Tag & { status: Status })[]>;
+    /** Tom moved, sized or turned a tag. */
+    update(id: string, spot: Spot): Promise<void>;
+    /** Tom's own tag: no address, no count, no mail; its device starts with "tom:". */
+    insertUp(
+      tag: NewTag & { device: string; status: Status; id?: string; created_at?: string },
+    ): Promise<string>;
+    /** A tag's whole row, the device too: only Tom's Remove and Undo use it. */
+    full(id: string): Promise<(Tag & { status: Status; device: string }) | null>;
     up(most: number): Promise<Tag[]>;
     statuses(ids: string[]): Promise<{ id: string; status: Status }[]>;
   };
   mail(subject: string, text: string): Promise<boolean>;
   secret: string;
+  /** Tom's key (ADMIN_KEY); without it nothing on the admin side answers. */
+  adminKey?: string | null;
 };
 
 const json = (body: unknown, status = 200) => Response.json(body, { status });
@@ -163,26 +191,32 @@ export function readStrokes(raw: unknown): Stroke[] | null {
   return strokes;
 }
 
-/** A sent tag as it is stored, or the reason it isn't. */
-export function readTag(body: Record<string, unknown>): NewTag | { error: string } {
-  const name =
-    typeof body.name === "string" ? body.name.replace(/[\p{Cc}\p{Cf}]/gu, "").trim() : "";
-  if (name.length > TAG_LIMITS.name) return { error: "name" };
-  const spot = body.spot as Record<string, unknown> | undefined;
+/** A spot as the wall takes it, or null when a number is wrong. */
+export function readSpot(raw: unknown, admin = false): Spot | null {
+  const spot = raw as Record<string, unknown> | undefined;
   if (
     !spot ||
     !num(spot.x, -50, 50) ||
-    !num(spot.y, 0, 20) ||
+    !num(spot.y, admin ? ADMIN_Y_MIN : VISITOR_Y_MIN, 20) ||
     !num(spot.w, 0.2, 6) ||
     !num(spot.h, 0.2, 4) ||
     !num(spot.turn, -45, 45)
-  ) {
-    return { error: "spot" };
-  }
+  )
+    return null;
+  const { x, y, w, h, turn } = spot as Spot;
+  return { x, y, w, h, turn };
+}
+
+/** A sent tag as it is stored, or the reason it isn't. */
+export function readTag(body: Record<string, unknown>, admin = false): NewTag | { error: string } {
+  const name =
+    typeof body.name === "string" ? body.name.replace(/[\p{Cc}\p{Cf}]/gu, "").trim() : "";
+  if (name.length > TAG_LIMITS.name) return { error: "name" };
+  const spot = readSpot(body.spot, admin);
+  if (!spot) return { error: "spot" };
   const strokes = readStrokes(body.strokes);
   if (!strokes) return { error: "strokes" };
-  const { x, y, w, h, turn } = spot as Spot;
-  return { name, strokes, x, y, w, h, turn };
+  return { name, strokes, ...spot };
 }
 
 function address(request: Request): string {
@@ -199,6 +233,23 @@ export function handlers(deps: () => Deps | null) {
     const url = new URL(request.url);
     const review = url.searchParams.get("review");
     if (review !== null) return reviewPage(d, review, url.searchParams.get("sig"));
+    // Tom's cookie: every tag with its status. Anyone else gets the public answer below, as if the question was never asked.
+    if (url.searchParams.has("admin") && isAdmin(request, d.adminKey)) {
+      const all = (await d.db.everything(LIST_MOST)).map(
+        ({ id, created_at, name, strokes, status, ...spot }) => ({
+          id,
+          created_at,
+          name,
+          strokes,
+          status,
+          ...spotOf(spot),
+        }),
+      );
+      return Response.json(
+        { admin: true, tags: all, held: [] },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
+    }
     const ids = url.searchParams.get("ids");
     if (ids !== null) {
       const list = ids
@@ -221,7 +272,14 @@ export function handlers(deps: () => Deps | null) {
     const held = (await d.db.held()).map(spotOf);
     return Response.json(
       { tags, held },
-      { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=300" } },
+      {
+        headers: {
+          // an address with ?admin= from someone without the cookie is never kept by a shared cache
+          "Cache-Control": url.searchParams.has("admin")
+            ? "private, no-store"
+            : "public, s-maxage=30, stale-while-revalidate=300",
+        },
+      },
     );
   }
 
@@ -240,6 +298,7 @@ export function handlers(deps: () => Deps | null) {
     const d = deps();
     if (!d) return json({ error: "not-set-up" }, 503);
     const url = new URL(request.url);
+    if (url.searchParams.has("admin")) return adminDo(d, request);
     const review = url.searchParams.get("review");
     if (review !== null)
       return reviewDo(d, review, url.searchParams.get("sig"), url.searchParams.get("do"));
@@ -266,7 +325,8 @@ export function handlers(deps: () => Deps | null) {
     const who = tag.name || "someone without a name";
     const sent = await d.mail(
       `New tag on the wall from ${who}`,
-      `${who} left a tag.\n\nLook at it and approve or remove it:\n${link}\n`,
+      `${who} left a tag.\n\nLook at it and approve or remove it:\n${link}\n\n` +
+        `Open it on the wall: ${url.origin}${WALL_PATH}?tag=${id}\n`,
     );
     if (!sent) {
       await d.db.drop(id);
@@ -277,6 +337,85 @@ export function handlers(deps: () => Deps | null) {
   }
 
   return { GET, POST };
+}
+
+/** The new size keeps the frame's shape (16 by 9), so a tag is never squashed. */
+const SHAPE = 2.4 / 1.35;
+const shapeOk = (s: Spot) => Math.abs(s.w / s.h - SHAPE) < 0.03;
+
+/** Tom's actions. Cookie first (anyone else gets the same answer as for an address that isn't here), then the page the call came from. */
+async function adminDo(d: Deps, request: Request): Promise<Response> {
+  if (!usable(d.adminKey) || !isAdmin(request, d.adminKey))
+    return json({ error: "not-found" }, 404);
+  if (!fromOurPage(request)) return json({ error: "origin" }, 403);
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return json({ error: "bad-request" }, 400);
+  }
+  if (!body || typeof body !== "object") return json({ error: "bad-request" }, 400);
+  const what = body.do;
+  if (what === "create") {
+    const tag = readTag(body, true);
+    if ("error" in tag) return json(tag, 400);
+    if (!shapeOk(tag)) return json({ error: "spot" }, 400);
+    // Undo after Remove puts the same row back: the id, the time, the device and the status it had (what Remove answered with)
+    const back = body.restore as Record<string, unknown> | undefined;
+    let row: { id?: string; created_at?: string; device: string; status: Status } = {
+      device: "tom:" + randomUUID(),
+      status: "up",
+    };
+    if (back !== undefined) {
+      const at = typeof back.created_at === "string" ? Date.parse(back.created_at) : NaN;
+      if (
+        typeof back.id !== "string" ||
+        !UUID.test(back.id) ||
+        !Number.isFinite(at) ||
+        typeof back.device !== "string" ||
+        !/^[\w:-]{16,64}$/.test(back.device) ||
+        (back.status !== "up" && back.status !== "waiting")
+      )
+        return json({ error: "restore" }, 400);
+      row = {
+        id: back.id,
+        created_at: new Date(at).toISOString(),
+        device: back.device,
+        status: back.status,
+      };
+    }
+    let id: string;
+    try {
+      id = await d.db.insertUp({ ...tag, ...row });
+    } catch (e) {
+      if ((e as { code?: string }).code === "23505") return json({ error: "taken" }, 409); // the id or the device is in use again
+      throw e;
+    }
+    console.log("admin: create", id, row.status, back ? "restored" : "");
+    return json({ id });
+  }
+  const id = typeof body.id === "string" ? body.id : "";
+  if (!UUID.test(id)) return json({ error: "id" }, 400);
+  if (what !== "approve" && what !== "remove" && what !== "update")
+    return json({ error: "do" }, 400);
+  const was = await d.db.full(id);
+  if (!was) return json({ error: "gone" }, 404);
+  if (what === "approve") await d.db.approve(id);
+  else if (what === "remove") {
+    await d.db.drop(id);
+    console.log("admin: remove", id);
+    // what Undo needs to put the same row back (only Tom's browser gets it)
+    return json({
+      ok: true,
+      row: { id, created_at: was.created_at, device: was.device, status: was.status },
+    });
+  } else {
+    const spot = readSpot(body.spot, true);
+    if (!spot || !shapeOk(spot)) return json({ error: "spot" }, 400);
+    await d.db.update(id, spot);
+  }
+  console.log("admin:", what, id);
+  return json({ ok: true });
 }
 
 const esc = (s: string) =>
@@ -377,6 +516,7 @@ function liveDeps(): Deps | null {
   const COLS = "id, created_at, name, strokes, x, y, w, h, turn";
   return {
     secret,
+    adminKey: process.env.ADMIN_KEY ?? null,
     db: {
       async byDevice(device) {
         const r = await sql`select count(*)::int as n from tags where device = ${device}`;
@@ -425,6 +565,27 @@ function liveDeps(): Deps | null {
       },
       async approve(id) {
         await sql`update tags set status = 'up' where id = ${id}`;
+      },
+      async everything(most) {
+        const r = await sql.query(
+          `select ${COLS}, status from tags where status = 'waiting' or id in (select id from tags where status = 'up' order by created_at desc limit $1) order by created_at`,
+          [most],
+        );
+        return r as (Tag & { status: Status })[];
+      },
+      async update(id, s) {
+        await sql`update tags set x = ${s.x}, y = ${s.y}, w = ${s.w}, h = ${s.h}, turn = ${s.turn} where id = ${id}`;
+      },
+      async insertUp(t) {
+        const r =
+          await sql`insert into tags (id, created_at, name, strokes, x, y, w, h, turn, device, status)
+          values (coalesce(${t.id ?? null}::uuid, gen_random_uuid()), coalesce(${t.created_at ?? null}::timestamptz, now()), ${t.name}, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}, ${t.y}, ${t.w}, ${t.h}, ${t.turn}, ${t.device}, ${t.status})
+          returning id`;
+        return r[0]!.id as string;
+      },
+      async full(id) {
+        const r = await sql.query(`select ${COLS}, status, device from tags where id = $1`, [id]);
+        return (r[0] as (Tag & { status: Status; device: string }) | undefined) ?? null;
       },
       async up(most) {
         const r = await sql.query(

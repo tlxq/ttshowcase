@@ -1,7 +1,7 @@
 """Serves a folder (SERVE_DIR, default out/) like http.server, but browsers always check for a newer build.
 /next is guarded like on Vercel (middleware.ts, same rules): `/next?key=<PREVIEW_KEY>` once sets a
 cookie, without it /next is the site's 404 page. No PREVIEW_KEY: /next is closed.
-/api/tags goes to the local tag store (tools/tags/local.mjs) when TAGS_PORT is set (the pitch); /api/tags-local only from this PC.
+/api/tags and /api/admin go to the local tag store (tools/tags/local.mjs) when TAGS_PORT is set (the pitch); /api/tags-local only from this PC.
 Usage: serve.py <host> <port>"""
 
 import functools
@@ -82,9 +82,9 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
     def tags(self):
         """True when the request was for the tag store and is answered (or refused) here."""
         path = urllib.parse.urlsplit(self.path).path
-        if not TAGS_PORT or not (path == "/api/tags" or path.startswith("/api/tags-local/")):
+        if not TAGS_PORT or not (path in ("/api/tags", "/api/admin") or path.startswith("/api/tags-local/")):
             return False
-        if path != "/api/tags" and self.client_address[0] not in ("127.0.0.1", "::1"):
+        if path not in ("/api/tags", "/api/admin") and self.client_address[0] not in ("127.0.0.1", "::1"):
             self.send_error(404)  # the checks' doors are for this PC only
             return True
         # the loopback check above trusts the TCP peer: this server must never sit behind a local proxy (tailscale serve would make every peer look like loopback)
@@ -98,6 +98,9 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
         body = self.rfile.read(size) if size else None
         headers = {"Content-Type": self.headers.get("Content-Type", "application/json"),
                    "X-Forwarded-For": self.client_address[0], "Host": self.headers.get("Host", "")}
+        for key in ("Cookie", "Origin", "X-Admin"):  # Tom's cookie, and the two things an admin call must show
+            if self.headers.get(key):
+                headers[key] = self.headers.get(key)
         try:
             link = http.client.HTTPConnection("127.0.0.1", TAGS_PORT, timeout=10)
             link.request(self.command, self.path, body, headers)
@@ -107,7 +110,7 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
             self.send_error(502, "The local tag store isn't running")
             return True
         self.send_response(answer.status)
-        for key in ("Content-Type", "Cache-Control"):
+        for key in ("Content-Type", "Cache-Control", "Set-Cookie"):
             if answer.getheader(key):
                 self.send_header(key, answer.getheader(key))
         self.send_header("Content-Length", str(len(data)))
@@ -121,6 +124,10 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.tags():
+            return
+        if urllib.parse.urlsplit(self.path).path == "/favicon.ico" and not os.path.isfile(os.path.join(DIR, "favicon.ico")):
+            self.send_response(204)  # the pitch has no icon; a browser asking for one is not an error in the checks' console
+            self.end_headers()
             return
         if self.gate():
             super().do_GET()
