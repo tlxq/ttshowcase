@@ -1322,30 +1322,47 @@ html:has(.lk) body {
 }
 .lk-missing-path {
   margin: 0;
-  font: 400 var(--t-lead) / 1.4 var(--look-mono);
+  font: 400 var(--look-label) / 1.4 var(--look-mono);
   color: var(--look-soft);
   overflow-wrap: anywhere;
 }
-/* The marker's strike: a slanted bar of the spray colour through the middle of the letters */
+/* The marker's strike: a thin spray line through the middle, so every letter of the address still reads */
 .lk-missing-path span {
-  position: relative;
+  text-decoration: line-through;
+  text-decoration-color: var(--look-spray);
+  text-decoration-thickness: 2px;
 }
-.lk-missing-path span::after {
-  content: "";
-  position: absolute;
-  inset: 46% -4% 32%;
-  background: var(--look-spray);
-  clip-path: polygon(0 20%, 100% 0, 99% 100%, 1% 85%);
+/* The walk's plate, with the one line and the one way back on it */
+.lk-missing-plate {
+  display: grid;
+  justify-items: start;
+  gap: var(--s2);
+  padding: var(--s3);
+  background: var(--look-plate);
+  border: 1px solid var(--look-plate-edge);
+  border-radius: 3px;
 }
 .lk-missing-say {
   margin: 0;
-  font: 900 var(--t-head) / 1.1 var(--look-words);
+  font: 400 var(--look-label) / 1.4 var(--look-mono);
   color: var(--look-text);
 }
-.lk-missing-ways {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s2);
+.lk-missing-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding-inline: var(--s3);
+  border: 1px solid var(--look-spray);
+  border-radius: 2px;
+  font: 500 var(--look-label) / 1 var(--look-mono);
+  color: var(--look-text);
+}
+@media (max-aspect-ratio: 4/5) {
+  .lk-missing-path,
+  .lk-missing-say,
+  .lk-missing-back {
+    font-size: var(--look-label-phone);
+  }
 }
 
 /* Tom's sign-in, /admin: one field and one button, nothing else on the page. */
