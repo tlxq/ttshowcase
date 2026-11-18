@@ -31,7 +31,7 @@ if [ "$compare_only" = 0 ]; then
   mkdir -p "$run/desktop" "$run/phone"
   . tools/walk/graphics.sh || exit 1
   port=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
-  python3 -I -m http.server "$port" --bind 127.0.0.1 --directory out >/dev/null 2>&1 &
+  SERVE_DIR=out python3 -I tools/serve.py 127.0.0.1 "$port" >/dev/null 2>&1 &
   server=$!
   trap 'kill "$server" 2>/dev/null; for k in desktop phone; do playwright-cli -s="pictures-$k" close >/dev/null 2>&1; done' EXIT
   for _ in $(seq 1 50); do

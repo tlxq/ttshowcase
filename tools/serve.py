@@ -1,6 +1,7 @@
 """Serves a folder (SERVE_DIR, default out/) like http.server, but browsers always check for a newer build.
 /next is guarded like on Vercel (middleware.ts, same rules): `/next?key=<PREVIEW_KEY>` once sets a
 cookie, without it /next is the site's 404 page. No PREVIEW_KEY: /next is closed.
+The response headers in vercel.json (security rules, noindex) are sent here too, so the checks run under them.
 /api/tags and /api/admin go to the local tag store (tools/tags/local.mjs) when TAGS_PORT is set (the pitch); /api/tags-local only from this PC.
 Usage: serve.py <host> <port>"""
 
@@ -9,7 +10,9 @@ import hmac
 import http.client
 import http.cookies
 import http.server
+import json
 import os
+import re
 import posixpath
 import sys
 import urllib.parse
@@ -18,6 +21,17 @@ COOKIE = "next_key"
 KEY = os.environ.get("PREVIEW_KEY", "")
 DIR = os.environ.get("SERVE_DIR", "out")
 TAGS_PORT = int(os.environ.get("TAGS_PORT") or 0)
+
+# vercel.json's header blocks; a block that depends on the host ("has"/"missing") is Vercel's own and left out here
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "vercel.json"), encoding="utf-8") as f:
+    HEADER_BLOCKS = [(b["source"], b["headers"]) for b in json.load(f).get("headers", [])
+                     if "has" not in b and "missing" not in b]
+# Only plain paths and a "(.*)" end mean the same here as in Vercel's path-to-regexp; anything else stops the server
+# instead of quietly matching something else.
+for source, _ in HEADER_BLOCKS:
+    if not re.fullmatch(r"/[A-Za-z0-9/_-]*(\(\.\*\))?", source):
+        sys.exit(f"serve.py: vercel.json header source {source} isn't a plain path or path(.*): teach serve.py how Vercel reads it")
+HEADER_BLOCKS = [(re.compile(re.escape(s.removesuffix("(.*)")) + (".*" if s.endswith("(.*)") else "")), h) for s, h in HEADER_BLOCKS]
 
 
 def clean(path):
@@ -42,7 +56,15 @@ def same(a, b):
 
 class NoStale(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
-        self.send_header("Cache-Control", "no-cache")
+        path = clean(urllib.parse.urlsplit(self.path).path)
+        sent = set()
+        for source, headers in HEADER_BLOCKS:
+            if source.fullmatch(path):
+                for h in headers:
+                    self.send_header(h["key"], h["value"])
+                    sent.add(h["key"].lower())
+        if "cache-control" not in sent:
+            self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
     def translate_path(self, path):
