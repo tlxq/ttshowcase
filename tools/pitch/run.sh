@@ -12,15 +12,19 @@ mkdir -p .cache/shots .cache/walk
 . tools/walk/graphics.sh || exit 1
 
 port=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+TAGS_PORT=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+export TAGS_PORT
+node tools/tags/local.mjs "$TAGS_PORT" >/dev/null 2>&1 & # the pitch's own tag store (in memory, no mail)
+tags=$!
 SERVE_DIR=.cache/pitch python3 -I tools/serve.py 127.0.0.1 "$port" >/dev/null 2>&1 &
 server=$!
-trap 'kill "$server" 2>/dev/null' EXIT
+trap 'kill "$server" "$tags" 2>/dev/null' EXIT
 for _ in $(seq 1 50); do
-  curl -fs "http://127.0.0.1:$port/paint.html" >/dev/null 2>&1 && break
+  curl -fs "http://127.0.0.1:$port/paint.html" >/dev/null 2>&1 && curl -fs "http://127.0.0.1:$port/api/tags" >/dev/null 2>&1 && break
   sleep 0.1
 done
 
-names="tour waits endwaits replay2 reduced contrast tagsfull scrollup loop pickspot tagit"
+names="tour waits endwaits replay2 reduced contrast tagsfull scrollup loop pickspot tagit tagstore"
 failed=0
 ran=0
 check() { # check, then "desktop" or "phone"
@@ -28,7 +32,7 @@ check() { # check, then "desktop" or "phone"
   [ -z "$only" ] || [ "$only" = "$name" ] || [ "$only" = "$1" ] || return 0
   ran=1
   local s="pitch-$name" result script=".cache/walk/pitch-$1.js"
-  sed -e "s#__URL__#http://127.0.0.1:$port/paint.html#" -e "s#__SHOTS__#$root/.cache/shots/#" "tools/pitch/checks/$1.js" > "$script"
+  sed -e "s#__URL__#http://127.0.0.1:$port/paint.html#g" -e "s#__SHOTS__#$root/.cache/shots/#g" "tools/pitch/checks/$1.js" > "$script"
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
   result=$(playwright-cli --raw -s="$s" run-code --filename="$root/$script" 2>&1 | grep -v '^$' | tail -1)

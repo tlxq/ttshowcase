@@ -3,13 +3,14 @@
 // when the last wall stretch is on the graphics card, and the slowest frame from the tap through the whole walk.
 // It tests what the tags add, against today's wall in the same run: fails when the full wall makes the bucket wait 0.3 s longer,
 // has more frames over 50 ms or a slower worst frame (by more than one refresh at 60 Hz) than today's wall, or a time or the frames never show.
+// The same for the visitors' wall (PR7): 40 approved stroke tags in the local store (tools/tags/local.mjs), painted from the store's answer, against today's empty wall.
 // A hard 50 ms limit after the tap waits on the pour fix (plan F-pr1-3): the pour alone has slow frames, tags or not.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   const at = () => page.evaluate(() => ({ ready: +document.documentElement.dataset.readyAt || null, wall: +document.documentElement.dataset.wallAt || null }));
-  const run = async (q, early) => {
+  const run = async (q, early, store) => {
     await page.goto('__URL__' + q);
-    for (let i = 0; i < 60 && !(await page.evaluate(early => document.documentElement.dataset.readyAt && (early || document.documentElement.dataset.wallAt), early)); i++) await page.waitForTimeout(early ? 20 : 250);
+    for (let i = 0; i < 60 && !(await page.evaluate(([early, store]) => document.documentElement.dataset.readyAt && (early || document.documentElement.dataset.wallAt && (!store || document.documentElement.dataset.storeAt)), [early, store])); i++) await page.waitForTimeout(early ? 20 : 250);
     const before = await at();
     await page.evaluate(() => { const F = window.__F = []; let last = 0; (function f(now) { if (last) F.push(now - last); last = now; requestAnimationFrame(f); })(); });
     await page.mouse.click(W / 2, H / 2);
@@ -20,17 +21,24 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     const F = await page.evaluate(() => window.__F.slice(1)), after = await at();
     const r = { ready: after.ready, wall: after.wall, frames: F.length, worst: Math.round(Math.max(...F)), over50: F.filter(v => v > 50).length };
     if (early) r.pendingAtTap = !before.wall;
+    if (store) r.storeAt = +(await page.evaluate(() => document.documentElement.dataset.storeAt)) || null;
     return r;
   };
+  await page.goto('__URL__'); await page.evaluate(() => fetch('/api/tags-local/reset', { method: 'POST' })); // each run starts with an empty store
   res.now = await run('');
   res.full = await run('?tags=full');
   res.fullEarlyTap = await run('?tags=full', true);
-  for (const [k, r] of Object.entries({ now: res.now, full: res.full, fullEarlyTap: res.fullEarlyTap })) {
+  await page.evaluate(() => fetch('/api/tags-local/seed?n=40', { method: 'POST' }));
+  res.store = await run('', false, true);
+  res.storeEarlyTap = await run('', true, true);
+  for (const [k, r] of Object.entries({ now: res.now, full: res.full, fullEarlyTap: res.fullEarlyTap, store: res.store, storeEarlyTap: res.storeEarlyTap })) {
     if (!r.ready) errs.push(k + ': the bucket was never ready');
     if (!r.wall) errs.push(k + ': a wall stretch never arrived');
+    if (k.startsWith('store') && !r.storeAt && !r.pendingAtTap) errs.push(k + ': the visitors\' tags never reached the wall');
     if (!r.frames) { errs.push(k + ': no frames recorded'); continue; }
     if (k !== 'now' && res.now.frames && r.over50 > res.now.over50) errs.push(k + ': ' + r.over50 + ' frames over 50 ms after the tap, today\'s wall ' + res.now.over50);
     if (k !== 'now' && res.now.frames && r.worst > res.now.worst + 17) errs.push(k + ': slowest frame ' + r.worst + ' ms, today\'s wall ' + res.now.worst + ' ms');
   }
   if (res.now.ready && res.full.ready && res.full.ready - res.now.ready >= 300) errs.push('the full visitor wall makes the bucket wait ' + (res.full.ready - res.now.ready) + ' ms longer');
+  await page.evaluate(() => fetch('/api/tags-local/reset', { method: 'POST' }));
   return JSON.stringify(res); }

@@ -2,12 +2,13 @@
  * The visitor wall's tags. A visitor picks a spot, draws one tag and sends it. Their own browser keeps the tag
  * and shows it on their wall at once, as if it were up; everyone else sees it only after Tom approves it from
  * the mail he gets. While it waits, it holds its spot: nobody else can tag over it. Tom's Remove deletes it,
- * which frees the spot and lets that visitor tag again. No accounts: one tag per device id, and a scrambled
+ * which frees the spot and lets that visitor tag again. An approved tag holds nothing: a new tag may go over it
+ * (the old one stays under it). No accounts: one tag per device id, and a scrambled
  * address stops robots (a few a day per address).
  *
  *   GET  /api/tags                      approved tags (oldest first, the newest paint over them) + held spots
  *   GET  /api/tags?ids=a                whether the visitor's own tag is still there: waiting or up
- *   POST /api/tags                      send a tag → { id }; Tom gets a mail with a review link
+ *   POST /api/tags                      send { name, device, spot, strokes } → { id }; Tom gets a mail with a review link
  *   GET  /api/tags?review=<id>&sig=…    Tom's review page: the tag drawn, Approve and Remove
  *   POST /api/tags?review=<id>&sig=…&do=approve|remove
  *
@@ -26,14 +27,31 @@ export const PER_ADDRESS = 5;
 export const MOST_WAITING = 50;
 /** Approved tags the wall gets: more than the visitor area fits (40), the oldest are painted over anyway. */
 export const LIST_MOST = 60;
-const MOST_POINTS = 4000;
-const MOST_STROKES = 80;
-const NAME_LONGEST = 24;
+/**
+ * What one tag may hold. The pitch's tag tool and its loader use the same numbers: tools/pitch/build.mjs puts
+ * them into the page, so the two can't drift apart (src/tags/tags.test.ts checks the tool ids too).
+ */
+export const TAG_LIMITS = {
+  strokes: 80,
+  points: 4000,
+  drips: 200,
+  dripsTotal: 400, // a whole tag: real drawing makes a few to a few dozen
+  dripMm: 1000,
+  dripSide: 50,
+  name: 24,
+  tools: ["skinny", "fat", "mop", "chisel", "pen"],
+};
 
 export type Status = "waiting" | "up";
 /** Where the tag sits on the wall, in metres: its middle, its size, and how far it is turned. */
 export type Spot = { x: number; y: number; w: number; h: number; turn: number };
-export type NewTag = { name: string; pen: string; color: string; strokes: number[][] } & Spot;
+/**
+ * One stroke as the tag tool makes it, with its own tool and colour. pts is [u, v, ms, pressure, ...], four numbers a
+ * point: u and v in tag pixels (320 a metre, the frame is 2.4 x 1.35 m), ms since the tag was started, pressure 0..1
+ * with two decimals (the tool's own number; a mouse is 0.5). dr is the drips: [index into pts, length in mm, side offset in px].
+ */
+export type Stroke = { tool: string; col: string; seed: number; pts: number[]; dr: number[][] };
+export type NewTag = { name: string; strokes: Stroke[] } & Spot;
 export type Tag = NewTag & { id: string; created_at: string };
 
 /** Everything the handlers need from the outside, so the tests can run them without a database or mail. */
@@ -44,11 +62,15 @@ export type Deps = {
     /** Tags sent from this address in the last day, removed ones included. */
     byAddress(ipHash: string): Promise<number>;
     waiting(): Promise<number>;
-    /** Spots taken by waiting tags and by the approved tags the wall shows. */
-    taken(): Promise<Spot[]>;
+    /**
+     * Spots held by waiting tags: nobody may tag over them until Tom decides. Approved tags hold nothing, so a
+     * new tag may go over one (the old one stays under it).
+     */
     held(): Promise<Spot[]>;
     /** The new tag's id, or null when this device already has one (two sends at the same moment). */
     insert(tag: NewTag & { device: string; ip_hash: string }): Promise<string | null>;
+    /** Takes back the address's latest send: the tag never reached Tom (the mail failed), so it must not use up the day's quota. */
+    refund(ipHash: string): Promise<void>;
     drop(id: string): Promise<void>;
     get(id: string): Promise<(Tag & { status: Status }) | null>;
     approve(id: string): Promise<void>;
@@ -84,17 +106,68 @@ export function overlaps(a: Spot, b: Spot): boolean {
 const num = (v: unknown, lo: number, hi: number) =>
   typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
 
+const whole = (v: unknown, lo: number, hi: number) => Number.isInteger(v) && num(v, lo, hi);
+
 /**
- * A sent tag as it is stored, or the reason it isn't. Points are rounded to whole numbers and pressure to
- * 0..100, which keeps a tag at a few KB.
+ * The strokes of a sent tag as they are stored, or null when one is wrong. Same rules as the pitch's loader. Points and
+ * times are whole numbers, pressure has two decimals, drips are whole numbers: a tag stays a few KB.
  */
+export function readStrokes(raw: unknown): Stroke[] | null {
+  const L = TAG_LIMITS;
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > L.strokes) return null;
+  const strokes: Stroke[] = [];
+  let points = 0,
+    dripsAll = 0;
+  for (const s of raw as Record<string, unknown>[]) {
+    if (!s || typeof s !== "object") return null;
+    if (typeof s.tool !== "string" || !L.tools.includes(s.tool)) return null;
+    const col = typeof s.col === "string" ? s.col.toLowerCase() : "";
+    if (!/^#[0-9a-f]{6}$/.test(col)) return null;
+    if (!whole(s.seed, 0, 2147483647)) return null;
+    const p = s.pts;
+    if (!Array.isArray(p) || p.length < 4 || p.length % 4) return null;
+    const pts: number[] = [];
+    for (let i = 0; i < p.length; i += 4) {
+      const [u, v, ms, pr] = [p[i], p[i + 1], p[i + 2], p[i + 3]];
+      if (
+        !num(u, -10000, 10000) ||
+        !num(v, -10000, 10000) ||
+        !num(ms, 0, 3600000) ||
+        !num(pr, 0, 1)
+      )
+        return null;
+      pts.push(
+        Math.round(u as number),
+        Math.round(v as number),
+        Math.round(ms as number),
+        Math.round((pr as number) * 100) / 100,
+      );
+    }
+    points += pts.length / 4;
+    if (points > L.points) return null;
+    const dr: number[][] = [];
+    if (s.dr !== undefined) {
+      if (!Array.isArray(s.dr) || s.dr.length > L.drips) return null;
+      dripsAll += s.dr.length;
+      if (dripsAll > L.dripsTotal) return null;
+      for (const d of s.dr) {
+        if (!Array.isArray(d) || d.length !== 3) return null;
+        if (!whole(d[0], 0, pts.length - 1) || (d[0] as number) % 4) return null;
+        if (!num(d[1], 0.5, L.dripMm - 0.5) || !num(d[2], -L.dripSide + 0.5, L.dripSide - 0.5))
+          return null;
+        dr.push([d[0] as number, Math.round(d[1] as number), Math.round(d[2] as number)]);
+      }
+    }
+    strokes.push({ tool: s.tool, col, seed: s.seed as number, pts, dr });
+  }
+  return strokes;
+}
+
+/** A sent tag as it is stored, or the reason it isn't. */
 export function readTag(body: Record<string, unknown>): NewTag | { error: string } {
   const name =
     typeof body.name === "string" ? body.name.replace(/[\p{Cc}\p{Cf}]/gu, "").trim() : "";
-  if (name.length > NAME_LONGEST) return { error: "name" };
-  if (typeof body.pen !== "string" || !/^[a-z]{2,12}$/.test(body.pen)) return { error: "pen" };
-  const color = typeof body.color === "string" ? body.color.toLowerCase() : "";
-  if (!/^#[0-9a-f]{6}$/.test(color)) return { error: "color" };
+  if (name.length > TAG_LIMITS.name) return { error: "name" };
   const spot = body.spot as Record<string, unknown> | undefined;
   if (
     !spot ||
@@ -106,37 +179,10 @@ export function readTag(body: Record<string, unknown>): NewTag | { error: string
   ) {
     return { error: "spot" };
   }
-  const raw = body.strokes;
-  if (!Array.isArray(raw) || raw.length < 1 || raw.length > MOST_STROKES)
-    return { error: "strokes" };
-  const strokes: number[][] = [];
-  let points = 0;
-  for (const s of raw) {
-    if (!Array.isArray(s) || s.length < 4 || s.length % 4) return { error: "strokes" };
-    const out: number[] = [];
-    for (let i = 0; i < s.length; i += 4) {
-      const [x, y, ms, p] = [s[i], s[i + 1], s[i + 2], s[i + 3]];
-      if (
-        !num(x, -10000, 10000) ||
-        !num(y, -10000, 10000) ||
-        !num(ms, 0, 600000) ||
-        !num(p, 0, 1)
-      ) {
-        return { error: "strokes" };
-      }
-      out.push(
-        Math.round(x as number),
-        Math.round(y as number),
-        Math.round(ms as number),
-        Math.round((p as number) * 100),
-      );
-    }
-    points += out.length / 4;
-    strokes.push(out);
-  }
-  if (points > MOST_POINTS) return { error: "strokes" };
+  const strokes = readStrokes(body.strokes);
+  if (!strokes) return { error: "strokes" };
   const { x, y, w, h, turn } = spot as Spot;
-  return { name, pen: body.pen, color, strokes, x, y, w, h, turn };
+  return { name, strokes, x, y, w, h, turn };
 }
 
 function address(request: Request): string {
@@ -165,17 +211,13 @@ export function handlers(deps: () => Deps | null) {
       );
     }
     // Only these fields leave the server: never the device or the address hash. Held spots carry no tag.
-    const tags = (await d.db.up(LIST_MOST)).map(
-      ({ id, created_at, name, pen, color, strokes, ...spot }) => ({
-        id,
-        created_at,
-        name,
-        pen,
-        color,
-        strokes,
-        ...spotOf(spot),
-      }),
-    );
+    const tags = (await d.db.up(LIST_MOST)).map(({ id, created_at, name, strokes, ...spot }) => ({
+      id,
+      created_at,
+      name,
+      strokes,
+      ...spotOf(spot),
+    }));
     const held = (await d.db.held()).map(spotOf);
     return Response.json(
       { tags, held },
@@ -184,6 +226,17 @@ export function handlers(deps: () => Deps | null) {
   }
 
   async function POST(request: Request): Promise<Response> {
+    try {
+      return await post(request);
+    } catch (e) {
+      // e.g. the table still has the old NOT NULL columns (tools/tags/schema.sql step 1 not run): say so in the log, not just a bare 500
+      const err = e as { code?: string; message?: string };
+      console.error("tags: store failed", err.code, err.message);
+      return json({ error: "store" }, 500);
+    }
+  }
+
+  async function post(request: Request): Promise<Response> {
     const d = deps();
     if (!d) return json({ error: "not-set-up" }, 503);
     const url = new URL(request.url);
@@ -205,7 +258,7 @@ export function handlers(deps: () => Deps | null) {
     const ipHash = sha(d.secret + address(request));
     if ((await d.db.byAddress(ipHash)) >= PER_ADDRESS) return json({ error: "too-many" }, 429);
     if ((await d.db.waiting()) >= MOST_WAITING) return json({ error: "wall-busy" }, 503);
-    if ((await d.db.taken()).some((s) => overlaps(s, tag)))
+    if ((await d.db.held()).some((s) => overlaps(s, tag)))
       return json({ error: "spot-taken" }, 409);
     const id = await d.db.insert({ ...tag, device, ip_hash: ipHash });
     if (!id) return json({ error: "one-tag" }, 409);
@@ -217,6 +270,7 @@ export function handlers(deps: () => Deps | null) {
     );
     if (!sent) {
       await d.db.drop(id);
+      await d.db.refund(ipHash);
       return json({ error: "mail-service" }, 502);
     }
     return json({ id });
@@ -274,18 +328,24 @@ async function reviewPage(d: Deps, id: string, sig: string | null): Promise<Resp
   const action = (what: string, label: string, cls: string) =>
     `<form method="post" action="/api/tags?review=${id}&amp;sig=${esc(sig!)}&amp;do=${what}"><button class="${cls}">${label}</button></form>`;
   const now = tag.status === "up" ? "On the wall" : "Waiting for you";
-  const draw = JSON.stringify({ strokes: tag.strokes, color: tag.color }).replace(/</g, "\\u003c");
+  const draw = JSON.stringify(tag.strokes).replace(/</g, "\\u003c");
+  // A plain picture of the tag for the mail's reader: every stroke in its own colour as a line, its drips as short lines.
+  // The widths are each tool's mark radius in tag pixels (the pitch's tools); pressure, mist and wetness are left out.
+  const script =
+    `(()=>{const t=${draw}.filter(s=>s&&s.pts),c=document.querySelector("canvas"),g=c.getContext("2d"),R={skinny:5,fat:16,mop:9,chisel:11,pen:2};` +
+    `let a=1/0,b=1/0,e=-1/0,f=-1/0;const at=(x,y)=>{a=Math.min(a,x);b=Math.min(b,y);e=Math.max(e,x);f=Math.max(f,y)};` +
+    `for(const s of t){for(let i=0;i<s.pts.length;i+=4)at(s.pts[i],s.pts[i+1]);for(const d of s.dr||[])at(s.pts[d[0]]+d[2],s.pts[d[0]+1]+d[1]*.32)}` +
+    `const k=Math.min((c.width-80)/Math.max(e-a,1),(c.height-80)/Math.max(f-b,1)),ox=(c.width-(e-a)*k)/2-a*k,oy=(c.height-(f-b)*k)/2-b*k;` +
+    `g.lineCap=g.lineJoin="round";for(const s of t){const r=R[s.tool]||5,p=s.pts;g.strokeStyle=g.fillStyle=s.col;g.lineWidth=Math.max(2,r*k*1.4);g.beginPath();` +
+    `g.moveTo(ox+p[0]*k,oy+p[1]*k);for(let i=4;i<p.length;i+=4)g.lineTo(ox+p[i]*k,oy+p[i+1]*k);if(p.length==4)g.lineTo(ox+p[0]*k+.1,oy+p[1]*k);g.stroke();` +
+    `g.lineWidth=Math.max(1.5,r*k*.5);for(const d of s.dr||[]){const x=ox+(p[d[0]]+d[2])*k,y=oy+p[d[0]+1]*k;g.beginPath();g.moveTo(x,y);g.lineTo(x,y+d[1]*.32*k);g.stroke()}}})()`;
   return page(
     `Tag from ${tag.name || "no name"}`,
     `<h1>${esc(tag.name || "No name")}</h1><p class="quiet">${now} · sent ${esc(new Date(tag.created_at).toUTCString())}</p>` +
       `<canvas width="1200" height="600"></canvas>` +
       (tag.status === "waiting" ? action("approve", "Approve", "ok") : "") +
       action("remove", "Remove", "") +
-      `<script>(()=>{const t=${draw},c=document.querySelector("canvas"),g=c.getContext("2d");` +
-      `let a=1/0,b=1/0,e=-1/0,f=-1/0;for(const s of t.strokes)for(let i=0;i<s.length;i+=4){a=Math.min(a,s[i]);b=Math.min(b,s[i+1]);e=Math.max(e,s[i]);f=Math.max(f,s[i+1])}` +
-      `const k=Math.min((c.width-80)/Math.max(e-a,1),(c.height-80)/Math.max(f-b,1)),ox=(c.width-(e-a)*k)/2,oy=(c.height-(f-b)*k)/2;` +
-      `g.strokeStyle=t.color;g.lineCap=g.lineJoin="round";for(const s of t.strokes)for(let i=4;i<s.length;i+=4){` +
-      `g.lineWidth=2+s[i+3]*.25;g.beginPath();g.moveTo(ox+(s[i-4]-a)*k,oy+(s[i-3]-b)*k);g.lineTo(ox+(s[i]-a)*k,oy+(s[i+1]-b)*k);g.stroke()}})()</script>`,
+      `<script>${script}</script>`,
   );
 }
 
@@ -314,7 +374,7 @@ function liveDeps(): Deps | null {
     to = process.env.CONTACT_TO;
   if (!url || !secret || secret.length < 32 || !key || !to) return null;
   const sql = neon(url);
-  const COLS = "id, created_at, name, pen, color, strokes, x, y, w, h, turn";
+  const COLS = "id, created_at, name, strokes, x, y, w, h, turn";
   return {
     secret,
     db: {
@@ -331,14 +391,6 @@ function liveDeps(): Deps | null {
         const r = await sql`select count(*)::int as n from tags where status = 'waiting'`;
         return r[0]!.n as number;
       },
-      async taken() {
-        const r = await sql.query(
-          `select x, y, w, h, turn from tags where status = 'waiting'
-           union all select x, y, w, h, turn from (select * from tags where status = 'up' order by created_at desc limit $1) t`,
-          [LIST_MOST],
-        );
-        return r as Spot[];
-      },
       async held() {
         const r = await sql`select x, y, w, h, turn from tags where status = 'waiting'`;
         return r as Spot[];
@@ -351,8 +403,8 @@ function liveDeps(): Deps | null {
           [, , r] = await sql.transaction([
             sql`delete from sends where at < now() - interval '1 day'`,
             sql`insert into sends (ip_hash) values (${t.ip_hash})`,
-            sql`insert into tags (name, pen, color, strokes, x, y, w, h, turn, device)
-              values (${t.name}, ${t.pen}, ${t.color}, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}, ${t.y}, ${t.w}, ${t.h}, ${t.turn}, ${t.device})
+            sql`insert into tags (name, strokes, x, y, w, h, turn, device)
+              values (${t.name}, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}, ${t.y}, ${t.w}, ${t.h}, ${t.turn}, ${t.device})
               returning id`,
           ]);
         } catch (e) {
@@ -360,6 +412,9 @@ function liveDeps(): Deps | null {
           throw e;
         }
         return r![0]!.id as string;
+      },
+      async refund(ipHash) {
+        await sql`delete from sends where ctid = (select ctid from sends where ip_hash = ${ipHash} order by at desc limit 1)`;
       },
       async drop(id) {
         await sql`delete from tags where id = ${id}`;

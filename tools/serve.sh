@@ -30,4 +30,12 @@ echo "Serving $dir/ at $url (Ctrl+C to stop)"
 if [ "${2:-}" = "--open" ]; then
   (sleep 1; xdg-open "$url" >/dev/null 2>&1) &
 fi
-exec python3 -I tools/serve.py "$host" "$port"
+# The pitch's own tag store (SERVE_TAGS=1): api/tags.ts in memory on this PC, behind serve.py's /api/tags
+if [ -n "${SERVE_TAGS:-}" ]; then
+  TAGS_PORT=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
+  export TAGS_PORT
+  node tools/tags/local.mjs "$TAGS_PORT" &
+  tags=$!
+  trap 'kill "$tags" 2>/dev/null' EXIT
+fi
+python3 -I tools/serve.py "$host" "$port"
