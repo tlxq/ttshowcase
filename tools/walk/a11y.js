@@ -7,6 +7,10 @@ async page=>{ const errs=[], res={errs};
  res.notFoundTitle=await page.title();
  if(res.notFoundTitle!=='Page not found, Tom Larsson') errs.push('the 404 page title is "'+res.notFoundTitle+'"');
  if(!(await page.evaluate(()=>/Nothing painted here/.test(document.body.innerText)))) errs.push('/404.html is not the 404 page');
+ res.notFound=await page.evaluate(()=>{ const ways=[...document.querySelectorAll('main a')], a=ways[0], r=a&&a.getBoundingClientRect(), p=document.querySelector('.lk-missing-path span'), s=p&&getComputedStyle(p);
+  return {ways:ways.map(w=>w.textContent.trim()), tapH:r&&Math.round(r.height), labelPx:a&&parseFloat(getComputedStyle(a).fontSize), struck:!!s&&s.textDecorationLine==='line-through', addressPx:s&&parseFloat(s.fontSize), sayPx:parseFloat(getComputedStyle(document.querySelector('.lk-missing-say')).fontSize), noBar:!p||getComputedStyle(p,'::after').content==='none', hasTag:!!document.querySelector('.lk-missing-tag svg, .lk-missing-tag canvas, .lk-missing-tag img, .lk-missing-tag [data-hand]')}; });
+ if(res.notFound.ways.join()!=='Back to the start'||res.notFound.tapH<48||res.notFound.labelPx<13||!res.notFound.struck||res.notFound.addressPx<13||res.notFound.sayPx<13) errs.push('the 404 page has not one "Back to the start" of 48 px, a struck address and 13 px text: '+JSON.stringify(res.notFound));
+ if(!res.notFound.noBar) errs.push('the 404 address still has a bar over its letters');
  const run=async(label)=>{
   for(const p of ['/','/wall.html','/404.html']){
    await page.goto('__WALK_URL__'+p); await page.waitForTimeout(2500);
