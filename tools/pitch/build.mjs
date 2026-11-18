@@ -1,5 +1,5 @@
-// Builds the paint pitch (pitch/paint.src.html) into .cache/pitch/paint.html: fonts, hand-written words and the
-// stencil palette go into the page, the pictures are linked from pitch/assets.
+// Builds the paint pitch (pitch/paint.src.html) into .cache/pitch/paint.html: fonts and hand-written words go
+// into the page, the pictures are linked from pitch/assets.
 // --site also puts it into the built site (out/) as /next (behind its key, middleware.ts), pictures copied to
 // /next/assets/: `npm run build` runs it after next build, so Vercel deploys the pitch at ttdevs.com/next.
 // The fonts are fetched once into .cache/fonts and never go into git: Clash Display's licence (ITF FFL, section 02)
@@ -85,7 +85,6 @@ const parts = {
   __HAND__: hand("hi-i-m-tom"),
   __HAND_WALL__: `{${["tom", "ttdevs", "larsson", "tt"].map((w) => `"${w}": ${hand(w)}`).join(", ")}}`,
   __TAG_LIMITS__: JSON.stringify(TAG_LIMITS), // what one tag may hold: the store's own numbers (api/tags.ts)
-  __PAL__: readFileSync(join(root, "pitch/assets/epa_pal.json"), "utf8").trim(),
 };
 let page = readFileSync(join(root, "pitch/paint.src.html"), "utf8");
 for (const [key, value] of Object.entries(parts)) {
