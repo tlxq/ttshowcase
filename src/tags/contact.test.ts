@@ -16,6 +16,10 @@ function world(mailWorks = true) {
     async count(ipHash) {
       sends.push(ipHash);
     },
+    async refund(ipHash) {
+      const i = sends.lastIndexOf(ipHash);
+      if (i >= 0) sends.splice(i, 1);
+    },
     async mail(m) {
       mails.push(m);
       return mailWorks;
@@ -52,10 +56,14 @@ test(`${MAIL_PER_ADDRESS} messages a day per address, then too-many and no mail`
   assert.equal((await w.post(send(letter, "5.6.7.8"))).status, 200);
 });
 
-test("a send the mail service turns down still counts", async () => {
+test("a send the mail service turns down is given back", async () => {
   const w = world(false);
-  for (let i = 0; i < MAIL_PER_ADDRESS; i++) assert.equal((await w.post(send(letter))).status, 502);
-  assert.equal((await w.post(send(letter))).status, 429);
+  for (let i = 0; i < MAIL_PER_ADDRESS + 2; i++) {
+    const r = await w.post(send(letter));
+    assert.equal(r.status, 502);
+    assert.deepEqual(await r.json(), { error: "mail-service" });
+  }
+  assert.equal(w.sends.length, 0);
 });
 
 test("robots, bad addresses and empty messages are never counted or mailed", async () => {
@@ -82,6 +90,7 @@ test("no database, no mail", async () => {
     secret: SECRET,
     sentToday: () => Promise.reject(new Error("down")),
     count: async () => {},
+    refund: async () => {},
     mail: async () => (mailed++, true),
   }));
   assert.equal((await post(send(letter))).status, 503);

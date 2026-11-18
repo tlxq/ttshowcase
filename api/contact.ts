@@ -33,6 +33,8 @@ export type ContactDeps = {
   sentToday(ipHash: string): Promise<number>;
   /** Counts one more mail for this address (and clears rows older than a day). */
   count(ipHash: string): Promise<void>;
+  /** Takes back this address's latest count: the mail never went out, so it must not use up the day's messages. */
+  refund(ipHash: string): Promise<void>;
   mail(m: { replyTo: string; subject: string; text: string }): Promise<boolean>;
 };
 
@@ -60,8 +62,8 @@ export function contact(deps: () => ContactDeps | null) {
       return Response.json({ error: "message" }, { status: 400 });
     }
     const ipHash = mailHash(request, d.secret);
-    // Counted before it goes: a send the mail service turns down still used a call to it. No count, no
-    // mail: when the database doesn't answer, nothing is sent.
+    // Counted before it goes, so a flood can't slip past while the mail is in flight; given back when the
+    // mail fails. No count, no mail: when the database doesn't answer, nothing is sent.
     try {
       if ((await d.sentToday(ipHash)) >= MAIL_PER_ADDRESS) {
         return Response.json({ error: "too-many" }, { status: 429 });
@@ -75,7 +77,15 @@ export function contact(deps: () => ContactDeps | null) {
       subject: `Message from ${name ? `${name} <${email}>` : email}`,
       text: message,
     });
-    if (!sent) return Response.json({ error: "mail-service" }, { status: 502 });
+    if (!sent) {
+      // The mail never reached Tom: give the send back, as api/tags.ts does.
+      try {
+        await d.refund(ipHash);
+      } catch {
+        // The answer is the same; the count stays until it is a day old.
+      }
+      return Response.json({ error: "mail-service" }, { status: 502 });
+    }
     return Response.json({ sent: true });
   };
 }
@@ -99,6 +109,9 @@ function liveDeps(): ContactDeps | null {
         sql`delete from sends where at < now() - interval '1 day'`,
         sql`insert into sends (ip_hash) values (${ipHash})`,
       ]);
+    },
+    async refund(ipHash) {
+      await sql`delete from sends where ctid = (select ctid from sends where ip_hash = ${ipHash} order by at desc limit 1)`;
     },
     async mail({ replyTo, subject, text }) {
       try {
