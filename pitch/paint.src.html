@@ -266,7 +266,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   // the curb has a broken gap; the paint from one puddle finds it and runs along the gutter into the drain (Tom 11-16)
   const GAP_X = NARROW ? .7 : 1.25, DRAIN_X = NARROW ? 1.55 : 2.3, X0 = WX - WW / 2, X1 = END_X; // the curb runs on over the workshop and past the exit
   const curbM = new THREE.MeshStandardMaterial({ color: 0x8a8c90, roughness: .85, map: tex("assets/wall4_diff.jpg", true, WW / TILE, .3), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, .3), envMapIntensity: .3 });
-  for (let i = 0; i < PROF.length - 1; i++) { const [p0, h] = PROF[i], [p1, h1] = PROF[i + 1]; if (h !== h1 || p1 <= p0) continue; // each flat piece of ground
+  for (let i = 0; i < PROF.length - 1; i++) { const [p0, h] = PROF[i], [p1, h1] = PROF[i + 1]; if (h !== h1 || p1 <= p0 || (p0 >= RA && p1 <= RB)) continue; // each flat piece of street; not on the narrow flight's treads
     for (const [a, b] of [[X0, GAP_X - .22], [GAP_X + .2, X1]]) { const x0 = Math.max(a, p0), x1 = Math.min(b, p1); if (x1 - x0 < .01) continue; const c = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, .16, .34), curbM); c.position.set((x0 + x1) / 2, h + .02, CURB_Z + .17); scene.add(c); } }
   for (const [x, z, r, sy] of [[GAP_X - .27, CURB_Z + .5, .07, .6], [GAP_X + .3, CURB_Z + .1, .05, .7], [GAP_X - .1, CURB_Z - .12, .035, .8]]) { // broken bits of the curb
     const b = new THREE.Mesh(new THREE.DodecahedronGeometry(r), curbM); b.scale.y = sy; b.position.set(x, GROUND + r * sy * .7, z); b.rotation.set(x * 3, z * 5, 1); scene.add(b); }
@@ -281,13 +281,13 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   // the steps: worn yellow paint on each edge, a handrail by the wall, a wall lamp over each flight; one light, moved to the flight in view
   { const prev = ground.material.onBeforeCompile; ground.material.onBeforeCompile = sh => { prev(sh);
     sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", `float nose = 0.;
-          ${STAIRS.map(([a, b]) => `if (vWP.x > ${a.toFixed(3)} && vWP.x < ${(b + .001).toFixed(3)} && (${a.toFixed(3)} < 15. || vWP.z < ${SW.toFixed(2)})) { float f = fract((vWP.x - ${a.toFixed(3)}) / ${((b - a) / NSTEP).toFixed(4)}); nose = max(nose, smoothstep(.8, .84, f) + (1. - smoothstep(.0, .02, f))); }`).join("\n")}
+          ${STAIRS.map(([a, b]) => `if (vWP.x > ${a.toFixed(3)} && vWP.x < ${(b + .001).toFixed(3)} && (${a.toFixed(3)} < ${RA.toFixed(3)} || vWP.z < ${SW.toFixed(2)})) { float f = fract((vWP.x - ${a.toFixed(3)}) / ${((b - a) / NSTEP).toFixed(4)}); nose = max(nose, smoothstep(.8, .84, f) + (1. - smoothstep(.0, .02, f))); }`).join("\n")}
           nose *= smoothstep(.42, .62, gf(vWP.xz * 4.1 + 7.)) * (1. - gWet) * .8;
           diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.5, .39, .09) * (.6 + .4 * gn(vWP.xz * 40.)), clamp(nose, 0., 1.));
           #include <emissivemap_fragment>`); }; }
   const stairLamps = STAIRS.map(([a, b, h0, h1]) => { const m = new THREE.Group(), x = (a + b) / 2;
     const box = new THREE.Mesh(new THREE.BoxGeometry(.32, .18, .12), postM), lens = new THREE.Mesh(new THREE.BoxGeometry(.26, .04, .1), new THREE.MeshStandardMaterial({ color: 0, emissive: 0xffd9a8, emissiveIntensity: 2 }));
-    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, h1 + 2.5, x > 15 ? .29 : .07); scene.add(m); // the second flight's lamp hangs on the bridge's abutment
+    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, h1 + 2.5, a >= RA ? .29 : .07); scene.add(m); // the second flight's lamp hangs on the bridge's abutment
     const pts = [V(a - .4, h0 + .9, .3), V(a, h0 + .9, .3), V(b, h1 + .9, .3), V(b + .4, h1 + .9, .3)];
     for (let i = 0; i < 3; i++) { const d = pts[i + 1].clone().sub(pts[i]), r = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, d.length(), 8), postM);
       r.position.copy(pts[i]).addScaledVector(d, .5); r.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize()); scene.add(r); }
@@ -1000,7 +1000,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
       (function step() { const s = performance.now(); while (performance.now() - s < 4) if (it.next().done) return; requestAnimationFrame(step); })(); }
     if (!wk) here(); }
   wallRun(WL, { hands: WALL_HAND, tags: WL.tags, L: WL.L });
-  const links = [{ t: "Open the site", href: "https://eparadar.se" }, { t: "Code for epaRadar", href: "https://github.com/tlxq/eparadar" }];
+  const links = [{ t: "Open the site, epaRadar", href: "https://eparadar.se" }, { t: "Code for epaRadar", href: "https://github.com/tlxq/eparadar" }];
   document.querySelector(".hud").insertAdjacentHTML("beforeend", links.map((l, i) => `<a class="hot" id="hot${i}" href="${l.href}" target="_blank" rel="noopener" aria-label="${l.t}" tabindex="-1"></a>`).join("")
     + '<p class="head">epaRadar: Friends on a live map. Only friends see where you are. Degree project, built by me. React Native, Expo, Supabase, Postgres, pgTAP.</p>');
   const hots = links.map((l, i) => document.getElementById("hot" + i));
@@ -1827,7 +1827,8 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .25, EY - EH / 2 + .3, 0) : V(EX - EW * .3, EY + EH / 2 - .25, 0), NARROW ? 18 : 24, NARROW ? 60 : -96); // phone: under the painting, on the empty floor
     // the two signs hang one under the other: each tap area is at least 48 px tall, growing away from the line between them, so they never overlap
     const sgn = SIGNS.map(([a, b]) => [...proj(a), ...proj(b)]), seam = (sgn[0][4] + sgn[1][1]) / 2;
-    hots.forEach((h, i) => { if (sec < .3 || sv > 360) { h.style.display = "none"; h.tabIndex = -1; return; }
+    const signsIn = sec >= .3 && pan > .5 && walk3 < .5 && sgn.every(b => b[2] && b[3] > 0 && b[0] < innerWidth && b[4] > 0 && b[1] < innerHeight); // at this wall, both signs in view
+    hots.forEach((h, i) => { if (!signsIn) { h.style.display = "none"; h.tabIndex = -1; return; }
       const [ax, ay, , bx, by] = sgn[i], hgt = Math.max(48, i ? by - seam : seam - ay), w = Math.max(48, bx - ax + 8);
       Object.assign(h.style, { display: "block", left: (ax + bx) / 2 - w / 2 + "px", top: (i ? seam : seam - hgt) + "px", width: w + "px", height: hgt + "px" }); h.tabIndex = 0; });
     const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
