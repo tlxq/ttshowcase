@@ -29,9 +29,11 @@ grep -q next_key "$jar" || no "the right key should set the next_key cookie"
 page=$(curl -s -b "$jar" -w '\n%{http_code}' "$base/next")
 [ "$(tail -1 <<<"$page")" = 200 ] || no "/next with the cookie should be 200"
 grep -q 'noindex' <<<"$page" || no "/next should say noindex"
+grep -q 'id="leave"' <<<"$page" || no "/next should be the paint walk (tools/pitch/build.mjs --site)"
+[ "$(code -b "$jar" "$base/next/assets/wall4_diff.jpg")" = 200 ] || no "the walk's pictures should be at /next/assets/"
 [ "$(code "$base/")" = 200 ] || no "the home page should still be 200"
 if grep -rlE 'href="/next([/?#".])' out --include='*.html' | grep -v '^out/next' >/dev/null; then
   no "a page links to /next: $(grep -rlE 'href="/next([/?#".])' out --include='*.html' | grep -v '^out/next' | tr '\n' ' ')"
 fi
-[ "$fail" = 0 ] && echo "next-check: /next closed without the key, open with it, noindex, linked from nowhere"
+[ "$fail" = 0 ] && echo "next-check: /next closed without the key, the paint walk with it, noindex, linked from nowhere"
 exit "$fail"
