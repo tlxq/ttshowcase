@@ -35,6 +35,7 @@ export function AdminForm() {
   const [state, setState] = useState<State>("checking");
   const [why, setWhy] = useState("");
   const [key, setKey] = useState("");
+  const [outWhy, setOutWhy] = useState("");
 
   useEffect(() => {
     let live = true;
@@ -72,11 +73,17 @@ export function AdminForm() {
 
   async function signOut() {
     setState("sending");
+    setOutWhy("");
     try {
-      await call({ signout: true });
-    } catch {
-      setWhy("The page couldn't reach the server.");
-      setState("failed");
+      const answer = await call({ signout: true });
+      if (!answer.ok) throw new Error("refused");
+    } catch (e) {
+      setOutWhy(
+        e instanceof TypeError
+          ? "The page couldn't reach the server."
+          : "The server didn't answer.",
+      );
+      setState("in");
       return;
     }
     hint(false);
@@ -97,6 +104,11 @@ export function AdminForm() {
         >
           {state === "sending" ? "Signing out…" : "Sign out"}
         </button>
+        {outWhy && (
+          <p className="lk-mail-error" role="alert">
+            Couldn&apos;t sign out. {outWhy} Try again.
+          </p>
+        )}
       </div>
     );
   }
@@ -104,7 +116,7 @@ export function AdminForm() {
   return (
     <form className="lk-mail lk-admin" onSubmit={signIn}>
       <label className="lk-mail-row">
-        <span className="lk-mail-key">key</span>
+        <span className="lk-mail-key">Key</span>
         <input
           type="password"
           name="key"

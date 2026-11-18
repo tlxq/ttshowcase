@@ -49,6 +49,15 @@ export const TAG_LIMITS = {
 /** Where the wall is on the site: the mail's second link opens it on the wall itself. One constant, so the launch can move it. */
 export const WALL_PATH = "/next";
 
+/**
+ * How low a tag's middle may sit. A visitor's frame is kept inside the visitor area (the pitch's AREA: the wall's ground, -2.2 m, plus
+ * 0.4 m, so the middle is at least half a frame height above that); the floor is that with a margin. Tom may go lower, anywhere on the wall.
+ * src/tags/admin.test.ts checks the ground against the pitch's own.
+ */
+export const WALL_GROUND = -2.2;
+export const VISITOR_Y_MIN = WALL_GROUND + 0.4 - 1.35 / 2 - 0.1;
+export const ADMIN_Y_MIN = -5;
+
 export type Status = "waiting" | "up";
 /** Where the tag sits on the wall, in metres: its middle, its size, and how far it is turned. */
 export type Spot = { x: number; y: number; w: number; h: number; turn: number };
@@ -86,7 +95,11 @@ export type Deps = {
     /** Tom moved, sized or turned a tag. */
     update(id: string, spot: Spot): Promise<void>;
     /** Tom's own tag: no address, no count, no mail; its device starts with "tom:". */
-    insertUp(tag: NewTag & { device: string; status: Status }): Promise<string>;
+    insertUp(
+      tag: NewTag & { device: string; status: Status; id?: string; created_at?: string },
+    ): Promise<string>;
+    /** A tag's whole row, the device too: only Tom's Remove and Undo use it. */
+    full(id: string): Promise<(Tag & { status: Status; device: string }) | null>;
     up(most: number): Promise<Tag[]>;
     statuses(ids: string[]): Promise<{ id: string; status: Status }[]>;
   };
@@ -179,12 +192,12 @@ export function readStrokes(raw: unknown): Stroke[] | null {
 }
 
 /** A spot as the wall takes it, or null when a number is wrong. */
-export function readSpot(raw: unknown): Spot | null {
+export function readSpot(raw: unknown, admin = false): Spot | null {
   const spot = raw as Record<string, unknown> | undefined;
   if (
     !spot ||
     !num(spot.x, -50, 50) ||
-    !num(spot.y, -5, 20) || // the wall starts at -2.2 m: a tag low on it sits below 0
+    !num(spot.y, admin ? ADMIN_Y_MIN : VISITOR_Y_MIN, 20) ||
     !num(spot.w, 0.2, 6) ||
     !num(spot.h, 0.2, 4) ||
     !num(spot.turn, -45, 45)
@@ -195,11 +208,11 @@ export function readSpot(raw: unknown): Spot | null {
 }
 
 /** A sent tag as it is stored, or the reason it isn't. */
-export function readTag(body: Record<string, unknown>): NewTag | { error: string } {
+export function readTag(body: Record<string, unknown>, admin = false): NewTag | { error: string } {
   const name =
     typeof body.name === "string" ? body.name.replace(/[\p{Cc}\p{Cf}]/gu, "").trim() : "";
   if (name.length > TAG_LIMITS.name) return { error: "name" };
-  const spot = readSpot(body.spot);
+  const spot = readSpot(body.spot, admin);
   if (!spot) return { error: "spot" };
   const strokes = readStrokes(body.strokes);
   if (!strokes) return { error: "strokes" };
@@ -344,24 +357,60 @@ async function adminDo(d: Deps, request: Request): Promise<Response> {
   if (!body || typeof body !== "object") return json({ error: "bad-request" }, 400);
   const what = body.do;
   if (what === "create") {
-    const tag = readTag(body);
+    const tag = readTag(body, true);
     if ("error" in tag) return json(tag, 400);
     if (!shapeOk(tag)) return json({ error: "spot" }, 400);
-    // a restored tag (Undo after Remove) may go back as waiting; a new one goes up at once
-    const status: Status = body.status === "waiting" ? "waiting" : "up";
-    const id = await d.db.insertUp({ ...tag, device: "tom:" + randomUUID(), status });
-    console.log("admin: create", id, status);
+    // Undo after Remove puts the same row back: the id, the time, the device and the status it had (what Remove answered with)
+    const back = body.restore as Record<string, unknown> | undefined;
+    let row: { id?: string; created_at?: string; device: string; status: Status } = {
+      device: "tom:" + randomUUID(),
+      status: "up",
+    };
+    if (back !== undefined) {
+      const at = typeof back.created_at === "string" ? Date.parse(back.created_at) : NaN;
+      if (
+        typeof back.id !== "string" ||
+        !UUID.test(back.id) ||
+        !Number.isFinite(at) ||
+        typeof back.device !== "string" ||
+        !/^[\w:-]{16,64}$/.test(back.device) ||
+        (back.status !== "up" && back.status !== "waiting")
+      )
+        return json({ error: "restore" }, 400);
+      row = {
+        id: back.id,
+        created_at: new Date(at).toISOString(),
+        device: back.device,
+        status: back.status,
+      };
+    }
+    let id: string;
+    try {
+      id = await d.db.insertUp({ ...tag, ...row });
+    } catch (e) {
+      if ((e as { code?: string }).code === "23505") return json({ error: "taken" }, 409); // the id or the device is in use again
+      throw e;
+    }
+    console.log("admin: create", id, row.status, back ? "restored" : "");
     return json({ id });
   }
   const id = typeof body.id === "string" ? body.id : "";
   if (!UUID.test(id)) return json({ error: "id" }, 400);
   if (what !== "approve" && what !== "remove" && what !== "update")
     return json({ error: "do" }, 400);
-  if (!(await d.db.get(id))) return json({ error: "gone" }, 404);
+  const was = await d.db.full(id);
+  if (!was) return json({ error: "gone" }, 404);
   if (what === "approve") await d.db.approve(id);
-  else if (what === "remove") await d.db.drop(id);
-  else {
-    const spot = readSpot(body.spot);
+  else if (what === "remove") {
+    await d.db.drop(id);
+    console.log("admin: remove", id);
+    // what Undo needs to put the same row back (only Tom's browser gets it)
+    return json({
+      ok: true,
+      row: { id, created_at: was.created_at, device: was.device, status: was.status },
+    });
+  } else {
+    const spot = readSpot(body.spot, true);
     if (!spot || !shapeOk(spot)) return json({ error: "spot" }, 400);
     await d.db.update(id, spot);
   }
@@ -528,10 +577,15 @@ function liveDeps(): Deps | null {
         await sql`update tags set x = ${s.x}, y = ${s.y}, w = ${s.w}, h = ${s.h}, turn = ${s.turn} where id = ${id}`;
       },
       async insertUp(t) {
-        const r = await sql`insert into tags (name, strokes, x, y, w, h, turn, device, status)
-          values (${t.name}, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}, ${t.y}, ${t.w}, ${t.h}, ${t.turn}, ${t.device}, ${t.status})
+        const r =
+          await sql`insert into tags (id, created_at, name, strokes, x, y, w, h, turn, device, status)
+          values (coalesce(${t.id ?? null}::uuid, gen_random_uuid()), coalesce(${t.created_at ?? null}::timestamptz, now()), ${t.name}, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}, ${t.y}, ${t.w}, ${t.h}, ${t.turn}, ${t.device}, ${t.status})
           returning id`;
         return r[0]!.id as string;
+      },
+      async full(id) {
+        const r = await sql.query(`select ${COLS}, status, device from tags where id = $1`, [id]);
+        return (r[0] as (Tag & { status: Status; device: string }) | undefined) ?? null;
       },
       async up(most) {
         const r = await sql.query(

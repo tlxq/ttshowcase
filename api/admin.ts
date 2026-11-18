@@ -6,6 +6,9 @@
  *   POST /api/admin { key }           → 200 and the cookie, or 401 { error: "key" }, 429 { error: "too-many" }
  *   POST /api/admin { signout: true } → 200 and the cookie cleared
  *
+ * The cookie is the same for every sign-in (an HMAC of the key) and lasts a year, or until ADMIN_KEY changes: rotating the key in Vercel
+ * and in Pass signs out every device at once, and there is no other way to sign one device out from here.
+ *
  * Every call must come from our own page (header X-Admin: 1 and the site as Origin). Tests: src/tags/admin.test.ts.
  */
 import { neon } from "@neondatabase/serverless";

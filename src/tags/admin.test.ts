@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { handlers, WALL_PATH } from "../../api/tags.ts";
+import { readFileSync } from "node:fs";
+import { ADMIN_Y_MIN, handlers, VISITOR_Y_MIN, WALL_GROUND, WALL_PATH } from "../../api/tags.ts";
 import { admin, adminHash } from "../../api/admin.ts";
 import {
   ADMIN_COOKIE,
@@ -299,13 +300,111 @@ test("Tom's own tag goes up at once, with no mail, no device limit and no held-s
   assert.equal(new Set(tomRows.map((r) => r.device)).size, 3);
 });
 
-test("a tag that was removed comes back with Undo, as it was", async () => {
+/** A visitor's tag, sent as the page sends it. */
+const visitorSends = (api: ReturnType<typeof handlers>, device: string, x = -8, y = 3) =>
+  api.POST(
+    new Request(SITE + "/api/tags", {
+      method: "POST",
+      headers: { "x-forwarded-for": "1.1.1.1" },
+      body: JSON.stringify({ name: "V", device, spot: spot({ x, y }), strokes: [stroke] }),
+    }),
+  );
+
+test("Undo puts the very same row back: id, time, device and status", async () => {
   const { api, rows } = world();
-  const { id } = (await (await api.POST(tom(newTag()))).json()) as { id: string };
-  await api.POST(tom({ do: "remove", id }));
+  await visitorSends(api, "device-00000000000000aa");
+  await api.POST(tom({ do: "approve", id: rows[0]!.id }));
+  const before = { ...rows[0]! };
+  const gone = await api.POST(tom({ do: "remove", id: before.id }));
+  const { row } = (await gone.json()) as { row: Record<string, string> };
+  assert.deepEqual(row, {
+    id: before.id,
+    created_at: before.created_at,
+    device: before.device,
+    status: "up",
+  });
   assert.equal(rows.length, 0);
-  await api.POST(tom(newTag({ status: "waiting" })));
+  const back = await api.POST(
+    tom({ ...newTag({ name: "V", spot: spot({ x: -8, y: 3 }) }), restore: row }),
+  );
+  assert.equal(back.status, 200);
+  assert.deepEqual(await back.json(), { id: before.id });
+  assert.equal(rows.length, 1);
+  assert.deepEqual(
+    [rows[0]!.id, rows[0]!.created_at, rows[0]!.device, rows[0]!.status],
+    [before.id, before.created_at, before.device, "up"],
+  );
+  assert.equal(
+    (await visitorSends(api, "device-00000000000000aa", -3)).status,
+    409,
+    "the visitor still has their one tag, so they can't end up with two",
+  );
+});
+
+test("a waiting tag comes back waiting, and the restore is checked", async () => {
+  const { api, rows } = world();
+  await visitorSends(api, "device-00000000000000bb");
+  const id = rows[0]!.id;
+  const { row } = (await (await api.POST(tom({ do: "remove", id }))).json()) as {
+    row: Record<string, string>;
+  };
+  assert.equal(row.status, "waiting");
+  const put = (restore: unknown) => api.POST(tom({ ...newTag(), restore }));
+  for (const bad of [
+    { ...row, id: "nope" },
+    { ...row, created_at: "yesterday" },
+    { ...row, device: "x" },
+    { ...row, status: "gone" },
+    "row",
+  ])
+    assert.equal((await put(bad)).status, 400, JSON.stringify(bad));
+  assert.equal(rows.length, 0);
+  assert.equal((await put(row)).status, 200);
   assert.equal(rows[0]!.status, "waiting");
+  assert.equal((await put(row)).status, 409, "the id is in use again");
+  const twice = await put({ ...row, id: crypto.randomUUID() });
+  assert.equal(twice.status, 409, "and so is the device");
+  assert.equal(rows.length, 1);
+});
+
+test("a restore from anyone but Tom is refused", async () => {
+  const { api, rows } = world();
+  const r = await api.POST(
+    from(
+      "/api/tags?admin=1",
+      {
+        method: "POST",
+        body: JSON.stringify({ ...newTag(), restore: { id: crypto.randomUUID() } }),
+      },
+      { "x-admin": "1", origin: SITE },
+    ),
+  );
+  assert.equal(r.status, 404);
+  assert.equal(rows.length, 0);
+});
+
+test("a visitor's tag may sit as low as the visitor area goes, Tom's as low as the wall", async () => {
+  const { api } = world();
+  let across = -30;
+  const low = (y: number) =>
+    visitorSends(api, "device-" + String(Math.random()).slice(2, 18), (across += 3), y);
+  // the lowest middle the pitch allows a visitor: its AREA floor (ground + 0.4 m) plus half a frame
+  assert.equal((await low(-2.2 + 0.4 + 1.35 / 2)).status, 200);
+  assert.equal((await low(-1.1)).status, 200, "the silent-400 case");
+  assert.equal((await low(VISITOR_Y_MIN - 0.01)).status, 400);
+  assert.equal((await low(-4)).status, 400);
+  assert.equal((await low(0)).status, 200);
+  const tag = (y: number) => api.POST(tom(newTag({ spot: spot({ y }) })));
+  assert.equal((await tag(-4)).status, 200, "Tom goes lower");
+  assert.equal((await tag(ADMIN_Y_MIN)).status, 200);
+  assert.equal((await tag(ADMIN_Y_MIN - 0.01)).status, 400);
+});
+
+test("the visitor floor follows the pitch's own wall", () => {
+  const pitch = readFileSync(new URL("../../pitch/paint.src.html", import.meta.url), "utf8");
+  const ground = Number(pitch.match(/GROUND = (-?[\d.]+)/)![1]);
+  assert.equal(ground, WALL_GROUND);
+  assert.match(pitch, /AREA = \{[^}]*y0: GROUND \+ \.4/);
 });
 
 test("Tom's tag is held to the same rules as a visitor's", async () => {

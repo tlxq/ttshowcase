@@ -60,9 +60,14 @@ export function memoryDeps(secret: string, mail: Deps["mail"], adminKey: string 
         if (r) Object.assign(r, spot);
       },
       async insertUp(t) {
-        const id = randomUUID();
-        rows.push({ ...t, ip_hash: "", id, created_at: new Date().toISOString() });
+        const id = t.id ?? randomUUID();
+        if (rows.some((r) => r.id === id || r.device === t.device))
+          throw Object.assign(new Error("duplicate"), { code: "23505" });
+        rows.push({ ...t, ip_hash: "", id, created_at: t.created_at ?? new Date().toISOString() });
         return id;
+      },
+      async full(id) {
+        return rows.find((r) => r.id === id) ?? null;
       },
       async up(most) {
         return rows.filter((r) => r.status === "up").slice(-most);

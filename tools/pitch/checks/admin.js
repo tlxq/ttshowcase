@@ -80,11 +80,12 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const waitingNow = await api('/api/tags', 'GET', null, { omit: 1 }); if (waitingNow.j.tags.length !== 2) errs.push('after Approve a visitor does not see both tags: ' + waitingNow.text.slice(0, 100));
 
   // Remove, then Undo
-  await pick(waiting.id); await page.click('#admRemove'); res.removed = await settle(s => !s.tags.some(t => t.id === waiting.id) && s.buttons.includes('Undo'), 30);
+  const rowBefore = (await rows()).find(r => r.id === waiting.id); await pick(waiting.id); await page.click('#admRemove'); res.removed = await settle(s => !s.tags.some(t => t.id === waiting.id) && s.buttons.includes('Undo'), 30);
   if ((await rows()).some(r => r.id === waiting.id) || !res.removed.buttons.includes('Undo') || res.removed.sel) errs.push('Remove did not take the tag off the store, or Undo is not offered: ' + JSON.stringify(res.removed));
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-admin-removed.png' });
   await page.click('#admUndo'); res.undone = await settle(s => s.tags.length === 2 && s.sel, 40);
-  const ur = (await rows()).find(r => r.name === 'Visitor'); if (!ur || res.undone.tags.length !== 2 || Math.abs(ur.w - kept.w) > .01) errs.push('Undo did not put the tag back as it was: ' + JSON.stringify([ur && ur.w, res.undone.tags.length]));
+  const ur = (await rows()).find(r => r.name === 'Visitor'); if (!ur || ur.id !== rowBefore.id || ur.created_at !== rowBefore.created_at || ur.device !== rowBefore.device || ur.status !== rowBefore.status) errs.push('Undo did not put the very same row back: ' + JSON.stringify([rowBefore, ur]));
+  if (!ur || res.undone.tags.length !== 2 || Math.abs(ur.w - kept.w) > .01) errs.push('Undo did not put the tag back as it was: ' + JSON.stringify([ur && ur.w, res.undone.tags.length]));
   await page.click('#admDone'); res.done = await state(); if (res.done.sel || res.done.bar) errs.push('Done left a tag picked');
 
   // ---- 4. Tom's own tag: a tap on a bare wall, the tag tool, Put it on the wall; it is up at once, no mail

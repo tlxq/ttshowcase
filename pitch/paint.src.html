@@ -1695,11 +1695,11 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   async function admPost(body) { try { const r = await fetch("/api/tags?admin=1", { method: "POST", headers: { "Content-Type": "application/json", "X-Admin": "1" }, body: JSON.stringify(body) }); return { ok: r.ok, status: r.status, j: await r.json().catch(() => null) }; } catch (_) { return { ok: false, status: 0, j: null }; } }
   async function admSave(A, was) { adm.undo = null; const sp = admSpot(A.t); admMove(A, sp); const r = await admPost({ do: "update", id: A.t.id, spot: sp });
     if (!r.ok) { admMove(A, was); adm.fail = true; } else { adm.fail = false; adm.note = ""; } pickShow(); }
-  async function admAct(what, id) { const A = adm.map.get(id); if (!A || adm.busy) return; adm.busy = true; adm.fail = false; const t = A.t, snap = { name: t.name, spot: admSpot(t), strokes: t.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr: dr || [] })), status: t.status };
+  async function admAct(what, id) { const A = adm.map.get(id); if (!A || adm.busy) return; adm.busy = true; adm.fail = false; const t = A.t, snap = { name: t.name, spot: admSpot(t), strokes: t.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr: dr || [] })) };
     const r = await admPost({ do: what, id }); adm.busy = false;
     if (!r.ok) { adm.fail = true; pickShow(); return; }
     if (what === "approve") { t.status = "up"; adm.note = "Approved."; admFrames(); }
-    else { if (adm.sel === id) adm.sel = null; admDispose(A); adm.undo = snap; adm.note = "Removed."; [pick.fw, pick.fh, pick.rot] = [FRAME.w, FRAME.h, 0]; }
+    else { if (adm.sel === id) adm.sel = null; admDispose(A); adm.undo = { ...snap, restore: r.j && r.j.row }; /* Undo puts this very row back: its id, time and device */ adm.note = "Removed."; [pick.fw, pick.fh, pick.rot] = [FRAME.w, FRAME.h, 0]; }
     pickShow(); admPaint(); }
   async function admUndo() { const u = adm.undo; if (!u || adm.busy) return; adm.busy = true; const r = await admPost({ do: "create", ...u }); adm.busy = false; if (!r.ok) { adm.fail = true; pickShow(); return; }
     adm.undo = null; await admRefresh(); admSelect(r.j.id); adm.note = "Put back."; admPaint(); }
