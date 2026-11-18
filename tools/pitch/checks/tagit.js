@@ -30,14 +30,23 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.waitForTimeout(1300); await page.mouse.up(); await page.waitForTimeout(4000);
   res.drip = await page.evaluate(() => { const [w, fh] = window.tagTest.size; return { drips: window.tagTest.drips(), running: window.tagTest.running(), below: (() => { const m = w / 2.4, y = Math.round(fh * .3 + .08 * m); let n = 0; for (let x = Math.round(w * .85 - .06 * m); x <= w * .85 + .06 * m; x++) n += window.tagTest.paintAt(x, y) > 40; return n; })() }; }); // paint 8 cm under the pool: every run is 10 cm or longer
   if (!res.drip.drips || !res.drip.below || res.drip.running) errs.push('holding a fat cap still made no drip that ran down and stopped: ' + JSON.stringify(res.drip));
-  await page.click('#tagTool'); await page.click('#tagTools [data-t="pen"]'); await page.click('#tagCol'); await page.click('#tagCols [data-c="#2fa35a"]');
+  await page.click('#tagTool');
+  res.toolMenu = await page.evaluate(() => { const bar = [...document.querySelectorAll('#tagBar button')].map(b => Math.round(b.getBoundingClientRect().height)), nm = document.querySelector('#tagTool .nm'), ch = parseFloat(getComputedStyle(document.querySelector('#tagTool .chev')).fontSize);
+    return { names: [...document.querySelectorAll('#tagTools button')].map(b => b.querySelector('span:last-child').firstChild.textContent), rows: [...document.querySelectorAll('#tagTools button')].map(b => Math.round(b.getBoundingClientRect().height)), bar, cut: nm.scrollWidth > nm.clientWidth, chev: ch }; });
+  if (res.toolMenu.names.join() !== 'Skinny,Fat,Mop,Chisel,Pen') errs.push('the tools are not Skinny, Fat, Mop, Chisel, Pen: ' + res.toolMenu.names);
+  if (res.toolMenu.cut || res.toolMenu.chev < 16 || Math.min(...res.toolMenu.bar, ...res.toolMenu.rows) < 48) errs.push('the tag bar cuts a name, has a small arrow or a button under 48 px: ' + JSON.stringify(res.toolMenu));
+  await page.click('#tagTools [data-t="pen"]'); await page.click('#tagCol');
+  res.colMenu = await page.evaluate(() => { const bs = [...document.querySelectorAll('#tagCols button')], rs = bs.map(b => b.getBoundingClientRect()), dot = b => getComputedStyle(b.querySelector('.dot')).borderTopColor;
+    return { names: bs.map(b => b.textContent.trim()), cols: new Set(rs.map(r => Math.round(r.left))).size, rows: new Set(rs.map(r => Math.round(r.top))).size, minH: Math.round(Math.min(...rs.map(r => r.height))), black: dot(bs[0]) !== dot(bs[1]) && bs[0].querySelector('.dot').hasAttribute('data-ring'), inside: rs.every(r => r.left >= 0 && r.right <= innerWidth), oneLine: bs.every(b => b.scrollWidth <= b.clientWidth && b.getBoundingClientRect().height < 80) }; });
+  if (res.colMenu.names.length !== 12 || res.colMenu.names.some(n => !n) || res.colMenu.cols !== 4 || res.colMenu.rows !== 3 || res.colMenu.minH < 48 || !res.colMenu.black || !res.colMenu.inside || !res.colMenu.oneLine) errs.push('the colour menu is not 12 named buttons in 4 x 3, 48 px, Black ringed: ' + JSON.stringify(res.colMenu));
+ await page.click('#tagCols [data-c="#2fa35a"]');
   await line([[.2, .2], [.8, .25]]);
   await line([[.7, .4], [.75, 1.6]]); // runs far below the frame: the paint must stop at its edge
   res.drawn = await st();
   if (res.drawn.strokes !== 4) errs.push('four strokes drawn, ' + res.drawn.strokes + ' kept');
   const px = await page.evaluate(() => { const [w, fh, h] = window.tagTest.size; return { inside: window.tagTest.paintAt(Math.round(w * .3), Math.round(fh * .7)), tool: document.querySelector('#tagTool .nm').textContent }; });
   if (!px.inside) errs.push('no paint where the first stroke went');
-  if (px.tool !== 'Paint pen') errs.push('the tool menu did not change the tool: ' + px.tool);
+  if (px.tool !== 'Pen') errs.push('the tool menu did not change the tool: ' + px.tool);
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-draw.png' });
   await page.click('#tagUndo'); await page.waitForTimeout(100); res.undone = (await st()).strokes;
   if (res.undone !== 3) errs.push('Undo left ' + res.undone + ' strokes, not 3');
