@@ -45,13 +45,13 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .mail button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid var(--look-spray); border-radius: 2px; min-height: 48px; cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
 .mail button:hover { background: rgba(255, 79, 26, .16); }
 .mail .err { margin: 0; color: var(--look-text); }
-.mail nav { display: flex; gap: 16px; }
+.mail nav { display: grid; grid-template-columns: auto auto; justify-content: space-between; column-gap: 16px; row-gap: 0; } /* the four ways on, in two even rows: GitHub and LinkedIn, then Leave your tag and Back to the start; no name wraps */
+.mail nav > * { white-space: nowrap; }
 .mail nav a { color: var(--look-text); min-height: 48px; display: inline-flex; align-items: center; text-decoration: none; }
 .mail nav a:hover { color: var(--look-spray); }
-.mail nav .again { margin-left: auto; font: inherit; color: var(--look-text); background: none; border: 0; padding: 0; min-height: 48px; cursor: pointer; } /* the loop: a button (it acts here, it opens nothing), dressed as the links, apart from the two outside ones */
+.mail nav .again { font: inherit; color: var(--look-text); background: none; border: 0; padding: 0; min-height: 48px; cursor: pointer; } /* the loop: a button (it acts here, it opens nothing), dressed as the links, apart from the two outside ones */
 .mail nav .again:hover { color: var(--look-spray); background: none; }
-.mail nav { flex-wrap: wrap; column-gap: 16px; row-gap: 0; }
-.mail nav .leave { margin-left: 0; color: var(--look-spray); } /* Leave your tag (PR5): the way to the visitor wall; first look, its place comes with Back to the start's design pitch */
+.mail nav .leave { color: var(--look-spray); } /* Leave your tag (PR5): the way to the visitor wall; first look, its place comes with Back to the start's design pitch */
 /* pick the spot (PR5): the wall dims round a work light on the spot; the frame is the tag's size on the wall */
 .pick { position: fixed; inset: 0; user-select: none; -webkit-user-select: none; pointer-events: none; opacity: 0; transition: opacity 300ms cubic-bezier(.2, 0, 0, 1); touch-action: none; }
 .pick.on { opacity: 1; pointer-events: auto; }
