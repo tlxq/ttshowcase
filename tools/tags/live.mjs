@@ -21,10 +21,16 @@ const sent = await fetch(api, {
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     name: "test",
-    pen: "graffiti",
-    color: "#e8452c",
     spot,
-    strokes: [[0, 0, 0, 0.5, 400, 300, 120, 0.8, 800, 0, 240, 0.6]],
+    strokes: [
+      {
+        tool: "fat",
+        col: "#e8452c",
+        seed: 1234,
+        pts: [0, 0, 0, 0.5, 400, 300, 120, 0.8, 800, 0, 240, 0.6],
+        dr: [[4, 200, 0]],
+      },
+    ],
     device: "live-test-" + randomBytes(8).toString("hex"),
   }),
 });
@@ -40,14 +46,15 @@ try {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       name: "test",
-      pen: "graffiti",
-      color: "#e8452c",
       spot,
-      strokes: [[0, 0, 0, 0.5]],
+      strokes: [{ tool: "pen", col: "#2fa35a", seed: 5, pts: [0, 0, 0, 0.5], dr: [] }],
       device: "live-test-" + randomBytes(8).toString("hex"),
     }),
   });
-  step(again.status === 409, `another tag on the same spot: ${again.status} (held)`);
+  step(
+    again.status === 409,
+    `another tag on the same spot while this one waits: ${again.status} (held)`,
+  );
   const page = await fetch(review);
   step(page.ok && /Approve/.test(await page.text()), `review page: ${page.status}`);
   step(

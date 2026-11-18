@@ -13,6 +13,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
+import { TAG_LIMITS } from "../../api/tags.ts";
 
 const root = resolve(import.meta.dirname, "../..");
 const fonts = join(root, ".cache/fonts");
@@ -78,6 +79,7 @@ const parts = {
   __EMBED__: embed,
   __HAND__: hand("hi-i-m-tom"),
   __HAND_WALL__: `{${["tom", "ttdevs", "larsson", "tt"].map((w) => `"${w}": ${hand(w)}`).join(", ")}}`,
+  __TAG_LIMITS__: JSON.stringify(TAG_LIMITS), // what one tag may hold: the store's own numbers (api/tags.ts)
   __PAL__: readFileSync(join(root, "pitch/assets/epa_pal.json"), "utf8").trim(),
 };
 let page = readFileSync(join(root, "pitch/paint.src.html"), "utf8");

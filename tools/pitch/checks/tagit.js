@@ -1,6 +1,6 @@
 // Tag it (PR6, Tom 11-17): a tap on a lit part of the wall flies in and opens the drawing bar; strokes paint inside the frame with the tool and colour picked from the menus;
 // a tap outside the frame makes no stroke; a fat cap held still drips; Undo takes the last stroke; Done replays the tag once, then the name and Put it on the wall; the camera steps back to the form,
-// the wet paint dries, Leave your tag is gone, and after a reload the visitor's own tag is still on the wall; a saved tag with a broken spot or drip is ignored.
+// the wet paint dries and the tag goes to the store without a word, Leave your tag is gone, and after a reload the visitor's own tag is still on the wall; a saved tag with a broken spot or drip is ignored.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   const toForm = async () => {
@@ -11,7 +11,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     return on; };
   const st = () => page.evaluate(() => ({ ...window.tagTest.state(), bar: !document.getElementById('tagBar').hidden, send: !document.getElementById('tagSend').hidden,
     form: document.getElementById('mail').classList.contains('on'), held: document.documentElement.style.overflow === 'hidden', hint: document.getElementById('pickHint').textContent }));
-  await page.goto('__URL__'); await page.evaluate(() => { try { localStorage.clear(); } catch (_) {} });
+  await page.goto('__URL__'); await page.evaluate(() => { try { localStorage.clear(); } catch (_) {} return fetch('/api/tags-local/reset', { method: 'POST' }); });
   await page.goto('__URL__');
   if (!(await toForm())) { errs.push('the morning form never showed, so Tag it was not tested'); return JSON.stringify(res); }
   await page.click('#leave'); await page.waitForTimeout(1700);
@@ -51,6 +51,8 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (res.put.stage || !res.put.saved || res.put.leave || !res.put.shown || !res.put.form || res.put.held) errs.push('Put it on the wall did not keep the tag and step back to the form: ' + JSON.stringify(res.put));
   if (!(res.put.wet > 0 && res.put.wet < 1)) errs.push('the paint is not drying as you step back: wet ' + res.put.wet);
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-put.png' });
+  res.sentTo = await page.evaluate(async () => ({ rows: (await (await fetch('/api/tags-local/rows')).json()).map(r => ({ name: r.name, strokes: r.strokes.map(s => s.tool + ' ' + s.col), device: r.device })), saved: window.tagTest.state() }));
+  if (res.sentTo.rows.length !== 1 || res.sentTo.rows[0].name !== 'Walker' || res.sentTo.rows[0].strokes.join() !== 'fat #ff4f1a,fat #ff4f1a,pen #2fa35a' || res.sentTo.saved.sent !== 'yes' || !res.sentTo.saved.id) errs.push('Put it on the wall did not send the tag with each stroke\'s own tool and colour, or the page did not keep the answer: ' + JSON.stringify(res.sentTo));
   await page.reload(); await page.waitForTimeout(2500); res.again = { ...(await st()), drips: await page.evaluate(() => window.tagTest.drips()) };
   if (!res.again.shown || res.again.leave || res.again.name !== 'Walker' || res.again.strokes !== 3 || !res.again.drips) errs.push('after a reload the own tag is not on the wall, or Leave your tag is back: ' + JSON.stringify(res.again));
   for (const [k, bad] of [['x', o => { o.x = 'a'; }], ['drip', o => { o.strokes[0].dr = [[0, '3', null]]; }]]) {
