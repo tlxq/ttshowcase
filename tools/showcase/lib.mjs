@@ -7,7 +7,7 @@ export const COMMANDS = [
   { name: "dev", about: "live editing on Tailscale, link + QR", menu: true },
   { name: "pitch", about: "the paint walk with your own local tag wall", menu: true },
   { name: "next", about: "open /next: live, dev, or preview [PR]", menu: true },
-  { name: "check", about: "the whole check, or one part: check walk route-phone", menu: true },
+  { name: "check", about: "the whole check, or one part: check walk look-phone", menu: true },
   { name: "doctor", about: "is this PC ready", menu: true },
   { name: "status", about: "branch, what runs, what's live, saved passes", menu: false },
   { name: "stop", about: "stop what showcase started: stop [dev|pitch]", menu: true },
@@ -39,7 +39,7 @@ export const HELP = {
     "The whole check before a PR: code, then the walks, then the pitch checks. A part that passed on this commit is skipped.",
     "showcase check",
     "showcase check --quick",
-    "showcase check walk route-phone",
+    "showcase check walk look-phone",
     "showcase check pitch contrast-phone",
   ],
   doctor: [
@@ -145,8 +145,8 @@ export function tick(c, state, name, what = "", width = 15) {
 
 // The names a walk or pitch check can have, read from the scripts so a new one is completed without a change here.
 export function walkNames(root) {
-  const m = readFileSync(`${root}/tools/walk/run.sh`, "utf8").match(/Names: ([^"]+)"/);
-  return m ? m[1].trim().split(/\s+/) : [];
+  const text = readFileSync(`${root}/tools/walk/run.sh`, "utf8");
+  return ["recordings", ...[...text.matchAll(/^walk (\S+) /gm)].map((m) => m[1])];
 }
 export function pitchNames(root) {
   const m = readFileSync(`${root}/tools/pitch/run.sh`, "utf8").match(/^names="([^"]+)"/m);

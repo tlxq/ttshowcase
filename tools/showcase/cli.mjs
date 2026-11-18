@@ -137,7 +137,7 @@ function tailscale() {
   return { ip, name };
 }
 function qr(url) {
-  if (!has("qrencode")) return say(c.dim("(No QR: install qrencode to get one)"));
+  if (!has("qrencode")) return say(c.dim("No QR code: install qrencode to get one"));
   say(sh("qrencode", ["-t", "ansiutf8", url]).stdout);
 }
 async function waitFor(url, pid, name, limitMs) {
@@ -159,7 +159,7 @@ async function install() {
     return say(tick(c, "ok", "packages", "already installed"));
   const r = await step("packages", "npm", ["ci"]);
   if (r.code !== 0) {
-    say(tick(c, "bad", "packages", "npm ci failed"));
+    say(tick(c, "bad", "packages", "Couldn't install them. See the log"));
     showFailure(r);
     return false;
   }
@@ -176,7 +176,7 @@ async function startServer(name, { cmd, args = [], env, page = "", limitMs }) {
     return linksOut(name, have.url);
   }
   if (!ts.ip) {
-    say(tick(c, "bad", "Tailscale", "no address"));
+    say(tick(c, "bad", "Tailscale", "Couldn't find this PC's address"));
     say(c.dim("  Fix: start Tailscale (sudo tailscale up), then try again"));
     return 1;
   }
@@ -208,6 +208,14 @@ async function startServer(name, { cmd, args = [], env, page = "", limitMs }) {
     env: { ...process.env, ...env, PORT: String(port) },
   });
   child.unref();
+  const failed = await new Promise((res) => {
+    child.once("error", (e) => res(e));
+    child.once("spawn", () => res(null));
+  });
+  if (failed) {
+    say(tick(c, "bad", name, `Couldn't start ${cmd}: ${failed.code ?? failed.message}`));
+    return 1;
+  }
   const rec = {
     pid: child.pid,
     start: startTime(child.pid),
@@ -219,7 +227,16 @@ async function startServer(name, { cmd, args = [], env, page = "", limitMs }) {
   const w = await waitFor(`http://${ts.ip}:${port}/${page}`, child.pid, name, limitMs);
   if (tty) process.stdout.write("\r\x1b[2K");
   if (!w.ok) {
-    say(tick(c, "bad", name, w.slow ? `no answer after ${took(w.ms)}` : "stopped while starting"));
+    say(
+      tick(
+        c,
+        "bad",
+        name,
+        w.slow
+          ? `Couldn't start: no answer after ${took(w.ms)}. See the log`
+          : "Couldn't start: it stopped. See the log",
+      ),
+    );
     showFailure({ out: readFileSync(logPath, "utf8"), log: logPath });
     if (w.slow) await stopOne(name, true);
     rmSync(recordPath(name), { force: true });
@@ -257,7 +274,16 @@ async function stopOne(name, quiet = false) {
     }
     return 0;
   }
-  const gone = () => startTime(r.pid) !== r.start;
+  // The leader matched the record, so the group is ours. It lives on while any child does (pitch = bash + python +
+  // the node tag store), and its id can't be reused until the last one is gone: wait for the whole group.
+  const gone = () => {
+    try {
+      process.kill(-r.pid, 0);
+      return false;
+    } catch {
+      return true;
+    }
+  };
   try {
     process.kill(-r.pid, "SIGTERM");
   } catch {}
@@ -336,12 +362,12 @@ async function status({ header = false } = {}) {
     const [sha, state] = live;
     const word =
       {
-        success: c.ok("live"),
-        pending: c.warn("deploying"),
-        failure: c.bad("deploy failed"),
-        error: c.bad("deploy failed"),
-      }[state] ?? c.dim(state);
-    liveLine = `${word} ${c.dim("on ttdevs.com:")} master ${sha} ${c.dim(`· ${release}${since && since !== "0" ? ` + ${since} merged since` : ""}`)}`;
+        success: c.ok("Deployed"),
+        pending: c.warn("Deploying"),
+        failure: c.bad("Deploy failed"),
+        error: c.bad("Deploy failed"),
+      }[state] ?? c.dim("Deploy state unknown");
+    liveLine = `ttdevs.com ${c.dim("·")} master ${sha} ${c.dim("·")} ${word} ${c.dim(`· ${release}${since && since !== "0" ? ` + ${since} merged since` : ""}`)}`;
   }
   say(`  ${lab("site")} ${liveLine}`);
   say(
@@ -359,20 +385,22 @@ async function status({ header = false } = {}) {
   });
   const p = [
     ...passes.ok.map((n) => `${c.ok("✓")} ${n}`),
-    passes.not.length ? c.dim(`${passes.not.join(", ")}: not run on it`) : "",
+    passes.not.length ? c.dim(`not yet: ${passes.not.join(", ")}`) : "",
   ]
     .filter(Boolean)
     .join("  ");
-  say(`  ${lab("passes")} ${c.dim(`on ${passes.sha}:`)} ${p}`);
+  say(
+    `  ${lab("passes")} ${dirty ? c.dim("none count while files are changed (commit first)") : `${c.dim(`on ${passes.sha}`)}  ${p}`}`,
+  );
   if (pr) {
     const runs = pr.statusCheckRollup ?? [];
     const st = runs.some((r) => ["FAILURE", "ERROR"].includes(r.conclusion ?? r.state))
-      ? c.bad("check failed")
+      ? c.bad("Checks failed")
       : runs.some((r) => (r.status && r.status !== "COMPLETED") || r.state === "PENDING")
-        ? c.warn("checks running")
+        ? c.warn("Checks running")
         : runs.length
-          ? c.ok("checks green")
-          : c.dim("no checks yet");
+          ? c.ok("Checks OK")
+          : c.dim("No checks yet");
     say(
       `  ${lab("PR")} #${pr.number} ${pr.title.length > 60 ? pr.title.slice(0, 59) + "…" : pr.title} ${c.dim("·")} ${st}`,
     );
@@ -428,7 +456,7 @@ async function doctor() {
   const ts = tailscale();
   ts.ip
     ? row("ok", "Tailscale", `${ts.ip}${ts.name ? c.dim(` · ${ts.name}`) : ""}`)
-    : row("bad", "Tailscale", "no address", "sudo tailscale up");
+    : row("bad", "Tailscale", "Couldn't find this PC's address", "sudo tailscale up");
   const keys = {
     "/next key": "ttshowcase-next.key",
     "admin key": "ttshowcase-admin.key",
@@ -468,7 +496,7 @@ async function doctor() {
   }
   if (free.length) row("ok", `port${free.length > 1 ? "s" : ""} ${free.join(" ")}`, "free");
   say("");
-  say(problems ? c.bad(`${problems} problem${problems > 1 ? "s" : ""}.`) : c.ok("Ready."));
+  say(problems ? c.bad(`Needs you: ${problems}`) : c.ok("OK"));
   if (problems) next("showcase doctor again after the fix");
   return problems ? 1 : 0;
 }
@@ -519,7 +547,7 @@ async function check(f) {
     if (p === "walk" && !built) {
       const b = await step("build", "npm", ["run", "build"], { log: "check-build" });
       if (b.code !== 0) {
-        say(tick(c, "bad", "build", "failed", 12));
+        say(tick(c, "bad", "build", "Failed. See the log", 12));
         showFailure(b);
         return 1;
       }
@@ -529,7 +557,7 @@ async function check(f) {
         log: "check-pitch-build",
       });
       if (b.code !== 0) {
-        say(tick(c, "bad", "pitch build", "failed", 12));
+        say(tick(c, "bad", "pitch build", "Failed. See the log", 12));
         showFailure(b);
         return 1;
       }
@@ -584,7 +612,7 @@ async function release(f) {
   if (!f.yes) {
     if (!process.stdin.isTTY) throw new Usage("Add --yes to release without asking");
     const yes = await ask(
-      `${c.cyan("?")} Make tag ${version} and its GitHub Release? ${c.dim("(y/N)")} `,
+      `${c.cyan("?")} Release ${version} (tag + GitHub Release)? ${c.dim("(y/N)")} `,
     );
     if (!yes) return (say(c.dim("Nothing made.")), 0);
   }
@@ -612,6 +640,7 @@ function ask(q) {
     process.stdout.write(q);
     process.stdin.setRawMode?.(false);
     process.stdin.resume();
+    process.stdin.once("end", () => res(false));
     process.stdin.once("data", (d) => {
       process.stdin.pause();
       res(/^y(es)?$/i.test(String(d).trim()));
@@ -725,7 +754,7 @@ async function run(cmd, f) {
         log: "pitch-build",
       });
       if (b.code !== 0) {
-        say(tick(c, "bad", "pitch build", "failed"));
+        say(tick(c, "bad", "pitch build", "Failed. See the log"));
         showFailure(b);
         return 1;
       }
@@ -774,6 +803,12 @@ async function run(cmd, f) {
 }
 
 export async function main(argv) {
+  // `showcase status | head -1`: the reader left, so stop quietly
+  process.stdout.on("error", (e) => process.exit(e.code === "EPIPE" ? 0 : 1));
+  process.on("exit", () => {
+    if (process.stdin.isTTY) process.stdin.setRawMode?.(false);
+    if (tty) process.stdout.write("\x1b[?25h");
+  });
   if (argv[0] === "__complete") return (say(complete(argv.slice(1), root).join("\n")), 0);
   if (argv[0] === "completion") {
     if (argv[1] !== "bash") return (console.error("Usage: showcase completion bash"), 2);

@@ -19,9 +19,9 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 test("reads the command, its words and the shared flags", () => {
-  const f = parseArgs(["check", "walk", "route-phone", "--force", "--no-color"]);
+  const f = parseArgs(["check", "walk", "look-phone", "--force", "--no-color"]);
   assert.equal(f.command, "check");
-  assert.deepEqual(f.words, ["walk", "route-phone"]);
+  assert.deepEqual(f.words, ["walk", "look-phone"]);
   assert.equal(f.force, true);
   assert.equal(f.color, false);
   assert.equal(parseArgs(["--wat"]).unknown, "--wat");
@@ -53,10 +53,10 @@ test("times and ticks read the same everywhere", () => {
 test("completion offers commands, parts and the real walk and check names", () => {
   assert.deepEqual(complete(["st"], root), ["status", "stop"]);
   assert.deepEqual(complete(["check", ""], root), ["code", "walk", "pitch", "--quick", "--force"]);
-  assert.ok(complete(["check", "walk", "route"], root).includes("route-phone"));
+  assert.ok(complete(["check", "walk", "look"], root).includes("look-phone"));
   assert.ok(complete(["check", "pitch", "contrast-"], root).includes("contrast-phone"));
   assert.deepEqual(complete(["stop", ""], root), ["dev", "pitch"]);
-  assert.ok(walkNames(root).length > 5);
+  assert.deepEqual(walkNames(root).slice(0, 3), ["recordings", "look-desktop", "look-phone"]);
   assert.ok(pitchNames(root).includes("tour-desktop"));
 });
 
