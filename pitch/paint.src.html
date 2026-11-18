@@ -58,7 +58,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .pick .ov path { fill: rgba(0, 0, 0, .62); }
 .pick[data-mode="1"] .ov { display: block; }
 .pick[data-mode="1"] .dim { display: none; }
-.pick .bar button[hidden] { display: none; }
+.pick .bar button[hidden], .pick .top button[hidden] { display: none; }
 .pick .frame.locked { border-style: solid; border-color: var(--spray); cursor: default; }
 .pick .frame:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
 .pick .top, .pick .bar { position: absolute; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; background: rgba(8, 9, 12, .9); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; font: 500 14px/1.5 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); }
@@ -71,6 +71,28 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .pick .bar .go:disabled { opacity: .45; cursor: default; }
 .pick .top button { flex: none; }
 .pick .bar button:focus-visible, .pick .top button:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+/* Tag it (PR6): the tool you hold, its colour, Undo, Done; the menus open above the bar */
+.pick .bar button:disabled { opacity: .45; cursor: default; }
+#tagTool { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 0 10px; text-align: left; }
+#tagTool .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tagTool .ic, .pick .menu .ic { display: inline-flex; flex: none; }
+#tagCol, #tagUndo { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 10px; min-width: 48px; flex: none; }
+.pick .chev { opacity: .6; font-size: 11px; }
+.pick .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(239, 233, 220, .3); box-sizing: border-box; flex: none; }
+.pick .menu { position: absolute; bottom: 82px; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 2px; padding: 6px; background: rgba(8, 9, 12, .95); border: 1px solid rgba(239, 233, 220, .16); border-radius: 3px; font: 500 14px/1.3 ui-monospace, "IBM Plex Mono", monospace; }
+.pick .menu[hidden] { display: none; }
+.pick .menu button { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 10px; font: inherit; text-align: left; color: var(--fg); background: transparent; border: 0; border-radius: 2px; cursor: pointer; }
+.pick .menu button[aria-pressed="true"] { background: rgba(255, 79, 26, .16); }
+.pick .menu button:focus-visible { outline: 2px solid var(--spray); outline-offset: -2px; }
+.pick .menu small { display: block; color: var(--soft); font-size: 12px; }
+.pick .menu.cols { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.pick .menu.cols button { justify-content: center; padding: 0; }
+.pick .menu.cols button[aria-pressed="true"] { background: transparent; }
+.pick .menu.cols button[aria-pressed="true"] .dot { box-shadow: 0 0 0 2px #08090c, 0 0 0 4px var(--fg); }
+#tagSend { flex-wrap: wrap; }
+#tagName { flex: 1 1 100%; min-height: 48px; box-sizing: border-box; padding: 0 12px; font: 500 16px/1.3 ui-monospace, "IBM Plex Mono", monospace; color: var(--fg); background: rgba(239, 233, 220, .06); border: 1px solid rgba(239, 233, 220, .3); border-radius: 2px; user-select: text; -webkit-user-select: text; }
+#tagName::placeholder { color: var(--soft); opacity: 1; }
+#tagName:focus-visible { outline: 2px solid var(--spray); outline-offset: 2px; }
 @media (max-aspect-ratio: 4/5) { .mail { right: 16px; left: 16px; width: auto; top: auto; bottom: 16px; transform: none; padding: 12px 16px; gap: 4px; } .mail textarea { min-height: 72px; } }
 .nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--soft); font: 16px system-ui; }
 </style>
@@ -78,7 +100,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 <canvas id="c"></canvas>
 <div class="track"></div>
 <div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag edge" id="tagUp"><b>Scroll up</b>Visitors' tags</div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map. Only friends see where you are.<br>Degree project, built by me<br><span>React Native &middot; Expo &middot; Supabase &middot; Postgres &middot; pgTAP</span></div></div>
-<div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"></div><div class="bar" id="pickBar"><button type="button" id="pickMove">Move spot</button><button type="button" id="pickWide">See the whole wall</button><button type="button" class="go" id="pickLock">Lock spot</button></div></div>
+<div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="tagMoveB" hidden>Move it</button><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"></div><div class="menu" id="tagTools" role="group" aria-label="Tool" hidden></div><div class="menu cols" id="tagCols" role="group" aria-label="Colour" hidden></div><div class="bar" id="tagBar" hidden><button type="button" id="tagTool" aria-expanded="false" aria-controls="tagTools"><span class="ic"></span><span class="nm"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagCol" aria-expanded="false" aria-controls="tagCols" aria-label="Colour"><span class="dot"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagUndo" aria-label="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="go" id="tagDone" disabled>Done</button></div><div class="bar" id="tagSend" hidden><input id="tagName" maxlength="24" placeholder="Your name (optional)" aria-label="Your name, optional" autocomplete="nickname" enterkeyhint="done" spellcheck="false"><button type="button" id="tagBack">Back</button><button type="button" class="go" id="tagPut">Put it on the wall</button></div></div>
 <div class="white" id="white"></div>
 <div class="head" id="head"><span>Tom Larsson &middot; a collection of builds</span><h1>I build and run things myself.</h1></div>
 
@@ -1321,30 +1343,31 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   again.addEventListener("click", e => { e.preventDefault(); if (duskAt) return; duskAt = performance.now() - (REDUCED ? 1e5 : 0); root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
   // Leave your tag (Tom 11-17, PR5 pick the spot): from the form the camera steps back to a wide shot of the whole wall a visitor may tag:
   // the visitor stretch left of the opening and the opening wall itself, where the bucket pours, so the tags greet everyone who arrives.
-  // Lit = may be tagged; dark = kept clear (the title, the line's run to the drain, the bucket's ledge). Tap a lit part: the camera flies in close,
-  // the wall dims round a work light on the spot (one dark sheet with a hole, no extra light: every light costs a frame on the T14s); drag or tap
-  // to fine-tune, then Lock spot. One frame size for everyone. Tags are never removed: a new tag may go over an approved one, which stays
+  // Lit = may be tagged; dark = kept clear (the title, the line's run to the drain, the bucket's ledge). Tap a lit part: that is the spot (Tom 11-18:
+  // tap = your spot, draw at once); the camera flies in close, the wall dims round a work light on it (one dark sheet with a hole, no extra light:
+  // every light costs a frame on the T14s) and the drawing starts. Move it goes back to the wide shot, the paint kept. One frame size for everyone,
+  // a real tag's size (Tom 11-18: 2.4 x 1.35 m, filling most of the screen close in). Tags are never removed: a new tag may go over an approved one, which stays
   // visible under it (Tom 11-17), so only kept-clear areas turn the frame yellow (a waiting tag's held area joins them with the store, PR7).
-  const FRAME = { w: 1.6, h: .9 }, AREA = { x0: VISITOR_WALL.x0, x1: 8.5, y0: GROUND + .4, y1: WALL_TOP - 1 }; // x1: short of the step down to the epaRadar wall
+  const FRAME = { w: 2.4, h: 1.35 }, AREA = { x0: VISITOR_WALL.x0, x1: 8.5, y0: GROUND + .4, y1: WALL_TOP - 1 }; // x1: short of the step down to the epaRadar wall
   let CLEAR = []; // kept-clear boxes [x0, y0, x1, y1], made when the pour is done (the line's run is known then)
   function clearBoxes() { const m = .3, b = [[-PW / 2 - m, PCY - PH / 2 - m, PW / 2 + m, PCY + PH / 2 + m], [LEDGE.x - 1.2, WALL_TOP - 2, LEDGE.x + 1.6, WALL_TOP]];
     if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); } return b; }
   const inArea = (x, y) => [cl(x, AREA.x0 + FRAME.w / 2, AREA.x1 - FRAME.w / 2), cl(y, AREA.y0 + FRAME.h / 2, AREA.y1 - FRAME.h / 2)];
   const kept = (x, y) => CLEAR.some(c => x + FRAME.w / 2 > c[0] && x - FRAME.w / 2 < c[2] && y + FRAME.h / 2 > c[1] && y - FRAME.h / 2 < c[3]);
   const pickEl = document.getElementById("pick"), pickDim = pickEl.querySelector(".dim"), pickOv = pickEl.querySelector(".ov"), pickFrame = document.getElementById("pickFrame"), pickHint = document.getElementById("pickHint"),
-    pickLock = document.getElementById("pickLock"), pickWide = document.getElementById("pickWide"), pickCancel = document.getElementById("pickCancel"), pickMove = document.getElementById("pickMove"), pickBar = document.getElementById("pickBar");
+    pickCancel = document.getElementById("pickCancel"), tagMoveB = document.getElementById("tagMoveB");
   const pick = { mode: 0, from: null, t0: 0, dur: 1, k: 0, fog: 0, x: 0, y: 0, cx: 0, cy: 0, ox: 0, drag: null, pan: null, locked: false, ui: false, r: 0, last: [V(), V()] };
   const th = () => Math.tan(camera.fov * Math.PI / 360);
   const ovD = () => Math.min(30, Math.max((AREA.x1 - AREA.x0 + 1.5) / (2 * th() * camera.aspect), (AREA.y1 - AREA.y0 + 1.5) / (2 * th()))); // the whole area on a laptop; a phone sees ~11 m and swipes
   const ovHalf = () => ovD() * th() * camera.aspect; // half the width the wide shot sees on the wall
   const ovX = x => { const h = ovHalf(), a = AREA.x0 + h - .75, b = AREA.x1 - h + .75; return a > b ? (AREA.x0 + AREA.x1) / 2 : cl(x, a, b); };
-  const closeD = () => Math.max(FRAME.w / ((NARROW ? .7 : .36) * 2 * th() * camera.aspect), FRAME.h / (.42 * 2 * th())); // the frame fills ~a third of a laptop screen, most of a phone's width
+  const closeD = () => Math.max(FRAME.w / ((NARROW ? .92 : .8) * 2 * th() * camera.aspect), FRAME.h / (.7 * 2 * th())); // the frame fills ~a third of a laptop screen, most of a phone's width
   function pickShow() { const t = kept(pick.x, pick.y), m = pick.mode; if (m < 0) return; /* on the way back the last words stay while they fade */ pickFrame.classList.toggle("taken", t); pickFrame.classList.toggle("locked", pick.locked); pickFrame.classList.toggle("small", m === 1);
-    pickFrame.textContent = pick.locked || m === 1 ? "" : t ? "This part stays clear. Move it a little." : "Your tag here"; pickFrame.setAttribute("aria-valuetext", t ? "kept clear" : "free");
-    pickLock.hidden = pickWide.hidden = m !== 2 || pick.locked; pickLock.disabled = t; pickMove.hidden = !pick.locked; pickBar.hidden = m !== 2; // wide: tapping the wall is the step, no buttons
-    pickHint.textContent = pick.locked ? "Spot locked." : m === 1 ? "Tap a lit part of the wall where your tag goes." + (ovHalf() * 2 < AREA.x1 - AREA.x0 ? " Swipe to see more of it." : "")
-      : "Drag the frame to fine-tune, or tap the wall."; }
-  function pickGo(m, dur) { pick.from = [pick.last[0].clone(), pick.last[1].clone()]; pick.t0 = performance.now(); pick.mode = m; pick.dur = dur; pick.drag = pick.pan = null;
+    pickFrame.setAttribute("aria-valuetext", t ? "kept clear" : "free"); tagMoveB.hidden = m !== 2 || tag.stage !== "draw";
+    tagBar.hidden = m !== 2 || tag.stage !== "draw"; tagSend.hidden = m !== 2 || tag.stage !== "send" || !!tag.play; if (tagBar.hidden) tagMenus(); // wide: tapping the wall is the step, no buttons
+    pickHint.textContent = tag.stage === "draw" ? (tag.full ? "That's all the paint one tag holds. Undo a stroke or press Done." : "Draw your tag inside the frame.") : tag.stage === "send" ? (tag.play ? "Your tag, once more." : tag.err ? "Couldn't keep your tag: this browser doesn't let the page save it. Try again, or Cancel." : "Add a name if you like, then put it on the wall.") : m === 1 && pick.nope && t ? "This part stays clear. Tap a lit part of the wall."
+      : "Tap a lit part of the wall where your tag goes." + (ovHalf() * 2 < AREA.x1 - AREA.x0 ? " Swipe to see more of it." : ""); }
+  function pickGo(m, dur) { pick.from = [pick.last[0].clone(), pick.last[1].clone()]; pick.t0 = performance.now(); pick.mode = m; pick.dur = dur; pick.pan = null;
     pick.ui = false; pickEl.classList.remove("on"); pickEl.setAttribute("aria-hidden", true); pickEl.inert = true; pickFrame.tabIndex = -1; pickShow(); }
   function pickAt(x, y) { [pick.x, pick.y] = inArea(x, y); pickShow(); }
   document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); if (pick.mode || duskAt) return; CLEAR = clearBoxes();
@@ -1352,34 +1375,32 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     [pick.x, pick.y] = best || [-12, 3]; pick.ox = ovX(NARROW ? pick.x : 0); pick.locked = false; pickGo(1, 1.4); // the first spot offered: free, beside the opening, where the first screen looks
     root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
   const pickIn = () => { [pick.cx, pick.cy] = [pick.x, pick.y]; pickGo(2, .9); };
-  const pickWideGo = () => { pick.locked = false; pick.ox = ovX(pick.x); pickGo(1, .9); }, pickQuit = () => { if (pick.mode > 0) pickGo(-1, 1.2); }; // Cancel: back to the form from any step
-  const pickBack = () => pick.mode === 2 ? pickWideGo() : pickQuit(); // Esc: one step back (close in -> the wide shot -> the form)
-  pickCancel.addEventListener("click", pickQuit); pickWide.addEventListener("click", pickWideGo);
-  pickLock.addEventListener("click", () => { if (pickLock.disabled) return; pick.locked = true; pickShow(); pickMove.focus({ preventScroll: true }); });
-  pickMove.addEventListener("click", () => { pick.locked = false; pickShow(); pickFrame.focus({ preventScroll: true }); });
-  const mpp = () => FRAME.w / Math.max(1, pickFrame.offsetWidth); // metres per pixel on the wall, at the frame's distance
+  const pickWideGo = () => { pick.locked = false; pick.nope = false; pick.ox = ovX(pick.x); pickGo(1, .9); }, pickQuit = () => { if (pick.mode > 0) { tagStop(); pickGo(-1, 1.2); } }; // Cancel: back to the form from any step
+  // the spot chosen (a tap, or Enter on the frame): kept clear says so; else fly in and draw, with the paint so far if it was moved
+  const pickChoose = () => { if (kept(pick.x, pick.y)) { pick.nope = true; pickShow(); return; } pick.locked = true; pickIn(); tag.stage === "move" ? tagMoveTo() : tagStart(); };
+  const pickBack = () => { if (tagMenus()) return; if (tag.stage === "send") { if (!tag.play) tagRedo(); return; } if (tag.stage === "draw") { tagMove(); return; }
+    if (tag.stage === "move") { [pick.x, pick.y] = [tag.x, tag.y]; pickChoose(); return; } pickQuit(); };
+  // Esc: one step back (a menu closes; the name -> drawing; drawing -> the wide shot to move it; moving -> back to where it was; the wide shot -> the form). Esc never throws paint away
+  pickCancel.addEventListener("click", pickQuit); tagMoveB.addEventListener("click", () => tagMove());
   const wallAt = (px, py) => { const r = V(px / innerWidth * 2 - 1, 1 - py / innerHeight * 2, .5).unproject(camera).sub(camera.position), k = -camera.position.z / r.z; return k > 0 ? [camera.position.x + r.x * k, camera.position.y + r.y * k] : null; };
-  pickFrame.addEventListener("pointerdown", e => { if (pick.locked || pick.mode !== 2) return; e.stopPropagation(); pickFrame.setPointerCapture(e.pointerId); pick.drag = { px: e.clientX, py: e.clientY, x: pick.x, y: pick.y, m: mpp() }; });
-  pickFrame.addEventListener("pointermove", e => { const d = pick.drag; if (d) pickAt(d.x + (e.clientX - d.px) * d.m, d.y - (e.clientY - d.py) * d.m); });
-  pickFrame.addEventListener("pointerup", () => pick.drag = null); pickFrame.addEventListener("pointercancel", () => pick.drag = null);
-  pickEl.addEventListener("pointerdown", e => { if (pick.locked || !pick.ui || pick.drag || e.target.closest(".bar, .top")) return; pickEl.setPointerCapture(e.pointerId); pick.pan = { px: e.clientX, py: e.clientY, ox: pick.ox, moved: false }; });
-  pickEl.addEventListener("pointermove", e => { const p = pick.pan; if (!p) return; const dx = e.clientX - p.px; if (Math.hypot(dx, e.clientY - p.py) > 8) p.moved = true; // a swipe is never a tap; in the wide shot on a phone it moves along the wall
+  pickEl.addEventListener("pointerdown", e => { if (pick.locked || !pick.ui || e.target.closest(".bar, .top")) return; pickEl.setPointerCapture(e.pointerId); pick.pan = { px: e.clientX, py: e.clientY, ox: pick.ox, moved: false }; });
+  pickEl.addEventListener("pointermove", e => { const p = pick.pan; if (!p) { if (pick.mode === 1 && pick.ui && e.pointerType === "mouse" && !e.target.closest(".top")) { const w = wallAt(e.clientX, e.clientY); if (w) { pick.nope = false; pickAt(w[0], w[1]); } } return; } // a mouse shows where a click puts it const dx = e.clientX - p.px; if (Math.hypot(dx, e.clientY - p.py) > 8) p.moved = true; // a swipe is never a tap; in the wide shot on a phone it moves along the wall
     if (p.moved && pick.mode === 1) pick.ox = ovX(p.ox - dx * ovHalf() * 2 / innerWidth); });
   pickEl.addEventListener("pointerup", e => { const p = pick.pan; pick.pan = null; if (!p || p.moved) return; const w = wallAt(e.clientX, e.clientY); if (!w) return; // a tap: the frame goes there (wide: and the camera flies in)
-    const [x, y] = w; if (x < AREA.x0 || x > AREA.x1 || y < AREA.y0 || y > AREA.y1) return; pickAt(x, y); if (pick.mode === 1) pickIn(); });
+    const [x, y] = w; if (pick.mode !== 1 || x < AREA.x0 || x > AREA.x1 || y < AREA.y0 || y > AREA.y1) return; pickAt(x, y); pickChoose(); });
   pickEl.addEventListener("pointercancel", () => pick.pan = null);
-  pickFrame.addEventListener("keydown", e => { if (pick.locked) return; if (e.key === "Enter" && pick.mode === 1) { e.preventDefault(); pickIn(); return; }
-    const st = pick.mode === 1 ? .5 : .1, a = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, st], ArrowDown: [0, -st] }[e.key]; if (!a) return; e.preventDefault(); pickAt(pick.x + a[0], pick.y + a[1]); if (pick.mode === 1) pick.ox = ovX(pick.x); });
+  pickFrame.addEventListener("keydown", e => { if (pick.locked) return; if (e.key === "Enter" && pick.mode === 1) { e.preventDefault(); pickChoose(); return; }
+    pick.nope = false; const st = pick.mode === 1 ? .5 : .1, a = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, st], ArrowDown: [0, -st] }[e.key]; if (!a) return; e.preventDefault(); pickAt(pick.x + a[0], pick.y + a[1]); if (pick.mode === 1) pick.ox = ovX(pick.x); });
   addEventListener("keydown", e => { if (e.key === "Escape" && pick.mode > 0) pickBack(); });
   function pickCam(now, dt, cp, look) { // after the morning set the form's view: from there to the wide shot, or in close to the spot, or back
     skyMesh.visible = !pick.mode; // the dawn sky ends above the opening: the wide shot would show its edge, and by day the plain sky is right
-    if (!pick.mode) { pick.last[0].copy(cp); pick.last[1].copy(look); if (pick.refocus && !mail.inert) { pick.refocus = false; document.getElementById("leave").focus({ preventScroll: true }); } return; } // after Cancel the keyboard is back where it left
+    if (!pick.mode) { pick.last[0].copy(cp); pick.last[1].copy(look); if (pick.refocus && !mail.inert) { pick.refocus = false; (leaveB.hidden ? again : leaveB).focus({ preventScroll: true }); } return; } // after Cancel the keyboard is back where it left
     const tk = REDUCED ? 1 : sm(cl((now - pick.t0) / 1000 / pick.dur));
-    if (!pick.drag) { const f = Math.min(1, (REDUCED ? 60 : 3) * dt); pick.cx += (pick.x - pick.cx) * f; pick.cy += (pick.y - pick.cy) * f; } // the camera follows the spot once it is let go
+    { const f = Math.min(1, (REDUCED ? 60 : 3) * dt); pick.cx += (pick.x - pick.cx) * f; pick.cy += (pick.y - pick.cy) * f; } // the camera follows the spot
     let P, L; if (pick.mode === 1) { const oy = (AREA.y0 + AREA.y1) / 2; P = V(pick.ox, oy, ovD()); L = V(pick.ox, oy, 0); } else if (pick.mode === 2) { P = V(pick.cx, pick.cy, closeD()); L = V(pick.cx, pick.cy, 0); } else { P = cp.clone(); L = look.clone(); }
     cp.lerpVectors(pick.from[0], P, tk); look.lerpVectors(pick.from[1], L, tk); pick.last[0].copy(cp); pick.last[1].copy(look);
     pick.k = pick.mode < 0 ? 1 - tk : 1; pick.fog += ((pick.mode === 1 ? 1 : 0) - pick.fog) * Math.min(1, (REDUCED ? 60 : 3) * dt); scene.fog.density = .04 - .03 * pick.fog; // the wide shot sees 30 m: thin the haze
-    const ui = pick.mode > 0 && tk > .97; if (ui !== pick.ui) { pick.ui = ui; pickEl.classList.toggle("on", ui); pickEl.dataset.mode = pick.mode; pickEl.setAttribute("aria-hidden", !ui); pickEl.inert = !ui; pickFrame.tabIndex = ui ? 0 : -1; if (ui && !pick.locked) pickFrame.focus({ preventScroll: true }); }
+    const ui = pick.mode > 0 && tk > .97; if (ui !== pick.ui) { pick.ui = ui; pickEl.classList.toggle("on", ui); pickEl.dataset.mode = pick.mode; pickEl.setAttribute("aria-hidden", !ui); pickEl.inert = !ui; pickFrame.tabIndex = ui ? 0 : -1; if (ui) (pick.locked ? tagToolB : pickFrame).focus({ preventScroll: true }); }
     if (pick.mode < 0 && tk >= 1) { pick.mode = 0; pick.refocus = true; pick.k = 0; pick.fog = 0; scene.fog.density = .04; root.style.overflow = ""; root.style.touchAction = ""; } }
   function pickPlace() { if (!pick.ui) return; camera.updateMatrixWorld(); // after the camera moved: the frame, and the work light (close) or the lit area (wide)
     const [ax, ay] = proj(V(pick.x - FRAME.w / 2, pick.y + FRAME.h / 2, 0)), [bx, by] = proj(V(pick.x + FRAME.w / 2, pick.y - FRAME.h / 2, 0)), w = bx - ax, h = by - ay;
@@ -1394,6 +1415,153 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     freeOnScreen: () => { for (let y = AREA.y1 - 1; y > AREA.y0 + 1; y -= .4) for (let x = AREA.x0 + 1; x < AREA.x1 - 1; x += .4) { if (kept(x, y) || Math.hypot(x - pick.x, y - pick.y) < 1) continue; const [px, py] = proj(V(x, y, 0)); if (px > 80 && px < innerWidth - 80 && py > 140 && py < innerHeight - 140) return { x: px, y: py }; } return null; },
     restored: () => scene.fog.density === .04 && skyMesh.visible && root.style.touchAction === "",
     spotOnScreen: () => { const [px, py] = proj(V(pick.x, pick.y, 0)); return { x: px, y: py }; } };
+  // ---- Tag it (Tom 11-17, PR6): after Lock spot the visitor draws in the frame with real graffiti tools; every stroke keeps its own tool
+  // and colour. The paint goes on its own small surface on the wall, sent to the graphics card only on frames it changes. Paint stops at the
+  // frame; only drips run below it. Done: the tag sprays itself once in the visitor's own rhythm, then a name (optional) and Put it on the wall.
+  // The tag stays in this browser (one per device, forever) and shows at its spot, full colour, on every visit; the store and Tom's OK come in PR7.
+  const TPM = 320, DRIP = .4, TW = Math.round(FRAME.w * TPM), TFH = Math.round(FRAME.h * TPM), TH = Math.round((FRAME.h + DRIP) * TPM); // pixels a metre; the frame; room for drips
+  const TCOLS = [["Black", "#151515"], ["White", "#f2f0ea"], ["Chrome", "#b9bcc2"], ["Gold", "#c9a03a"], ["Red", "#d42a2a"], ["Orange", "#ff4f1a"], ["Yellow", "#f5cf2b"],
+    ["Green", "#2fa35a"], ["Sky blue", "#4fb3e8"], ["Deep blue", "#1f3fa6"], ["Purple", "#7a3fb0"], ["Pink", "#ef6fa8"]];
+  const TICON = { can: '<svg width="22" height="26" viewBox="0 0 22 26" aria-hidden="true"><rect x="5" y="6" width="12" height="19" rx="2" fill="currentColor" opacity=".9"/><rect x="8" y="2" width="6" height="4" rx="1" fill="currentColor" opacity=".6"/><rect x="10" y="0" width="2" height="2" fill="currentColor"/></svg>',
+    mop: '<svg width="22" height="26" viewBox="0 0 22 26" aria-hidden="true"><path d="M6 8h10v15a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z" fill="currentColor" opacity=".9"/><rect x="7" y="2" width="8" height="6" rx="3" fill="currentColor" opacity=".55"/></svg>',
+    chisel: '<svg width="22" height="26" viewBox="0 0 22 26" aria-hidden="true"><rect x="7" y="7" width="8" height="18" rx="1.5" fill="currentColor" opacity=".9"/><path d="M8 7 14 2v5z" fill="currentColor" opacity=".6"/></svg>',
+    pen: '<svg width="22" height="26" viewBox="0 0 22 26" aria-hidden="true"><rect x="8.5" y="6" width="5" height="19" rx="1.5" fill="currentColor" opacity=".9"/><path d="M9.5 6 11 1l1.5 5z" fill="currentColor" opacity=".6"/></svg>' };
+  // r: the mark's radius in metres on a slow pass; mist: overspray specks a dab; flow: paint a second while the can or marker is held still,
+  // less as it moves (a drip starts where it reaches 1). A spray line is wide and heavy when slow, thin and light when fast, like a real cap
+  const TTOOLS = [{ id: "skinny", name: "Skinny cap", note: "spray can: thin lines, soft mist", icon: "can", kind: "spray", r: .014, mist: 3, flow: 1.1 },
+    { id: "fat", name: "Fat cap", note: "spray can: wide, overspray, drips", icon: "can", kind: "spray", r: .05, mist: 9, flow: 2.2 },
+    { id: "mop", name: "Mop", note: "marker: wet, uneven, drips a lot", icon: "mop", kind: "mop", r: .028, flow: 3.2 },
+    { id: "chisel", name: "Chisel", note: "marker: thick and thin by angle", icon: "chisel", kind: "chisel", r: .035, flow: .4 },
+    { id: "pen", name: "Paint pen", note: "thin and solid", icon: "pen", kind: "pen", r: .006, flow: 0 }], TOOL = Object.fromEntries(TTOOLS.map(t => [t.id, t]));
+  const MOST_STROKES = 80, MOST_POINTS = 4000, TAG_KEY = "ttshowcase.tag", TAG_FONT = `${Math.round(.07 * TPM)}px "Saira Stencil One"`; // the store's own limits (api/tags.ts)
+  const tagC = document.createElement("canvas"); tagC.width = TW; tagC.height = TH; const tgc = tagC.getContext("2d", { willReadFrequently: true });
+  // Two pictures of the same canvas: while drawing (no smaller copies, and only the part that changed is sent to the graphics card: sending the
+  // whole canvas and rebuilding its smaller copies every frame is what the T14s's graphics lagged on, Tom 11-18) and on the wall (with them: seen from afar)
+  const tagDrawTx = new THREE.CanvasTexture(tagC); tagDrawTx.encoding = THREE.sRGBEncoding; tagDrawTx.generateMipmaps = false; tagDrawTx.minFilter = THREE.LinearFilter;
+  const tagTx = new THREE.CanvasTexture(tagC); tagTx.encoding = THREE.sRGBEncoding; tagTx.anisotropy = maxAniso;
+  const tglx = renderer.getContext(), tagBox = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9, all: true };
+  const tagGrow = (x, y, r) => { tagBox.x0 = Math.min(tagBox.x0, x - r); tagBox.y0 = Math.min(tagBox.y0, y - r); tagBox.x1 = Math.max(tagBox.x1, x + r); tagBox.y1 = Math.max(tagBox.y1, y + r); };
+  const tagMesh = new THREE.Mesh(new THREE.PlaneGeometry(FRAME.w, FRAME.h + DRIP), new THREE.MeshPhysicalMaterial({ map: tagTx, transparent: true, depthWrite: false, roughness: .6, clearcoat: .25, clearcoatRoughness: .3,
+    polygonOffset: true, polygonOffsetFactor: -3 })); // no wall bump map: its panel grooves showed through bright paint as thin dark lines
+  tagMesh.visible = false; scene.add(tagMesh);
+  const tag = { err: false, stage: null, strokes: [], cur: null, t0: 0, tool: TOOL.fat, col: TCOLS[5][1], x: 0, y: 0, name: "", full: false, play: null, putAt: 0, wet: -1, runs: [] };
+  const tagBar = document.getElementById("tagBar"), tagSend = document.getElementById("tagSend"), tagToolB = document.getElementById("tagTool"), tagColB = document.getElementById("tagCol"),
+    tagUndo = document.getElementById("tagUndo"), tagDone = document.getElementById("tagDone"), tagToolsM = document.getElementById("tagTools"), tagColsM = document.getElementById("tagCols"),
+    tagName = document.getElementById("tagName"), tagPut = document.getElementById("tagPut"), leaveB = document.getElementById("leave");
+  const rng = seed => { let s = (seed % 2147483646) + 1; return () => (s = s * 16807 % 2147483647) / 2147483647; };
+  const sprites = {}, sprite = hex => { if (sprites[hex]) return sprites[hex]; const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), n = parseInt(hex.slice(1), 16), C = `${n >> 16},${n >> 8 & 255},${n & 255}`;
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, `rgba(${C},.95)`); gr.addColorStop(.45, `rgba(${C},.8)`); gr.addColorStop(1, `rgba(${C},0)`); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return sprites[hex] = c; };
+  // one piece of a stroke: from its point j - 4 to point j (u, v, ms, pressure in tag pixels), with the stroke's own tool, colour and dice.
+  // A spray dab grows and darkens the slower the can moves (m/s from the points' own times), so the same stroke replays the same
+  function tagSeg(g, s, j, R) { const T = TOOL[s.tool], P = s.pts, i0 = j ? j - 4 : 0, a = [P[i0], P[i0 + 1], P[i0 + 3]], b = [P[j], P[j + 1], P[j + 3]], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+    const slow = j ? cl(1 - L / Math.max(1, P[j + 2] - P[i0 + 2]) * 1000 / TPM / 1.6) : 1, st = Math.max(1, T.r * TPM * .3), n = Math.max(1, Math.ceil(L / st));
+    for (let i = 1; i <= n; i++) { const x = a[0] + dx * i / n, y = a[1] + dy * i / n, p = a[2] + (b[2] - a[2]) * i / n;
+      if (T.kind === "spray") { const r = T.r * TPM * (.55 + .5 * slow) * (.8 + .4 * p); g.globalAlpha = .3 + .6 * slow; g.drawImage(sprite(s.col), x - r * 1.8, y - r * 1.8, r * 3.6, r * 3.6);
+        g.globalAlpha = .45; g.fillStyle = s.col; const m = Math.round(T.mist * (.4 + .8 * slow)); for (let k = 0; k < m; k++) { const an = R() * 6.283, d = r * (1.4 + R() * 2); g.fillRect(x + Math.cos(an) * d, y + Math.sin(an) * d, 1.5, 1.5); }
+        tagGrow(x, y, r * 3.5 + 2); }
+      else { const r = T.r * TPM * (.8 + .4 * p); g.fillStyle = s.col;
+        if (T.kind === "mop") { g.globalAlpha = .85; g.beginPath(); g.arc(x, y, r * (.85 + R() * .3 + .2 * slow), 0, 6.283); g.fill(); }
+        else if (T.kind === "chisel") { g.globalAlpha = .92; g.save(); g.translate(x, y); g.rotate(-.7); g.fillRect(-r, -r * .18, r * 2, r * .36); g.restore(); }
+        else { g.globalAlpha = 1; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill(); } tagGrow(x, y, r * 1.6 + 2); } }
+    g.globalAlpha = 1; }
+  function tagStep(s, j, R) { tgc.save(); tgc.beginPath(); tgc.rect(0, 0, TW, TFH); tgc.clip(); tagSeg(tgc, s, j, R); tgc.restore(); } // paint stops at the frame
+  // Drips: paint pools where the can or marker moves slowly or stays, and a run starts there and creeps down, slowing as it dries.
+  // Each is kept with its stroke ([point, length mm, start left or right of the point, px]) so a replay and the next visit show the same runs; they may run below the frame.
+  const tagDripW = s => Math.max(1.5, TOOL[s.tool].r * TPM * .22);
+  function tagDripTo(s, d, from, to, end) { const x = s.pts[d[0]] + d[2], y = s.pts[d[0] + 1] + TOOL[s.tool].r * TPM * .7 /* from the pool's lower edge */, w = tagDripW(s), L = d[1] / 1000 * TPM, a = Math.min(from, L), b = Math.min(to, L, TH - 3 - y); if (b <= a && !end) return;
+    tgc.globalAlpha = .88; tgc.fillStyle = s.col; const ya = Math.round(y + a), yb = Math.round(y + b); if (yb > ya) tgc.fillRect(Math.round(x - w / 2), ya, Math.round(w), yb - ya); // whole pixels: no edge is painted twice // a filled bar: tiny stroked pieces left a cleared line across the pool in Chrome (11-18)
+    if (end) { tgc.beginPath(); tgc.arc(x, y + b, w * .95, 0, 6.283); tgc.fill(); } tgc.globalAlpha = 1; tagGrow(x, y + (a + b) / 2, (b - a) / 2 + w * 2 + 2); }
+  function tagDripNew(s, j, now) { const P = s.pts; if (P[j] < 2 || P[j] > TW - 2 || P[j + 1] < 0 || P[j + 1] > TFH) return; // only from paint inside the frame
+    const R = rng(s.seed * 31 + s.dr.length * 7 + 3), d = [j, Math.round((.1 + R() * .25) * (TOOL[s.tool].kind === "mop" ? 1.4 : 1) * 1000), Math.round((R() - .5) * 1.4 * TOOL[s.tool].r * TPM)]; // runs from one pool start side by side across the mark
+    s.dr.push(d); tagRun(s, d, now); }
+  const tagRun = (s, d, now) => REDUCED ? tagDripTo(s, d, 0, 1e9, true) : tag.runs.push({ s, d, born: now, done: 0 });
+  function tagRuns(now) { tag.runs = tag.runs.filter(r => { const L = r.d[1] / 1000 * TPM, to = L * (1 - Math.exp(-Math.max(0, now - r.born) / 900)), /* a frame's time can be a little before the event that made the run */ end = to > L * .98;
+    tagDripTo(r.s, r.d, r.done, end ? L : to, end); r.done = to; return !end; }); }
+  // how much paint has pooled at the tip: grows with time held, falls as the tip moves on (8 a metre)
+  function tagPool(s, j, now, moved) { const T = TOOL[s.tool]; if (!T.flow) return; const P = s.pts, mv = moved && j ? Math.hypot(P[j] - P[j - 4], P[j + 1] - P[j - 3]) / TPM : 0; // a new point takes paint off; held, it only gathers
+    s.load = Math.max(0, s.load + (now - s.lt) / 1000 * T.flow - mv * 8); s.lt = now; if (s.load >= 1) { s.load = 0; tagDripNew(s, j, now); } }
+  function tagNamePaint() { if (!tag.name) return; tgc.font = `${Math.round(.07 * TPM)}px "Saira Stencil One", sans-serif`; tgc.textAlign = "right"; tgc.textBaseline = "top";
+    tgc.fillStyle = "rgba(236,230,216,.88)"; tgc.fillText(tag.name, TW - 8, TFH + .05 * TPM); tgc.textAlign = "left"; }
+  function tagRedraw() { tgc.clearRect(0, 0, TW, TH); tag.runs = []; tag.strokes.forEach(s => { const R = rng(s.seed); for (let j = 0; j < s.pts.length; j += 4) tagStep(s, j, R); });
+    tag.strokes.forEach(s => (s.dr || []).forEach(d => tagDripTo(s, d, 0, 1e9, true))); tagNamePaint(); tagBox.all = true; }
+  // the changed part to the graphics card, once a frame: while drawing only that part, else the whole picture
+  function tagUpload() { const tx = tag.stage ? tagDrawTx : tagTx, m = tagMesh.material; if (m.map !== tx) { m.map = tx; tagBox.all = true; }
+    const b = tagBox, x = Math.max(0, Math.floor(b.x0)), y = Math.max(0, Math.floor(b.y0)), w = Math.min(TW, Math.ceil(b.x1)) - x, h = Math.min(TH, Math.ceil(b.y1)) - y, pr = renderer.properties.get(tx);
+    if (b.all || !pr.__webglTexture || tx !== tagDrawTx) { if (b.all || (w > 0 && h > 0)) tx.needsUpdate = true; }
+    else if (w > 0 && h > 0) {
+      renderer.state.bindTexture(tglx.TEXTURE_2D, pr.__webglTexture); tglx.pixelStorei(tglx.UNPACK_FLIP_Y_WEBGL, true); tglx.pixelStorei(tglx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); tglx.pixelStorei(tglx.UNPACK_ALIGNMENT, 4);
+      tglx.texSubImage2D(tglx.TEXTURE_2D, 0, x, TH - y - h, tglx.RGBA, tglx.UNSIGNED_BYTE, tgc.getImageData(x, y, w, h)); }
+    b.x0 = b.y0 = 1e9; b.x1 = b.y1 = -1e9; b.all = false; }
+  function tagPlace(x, y) { tag.x = x; tag.y = y; tagMesh.position.set(x, y - DRIP / 2, .003); } // the frame's top edge stays at the spot's; the drip room hangs below
+  function tagMenus(open) { const was = !tagToolsM.hidden || !tagColsM.hidden, back = !tagToolsM.hidden ? tagToolB : tagColB, inMenu = tagToolsM.contains(document.activeElement) || tagColsM.contains(document.activeElement); tagToolsM.hidden = open !== tagToolsM; tagColsM.hidden = open !== tagColsM;
+    tagToolB.setAttribute("aria-expanded", open === tagToolsM); tagColB.setAttribute("aria-expanded", open === tagColsM); if (was && !open && inMenu) back.focus({ preventScroll: true }); return was && !open; }
+  [tagToolsM, tagColsM].forEach(m => m.addEventListener("focusout", e => { if (!m.hidden && !m.contains(e.relatedTarget) && e.relatedTarget !== tagToolB && e.relatedTarget !== tagColB) { m.hidden = true; tagToolB.setAttribute("aria-expanded", false); tagColB.setAttribute("aria-expanded", false); } }));
+  function tagBarPaint() { tagToolB.querySelector(".ic").innerHTML = TICON[tag.tool.icon]; tagToolB.querySelector(".ic").style.color = tag.col; tagToolB.querySelector(".nm").textContent = tag.tool.name;
+    tagColB.querySelector(".dot").style.background = tag.col; tagColB.setAttribute("aria-label", "Colour: " + TCOLS.find(c => c[1] === tag.col)[0]);
+    tagToolsM.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === tag.tool.id)); tagColsM.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.c === tag.col));
+    tagUndo.disabled = tagDone.disabled = !tag.strokes.length; }
+  tagToolsM.innerHTML = TTOOLS.map(t => `<button type="button" data-t="${t.id}" aria-pressed="false"><span class="ic" style="color: var(--soft)">${TICON[t.icon]}</span><span>${t.name}<small>${t.note}</small></span></button>`).join("");
+  tagColsM.innerHTML = TCOLS.map(([n, h]) => `<button type="button" data-c="${h}" aria-label="${n}" title="${n}" aria-pressed="false"><span class="dot" style="background: ${h}"></span></button>`).join("");
+  tagToolB.addEventListener("click", () => { tagMenus(tagToolsM.hidden ? tagToolsM : null); if (!tagToolsM.hidden) tagToolsM.querySelector('[aria-pressed="true"]').focus({ preventScroll: true }); });
+  tagColB.addEventListener("click", () => { tagMenus(tagColsM.hidden ? tagColsM : null); if (!tagColsM.hidden) tagColsM.querySelector('[aria-pressed="true"]').focus({ preventScroll: true }); });
+  tagToolsM.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; tag.tool = TOOL[b.dataset.t]; tagMenus(); tagBarPaint(); tagToolB.focus({ preventScroll: true }); });
+  tagColsM.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; tag.col = b.dataset.c; tagMenus(); tagBarPaint(); tagColB.focus({ preventScroll: true }); });
+  function tagStart() { tag.stage = "draw"; tag.strokes = []; tag.cur = null; tag.full = false; tag.play = null; tag.putAt = 0; tagPlace(pick.x, pick.y); tgc.clearRect(0, 0, TW, TH); tag.runs = []; tagBox.all = true;
+    tagMesh.visible = true; tagBarPaint(); pickShow(); document.fonts.load(TAG_FONT).catch(() => {}); }
+  function tagStop() { if (!tag.stage) return; tag.stage = null; tag.strokes = []; tag.cur = null; tag.play = null; tag.runs = []; tagMesh.visible = false; tagMenus(); } // Cancel: the paint goes with it
+  function tagMove() { if (tag.cur) return; tag.stage = "move"; tagMenus(); pickWideGo(); } // back to the wide shot; the paint stays and goes with the frame
+  function tagMoveTo() { tag.stage = "draw"; tagPlace(pick.x, pick.y); tagBarPaint(); pickShow(); }
+  function tagRedo() { tag.stage = "draw"; tag.play = null; tag.name = ""; tagRedraw(); tagBarPaint(); pickShow(); tagDone.focus({ preventScroll: true }); }
+  const tagAt = e => { const w = wallAt(e.clientX, e.clientY); if (!w) return null;
+    return [cl(Math.round((w[0] - (tag.x - FRAME.w / 2)) * TPM), -200, TW + 200), cl(Math.round((tag.y + FRAME.h / 2 - w[1]) * TPM), -200, TFH + 200)]; };
+  const tagCount = () => tag.strokes.reduce((n, s) => n + s.pts.length / 4, 0);
+  pickEl.addEventListener("pointerdown", e => { if (tag.stage !== "draw" || tag.cur || e.button > 0 || e.target.closest(".bar, .top, .menu")) return; if (tagMenus()) return; const q = tagAt(e);
+    if (!q || q[0] < 0 || q[0] > TW || q[1] < 0 || q[1] > TFH) return; // a stroke starts inside the frame: one that starts outside would leave nothing to see
+    if (tag.strokes.length >= MOST_STROKES || tagCount() >= MOST_POINTS) { tag.full = true; pickShow(); return; }
+    pickEl.setPointerCapture(e.pointerId); const now = performance.now(); if (!tag.strokes.length) tag.t0 = now;
+    const s = tag.cur = { pid: e.pointerId, tool: tag.tool.id, col: tag.col, seed: 1 + (Math.random() * 2e9 | 0), pts: [q[0], q[1], Math.round(now - tag.t0), e.pointerType === "pen" && e.pressure > 0 ? e.pressure : .5], dr: [], load: .35, lt: now }; // a spray starts with a spit
+    s.R = rng(s.seed); tag.strokes.push(s); tagStep(s, 0, s.R); tagBarPaint(); });
+  pickEl.addEventListener("pointermove", e => { const s = tag.cur; if (!s || e.pointerId !== s.pid) return;
+    for (const ev of e.getCoalescedEvents ? e.getCoalescedEvents() : [e]) { const q = tagAt(ev), n = s.pts.length; if (!q || Math.hypot(q[0] - s.pts[n - 4], q[1] - s.pts[n - 3]) < 2) continue;
+      if (tagCount() >= MOST_POINTS) { tag.full = true; pickShow(); break; }
+      // each batched point keeps its own time, so the cap's speed is the hand's speed
+      const now = Math.max(s.lt, ev.timeStamp || performance.now()); s.pts.push(q[0], q[1], Math.max(s.pts[n - 2], Math.round(now - tag.t0)), ev.pointerType === "pen" && ev.pressure > 0 ? ev.pressure : .5); tagStep(s, n, s.R); tagPool(s, n, now, true); } });
+  const tagEnd = e => { const s = tag.cur; if (!s || (e && e.pointerId !== s.pid)) return; tag.cur = null; delete s.R; delete s.pid; delete s.load; delete s.lt; tagBarPaint(); };
+  pickEl.addEventListener("pointerup", tagEnd); pickEl.addEventListener("pointercancel", tagEnd);
+  tagUndo.addEventListener("click", () => { if (tag.cur) return; tag.strokes.pop(); tag.full = false; tagRedraw(); tagBarPaint(); pickShow(); if (tagUndo.disabled) tagToolB.focus({ preventScroll: true }); });
+  // Done: the tag sprays itself once in the visitor's own rhythm; pauses between strokes are cut to 0.18 s and the whole is held to 4 s at most
+  tagDone.addEventListener("click", () => { if (!tag.strokes.length || tag.cur) return; tag.err = false; tag.stage = "send"; tagMenus();
+    let shift = 0, last = null; tag.strokes.forEach(s => { if (last !== null) shift += Math.max(0, s.pts[2] - last - 180); s.rt = []; for (let j = 2; j < s.pts.length; j += 4) s.rt.push(s.pts[j] - shift); last = s.pts[s.pts.length - 2]; });
+    const total = Math.max(1, last - shift); tgc.clearRect(0, 0, TW, TH); tag.runs = []; tagBox.all = true;
+    tag.play = REDUCED ? null : { at: performance.now(), f: Math.min(1, 4000 / total), si: 0, j: 0, R: null }; if (!tag.play) tagRedraw(); pickShow(); if (!tag.play) tagPut.focus({ preventScroll: true }); });
+  function tagPlay(now) { const P = tag.play, el = now - P.at;
+    while (P.si < tag.strokes.length) { const s = tag.strokes[P.si]; if (!P.j) P.R = rng(s.seed); if (s.rt[P.j / 4] * P.f > el) break;
+      tagStep(s, P.j, P.R); s.dr.forEach(d => { if (d[0] === P.j) tagRun(s, d, now); }); P.j += 4; if (P.j >= s.pts.length) { P.si++; P.j = 0; } }
+    if (P.si >= tag.strokes.length && el > 300 && !tag.runs.length) { tag.play = null; pickShow(); tagPut.focus({ preventScroll: true }); } }
+  document.getElementById("tagBack").addEventListener("click", tagRedo);
+  tagName.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); tagPut.click(); } });
+  // Put it on the wall: kept in this browser; the camera steps back out to the form while the wet paint dries
+  tagPut.addEventListener("click", () => { if (tag.stage !== "send" || tag.play) return; tag.name = tagName.value.replace(/[\p{Cc}\p{Cf}]/gu, "").trim().slice(0, 24); tagRedraw();
+    try { localStorage.setItem(TAG_KEY, JSON.stringify({ v: 1, x: tag.x, y: tag.y, w: FRAME.w, h: FRAME.h, turn: 0, name: tag.name, strokes: tag.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr })) })); }
+    catch (_) { tag.err = true; pickShow(); return; } // nowhere to keep it: it stays here, and Leave your tag stays
+    tag.stage = null; tag.putAt = performance.now() - (REDUCED ? 1e5 : 0); leaveB.hidden = true; pick.locked = false; pickGo(-1, 1.2); });
+  function tagTick(now) { if (tag.play) tagPlay(now);
+    const c = tag.cur; if (c && TOOL[c.tool].flow && c.load + (now - c.lt) / 1000 * TOOL[c.tool].flow >= 1) tagPool(c, c.pts.length - 4, now, false); // held still: it pools and runs
+    if (tag.runs.length) tagRuns(now);
+    const w = tag.stage ? 1 : tag.putAt ? cl(1 - (now - tag.putAt) / 5000) : 0; // wet while you paint; dries over 5 s once it's on the wall
+    if (Math.abs(w - tag.wet) > .01 || (w === 0 && tag.wet !== 0)) { tag.wet = w; const m = tagMesh.material; m.roughness = .6 - .48 * w; m.clearcoat = .25 + .75 * w; m.clearcoatRoughness = .3 - .25 * w; }
+    if (tagBox.all || tagBox.x1 > tagBox.x0) tagUpload(); }
+  // your own tag on every visit: at its spot, dry, and no second Leave your tag
+  { let o = null; try { o = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); } catch (_) {}
+    const ok = o && o.v === 1 && Number.isFinite(o.x) && Number.isFinite(o.y) && Array.isArray(o.strokes) && o.strokes.length && o.strokes.length <= MOST_STROKES && Math.abs(o.x) < 50 && o.y > -10 && o.y < 20 && o.strokes.reduce((n, s) => n + (s && Array.isArray(s.pts) ? s.pts.length / 4 : 1e9), 0) <= MOST_POINTS && o.strokes.every(s => Object.hasOwn(TOOL, s.tool) && /^#[0-9a-f]{6}$/.test(s.col) && Number.isInteger(s.seed) && Array.isArray(s.pts) && s.pts.length >= 4 && s.pts.length % 4 === 0 && s.pts.every(Number.isFinite)
+      && (s.dr === undefined || Array.isArray(s.dr) && s.dr.length <= 200 && s.dr.every(d => Array.isArray(d) && d.length === 3 && Number.isInteger(d[0]) && d[0] >= 0 && d[0] < s.pts.length && d[0] % 4 === 0 && Number.isFinite(d[1]) && Number.isFinite(d[2]) && d[1] > 0 && d[1] < 1000 && Math.abs(d[2]) < 50)));
+    if (ok) { tag.strokes = o.strokes; tag.strokes.forEach(s => s.dr = s.dr || []); tag.name = typeof o.name === "string" ? o.name.slice(0, 24) : ""; tagPlace(o.x, o.y); tagMesh.visible = true; tag.putAt = -1e6; leaveB.hidden = true;
+      tagRedraw(); if (tag.name) document.fonts.load(TAG_FONT).then(tagRedraw, () => {}); } }
+  window.tagTest = { // for the tagit check
+    frameBox: () => { const r = pickFrame.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
+    state: () => ({ stage: tag.stage, strokes: tag.strokes.length, points: tagCount(), playing: !!tag.play, shown: tagMesh.visible, wet: +tag.wet.toFixed(2), name: tag.name,
+      saved: (() => { try { return !!localStorage.getItem(TAG_KEY); } catch (_) { return false; } })(), leave: !leaveB.hidden }),
+    paintAt: (u, v) => tgc.getImageData(u, v, 1, 1).data[3], size: [TW, TFH, TH], drips: () => tag.strokes.reduce((n, s) => n + s.dr.length, 0), running: () => tag.runs.length };
   let mornAt = 0;
   function morning(now, sv, cp, look) { // after endCam: the white, the cut, the day light; returns nothing
     const dusk = duskAt; // the dusk's last frame clears duskAt; the form must not show for that frame
@@ -1557,7 +1725,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     lamp.position.set(-8.5 + 2.5 * lookL, 4.2 + .6 * lookL, 1.6 + .8 * lookL); lamp.target.position.set(.5 - 12.5 * lookL, .2 + 2.4 * lookL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = (1 - inShaft(cp)) * (1 - pick.k); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    camera.lookAt(cl_); pickPlace();
+    camera.lookAt(cl_); pickPlace(); tagTick(now);
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);
