@@ -5,6 +5,7 @@
 // The fonts are fetched once into .cache/fonts and never go into git: Clash Display's licence (ITF FFL, section 02)
 // does not allow the font file in a public repository; serving it on our own site is allowed.
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   copyFileSync,
   existsSync,
@@ -99,7 +100,24 @@ if (left)
   throw new Error(
     `pitch/paint.src.html asks for ${left[0]}, which tools/pitch/build.mjs doesn't fill`,
   );
-writeFileSync(join(out, "paint.html"), page);
+// The page's own script rule, on top of the site's header (vercel.json): only its inline scripts, by their hash, and
+// three from jsDelivr at the pinned version run here. Hashed last, after every change to the page's text.
+function withScriptRule(html) {
+  const hashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
+    (m) => `'sha256-${createHash("sha256").update(m[1], "utf8").digest("base64")}'`,
+  );
+  const rule = [
+    `script-src ${hashes.join(" ")} https://cdn.jsdelivr.net/npm/three@0.147.0/`,
+    "worker-src blob:",
+    "object-src 'none'",
+    "base-uri 'none'",
+  ].join("; ");
+  const at = '<meta charset="utf-8">\n';
+  if (!html.includes(at))
+    throw new Error('pitch/paint.src.html lost its <meta charset="utf-8"> line');
+  return html.replace(at, `${at}<meta http-equiv="Content-Security-Policy" content="${rule}">\n`);
+}
+writeFileSync(join(out, "paint.html"), withScriptRule(page));
 
 // Pictures: pitch/assets holds only what is free to publish (CC0, or from a public repo). Pictures from a project
 // whose repo is private come from its live site, fetched once into .cache/pitch-media and never put in git.
@@ -124,7 +142,10 @@ if (process.argv.includes("--site")) {
   if (!existsSync(join(site, "index.html")))
     throw new Error("Couldn't find the built site in out/. Run: npm run build");
   // the page is /next (no trailing slash), so its relative "assets/…" would point at /assets/: make them /next/assets/
-  writeFileSync(join(site, "next.html"), page.replace(/(["'`])assets\//g, "$1/next/assets/"));
+  writeFileSync(
+    join(site, "next.html"),
+    withScriptRule(page.replace(/(["'`])assets\//g, "$1/next/assets/")),
+  );
   const siteAssets = join(site, "next/assets");
   rmSync(siteAssets, { force: true, recursive: true });
   mkdirSync(siteAssets, { recursive: true });

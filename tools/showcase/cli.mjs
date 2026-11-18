@@ -574,7 +574,7 @@ async function check(f) {
     const failed = lines.filter((l) => / FAILED /.test(l)).length;
     const what =
       p === "code"
-        ? "typecheck, lint, unit, build, /next closed, functions, packages"
+        ? "typecheck, lint, unit, build, /next closed, headers, functions, packages"
         : name
           ? name
           : `${lines.length - failed} of ${lines.length}`;
