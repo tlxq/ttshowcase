@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-hero="a" data-scroll="mix">
+<html lang="en" data-hero="a" data-scroll="live">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -207,7 +207,28 @@ a { color: inherit; }
 [data-scroll="mix"] .more .list a { justify-self: start; border-color: var(--look-cream); }
 [data-scroll="mix"] .more .list a:hover { background: var(--look-cream); color: var(--look-dark); }
 [data-scroll="mix"] .more .list em { color: var(--look-quiet); }
+
+/* live (Tom 11-19: "too static, framed into boxes, want something more alive"): one project as a scene, no box.
+   Everything follows the scroll all the time: the screen tilts up and grows to fill the screen, the phone rises faster
+   than the page and crosses it, the name slides huge behind, the text rises without a panel. epaRadar first. */
+[data-scroll="live"] [data-only~="live"], [data-scroll="live"] [data-only~="3"], [data-scroll="live"] [data-only~="1"] { display: block; }
+[data-scroll="live"] .card:first-child { display: none; }
+[data-scroll="live"] .work-head { position: static; }
+.scene { height: 360svh; background: var(--g); position: relative; }
+.scene .st { position: sticky; top: 0; height: 100svh; overflow: clip; perspective: 1400px; }
+.scene .huge { position: absolute; left: 0; top: 50%; margin: 0; white-space: nowrap; font: 700 36vw/.8 var(--f-big); text-transform: uppercase; letter-spacing: -.02em; color: rgb(255 255 255 / .07); will-change: transform; }
+.scene .big-s, .scene .small-s { position: absolute; left: 0; top: 0; overflow: clip; will-change: transform, width, height; box-shadow: 0 40px 90px rgb(0 0 0 / .55); }
+.scene .big-s img, .scene .small-s img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% var(--pan, 0%); }
+.scene .scrim { position: absolute; inset: 0; background: linear-gradient(90deg, rgb(8 14 30 / .97) 0%, rgb(8 14 30 / .9) 34%, rgb(8 14 30 / .4) 55%, transparent 75%); opacity: 0; pointer-events: none; }
+.scene .tx { position: absolute; left: max(var(--gutter), calc((100vw - 1180px) / 2)); bottom: 12svh; width: min(520px, 100vw - 2 * var(--gutter)); display: grid; gap: var(--s2); z-index: 3; }
+.scene .tx > * { margin: 0; opacity: 0; transform: translateY(40px); }
+.scene h3 { font: 700 clamp(56px, 8vw, 128px)/.9 var(--f-big); text-transform: uppercase; }
+.scene .what { font: 500 clamp(19px, 1.8vw, 24px)/1.35 var(--f-text); }
+.scene .meta { font-size: 15px; color: var(--look-soft); }
+@media (max-width: 700px) { .scene .scrim { background: linear-gradient(0deg, rgb(5 10 22 / .95) 0%, rgb(5 10 22 / .7) 40%, transparent 70%); } .scene .tx { bottom: 6svh; } .scene h3 { font-size: 56px; } }
 @media (prefers-reduced-motion: reduce) {
+  .scene { height: auto; } .scene .st { position: relative; height: auto; min-height: 100svh; } .scene .tx > * { opacity: 1; transform: none; } .scene .scrim { opacity: 1; }
+  .scene .lap-s, .scene .ph-s { position: absolute; inset: 0; } .scene .ph-s { display: none; } .scene .lap-s img { width: 100%; height: 100%; object-fit: cover; }
   .big .ln > span { transform: none; transition: none; }
   .card, .work-head { position: static; transform: none !important; filter: none !important; }
   .phone, .phone.tall img, .portal img { transform: none !important; transition: none; }
@@ -241,6 +262,20 @@ a { color: inherit; }
     <p class="num"><span id="nCommits">0</span> <small>commits</small></p>
     <p class="sub"><span id="nPrs">0</span> merged pull requests in <span id="nRepos">0</span> repos</p>
     <p class="src" id="nSrc">Counted from GitHub as the page loads.</p>
+  </div></section>
+
+  <section class="scene" id="s-epa" data-only="live" style="--g:#0f1c36" aria-label="epaRadar"><div class="st">
+    <p class="huge" aria-hidden="true">epaRadar</p>
+    <span class="lap-s"><img src="/projects/eparadar-laptop.webp" alt="eparadar.se on a laptop"></span>
+    <span class="ph-s"><img src="/projects/eparadar-karta.webp" alt="The epaRadar app: friends on the map"></span>
+    <div class="scrim"></div>
+    <div class="tx">
+      <p class="label">Degree project, built alone</p>
+      <h3>epaRadar</h3>
+      <p class="what">Friends on a live map. Only friends see where you are.</p>
+      <p class="meta">React Native, Expo, Supabase, Postgres, pgTAP</p>
+      <div class="btns"><a class="btn main" href="https://eparadar.se">Open the site ↗</a><a class="btn" href="https://github.com/tlxq/eparadar">Code ↗</a></div>
+    </div>
   </div></section>
 
   <section class="work g" id="work"><div class="wrap">
@@ -304,7 +339,7 @@ a { color: inherit; }
 <script>
 (() => {
   // round 2: which scroll moment (?scroll=1..4)
-  const opt = (/[?&]scroll=([1-4]|mix)/.exec(location.search) || [0, "mix"])[1], mix = opt === "mix";
+  const opt = (/[?&]scroll=([1-4]|mix|live)/.exec(location.search) || [0, "live"])[1], isLive = opt === "live", mix = opt === "mix" || isLive;
   document.documentElement.dataset.scroll = opt;
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   // big words rise out of their masks when they come into view
@@ -334,7 +369,7 @@ a { color: inherit; }
     } catch { document.getElementById("nSrc").textContent = "GitHub didn't answer just now, so there are no numbers."; }
   })();
   const bar = document.querySelector(".bar"), me = document.querySelector(".me"), meImg = me.querySelector("img"), slot = document.querySelector(".av-slot"), fly = document.querySelector(".fly");
-  const cards = [...document.querySelectorAll(".card")], movers = [...document.querySelectorAll("[data-p]")];
+  const cards = [...document.querySelectorAll(".card")].filter((c, i) => !(isLive && i === 0)), movers = [...document.querySelectorAll("[data-p]")];
   const lerp = (a, b, t) => a + (b - a) * t, clamp = v => Math.min(1, Math.max(0, v));
   if (!still) { fly.hidden = false; meImg.style.visibility = "hidden"; }
   // 4: the cards go on one track inside a pinned window; dragging the track scrolls the page
@@ -366,10 +401,42 @@ a { color: inherit; }
   // 2: the ground per project (NEW colours, need Tom's OK for tokens.css)
   const grounds = [["#0f1c36", "var(--look-text)", ""], ["#1d2a5c", "#f2c230", ""], ["#d6e6f2", "var(--look-dark)", "var(--look-dark-quiet)"]];
   const work = document.querySelector(".work");
+  // live scenes: every layer follows the scroll value k (0..1 through the scene), nothing waits on a timer
+  const sm = (a, b, k) => { const t = clamp((k - a) / (b - a)); return t * t * (3 - 2 * t); };
+  const scenes = [...document.querySelectorAll(".scene")].map(el => ({ el, st: el.querySelector(".st"), huge: el.querySelector(".huge"), lap: el.querySelector(".lap-s"), ph: el.querySelector(".ph-s"), scrim: el.querySelector(".scrim"), tx: [...el.querySelector(".tx").children] }));
+  let mx = 0, my = 0;
+  addEventListener("pointermove", e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; ask(); }, { passive: true });
+  const runScene = (s, vh, vw) => {
+    const r = s.el.getBoundingClientRect(), k = clamp(-r.top / (r.height - vh));
+    if (r.bottom < 0 || r.top > vh) return;
+    const narrow = vw < 700;
+    // the big one fills the screen (laptop on a laptop, the app on a phone); the small one rides in front
+    const [big, small, bigAR, smallAR] = narrow ? [s.ph, s.lap, 650 / 300, 10 / 16] : [s.lap, s.ph, 10 / 16, 650 / 300];
+    big.className = "big-s"; small.className = "small-s";
+    const grow = sm(.04, .38, k), out = sm(.72, 1, k);
+    const w0 = narrow ? vw * .56 : vw * .42, fullW = Math.max(vw, vh / bigAR);
+    const w = lerp(w0, fullW, grow) * lerp(1, .55, out), h = w * bigAR;
+    const cx = lerp(vw * (narrow ? .5 : .62), vw / 2, grow) + lerp(0, -vw * .28, out), cy = lerp(vh * .62, vh / 2, grow) + lerp(0, -vh * .1, out);
+    big.style.width = w + "px"; big.style.height = h + "px";
+    big.style.borderRadius = lerp(18, 0, grow) + lerp(0, 18, out) + "px";
+    big.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotateX(${lerp(26, 0, grow) + my * -3}deg) rotateY(${mx * 4 * (1 - grow)}deg) rotateZ(${lerp(-4, 0, grow)}deg)`;
+    big.style.setProperty("--pan", (sm(.38, .72, k) * 30).toFixed(1) + "%");
+    // the small one rises faster than the page and crosses in front, turning with the pointer
+    const sw = narrow ? vw * .42 : Math.min(vw * .17, 300), sh = sw * smallAR;
+    const sx = narrow ? vw * .54 : vw * .74, sy = lerp(vh * 1.15, vh * (narrow ? .08 : .2), sm(.1, .5, k)) - sm(.5, 1, k) * vh * .9;
+    small.style.width = sw + "px"; small.style.height = sh + "px"; small.style.borderRadius = (narrow ? 10 : 26) + "px";
+    small.style.zIndex = 2;
+    small.style.transform = `translate(${sx + mx * 18}px, ${sy + my * 18}px) rotate(${lerp(14, -6, sm(.1, .6, k)) + mx * 6}deg)`;
+    // the name slides huge behind; the text rises in once the screen is full, line by line
+    s.huge.style.transform = `translate(${lerp(vw * .6, -s.huge.offsetWidth + vw * .2, k)}px, -50%)`;
+    s.scrim.style.opacity = sm(.3, .45, k) * (1 - out * .6);
+    s.tx.forEach((el, i) => { const t = sm(.36 + i * .035, .48 + i * .035, k); el.style.opacity = t; el.style.transform = `translateY(${(1 - t) * 40}px)`; });
+  };
   let queued = false;
   const frame = () => {
     queued = false;
     const vh = innerHeight, y = scrollY;
+    if (!still) scenes.forEach(sc => runScene(sc, vh, innerWidth));
     // the photo flies into the bar
     // it scrolls with the page until its top reaches the bar, then shrinks into the bar's round slot
     const a = me.getBoundingClientRect(), b = slot.getBoundingClientRect(), dock = b.bottom + 12;
@@ -382,8 +449,8 @@ a { color: inherit; }
     // the card nearest the middle of the screen
     let near = 0, best = Infinity;
     cards.forEach((c, i) => { const r = c.getBoundingClientRect(), d = Math.abs((opt === "4" ? r.left + r.width / 2 - innerWidth / 2 : r.top + r.height / 2 - vh / 2)); if (d < best) { best = d; near = i; } });
-    if (opt === "1" || mix) show(near);
-    if (opt === "2" || mix) { const r = work.getBoundingClientRect(), inside = r.top < vh * .5 && r.bottom > vh * .5; work.style.setProperty("--work-bg", inside ? grounds[near][0] : ""); work.style.setProperty("--work-ink", inside ? grounds[near][1] : ""); work.style.setProperty("--work-quiet", inside ? grounds[near][2] : ""); }
+    if (opt === "1" || mix) show(near + (isLive ? 1 : 0));
+    if (opt === "2" || mix) { const r = work.getBoundingClientRect(), inside = r.top < vh * .5 && r.bottom > vh * .5; work.style.setProperty("--work-bg", inside ? grounds[near + (isLive ? 1 : 0)][0] : ""); work.style.setProperty("--work-ink", inside ? grounds[near + (isLive ? 1 : 0)][1] : ""); work.style.setProperty("--work-quiet", inside ? grounds[near + (isLive ? 1 : 0)][2] : ""); }
     if (opt === "3" || mix) { const c = document.querySelector(".count"), r = c.getBoundingClientRect(), k = clamp((vh - r.top) / (c.offsetHeight)), q = 1 - Math.pow(1 - k, 3);
       document.getElementById("nCommits").textContent = Math.round(live.commits * q).toLocaleString("en-US"); document.getElementById("nPrs").textContent = Math.round(live.prs * q); document.getElementById("nRepos").textContent = Math.round(live.repos * q); }
     shelves.forEach(({ holder, vp, track }) => { const st = holder.getBoundingClientRect(), run = st.height - vh, k = clamp(-st.top / Math.max(1, run)); track.style.transform = `translateX(${-k * Math.max(0, track.scrollWidth - vp.clientWidth + 32)}px)`; });
