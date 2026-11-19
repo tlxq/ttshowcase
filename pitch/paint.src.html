@@ -222,7 +222,7 @@ html[data-plate="uv"] .tag[style*="opacity: 1"]::before { animation: uvbeam 3.2s
 @keyframes neonflick { 0%, 17%, 19%, 23%, 100% { opacity: 1; } 18%, 21% { opacity: .55; } 22% { opacity: .85; } }
 html[data-plate="neon"] .tag { --neon: #ff4fa3; width: auto; max-width: min(340px, 74vw); background: #0b0c10; border: 2px solid var(--neon); border-radius: 8px; padding: 8px 14px 10px; color: #f6eef2; font-family: "Inter", system-ui, sans-serif; font-weight: 500; text-transform: none; letter-spacing: 0; filter: none; text-shadow: none;
   box-shadow: 0 0 5px var(--neon), 0 0 16px var(--neon), 0 0 38px rgba(255, 79, 163, .35), inset 0 0 12px rgba(255, 79, 163, .4); }
-html[data-plate="neon"] .tag b { font-family: "Sedgwick Ave Display", cursive; font-weight: 400; font-size: 1.9em; line-height: 1.05; letter-spacing: .01em; text-transform: none; color: #fff; text-shadow: 0 0 3px #fff, 0 0 9px var(--neon), 0 0 20px var(--neon), 0 0 42px var(--neon); }
+html[data-plate="neon"] .tag b { display: block; margin-bottom: .35em; font-family: "Inter", system-ui, sans-serif; font-weight: 700; font-size: 1.25em; line-height: 1.2; letter-spacing: .01em; text-transform: none; color: #fff; text-shadow: 0 0 3px #fff, 0 0 9px var(--neon), 0 0 20px var(--neon), 0 0 42px var(--neon); }
 html[data-plate="neon"] #tagFacts { --neon: #ff8a3d; } html[data-plate="neon"] #tagRvf { --neon: #6fd3ff; }
 html[data-plate="neon"] .tag[style*="opacity: 1"] { animation: neonflick 9s linear infinite; }
 html[data-plate="neon"] .tag.facts { text-transform: none; }
@@ -1059,7 +1059,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
       if (o.row) { const cells = Math.max(items.length, 1), cw = (W - 2 * pad) / cells; let nfs = H * .5;
         for (const [n] of items) nfs = Math.min(nfs, fit(n, 1000, cw * .86)); nfs = Math.min(nfs, H * (items.length ? .4 : 0));
         const half = Math.ceil(stack.length / 2), lines = stack.length > 5 ? [stack.slice(0, half).join("  \u00b7  "), stack.slice(half).join("  \u00b7  ")] : [stack.join("  \u00b7  ")];
-        const wfs = nfs * .4; let sfs = H * .2; for (const t of lines) sfs = Math.min(sfs, fit(t, 1000, W - 2 * pad)); sfs = Math.min(sfs, items.length ? (H - nfs - wfs * 1.5) / (lines.length * 1.3 + .3) : 1e9);
+        const wfs = nfs * .4; let sfs = H * (o.fill || .2); for (const t of lines) sfs = Math.min(sfs, fit(t, 1000, W - 2 * pad)); sfs = Math.min(sfs, items.length ? (H - nfs - wfs * 1.5) / (lines.length * 1.3 + .3) : 1e9);
         const blockH = (items.length ? nfs + wfs * 1.5 + sfs * .3 : 0) + lines.length * sfs * 1.2;
         let y = Math.max(0, (H - blockH) / 2);
         if (items.length) { items.forEach(([n, wd], i) => { const cx = pad + cw * (i + .5); parts.push([n, nfs, cx, y, "center"], [wd, Math.min(wfs, fit(wd, 1000, cw * .92)), cx, y + nfs * 1.02, "center"]); }); y += nfs + wfs * 1.5 + sfs * .3; }
@@ -1271,12 +1271,12 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   const MK = (NARROW ? 6.4 : 9.2) / 1536, FXC = BAN ? RX + (760 - 1290) * MK : RX; // the painting's scale and the middle of its picture (paintOn below)
   const FW = BAN ? (NARROW ? 5.6 : 8) : NARROW ? 5 : 7.4, FH = BAN ? 1.2 : 1.85, FZ = BAN ? 1.1 : -1.3, FX0 = FXC - FW / 2;
   const metal3 = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: .8, roughness: .45 });
-  for (let x = FX0; x <= FX0 + FW + .01; x += FW / Math.round(FW / 2.1)) { const po = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, FH + .06, 10), metal3); po.position.set(x, G3 + (FH + .06) / 2, FZ); scene.add(po); }
-  { const rail = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, FW, 8), metal3); rail.rotation.z = Math.PI / 2; rail.position.set(FXC, G3 + FH, FZ); scene.add(rail); }
+  if (!BAN) for (let x = FX0; x <= FX0 + FW + .01; x += FW / Math.round(FW / 2.1)) { const po = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, FH + .06, 10), metal3); po.position.set(x, G3 + (FH + .06) / 2, FZ); scene.add(po); }
+  if (!BAN) { const rail = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, FW, 8), metal3); rail.rotation.z = Math.PI / 2; rail.position.set(FXC, G3 + FH, FZ); scene.add(rail); }
   const lc = document.createElement("canvas"); lc.width = lc.height = 128; { const g = lc.getContext("2d"); g.strokeStyle = "#ffffff"; g.lineWidth = 11; g.beginPath(); g.moveTo(0, 0); g.lineTo(128, 128); g.moveTo(128, 0); g.lineTo(0, 128); g.stroke(); }
   const lTex = new THREE.CanvasTexture(lc); lTex.wrapS = lTex.wrapT = THREE.RepeatWrapping; lTex.repeat.set(FW / .1, FH / .1); lTex.anisotropy = maxAniso;
   const link3 = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), new THREE.MeshStandardMaterial({ color: 0x9aa0a6, metalness: .7, roughness: .4, alphaMap: lTex, transparent: true, depthWrite: false, opacity: .9, side: THREE.DoubleSide }));
-  link3.material.map = null; link3.position.set(FXC, G3 + FH / 2, FZ); scene.add(link3);
+  link3.material.map = null; link3.position.set(FXC, G3 + FH / 2, FZ); if (!BAN) scene.add(link3);
   // the ribbons: one instanced strip pair (a knot and two tails), tied at points of the mesh; each appears at its own time and moves in the wind
   const rib = (() => { const pos = [], idx = []; const tail = (ang, L, w) => { const b = pos.length / 3; for (let i = 0; i <= 6; i++) { const t = i / 6 * L; for (const sx of [-1, 1]) pos.push(Math.sin(ang) * t + sx * w / 2 * Math.cos(ang), -Math.cos(ang) * t, 0); if (i < 6) { const k = b + i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); } } };
     tail(.13, .19, .036); tail(-.1, .16, .036); const g = new THREE.InstancedBufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; })();
@@ -1304,35 +1304,34 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   // the name, the painted house and the link (Tom 11-19: soft pastel community mural): the painting is on the wall from the start, the house on the hole's side,
   // so the wall breaks open through the painted preschool and the real one shows. Its foot (picture row 911) stands on the street. The link is a mark of its own story
   // (Tom 11-19, ?rvflink=): a yellow ribbon, written on in marker, tied on a stretch of the painted fence on the left (it flutters a little), or the children's chalk on the pavement.
-  const RVP = paintOn("assets/rvf_wall.webp", NARROW ? 6.4 : 9.2, [1290, 911], [RX, G3]);
-  for (const [n, b] of [["raddavarfruberga's name", [40, 260, 1135, 560]], ["raddavarfruberga's house", [940, 260, 1535, 850]]]) RVP.protect(n, b);
+  const RVP = paintOn("assets/rvf_wall.webp", NARROW ? 6.4 : 9.2, [1290, BAN ? 872 : 911], [RX, G3]);
+  for (const [n, b] of BAN ? [["raddavarfruberga's name", [20, 180, 1000, 480]], ["raddavarfruberga's preschool", [860, 230, 1535, 872]], ["raddavarfruberga's banner", [77, 520, 842, 775]]]
+    : [["raddavarfruberga's name", [40, 260, 1135, 560]], ["raddavarfruberga's house", [940, 260, 1535, 850]]]) RVP.protect(n, b);
+  let RVF_TAGS = [], RVF_PAINT = null; // the stack as tags round the piece; the banner's words sprayed on (k: 0 to 1)
   const RVF_LINK = document.documentElement.dataset.rvflink;
   let RVF_BOX, RVF_B = RVP, RVF_FLUTTER = null, RVF_GLOW; // the mark's tap area (in its own space: left, top, right, bottom), that space, the ribbon's wind, its glow
-  if (BAN) { // the sheet: tied to the rail at its two top corners and in the middle, painted by hand, the link; it moves in the wind
-    const BW = NARROW ? 3.6 : 3.4, CW = 1500, CH = 520, BH = BW * CH / CW, bk = BW / CW, BX = FX0 + FW * (NARROW ? .5 : .36), BTOP = G3 + FH - .07, BZ = FZ + .035;
-    const bc = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), bt = new THREE.CanvasTexture(bc); bt.encoding = THREE.sRGBEncoding; bt.anisotropy = maxAniso;
-    const sheet = () => { const g = bc.getContext("2d"); g.fillStyle = "#e9e3d5"; g.fillRect(0, 0, CW, CH);
-      for (let k = 0; k < 9000; k++) { const v = 200 + Math.random() * 40 | 0; g.fillStyle = `rgba(${v},${v - 6},${v - 18},${.05 + Math.random() * .08})`; g.fillRect(Math.random() * CW, Math.random() * CH, 1 + Math.random() * 3, 1); } // the cloth's weave
-      for (const y of [CH * .33, CH * .66]) { const gr = g.createLinearGradient(0, y - 14, 0, y + 14); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(.5, "rgba(90,80,60,.10)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, y - 14, CW, 28); } // where it was folded
-      const eg = g.createRadialGradient(CW / 2, CH / 2, CH * .4, CW / 2, CH / 2, CW * .62); eg.addColorStop(0, "rgba(0,0,0,0)"); eg.addColorStop(1, "rgba(80,66,40,.22)"); g.fillStyle = eg; g.fillRect(0, 0, CW, CH); // grubby edges
-      const RED = "#b0231c"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = RED;
-      const lines = ["Don't kick", "our kids out"], fs = 196, ys = [CH * .44, CH * .86];
-      lines.forEach((t, i) => { g.font = `${fs}px "Sedgwick Ave Display", cursive`; const x = CW / 2 + (i ? 18 : -22), y = ys[i];
-        g.globalAlpha = .9; g.fillText(t, x, y); g.globalAlpha = .35; g.fillText(t, x + 3, y - 2); g.globalAlpha = 1; // a brush goes over twice
-        const w = g.measureText(t).width; for (let d = 0; d < 5; d++) { const dx = x - w / 2 + w * (.08 + Math.random() * .84), L = 14 + Math.random() * 46, dw = 4 + Math.random() * 4; // paint that ran
+  if (BAN) { // (Tom 11-19) the banner is painted in the piece (picture pixels 77, 520 to 842, 775); its words are set by hand, sprayed on when you arrive, and it is the link.
+    // The stack: each tool its own small tag on bare concrete round the piece, in the piece's colours, sprayed in one after another.
+    const BB = [77, 520, 842, 775], tl = RVP.at(BB[0] + 45, BB[1] + 40), br = RVP.at(BB[2] - 45, BB[3] - 22), TW = br.x - tl.x, TH = tl.y - br.y, CW = 1400, CH = Math.round(CW * TH / TW);
+    const full = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), show = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), bt = new THREE.CanvasTexture(show);
+    bt.encoding = THREE.sRGBEncoding; bt.anisotropy = maxAniso;
+    const words = () => { const g = full.getContext("2d"), RED = "#b0231c", lines = ["Don't kick", "our kids out"]; g.clearRect(0, 0, CW, CH); g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = RED;
+      let fs = CH * .46; g.font = `${fs}px "Sedgwick Ave Display", cursive`; const wmax = Math.max(...lines.map(t => g.measureText(t).width)); fs = Math.min(fs, fs * CW * .94 / wmax);
+      lines.forEach((t, i) => { g.font = `${fs}px "Sedgwick Ave Display", cursive`; const x = CW / 2 + (i ? 14 : -18), y = CH * (i ? .9 : .45);
+        g.globalAlpha = .92; g.fillText(t, x, y); g.globalAlpha = .35; g.fillText(t, x + 3, y - 2); g.globalAlpha = 1; // a brush goes over twice
+        const w = g.measureText(t).width; for (let d = 0; d < 4; d++) { const dx = x - w / 2 + w * (.08 + Math.random() * .84), L = 10 + Math.random() * fs * .22, dw = 3 + Math.random() * 4; // paint that ran
           g.beginPath(); g.moveTo(dx - dw / 2, y - 8); g.lineTo(dx - dw / 2.6, y + L); g.arc(dx, y + L, dw / 2.2, Math.PI, 0, true); g.lineTo(dx + dw / 2, y - 8); g.fill(); } });
-      bt.needsUpdate = true; };
-    document.fonts.load('196px "Sedgwick Ave Display"').then(sheet, sheet);
-    const bg = new THREE.PlaneGeometry(BW, BH, 40, 14), bp = bg.attributes.position, b0 = bp.array.slice();
-    const ban = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ map: bt, roughness: .95, side: THREE.DoubleSide })); ban.position.set(BX, BTOP - BH / 2, BZ); scene.add(ban);
-    RVF_FLUTTER = t => { for (let i = 0; i < bp.count; i++) { const x = b0[i * 3], y = b0[i * 3 + 1], u = (x + BW / 2) / BW, v = Math.max(0, (BH / 2 - y) / BH), hang = Math.pow(v, 1.25), ph = t * 1.7; // max: the top row sits a hair above 0, and a power of it would be NaN
-        const sag = (1 - v) * .035 * Math.abs(Math.sin(u * 2 * Math.PI)); // the top edge between the three ties
-        const rp_z = hang * (.05 + .035 * Math.sin(ph + u * 6.5) + .018 * Math.sin(ph * 2.3 + u * 13 + v * 4)) + .012 * Math.sin(u * 2 * Math.PI) ** 2;
-        bp.setXYZ(i, x + hang * .025 * Math.sin(ph * .9 + v * 3), y - sag + hang * .01 * Math.sin(ph * 1.4 + u * 9), rp_z); }
-      bp.needsUpdate = true; bg.computeVertexNormals(); };
-    const BANB = { at: (u, v) => V(BX - BW / 2 + u * bk, BTOP - v * bk, BZ + .07), k: bk };
-    RVF_BOX = [0, 0, CW, CH]; RVF_B = BANB; RVF_GLOW = () => makeGlow(bc.toDataURL(), BANB, RVF_BOX, { rect: true, colour: "#ffe9a8", fill: 0, hole: 1 });
-    PROT.push(["the banner", BANB.at(0, CH), BANB.at(CW, 0)]); }
+      shown = -1; };
+    let shown = -1; document.fonts.load('100px "Sedgwick Ave Display"').then(words, words);
+    const ban = new THREE.Mesh(new THREE.PlaneGeometry(TW, TH), new THREE.MeshStandardMaterial({ map: bt, transparent: true, depthWrite: false, roughness: .7, polygonOffset: true, polygonOffsetFactor: -3 }));
+    ban.material.onBeforeCompile = wall.material.onBeforeCompile; ban.position.set(tl.x + TW / 2, br.y + TH / 2, .005); ban.renderOrder = 2; scene.add(ban); // after the painting: both are see-through layers on the wall
+    RVF_PAINT = k => { k = Math.round(k * 60) / 60; if (k === shown) return; shown = k; const g = show.getContext("2d"); g.clearRect(0, 0, CW, CH); if (k <= 0) { bt.needsUpdate = true; return; }
+      const x = k * CW * 1.1; g.drawImage(full, 0, 0); g.globalCompositeOperation = "destination-in"; const gr = g.createLinearGradient(x - CW * .1, 0, x, 0); gr.addColorStop(0, "#000"); gr.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = gr; g.fillRect(0, 0, CW, CH); g.globalCompositeOperation = "source-over"; bt.needsUpdate = true; }; // left to right, a soft front like a can moving along
+    RVF_BOX = BB; RVF_GLOW = () => makeGlow("assets/rvf_wall.webp", RVP, BB, { rect: true, colour: "#ffe9a8", fill: 0, hole: 1 });
+    const R = ([u0, v0, u1, v1]) => [RVP.at(u0, 0).x, RVP.at(0, v1).y, RVP.at(u1, 0).x, RVP.at(0, v0).y];
+    RVF_TAGS = [["Next.js", [60, 70, 420, 180], "#ffd23a"], ["TypeScript", [470, 75, 930, 185], "#4fb6ee"], ["Supabase", [1010, 95, 1400, 205], "#ffd23a"], ["Resend", [90, 785, 420, 872], "#4fb6ee"], ["Vercel", [500, 785, 800, 872], "#ffd23a"]]
+      .map(([t, b, c], i) => makeSpray({ key: "rvfTag" + i, name: "raddavarfruberga's tag " + t, colour: c, stack: [t], row: true, fill: .62, rect: R(b) })); }
   else if (RVF_LINK === "ribbon") { // the fence stretch and the ribbon (its own picture, 330 x 250 px, tied at picture pixel 14, 690); the band itself is picture pixels 44, 698 to 314, 820
     paintOn("assets/rvf_fence.webp", RVP.w, [0, 0], [RVP.at(0, 0).x, RVP.at(0, 0).y], .003).m.renderOrder = 1; RVP.protect("the fence and the ribbon", [20, 640, 310, 912]);
     const rb = paintOn("assets/rvf_ribbon.webp", 330 * RVP.k, [0, 0], [RVP.at(14, 690).x, RVP.at(14, 690).y], .005, [330, 250]), rg = new THREE.PlaneGeometry(rb.w, rb.h, 30, 8), rp = rg.attributes.position, r0 = rp.array.slice(); rb.m.geometry = rg; rb.m.renderOrder = 2; Object.assign(rb.m.material, { emissive: new THREE.Color(0xffffff), emissiveMap: rb.m.material.map, emissiveIntensity: .5 }); // the band stays yellow in the shade of the wall
@@ -1347,11 +1346,11 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
     RVF_BOX = [30, 40, 1480, 600]; RVF_B = CKB; RVF_GLOW = () => makeGlow("assets/rvf_chalk.webp", CKB, RVF_BOX); }
   const lamp3 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp3.position.set(RX - 9, 3.8 - 2 * DROP, 4.4); lamp3.target.position.set(RX - 1.6, .3 - 2 * DROP, 0); lamp3.castShadow = false; scene.add(lamp3, lamp3.target);
   document.querySelector(".hud").insertAdjacentHTML("beforeend", '<a class="hot" id="hot3" href="https://raddavarfruberga.se" target="_blank" rel="noopener" aria-label="Open the site" tabindex="-1"></a>'
-    + '<div class="tag facts" id="tagRvf"><b>raddavarfruberga.se</b>Petition site for our preschool\'s parents. Volunteer project.</div>');
+    + '<div class="tag facts" id="tagRvf"><b>raddavarfruberga.se</b>We started this site to collect signatures for our preschool.</div>');
   const hot3 = document.getElementById("hot3"), tagRvf = document.getElementById("tagRvf");
-  const RVF_SP = makeSpray({ key: "rvf", name: "raddavarfruberga's stack", colour: "#8cc7ee", stack: ["Next.js", "TypeScript", "Supabase", "Resend", "Vercel"], row: true, rect: [RVP.at(40, 0).x, RVP.at(0, 235).y, RVP.at(900, 0).x, RVP.at(0, 70).y] });
+  const RVF_SP = BAN ? { fade() {} } : makeSpray({ key: "rvf", name: "raddavarfruberga's stack", colour: "#8cc7ee", stack: ["Next.js", "TypeScript", "Supabase", "Resend", "Vercel"], row: true, rect: [RVP.at(40, 0).x, RVP.at(0, 235).y, RVP.at(900, 0).x, RVP.at(0, 70).y] });
   svg.insertAdjacentHTML("beforeend", '<line id="l7"/><circle id="c7" r="4"/>'); const l7 = svg.querySelector("#l7"), c7 = svg.querySelector("#c7");
-  let rvfStart = 0; const RVF_END = RIB0 + 2.9; // the tag and the facts come while the last ribbons are tied
+  let rvfStart = 0; const RVF_END = BAN ? 1.8 : RIB0 + 2.9; // the tag and the facts come while the last ribbons are tied
   let endK = 0; // how far the camera has left raddavarfruberga for the manhole
   function rvfAt(now, walk3, end3) {
     lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3)); rU.uTm.value = now / 1000;
@@ -1360,7 +1359,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
     // the break: cracks run, then the wall gives, chunks fall out onto the street, dust, daylight floods through
     const tb = BAN ? -1 : sec - BRK, op = tb < 0 ? 0 : 1 - Math.pow(1 - cl(tb / .45), 3);
     holeU.uCrack.value = sec < 0 || BAN ? 0 : sm(cl(sec / BRK)) * .95 + .35 * sm(cl(tb / .6)); holeU.uOpen.value = op;
-    const open = op > .01; edge3.visible = open; edge3.scale.set(op, op, 1); rebar.visible = op > .95; ribs.visible = BAN ? sec >= 0 || REDUCED : open; photo3.visible = yard3.visible = open;
+    const open = op > .01; edge3.visible = open; edge3.scale.set(op, op, 1); rebar.visible = op > .95; ribs.visible = !BAN && open; photo3.visible = yard3.visible = open;
     chunks.visible = open; if (open) fall3(tb);
     const dk = tb < 0 ? 0 : cl(tb / 4.5); dust.visible = tb > 0 && dk < 1;
     if (dust.visible) { const dr = 1 - Math.exp(-tb * 1.6); for (let i = 0; i < dustN; i++) { const o = dust0[i], v = dustV[i]; dustP[i * 3] = o.x + v.x * dr; dustP[i * 3 + 1] = Math.max(G3 + .05, o.y + v.y * dr - .12 * tb); dustP[i * 3 + 2] = o.z + v.z * dr; }
@@ -1369,6 +1368,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
     const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0); RVF_SP.fade(showL);
     if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - HRX * .4, G3 + .1, .3) : RVP.at(BAN ? 1560 : RVF_LINK === "ribbon" ? 308 : 300, 650), NARROW ? 14 : 8, NARROW ? 70 : 20); // phone: below the street, where there is room; laptop: on the bare concrete between the link mark and the house
     if (RVF_FLUTTER && walk3 > .3 && end3 < .8) RVF_FLUTTER(now / 1000);
+    if (RVF_PAINT) RVF_PAINT(REDUCED ? 1 : sec < 0 ? 0 : cl((sec - .3) / 1.6)); RVF_TAGS.forEach((t, i) => t.fade(showL && sec > RVF_END + .2 + i * .3));
     placeHots([hot3], [RVF_BOX], RVF_B, sec >= .3 && walk3 > .5 && endK < .5); } // the link is the mark of this wall (the ribbon or the chalk), once the camera is at the wall
 
   // ---- the ending (storyboard 11-16): past raddavarfruberga a hatch in the pavement, steps down along the wall into a workshop under the street.
