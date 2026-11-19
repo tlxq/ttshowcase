@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-hero="a">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -37,15 +37,46 @@ a { color: inherit; }
 .big.up .ln > span { transform: none; }
 .big .ln:nth-child(2) > span { transition-delay: 90ms; }
 
-/* 1. who */
-.hero { min-height: 92svh; display: grid; align-content: end; padding-top: 120px; padding-bottom: var(--s6); }
-.hero .big { --sz: clamp(64px, 13vw, 200px); }
+/* 1. who: round 1 (Tom 11-19) picked A: the photo tall beside the name, a small walk card with a street clip under it. */
+.hero { min-height: 100svh; display: grid; align-content: center; padding-top: var(--s5); padding-bottom: var(--s5); }
+.hero-in { display: grid; gap: var(--s4); }
+.who { display: grid; gap: var(--s3); align-content: end; }
+.hero .big { --sz: clamp(64px, 8.4vw, 150px); }
 .hero .say { margin: 0; max-width: 34ch; font: 500 clamp(20px, 2.2vw, 28px)/1.35 var(--f-text); color: var(--look-soft); }
 .hero .say b { color: var(--look-text); font-weight: 600; }
-.hero .row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: var(--s4); }
+.me { margin: 0; overflow: clip; }
+.me img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
 .jump { display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4); list-style: none; margin: 0; padding: 0; }
 .jump a { font: 600 15px/1 var(--f-text); text-decoration: none; display: inline-flex; min-height: var(--tap); align-items: center; border-bottom: 2px solid var(--look-rule); }
 .jump a:hover, .jump a:focus-visible { border-color: var(--look-spray); outline: none; }
+/* the walk, small: a playing street clip and two lines */
+.walk { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s2); padding: 8px; padding-right: var(--s3); border-radius: 14px; text-decoration: none; background: var(--look-neon-box); border: 1px solid var(--look-plate-edge); max-width: 380px; transition: border-color var(--toggle) var(--ease), transform var(--toggle) var(--ease); }
+.walk:hover, .walk:focus-visible { border-color: var(--look-neon-pink); outline: none; transform: translateY(-2px); }
+.walk .clip { position: relative; display: block; width: 132px; aspect-ratio: 16 / 10; border-radius: 8px; overflow: clip; background: #000; }
+.walk video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.walk i { position: absolute; inset: auto auto 6px 6px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgb(0 0 0 / .6); color: var(--look-text); font: 11px/1 var(--f-text); font-style: normal; }
+.walk .wt { display: grid; gap: 4px; color: var(--look-neon-text); }
+.walk b { font: 700 19px/1.1 var(--f-big); text-transform: uppercase; letter-spacing: .01em; }
+.walk .wt span { font-size: 14px; line-height: 1.35; color: var(--look-quiet); }
+
+[data-hero="a"] .hero-in { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); grid-template-areas: "who me" "jump walk"; align-items: end; column-gap: var(--s6); }
+[data-hero="a"] .who { grid-area: who; }
+[data-hero="a"] .me { grid-area: me; aspect-ratio: 4 / 5; border-radius: 18px; max-height: 66svh; justify-self: end; width: 100%; }
+[data-hero="a"] .walk { grid-area: walk; justify-self: end; width: 100%; max-width: none; }
+[data-hero="a"] .jump { grid-area: jump; }
+
+
+
+@media (max-width: 860px) {
+  .hero { align-content: start; padding-top: var(--s4); }
+  .hero .big { --sz: clamp(52px, 15.5vw, 120px); }
+  .hero .say { font-size: 19px; }
+  .jump { display: none; }
+  [data-hero] .hero-in { grid-template-columns: 1fr; grid-template-areas: "me" "who" "walk"; gap: var(--s3); }
+  [data-hero] .walk { justify-self: stretch; width: 100%; max-width: none; }
+  [data-hero="a"] .me { aspect-ratio: 16 / 9; max-height: none; border-radius: 14px; }
+  [data-hero="a"] .me img { object-position: 50% 42%; }
+}
 
 /* 2. work: three products, each a card that stops while the next rises over it */
 .work { padding-top: var(--s6); padding-bottom: var(--s7); }
@@ -108,10 +139,11 @@ a { color: inherit; }
 </head>
 <body>
 <main>
-  <section class="hero g"><div class="wrap" style="display:grid;gap:var(--s4)">
-    <p class="label">Product engineer · TypeScript, React and C#/.NET</p>
-    <h1 class="big"><span class="ln"><span>Tom</span></span><span class="ln"><span>Larsson</span></span></h1>
-    <div class="row">
+  <section class="hero g"><div class="wrap hero-in">
+    <figure class="me"><img src="assets/tom.webp" alt="Tom Larsson" width="900" height="1173"></figure>
+    <div class="who">
+      <p class="label">Product engineer · TypeScript, React and C#/.NET</p>
+      <h1 class="big"><span class="ln"><span>Tom</span></span><span class="ln"><span>Larsson</span></span></h1>
       <p class="say">I build and run things myself, <b>from data model to server.</b></p>
       <div class="btns">
         <a class="btn main" href="#work">See the work ↓</a>
@@ -119,8 +151,9 @@ a { color: inherit; }
         <a class="btn" href="https://linkedin.com/in/tlxq">LinkedIn ↗</a>
       </div>
     </div>
+    <a class="walk" href="/next"><span class="clip"><video src="assets/walk_clip.webm" poster="assets/walk_clip.webp" muted loop playsinline autoplay aria-hidden="true"></video><i aria-hidden="true">▶</i></span><span class="wt"><b>Walk through it</b><span>My work as a street at night · 1 min</span></span></a>
     <ul class="jump" aria-label="Projects">
-      <li><a href="#eparadar">epaRadar</a></li><li><a href="#rvf">Rädda vår Fruberga</a></li><li><a href="#edge">EDGE</a></li><li><a href="#more">More</a></li><li><a href="/next">Walk through it</a></li>
+      <li><a href="#eparadar">epaRadar</a></li><li><a href="#rvf">Rädda vår Fruberga</a></li><li><a href="#edge">EDGE</a></li><li><a href="#more">More</a></li>
     </ul>
   </div></section>
 
