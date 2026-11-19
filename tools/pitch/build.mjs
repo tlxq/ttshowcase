@@ -73,8 +73,8 @@ async function saira() {
   return file;
 }
 
-// Style pitch (11-19), pitch only: two more free fonts (both SIL OFL) for ?font=hand and ?font=sans. Sedgwick Ave Display is a
-// marker hand taken from graffiti handwriting; Inter is the clean text face (one variable file, weights 400 to 700).
+// Two more free fonts (both SIL OFL): Sedgwick Ave Display, a marker hand taken from graffiti handwriting (raddavarfruberga's
+// banner words); Inter, the clean text face of the neon labels and the form (one variable file, weights 400 to 700).
 async function google(name, family, what) {
   const file = join(fonts, name);
   if (existsSync(file)) return file;
@@ -144,22 +144,12 @@ function withScriptRule(html) {
 }
 writeFileSync(join(out, "paint.html"), withScriptRule(page));
 
-// Pictures: pitch/assets holds only what is free to publish (CC0, or from a public repo). Pictures from a project
-// whose repo is private come from its live site, fetched once into .cache/pitch-media and never put in git.
-const remote = { "rvf_photo.jpg": "https://raddavarfruberga.se/img/vardfruberga-entre.jpg" };
-const media = join(root, ".cache/pitch-media");
-mkdirSync(media, { recursive: true });
-for (const [name, url] of Object.entries(remote)) {
-  const file = join(media, name);
-  if (!existsSync(file))
-    writeFileSync(file, Buffer.from(await (await get(url, name)).arrayBuffer()));
-}
+// Pictures: pitch/assets holds only what is free to publish (CC0, or from a public repo).
 const assets = join(out, "assets");
 rmSync(assets, { force: true, recursive: true });
 mkdirSync(assets);
 for (const name of readdirSync(join(root, "pitch/assets")))
   symlinkSync(join(root, "pitch/assets", name), join(assets, name));
-for (const name of Object.keys(remote)) symlinkSync(join(media, name), join(assets, name));
 console.log("Built .cache/pitch/paint.html");
 
 if (process.argv.includes("--site")) {

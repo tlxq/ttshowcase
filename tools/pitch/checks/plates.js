@@ -1,6 +1,6 @@
 // No plate over a picture (Tom 11-18): at every stop of the walk, no label plate (.tag) or the form (.mail) that shows covers a picture or the
 // mural's words. The pictures are the page's own list (window.plateTest, from PROT in pitch/paint.src.html): epaRadar's painting, the mural,
-// what shows through the preschool's hole and the six other paintings. The painted part only, never the bare concrete round it. A plate may touch a picture's edge by up to 6 px. Run at 1440 x 900 and on a phone.
+// the seven paintings. The painted part only, never the bare concrete round it. A plate may touch a picture's edge by up to 6 px. Run at 1440 x 900 and on a phone.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs, stops: 0, plates: 0, pictures: 0 };
   page.on('pageerror', e => errs.push(String(e)));
   const look = where => page.evaluate(where => {

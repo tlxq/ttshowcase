@@ -122,36 +122,12 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 #tagName:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 2px; }
 @media (max-aspect-ratio: 4/5) { .mail { right: 16px; left: 16px; width: auto; top: auto; bottom: 16px; transform: none; padding: 12px 16px; gap: 4px; } .mail textarea { min-height: 72px; } }
 .nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--look-soft); font: 16px system-ui; }
-/* ==== STYLE PITCH, PITCH ONLY (Tom 11-19): ?plate=dark|poster|stencil &font=today|hand|sans &light=night|dusk|day &street=bare|some|busy.
-   The defaults (dark, today, night, bare) are today's look: nothing below applies. Every value here moves to tokens.css after Tom picks. ==== */
 .pitch-svg { position: absolute; width: 0; height: 0; }
-/* plate = poster: paper pasted on the wall, a little wrinkled, taped at the top, dark text */
-html[data-plate="poster"] :is(.tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm) {
-  --look-text: #1b1814; --look-soft: #3a352c; --look-quiet: #56503f; --look-spray: #a8280a;
-  background-color: #ebe5d3; color: #1b1814; border: 0; border-radius: 1px; rotate: -.7deg;
-  background-image: linear-gradient(104deg, rgba(0,0,0,0) 0 18%, rgba(0,0,0,.07) 19%, rgba(255,255,255,.28) 21%, rgba(0,0,0,0) 24% 61%, rgba(0,0,0,.06) 63%, rgba(255,255,255,.22) 65%, rgba(0,0,0,0) 68%),
-    linear-gradient(172deg, rgba(0,0,0,0) 0 40%, rgba(0,0,0,.05) 41%, rgba(255,255,255,.2) 43%, rgba(0,0,0,0) 46%), radial-gradient(120% 90% at 20% 10%, rgba(255,255,255,.35), rgba(120,100,60,.12));
-  box-shadow: 0 1px 1px rgba(0,0,0,.35), 0 8px 18px rgba(0,0,0,.5); }
-html[data-plate="poster"] :is(.tag, .mail)::before { content: ""; position: absolute; top: -9px; left: 50%; width: 54px; height: 17px; margin-left: -27px; rotate: -3deg; background: rgba(226, 214, 160, .72); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
-html[data-plate="poster"] .tag:nth-of-type(2n) { rotate: .6deg; }
-html[data-plate="poster"] .mail input, html[data-plate="poster"] .mail textarea { border-bottom-color: rgba(27, 24, 20, .5); }
-html[data-plate="poster"] .mail button:hover { background: rgba(168, 40, 10, .14); }
-/* plate = stencil: no box, sprayed straight on the concrete: stencil heading, rough edge, a soft overspray so it reads on light concrete too */
-html[data-plate="stencil"] :is(.tag, .mail) { background: none; border: 0; border-radius: 0; filter: url(#rough); text-shadow: 0 0 2px rgba(0,0,0,.9), 0 0 10px rgba(0,0,0,.85); color: #f3eee1; padding: 4px 6px; font-family: "Saira Stencil One", sans-serif; text-transform: uppercase; letter-spacing: .05em; font-size: 14px; }
-html[data-plate="stencil"] :is(.tag, .mail) b { font-family: "Saira Stencil One", sans-serif; font-weight: 400; font-size: 1.45em; letter-spacing: .06em; color: #ece7da; }
-html[data-plate="stencil"] .tag.facts, html[data-plate="stencil"] .tag.facts span { text-transform: uppercase; } html[data-plate="stencil"] .tag.facts span { color: #e2dccb; }
-html[data-plate="stencil"] .mail input, html[data-plate="stencil"] .mail textarea { background: rgba(0,0,0,.28); }
-/* font = hand: a marker hand for the headings, Inter for the text; font = sans: Inter for everything */
-html[data-font="hand"] :is(.tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm), html[data-font="sans"] :is(.tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm) { font-family: "Inter", system-ui, sans-serif; letter-spacing: .005em; }
-html[data-font="hand"] :is(.tag, .mail) b { font-family: "Sedgwick Ave Display", cursive; font-weight: 400; font-size: 2.3em; line-height: 1.05; letter-spacing: .01em; text-transform: none; }
-html[data-font="sans"] :is(.tag, .mail) b { font-family: "Inter", system-ui, sans-serif; font-weight: 700; font-size: 1.1em; letter-spacing: .01em; text-transform: none; }
-html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts) { text-transform: none; }
 /* ==== PROJECT LABELS (Tom 11-19): one sentence per project, beside its painting (the plates check); the numbers and the stack are sprayed on the wall, not here. ==== */
 .tag.facts { width: min(270px, 70vw); font-size: calc(var(--look-label) * .9); line-height: 1.4; padding: 6px 9px; }
 .tag.facts b { margin-bottom: 1px; }
 @media (max-aspect-ratio: 4/5) { .tag.facts { font-size: calc(var(--look-label-phone) * .9); width: min(300px, 76vw); } }
-/* ==== STYLE PITCH, PITCH ONLY (Tom 11-19): ?plate= adds uv|neon|projected|panel; ?form=wall|glass|poster; ?end=17|29|67; the hover on every painted link.
-   Every value here moves to tokens.css after Tom picks. ==== */
+/* ==== THE LOOK TOM PICKED (11-19): neon label boxes, the form sprayed on the end wall's frame, a glow on every painted link ==== */
 /* hover on a painted link: a spray-can cursor, no box; the glow and the label are drawn by the page (hotOn in paint.src.html) */
 .hot { cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cg%20stroke='%23101010'%20stroke-width='1.6'%20stroke-linejoin='round'%3E%3Crect%20x='13'%20y='13'%20width='12'%20height='17'%20rx='2'%20fill='%23e8e2d4'/%3E%3Crect%20x='14.5'%20y='7'%20width='9'%20height='6'%20rx='1.5'%20fill='%23ff6a1f'/%3E%3Crect%20x='17.5'%20y='3'%20width='3'%20height='4'%20fill='%23e8e2d4'/%3E%3C/g%3E%3Cg%20fill='%23ff6a1f'%20stroke='%23101010'%20stroke-width='.5'%3E%3Ccircle%20cx='14'%20cy='4'%20r='1.3'/%3E%3Ccircle%20cx='10'%20cy='3'%20r='1'/%3E%3Ccircle%20cx='11'%20cy='6.5'%20r='.9'/%3E%3Ccircle%20cx='7'%20cy='5'%20r='.7'/%3E%3Ccircle%20cx='6'%20cy='1.8'%20r='.6'/%3E%3C/g%3E%3C/svg%3E") 6 2, pointer; -webkit-tap-highlight-color: transparent; }
 .hot:hover { background: none; }
@@ -160,7 +136,7 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
 button.hot { background: none; border: 0; padding: 0; }
 #endPan { display: none; position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); min-width: 120px; min-height: 48px; padding: 0 18px; font: 500 15px/1 "Inter", system-ui, sans-serif; color: #f4efe4; background: rgba(14, 16, 19, .88); border: 1px solid rgba(244, 239, 228, .35); border-radius: 24px; cursor: pointer; pointer-events: auto; z-index: 5; }
 #endPan:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
-/* the end form: it sits on the painted frame's dark panel (the page puts it there); three looks */
+/* the end form: it sits on the painted frame's dark panel (the page puts it there) */
 html form#mail { position: absolute; left: 0; top: 0; right: auto; bottom: auto; transform: none; rotate: none; width: 400px; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; align-content: center; gap: 8px 14px; padding: 12px 18px; background: none; border: 0; border-radius: 0; filter: none; text-shadow: none; box-shadow: none;
   font: 500 14px/1.3 "Inter", system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: var(--ink); --panel: #16181c; --ink: #f4efe4; --ink2: #bdb7a8; --line: #f4efe4; --acc: #ff7a2a; }
 html form#mail::before, html form#mail::after { display: none; }
@@ -179,80 +155,23 @@ form#mail button:disabled { opacity: .7; cursor: default; }
 form#mail button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; margin: 0; font: 500 20px/1.35 "Inter", system-ui, sans-serif; color: var(--ink); text-align: center; }
 /* wall: no box; the fields are lines sprayed on the dark panel, typed text in clean light letters, a sprayed button */
-html[data-form="wall"] form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); opacity: .75; filter: url(#rough); transition: background 160ms, box-shadow 160ms; }
-html[data-form="wall"] form#mail label.trap::after { display: none; }
-html[data-form="wall"] form#mail label:focus-within::after { background: var(--acc); opacity: 1; box-shadow: 0 0 10px var(--acc); }
-html[data-form="wall"] form#mail button { filter: url(#rough); box-shadow: 0 0 0 2px rgba(255, 122, 42, .25), 0 0 18px rgba(255, 122, 42, .4); }
-html[data-form="wall"] form#mail button:hover { filter: url(#rough) brightness(1.12); }
-/* glass: a slim frosted pane in the frame, one column */
-html[data-form="glass"] form#mail { --panel: #2b2e35; --ink: #ffffff; --ink2: #d9dce2; grid-template-columns: 1fr; gap: 8px; padding: 14px; background: rgba(255, 255, 255, .13); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); border: 1px solid rgba(255, 255, 255, .32); border-radius: 14px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), 0 12px 36px rgba(0, 0, 0, .42); }
-html[data-form="glass"] form#mail label.f-msg { grid-column: 1; }
-html[data-form="glass"] form#mail input, html[data-form="glass"] form#mail textarea { background: rgba(0, 0, 0, .24); border: 1px solid rgba(255, 255, 255, .24); border-radius: 8px; padding: 22px 10px 6px; transition: border-color 160ms; }
-html[data-form="glass"] form#mail label span { left: 10px; }
-html[data-form="glass"] form#mail input:focus, html[data-form="glass"] form#mail textarea:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(255, 122, 42, .28); }
-html[data-form="glass"] form#mail .err, html[data-form="glass"] form#mail button { grid-column: 1; grid-row: auto; justify-self: stretch; }
-html[data-form="glass"] form#mail .err { color: #ffd9cb; }
-html[data-form="glass"] form#mail button { color: #14110e; background: #f6f2e8; border-radius: 8px; }
-/* poster: a printed sheet pasted in the frame, taped at two corners, lines to write on */
-html[data-form="poster"] form#mail { --panel: #ebe5d2; --ink: #1b1814; --ink2: #4a4436; --line: rgba(27, 24, 20, .7); --acc: #a8280a; color: #1b1814; background-color: #ebe5d2; border-radius: 1px; rotate: -.5deg; padding: 12px 20px;
-  background-image: linear-gradient(104deg, rgba(0, 0, 0, 0) 0 18%, rgba(0, 0, 0, .07) 19%, rgba(255, 255, 255, .28) 21%, rgba(0, 0, 0, 0) 24% 61%, rgba(0, 0, 0, .06) 63%, rgba(255, 255, 255, .22) 65%, rgba(0, 0, 0, 0) 68%), linear-gradient(172deg, rgba(0, 0, 0, 0) 0 40%, rgba(0, 0, 0, .05) 41%, rgba(255, 255, 255, .2) 43%, rgba(0, 0, 0, 0) 46%), radial-gradient(120% 90% at 20% 10%, rgba(255, 255, 255, .35), rgba(120, 100, 60, .12));
-  box-shadow: 0 1px 1px rgba(0, 0, 0, .35), 0 8px 18px rgba(0, 0, 0, .5); }
-html[data-form="poster"] form#mail::before, html[data-form="poster"] form#mail::after { display: block; content: ""; position: absolute; top: -9px; width: 54px; height: 17px; background: rgba(226, 214, 160, .76); box-shadow: 0 1px 2px rgba(0, 0, 0, .25); }
-html[data-form="poster"] form#mail::before { left: 14px; rotate: -6deg; } html[data-form="poster"] form#mail::after { right: 14px; rotate: 5deg; }
-html[data-form="poster"] form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 4px; height: 2px; background: var(--line); }
-html[data-form="poster"] form#mail label.trap::after { display: none; }
-html[data-form="poster"] form#mail label:focus-within::after { background: var(--acc); height: 3px; }
-html[data-form="poster"] form#mail .err { color: #8f1d00; }
-html[data-form="poster"] form#mail button { color: #ebe5d2; background: #1b1814; border-radius: 1px; }
-@media (max-aspect-ratio: 4/5) { html form#mail { gap: 6px 10px; padding: 10px 12px; } html[data-form="glass"] form#mail { padding: 12px; } }
-/* plate = uv: the facts are written in invisible UV ink; a black light sweeps over them once and they glow violet-white (dim ghost before) */
-@property --uvx { syntax: "<percentage>"; inherits: false; initial-value: -30%; }
-@keyframes uvsweep { from { --uvx: -30%; } to { --uvx: 130%; } }
-@keyframes uvglow { 0%, 100% { filter: drop-shadow(0 0 4px rgba(160, 110, 255, .85)) drop-shadow(0 0 14px rgba(120, 70, 255, .5)); } 50% { filter: drop-shadow(0 0 7px rgba(190, 150, 255, 1)) drop-shadow(0 0 22px rgba(130, 80, 255, .7)); } }
-html[data-plate="uv"] .tag { --uvx: -30%; background-color: transparent; border: 0; border-radius: 0; padding: 6px 8px; font-family: "Saira Stencil One", sans-serif; text-transform: uppercase; letter-spacing: .05em; -webkit-text-fill-color: transparent; color: transparent; text-shadow: none;
-  background-image: linear-gradient(100deg, #f1e9ff 0, #f1e9ff calc(var(--uvx) - 6%), rgba(170, 140, 255, .13) calc(var(--uvx) + 6%), rgba(170, 140, 255, .13) 100%); -webkit-background-clip: text; background-clip: text; }
-html[data-plate="uv"] .tag b, html[data-plate="uv"] .tag.facts span { color: transparent; -webkit-text-fill-color: transparent; font-family: "Saira Stencil One", sans-serif; font-weight: 400; letter-spacing: .06em; }
-html[data-plate="uv"] .tag.facts { text-transform: uppercase; }
-html[data-plate="uv"] .tag[style*="opacity: 1"] { animation: uvsweep 3.2s cubic-bezier(.4, 0, .3, 1) forwards, uvglow 4s ease-in-out 3.2s infinite; }
-html[data-plate="uv"] .tag::before { content: ""; position: absolute; top: -26px; bottom: -26px; left: var(--uvx); width: 130px; margin-left: -65px; pointer-events: none; background: radial-gradient(closest-side, rgba(165, 120, 255, .42), rgba(110, 60, 255, .14) 62%, transparent); opacity: 0; }
-html[data-plate="uv"] .tag[style*="opacity: 1"]::before { animation: uvbeam 3.2s linear forwards; }
-@keyframes uvbeam { 0% { opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { html[data-plate="uv"] .tag[style*="opacity: 1"] { animation: none; --uvx: 130%; } html[data-plate="uv"] .tag::before { display: none; } }
+:root form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); opacity: .75; filter: url(#rough); transition: background 160ms, box-shadow 160ms; }
+:root form#mail label.trap::after { display: none; }
+:root form#mail label:focus-within::after { background: var(--acc); opacity: 1; box-shadow: 0 0 10px var(--acc); }
+:root form#mail button { filter: url(#rough); box-shadow: 0 0 0 2px rgba(255, 122, 42, .25), 0 0 18px rgba(255, 122, 42, .4); }
+:root form#mail button:hover { filter: url(#rough) brightness(1.12); }
+@media (max-aspect-ratio: 4/5) { html form#mail { gap: 6px 10px; padding: 10px 12px; } }
 /* plate = neon: a small neon sign / light box on the wall, glowing */
 @keyframes neonflick { 0%, 17%, 19%, 23%, 100% { opacity: 1; } 18%, 21% { opacity: .55; } 22% { opacity: .85; } }
-html[data-plate="neon"] .tag { --neon: #ff4fa3; width: auto; max-width: min(340px, 74vw); background: #0b0c10; border: 2px solid var(--neon); border-radius: 8px; padding: 8px 14px 10px; color: #f6eef2; font-family: "Inter", system-ui, sans-serif; font-weight: 500; text-transform: none; letter-spacing: 0; filter: none; text-shadow: none;
+:root .tag { --neon: #ff4fa3; width: auto; max-width: min(340px, 74vw); background: #0b0c10; border: 2px solid var(--neon); border-radius: 8px; padding: 8px 14px 10px; color: #f6eef2; font-family: "Inter", system-ui, sans-serif; font-weight: 500; text-transform: none; letter-spacing: 0; filter: none; text-shadow: none;
   box-shadow: 0 0 5px var(--neon), 0 0 16px var(--neon), 0 0 38px rgba(255, 79, 163, .35), inset 0 0 12px rgba(255, 79, 163, .4); }
-html[data-plate="neon"] .tag b { display: block; margin-bottom: .35em; font-family: "Inter", system-ui, sans-serif; font-weight: 700; font-size: 1.25em; line-height: 1.2; letter-spacing: .01em; text-transform: none; color: #fff; text-shadow: 0 0 3px #fff, 0 0 9px var(--neon), 0 0 20px var(--neon), 0 0 42px var(--neon); }
-html[data-plate="neon"] #tagFacts { --neon: #ff8a3d; } html[data-plate="neon"] #tagRvf { --neon: #6fd3ff; }
-html[data-plate="neon"] .tag[style*="opacity: 1"] { animation: neonflick 9s linear infinite; }
-html[data-plate="neon"] .tag.facts { text-transform: none; }
-@media (prefers-reduced-motion: reduce) { html[data-plate="neon"] .tag[style*="opacity: 1"] { animation: none; } }
-/* plate = projected: a projector beam throws the facts onto the concrete; a little flicker, dust in the beam */
-@keyframes projflick { 0%, 100% { opacity: 1; } 8% { opacity: .9; } 9% { opacity: 1; } 47% { opacity: .94; } 48% { opacity: 1; } 71% { opacity: .88; } 72% { opacity: .97; } }
-@keyframes dust { from { background-position: 0 0, 0 0, 0 0; } to { background-position: -90px 140px, 70px 210px, -40px 90px; } }
-html[data-plate="projected"] .tag { background: rgba(255, 244, 214, .09); border: 0; border-radius: 1px; padding: 8px 12px; color: #fff4d8; font-family: "Inter", system-ui, sans-serif; font-weight: 600; text-transform: none; letter-spacing: .01em; filter: blur(.25px); text-shadow: 0 0 6px rgba(255, 236, 190, .55);
-  transform: perspective(700px) rotateY(-9deg); transform-origin: 0 50%; box-shadow: 0 0 30px rgba(255, 240, 200, .16); }
-html[data-plate="projected"] .tag b { color: #fff; font-family: "Saira Stencil One", sans-serif; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; }
-html[data-plate="projected"] .tag.facts { text-transform: none; }
-html[data-plate="projected"] .tag::before, html[data-plate="projected"] .tag::after { content: ""; position: absolute; top: -230px; right: -380px; bottom: -6px; left: -8px; z-index: -1; pointer-events: none; clip-path: polygon(100% 0, 0 100%, calc(100% - 372px) 100%); }
-html[data-plate="projected"] .tag::before { background: linear-gradient(to bottom left, rgba(255, 244, 214, .02), rgba(255, 244, 214, .15)); }
-html[data-plate="projected"] .tag::after { background-image: radial-gradient(circle, rgba(255, 246, 220, .85) 0 1px, transparent 1.6px), radial-gradient(circle, rgba(255, 246, 220, .6) 0 1.2px, transparent 2px), radial-gradient(circle, rgba(255, 246, 220, .5) 0 .8px, transparent 1.4px); background-size: 57px 83px, 91px 119px, 37px 61px; animation: dust 14s linear infinite; opacity: .8; }
-html[data-plate="projected"] .tag[style*="opacity: 1"] { animation: projflick 6s steps(1, end) infinite; }
-@media (prefers-reduced-motion: reduce) { html[data-plate="projected"] .tag[style*="opacity: 1"], html[data-plate="projected"] .tag::after { animation: none; } }
-/* plate = panel: a hand-sprayed rectangle with masking-tape edges, the facts stencilled inside */
-html[data-plate="panel"] .tag { background: #e8e1cd; border: 0; border-radius: 0; padding: 12px 18px; color: #15120e; filter: url(#rough); text-shadow: none; font-family: "Saira Stencil One", sans-serif; text-transform: uppercase; letter-spacing: .05em; box-shadow: 0 0 0 3px rgba(232, 225, 205, .2), 0 0 26px 6px rgba(232, 225, 205, .24); }
-html[data-plate="panel"] .tag b { color: #a8280a; font-family: "Saira Stencil One", sans-serif; font-weight: 400; font-size: 1.3em; letter-spacing: .06em; }
-html[data-plate="panel"] .tag.facts { text-transform: uppercase; }
-html[data-plate="panel"] .tag::before, html[data-plate="panel"] .tag::after { content: ""; position: absolute; width: 64px; height: 17px; background: rgba(215, 196, 138, .86); box-shadow: 0 1px 2px rgba(0, 0, 0, .22); clip-path: polygon(0 12%, 4% 0, 8% 14%, 12% 0, 92% 0, 96% 14%, 100% 0, 100% 100%, 96% 86%, 92% 100%, 12% 100%, 8% 86%, 4% 100%, 0 88%); }
-html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; } html[data-plate="panel"] .tag::after { right: -22px; bottom: -6px; rotate: -34deg; }
+:root .tag b { display: block; margin-bottom: .35em; font-family: "Inter", system-ui, sans-serif; font-weight: 700; font-size: 1.25em; line-height: 1.2; letter-spacing: .01em; text-transform: none; color: #fff; text-shadow: 0 0 3px #fff, 0 0 9px var(--neon), 0 0 20px var(--neon), 0 0 42px var(--neon); }
+:root #tagFacts { --neon: #ff8a3d; } :root #tagRvf { --neon: #6fd3ff; }
+:root .tag[style*="opacity: 1"] { animation: neonflick 9s linear infinite; }
+:root .tag.facts { text-transform: none; }
+@media (prefers-reduced-motion: reduce) { :root .tag[style*="opacity: 1"] { animation: none; } }
 </style>
 <svg class="pitch-svg" aria-hidden="true"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></svg>
-<script>
-// pitch only: the style switch is read from the URL once; unknown or missing values mean today's look
-(() => { const q = new URLSearchParams(location.search), pick = (k, ok) => ok.includes(q.get(k)) ? q.get(k) : ok[0], d = document.documentElement.dataset;
-  d.plate = pick("plate", ["dark", "poster", "stencil", "uv", "neon", "projected", "panel"]); d.form = pick("form", ["wall", "glass", "poster"]); d.end = pick("end", ["29", "17", "67"]); d.font = pick("font", ["today", "hand", "sans"]); d.light = pick("light", ["night", "dusk", "day"]); d.street = pick("street", ["bare", "some", "busy"]);
-  d.rvflink = pick("rvflink", ["banner", "ribbon", "chalk"]); d.edgelink = pick("edgelink", ["banner", "billboard", "screens"]); })(); // the link marks: raddavarfruberga a ribbon on a fence or chalk on the pavement; EDGE banners, a billboard or screens
-</script>
 
 <canvas id="c"></canvas>
 <div class="track"></div>
@@ -318,33 +237,6 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
   const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + 2 * TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
   wall.position.set(WX, GROUND - 2 * TILE + (WH + 2 * TILE) / 2, 0); wall.receiveShadow = true; scene.add(wall); // reaches down to the workshop floor
-  // the hole for moment 3 (Tom 11-16: the wall falls apart and the preschool shows behind it). Its edge: r(a) below, the same in JS (holeR)
-  const holeU = { uHC: { value: new THREE.Vector2(0, 0) }, uHR: { value: new THREE.Vector2(1, 1) }, uOpen: { value: 0 }, uCrack: { value: 0 } };
-  wall.material.onBeforeCompile = sh => { Object.assign(sh.uniforms, holeU);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.)).xyz;");
-    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
-      varying vec3 vWP; uniform vec2 uHC, uHR; uniform float uOpen, uCrack;
-      float hh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-      float hn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(hh(i), hh(i + vec2(1, 0)), f.x), mix(hh(i + vec2(0, 1)), hh(i + vec2(1, 1)), f.x), f.y); }
-      float holeD(vec2 p) { vec2 q = (p - uHC) / uHR; float a = atan(q.y, q.x);
-        return length(q) / (1. + .12 * sin(3. * a + 1.) + .07 * sin(7. * a + 2.) + .05 * sin(13. * a + .5) + .03 * sin(23. * a + 4.)); }`)
-      .replace("#include <map_fragment>", `#include <map_fragment>
-        float hd = holeD(vWP.xy); if (hd < uOpen) discard;
-        float aw = fwidth(hd) * 1.5;
-        vec2 cq = vWP.xy - uHC; float cr = length(cq), ca0 = atan(cq.y, cq.x);
-        // an impact, not a drawn star (Tom 11-16): uneven angles, a few cracks missing, wider near the hit, starting from a crushed patch, never meeting in one point
-        float ca = ca0 + .12 * sin(3. * ca0 + 1.) + .06 * sin(5. * ca0 + 2.);
-        float cu = ca * 11. / 6.2832 + (hn(vec2(cr * 2.7, ca * 2.)) - .5) * .55 + (hn(vec2(cr * 13., ca * 5.)) - .5) * .12, cid = floor(cu + .5);
-        float cdst = abs(cu - cid) * 6.2832 / 11. * cr, cw = .007 * (1.4 - .5 * hd / max(uCrack, .01)) * (1. + 1.3 * exp(-cr * 2.2));
-        float R0 = .2 * (.85 + .3 * hn(vec2(ca0 * 2.5, 1.))) * smoothstep(0., .25, uCrack); // the crushed patch grows in the first moment
-        float ck = (1. - smoothstep(cw, cw + fwidth(cdst) * 1.5, cdst)) * (1. - smoothstep(-.15, 0., hd - uCrack * (1.1 + .55 * hh(vec2(cid, 3.)))))
-          * step(.22, hh(vec2(cid, 7.))) * smoothstep(R0 * .75, R0 * 1.05, cr);
-        float crush = (1. - smoothstep(R0 * .85, R0, cr)) * step(.001, uCrack), chip = (smoothstep(R0 * .8, R0, cr) - smoothstep(R0, R0 * 1.2, cr)) * step(.001, uCrack);
-        diffuseColor.rgb *= 1. - crush * (.35 + .35 * hn(vWP.xy * 55.)); // pulverised: darker, grainy
-        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.25, chip * hn(vWP.xy * 40.)); // chipped edge catches the light
-        float rim = uOpen > .01 ? 1. - smoothstep(uOpen, uOpen + .09, hd) : 0.;
-        diffuseColor.rgb *= 1. - .8 * ck;
-        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.18, 1.14, 1.08) * (.75 + .5 * hn(vWP.xy * 30.)), rim);`); };
   const MANHOLE_CUT = `if (vWP.y > ${(G3 - 1.6).toFixed(2)} && min(length(vWP.xz - vec2(${MX_IN.toFixed(2)}, ${MZ.toFixed(2)})), length(vWP.xz - vec2(${MX_OUT.toFixed(2)}, ${MZ.toFixed(2)}))) < ${MR.toFixed(3)}) discard;`; // the two shafts through the street and the ceiling
   const PROF = (() => { const pts = [[-28, GROUND]]; for (const [a, b, h0, h1] of STAIRS) { const t = (b - a) / NSTEP, r = (h0 - h1) / NSTEP;
       pts.push([a, h0]); for (let k = 0; k < NSTEP; k++) { pts.push([a + k * t, h0 - (k + 1) * r], [a + (k + 1) * t, h0 - (k + 1) * r]); } } pts.push([END_X, G3]); return pts; })();
@@ -1002,7 +894,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   function paintOn(file, w, [px, py], [wx, wy], z = .002, [pw, ph] = [1536, 960]) { const h = w * ph / pw, k = w / pw, cx = wx - px * k + w / 2, cy = wy + py * k - h / 2, map = tex(file, true, 1, 1); map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .55,
       normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2)) / TILE, (cy - h / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.9, .9), polygonOffset: true, polygonOffsetFactor: -2 }));
-    m.position.set(cx, cy, z); m.material.onBeforeCompile = wall.material.onBeforeCompile; scene.add(m);
+    m.position.set(cx, cy, z); scene.add(m);
     const at = (u, v) => V(cx - w / 2 + u * k, cy + h / 2 - v * k, 0);
     return { m, at, w, h, k, protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y1), at(x1, y0)]) }; }
   // the tap areas over painted link marks (picture pixels): each at least 48 x 48 px; two marks that sit close share the line between them (each grows away from it), so they never overlap.
@@ -1046,7 +938,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
     const mk = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return c; }, out = mk(), og = out.getContext("2d", { willReadFrequently: true });
     const map = new THREE.CanvasTexture(out); map.encoding = THREE.sRGBEncoding; map.anisotropy = maxAniso;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .6, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }));
-    mesh.position.set(x0 + w / 2, y0 + h / 2, o.z ?? .004); mesh.visible = false; mesh.material.onBeforeCompile = wall.material.onBeforeCompile; scene.add(mesh); // o.z: on a raised panel (EDGE)
+    mesh.position.set(x0 + w / 2, y0 + h / 2, o.z ?? .004); mesh.visible = false; scene.add(mesh); // o.z: on a raised panel (EDGE)
     PROT.push([o.name, V(x0, y0, 0), V(x1, y1, 0)]);
     let seed = [...o.key].reduce((a, c) => a + c.charCodeAt(0), 7); const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
     const sp = { mesh, op: 0, at: 0, draw() { seed = [...o.key].reduce((a, c) => a + c.charCodeAt(0), 7);
@@ -1239,99 +1131,15 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   document.querySelector(".hud").insertAdjacentHTML("beforeend", links.map((l, i) => `<a class="hot" id="hot${i}" href="${l.href}" target="_blank" rel="noopener" aria-label="${l.t}" tabindex="-1"></a>`).join("")
     + '<p class="head">epaRadar: Friends on a live map. Only friends see where you are. Degree project, built by me. React Native, Expo, Supabase, Postgres, pgTAP.</p>');
   const hots = links.map((l, i) => document.getElementById("hot" + i));
-  // ---- moment 3: raddavarfruberga. 1,024 people signed for the preschool: one yellow ribbon each, tied on a fence in front of the
-  // preschool painted on the wall (Tom 11-16). No words from the site (it is Swedish), no signers' names. Words from src/content/look.ts.
-  const BAN = document.documentElement.dataset.rvflink === "banner"; // (Tom 11-19) the wall stays whole: a fence in front of the painting, ribbons on it and the parents' painted sheet
-  const RX = 31, RN = 1024, // RX: 4.5 m further on than before, so the painted house (Tom 11-19) stands where the wall breaks and the sign beside it is clear of the underpass
-     RYEL = new THREE.Color(0xffc81a), NAVY = "15,27,51";
-  // the hole: centre and size; the preschool's yard and its own photo stand behind the wall, seen through it once it breaks
-  const HRX = NARROW ? 2.1 : 2.7, HRY = NARROW ? 2.1 : 2.3, HC = G3 + (NARROW ? 1.35 : 1.25);
-  holeU.uHC.value.set(RX, HC); holeU.uHR.value.set(HRX, HRY);
-  const holeR = a => 1 + .12 * Math.sin(3 * a + 1) + .07 * Math.sin(7 * a + 2) + .05 * Math.sin(13 * a + .5) + .03 * Math.sin(23 * a + 4);
-  const edge3 = (() => { const sh = new THREE.Shape(); for (let i = 0; i <= 120; i++) { const a = i / 120 * 6.2832, r = holeR(a); sh[i ? "lineTo" : "moveTo"](Math.cos(a) * r * HRX, Math.sin(a) * r * HRY); }
-    const g = new THREE.ExtrudeGeometry(sh, { depth: .32, bevelEnabled: false, curveSegments: 1 });
-    const side = new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, 1.5, 1.5), normalMap: tex("assets/wall4_nor_gl.jpg", false, 1.5, 1.5), color: 0x9a9890, roughness: .95, side: THREE.BackSide });
-    const m = new THREE.Mesh(g, [new THREE.MeshBasicMaterial({ visible: false }), side]); m.position.set(RX, HC, -.32); m.visible = false; scene.add(m); return m; })();
-  const rebar = new THREE.Group(); { const rust = new THREE.MeshStandardMaterial({ color: 0x5b3a26, roughness: .7, metalness: .5 });
-    for (const a of [.35, 1.2, 2.3, 2.9, 3.6]) { const r = holeR(a), x = Math.cos(a) * r * HRX, y = Math.sin(a) * r * HRY, ix = -Math.cos(a), iy = -Math.sin(a);
-      const c = new THREE.QuadraticBezierCurve3(V(x - ix * .08, y - iy * .08, -.16), V(x + ix * .22, y + iy * .22, -.12), V(x + ix * .34, y + iy * .34 - .14, -.05 + Math.random() * .1));
-      rebar.add(new THREE.Mesh(new THREE.TubeGeometry(c, 10, .011, 6), rust)); } }
-  rebar.position.set(RX, HC, 0); rebar.visible = false; scene.add(rebar);
-  // behind: the yard (gravel, daylight) and the preschool's own public photo (raddavarfruberga public/img/vardfruberga-entre.jpg), unlit and out of the fog
-  const PW3 = NARROW ? 9 : 10.5, PH3 = PW3 * 900 / 1600, PZ = -6;
-  const photo3 = new THREE.Mesh(new THREE.PlaneGeometry(PW3, PH3), new THREE.MeshBasicMaterial({ map: tex("assets/rvf_photo.jpg", true, 1, 1), fog: false, color: 0xf2f2f2 }));
-  photo3.material.map.wrapS = photo3.material.map.wrapT = THREE.ClampToEdgeWrapping; photo3.position.set(RX, G3 + PH3 / 2 - .35, PZ); photo3.visible = false; scene.add(photo3); if (!BAN) PROT.push(["the preschool photo", V(RX - HRX * .8, HC - HRY * .8, 0), V(RX + HRX * .8, HC + HRY * .8, 0)]); // what shows through the hole (its rough edge swings 12 %: the box is 80 % of it)
-
-  const yard3 = new THREE.Mesh(new THREE.PlaneGeometry(PW3 + 2, -PZ), new THREE.MeshBasicMaterial({ map: tex("assets/road_diff.jpg", true, (PW3 + 2) / 3, -PZ / 3), color: 0xc9b493, fog: false }));
-  yard3.rotation.x = -Math.PI / 2; yard3.position.set(RX, G3 + .004, PZ / 2); yard3.visible = false; scene.add(yard3);
-  const sun3 = new THREE.SpotLight(0xffe0b0, 0, 24, .34, 1, 1.1); sun3.position.set(RX, G3 + 3.6, -5); sun3.target.position.set(RX, G3, 7); scene.add(sun3, sun3.target);
-  const fill3 = new THREE.SpotLight(0xfff0d8, 0, 8, .9, .6, 1); fill3.position.set(RX + .5, G3 + 3, -4.5); fill3.target.position.set(RX, G3 + .8, -1); scene.add(fill3, fill3.target); // daylight on the fence and ribbons
-  // the fall: chunks of concrete and a cloud of dust, once
-  const chG = new THREE.IcosahedronGeometry(1, 0).toNonIndexed(); { const pa = chG.attributes.position, mv = new Map(); for (let i = 0; i < pa.count; i++) { const k = [pa.getX(i), pa.getY(i), pa.getZ(i)].map(v => v.toFixed(3)).join(); if (!mv.has(k)) mv.set(k, .7 + Math.random() * .5); const f = mv.get(k); pa.setXYZ(i, pa.getX(i) * f, pa.getY(i) * f, pa.getZ(i) * f); } chG.computeVertexNormals(); }
-  const CHN = 70, chunks = new THREE.InstancedMesh(chG, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, .3, .3), color: 0xb8b8b2, roughness: .95, flatShading: true }), CHN);
-  chunks.frustumCulled = false; chunks.visible = false; scene.add(chunks); { const c = new THREE.Color(); for (let i = 0; i < CHN; i++) chunks.setColorAt(i, c.setScalar(.6 + Math.random() * .45)); }
-  const CH = [...Array(CHN)].map(() => { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * .9 * holeR(a), big = Math.random() < .2;
-    const sz = big ? .14 + Math.random() * .12 : .04 + Math.random() * .08;
-    return { p: V(RX + Math.cos(a) * r * HRX, Math.max(G3 + .2, HC + Math.sin(a) * r * HRY), -.05 - Math.random() * .25), v: V((Math.random() - .5) * 1.4, Math.random() * 1.6, .6 + Math.random() * 2.4),
-      d: Math.random() * .35, s: V(sz * (.8 + Math.random() * .6), sz * (.35 + Math.random() * .35), sz * (.8 + Math.random() * .6)), q: new THREE.Quaternion().random(), w: V(Math.random() - .5, Math.random() - .5, Math.random() - .5).multiplyScalar(9), rest: false }; });
-  const dustN = 180, dustP = new Float32Array(dustN * 3), dustV = [...Array(dustN)].map(() => V((Math.random() - .5) * 2.2, Math.random() * 1.1 - .2, Math.random() * 2.6));
-  const dcv = document.createElement("canvas"); dcv.width = dcv.height = 64; { const g = dcv.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,255,255,.3)"); gr.addColorStop(.5, "rgba(255,255,255,.12)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); }
-  const dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute("position", new THREE.BufferAttribute(dustP, 3));
-  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ map: new THREE.CanvasTexture(dcv), color: 0xc9b9a0, size: .7, transparent: true, depthWrite: false, opacity: 0 })); dust.frustumCulled = false; dust.visible = false; scene.add(dust);
-  const dust0 = [...Array(dustN)].map(() => { const a = Math.random() * 6.283, r = Math.sqrt(Math.random()) * holeR(a); return V(RX + Math.cos(a) * r * HRX, Math.max(G3 + .1, HC + Math.sin(a) * r * HRY), Math.random() * .2); });
-  let simT = 0; const BRK = .8, RIB0 = 1.6; // the wall cracks for BRK s, breaks, then the ribbons start at RIB0
-  function fall3(t) { // steps the chunks to time t after the break (fixed steps, at most 4 s of falling)
-    const M = new THREE.Matrix4(), dq = new THREE.Quaternion(), e = new THREE.Euler(), Z = V(0, 0, 0), dt = 1 / 120, T = Math.min(t, 4);
-    while (simT < T) { simT += dt; for (const c of CH) { if (c.rest || simT < c.d) continue;
-      c.v.y -= 9.8 * dt; c.p.addScaledVector(c.v, dt); dq.setFromEuler(e.set(c.w.x * dt, c.w.y * dt, c.w.z * dt)); c.q.multiply(dq);
-      const fl = G3 + c.s.y * .7; if (c.p.y < fl) { c.p.y = fl; c.v.y *= -.28; c.v.x *= .55; c.v.z *= .55; c.w.multiplyScalar(.5); if (Math.abs(c.v.y) < .25 && c.v.length() < .3) c.rest = true; } } }
-    CH.forEach((c, i) => { M.compose(c.p, c.q, simT < c.d ? Z : c.s); chunks.setMatrixAt(i, M); }); chunks.instanceMatrix.needsUpdate = true; }
-  // the fence: posts, a top rail and chain-link mesh
-  const MK = (NARROW ? 6.4 : 9.2) / 1536, FXC = BAN ? RX + (760 - 1290) * MK : RX; // the painting's scale and the middle of its picture (paintOn below)
-  const FW = BAN ? (NARROW ? 5.6 : 8) : NARROW ? 5 : 7.4, FH = BAN ? 1.2 : 1.85, FZ = BAN ? 1.1 : -1.3, FX0 = FXC - FW / 2;
-  const metal3 = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: .8, roughness: .45 });
-  if (!BAN) for (let x = FX0; x <= FX0 + FW + .01; x += FW / Math.round(FW / 2.1)) { const po = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, FH + .06, 10), metal3); po.position.set(x, G3 + (FH + .06) / 2, FZ); scene.add(po); }
-  if (!BAN) { const rail = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, FW, 8), metal3); rail.rotation.z = Math.PI / 2; rail.position.set(FXC, G3 + FH, FZ); scene.add(rail); }
-  const lc = document.createElement("canvas"); lc.width = lc.height = 128; { const g = lc.getContext("2d"); g.strokeStyle = "#ffffff"; g.lineWidth = 11; g.beginPath(); g.moveTo(0, 0); g.lineTo(128, 128); g.moveTo(128, 0); g.lineTo(0, 128); g.stroke(); }
-  const lTex = new THREE.CanvasTexture(lc); lTex.wrapS = lTex.wrapT = THREE.RepeatWrapping; lTex.repeat.set(FW / .1, FH / .1); lTex.anisotropy = maxAniso;
-  const link3 = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), new THREE.MeshStandardMaterial({ color: 0x9aa0a6, metalness: .7, roughness: .4, alphaMap: lTex, transparent: true, depthWrite: false, opacity: .9, side: THREE.DoubleSide }));
-  link3.material.map = null; link3.position.set(FXC, G3 + FH / 2, FZ); if (!BAN) scene.add(link3);
-  // the ribbons: one instanced strip pair (a knot and two tails), tied at points of the mesh; each appears at its own time and moves in the wind
-  const rib = (() => { const pos = [], idx = []; const tail = (ang, L, w) => { const b = pos.length / 3; for (let i = 0; i <= 6; i++) { const t = i / 6 * L; for (const sx of [-1, 1]) pos.push(Math.sin(ang) * t + sx * w / 2 * Math.cos(ang), -Math.cos(ang) * t, 0); if (i < 6) { const k = b + i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); } } };
-    tail(.13, .19, .036); tail(-.1, .16, .036); const g = new THREE.InstancedBufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; })();
-  const rU = { uClk: { value: -1 }, uTm: { value: 0 } }, aIn = new Float32Array(RN * 4);
-  const ribMat = new THREE.MeshStandardMaterial({ color: RYEL, roughness: .42, side: THREE.DoubleSide, emissive: RYEL, emissiveIntensity: .06 }); // satin ribbon
-  ribMat.onBeforeCompile = sh => { Object.assign(sh.uniforms, rU);
-    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nuniform float uClk, uTm; attribute vec4 aIn;")
-      .replace("#include <begin_vertex>", `#include <begin_vertex>
-        float s = max(0., -transformed.y), k = smoothstep(aIn.x, aIn.x + .3, uClk), pop = k + sin(k * 3.1416) * .35;
-        transformed.z += sin(s * 22. - uTm * 6.5 + aIn.y) * .9 * s * s * 4. + sin(uTm * 2.3 + aIn.y * 1.7) * .25 * s;  // the wind
-        transformed.x += sin(uTm * 3.1 + aIn.y * 2.3) * .35 * s;
-        transformed *= pop * aIn.z;`); };
-  const ribs = new THREE.InstancedMesh(rib, ribMat, RN); ribs.frustumCulled = false; scene.add(ribs);
-  if (BAN) { const N = Math.round(FW / .15), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = V(1, 1, 1), order = [...Array(N).keys()].sort(() => Math.random() - .5); ribs.count = N; // one by one along the rail, then faster
-    for (let i = 0; i < N; i++) { const x = FX0 + .08 + (i + .5 + (Math.random() - .5) * .6) / N * (FW - .16), y = G3 + FH - .015 - Math.random() * .03;
-      Q.setFromAxisAngle(V(0, 0, 1), (Math.random() - .5) * .5); M.compose(V(x, y, FZ + .2), Q, V(1.5, 1.5, 1.5)); ribs.setMatrixAt(i, M); // in front of the sheet: they hang over its top edge
-      const j = order[i], at = RIB0 - 1.2 + (j < 6 ? j * .3 : 1.8 + 2 * Math.pow((j - 6) / (N - 6), .7)); aIn.set([at, Math.random() * 6.28, .8 + Math.random() * .45, 0], i * 4); }
-    rib.setAttribute("aIn", new THREE.InstancedBufferAttribute(aIn, 4)); ribs.instanceMatrix.needsUpdate = true; }
-  else { const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = V(1, 1, 1), cols = Math.round(Math.sqrt(RN * FW / (FH * .78))), rows = Math.ceil(RN / cols), order = [...Array(RN).keys()].sort(() => Math.random() - .5);
-    for (let i = 0; i < RN; i++) { const c = i % cols, r = (i / cols) | 0, x = FX0 + .1 + (c + .5 + (Math.random() - .5) * .5) / cols * (FW - .2), y = G3 + .3 + (r + .5 + (Math.random() - .5) * .4) / rows * (FH * .78);
-      Q.setFromAxisAngle(V(0, 0, 1), (Math.random() - .5) * .5); M.compose(V(x, y, FZ + .012), Q, S); ribs.setMatrixAt(i, M);
-      const j = order.indexOf(i), at = RIB0 + (j < 6 ? j * .35 : 2.1 + 2.6 * Math.pow((j - 6) / (RN - 6), .62)); // a few one by one, then faster and faster
-      aIn.set([at, Math.random() * 6.28, .8 + Math.random() * .45, 0], i * 4); }
-    rib.setAttribute("aIn", new THREE.InstancedBufferAttribute(aIn, 4)); ribs.instanceMatrix.needsUpdate = true; }
-  // the name, the painted house and the link (Tom 11-19: soft pastel community mural): the painting is on the wall from the start, the house on the hole's side,
-  // so the wall breaks open through the painted preschool and the real one shows. Its foot (picture row 911) stands on the street. The link is a mark of its own story
-  // (Tom 11-19, ?rvflink=): a yellow ribbon, written on in marker, tied on a stretch of the painted fence on the left (it flutters a little), or the children's chalk on the pavement.
-  const RVP = paintOn("assets/rvf_wall.webp", NARROW ? 6.4 : 9.2, [1290, BAN ? 872 : 911], [RX, G3]);
-  for (const [n, b] of BAN ? [["raddavarfruberga's name", [20, 180, 1000, 480]], ["raddavarfruberga's preschool", [860, 230, 1535, 872]], ["raddavarfruberga's banner", [77, 520, 842, 775]]]
-    : [["raddavarfruberga's name", [40, 260, 1135, 560]], ["raddavarfruberga's house", [940, 260, 1535, 850]]]) RVP.protect(n, b);
-  let RVF_TAGS = [], RVF_PAINT = null; // the stack as tags round the piece; the banner's words sprayed on (k: 0 to 1)
-  const RVF_LINK = document.documentElement.dataset.rvflink;
-  let RVF_BOX, RVF_B = RVP, RVF_FLUTTER = null, RVF_GLOW; // the mark's tap area (in its own space: left, top, right, bottom), that space, the ribbon's wind, its glow
-  if (BAN) { // (Tom 11-19) the banner is painted in the piece (picture pixels 77, 520 to 842, 775); its words are set by hand, sprayed on when you arrive, and it is the link.
-    // The stack: each tool its own small tag on bare concrete round the piece, in the piece's colours, sprayed in one after another.
-    const BB = [77, 520, 842, 775], tl = RVP.at(BB[0] + 45, BB[1] + 40), br = RVP.at(BB[2] - 45, BB[3] - 22), TW = br.x - tl.x, TH = tl.y - br.y, CW = 1400, CH = Math.round(CW * TH / TW);
+  // ---- moment 3: raddavarfruberga (Tom 11-19): one graffiti piece, soft pastel community mural: the name, the preschool sprayed in the name's style and
+  // the parents' banner painted in. The banner's words are set by hand and sprayed on when you arrive; the banner is the link. No signers' names (never public).
+  const RX = 31; // 4.5 m further on than the first version, so the sign beside it is clear of the underpass
+  const RVP = paintOn("assets/rvf_wall.webp", NARROW ? 6.4 : 9.2, [1290, 872], [RX, G3]); // its foot (picture row 872) stands on the street
+  for (const [n, b] of [["raddavarfruberga's name", [20, 180, 1000, 480]], ["raddavarfruberga's preschool", [860, 230, 1535, 872]], ["raddavarfruberga's banner", [77, 520, 842, 775]]]) RVP.protect(n, b);
+  let RVF_TAGS, RVF_PAINT; // the stack as tags round the piece; the banner's words sprayed on (k: 0 to 1)
+  const RVF_BOX = [77, 520, 842, 775], RVF_GLOW = () => makeGlow("assets/rvf_wall.webp", RVP, RVF_BOX, { rect: true, colour: "#ffe9a8", fill: 0, hole: 1 }); // the banner: the link's tap area and its glow
+  { // the banner's words, drawn once and sprayed on left to right; then the stack: each tool its own small tag round the piece, in its colours
+    const BB = RVF_BOX, tl = RVP.at(BB[0] + 45, BB[1] + 40), br = RVP.at(BB[2] - 45, BB[3] - 22), TW = br.x - tl.x, TH = tl.y - br.y, CW = 1400, CH = Math.round(CW * TH / TW);
     const full = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), show = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), bt = new THREE.CanvasTexture(show);
     bt.encoding = THREE.sRGBEncoding; bt.anisotropy = maxAniso;
     const words = () => { const g = full.getContext("2d"), RED = "#b0231c", lines = ["Don't kick", "our kids out"]; g.clearRect(0, 0, CW, CH); g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = RED;
@@ -1343,52 +1151,29 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
       shown = -1; };
     let shown = -1; document.fonts.load('100px "Sedgwick Ave Display"').then(words, words);
     const ban = new THREE.Mesh(new THREE.PlaneGeometry(TW, TH), new THREE.MeshStandardMaterial({ map: bt, transparent: true, depthWrite: false, roughness: .7, polygonOffset: true, polygonOffsetFactor: -3 }));
-    ban.material.onBeforeCompile = wall.material.onBeforeCompile; ban.position.set(tl.x + TW / 2, br.y + TH / 2, .005); ban.renderOrder = 2; scene.add(ban); // after the painting: both are see-through layers on the wall
+    ban.position.set(tl.x + TW / 2, br.y + TH / 2, .005); ban.renderOrder = 2; scene.add(ban); // after the painting: both are see-through layers on the wall
     RVF_PAINT = k => { k = Math.round(k * 60) / 60; if (k === shown) return; shown = k; const g = show.getContext("2d"); g.clearRect(0, 0, CW, CH); if (k <= 0) { bt.needsUpdate = true; return; }
       const x = k * CW * 1.1; g.drawImage(full, 0, 0); g.globalCompositeOperation = "destination-in"; const gr = g.createLinearGradient(x - CW * .1, 0, x, 0); gr.addColorStop(0, "#000"); gr.addColorStop(1, "rgba(0,0,0,0)");
       g.fillStyle = gr; g.fillRect(0, 0, CW, CH); g.globalCompositeOperation = "source-over"; bt.needsUpdate = true; }; // left to right, a soft front like a can moving along
-    RVF_BOX = BB; RVF_GLOW = () => makeGlow("assets/rvf_wall.webp", RVP, BB, { rect: true, colour: "#ffe9a8", fill: 0, hole: 1 });
     const R = ([u0, v0, u1, v1]) => [RVP.at(u0, 0).x, RVP.at(0, v1).y, RVP.at(u1, 0).x, RVP.at(0, v0).y];
     RVF_TAGS = [["Next.js", [60, 70, 420, 180], "#ffd23a"], ["TypeScript", [470, 75, 930, 185], "#4fb6ee"], ["Supabase", [1010, 95, 1400, 205], "#ffd23a"], ["Resend", [90, 785, 420, 872], "#4fb6ee"], ["Vercel", [500, 785, 800, 872], "#ffd23a"]]
-      .map(([t, b, c], i) => makeSpray({ key: "rvfTag" + i, name: "raddavarfruberga's tag " + t, colour: c, stack: [t], row: true, fill: .62, rect: R(b) })); }
-  else if (RVF_LINK === "ribbon") { // the fence stretch and the ribbon (its own picture, 330 x 250 px, tied at picture pixel 14, 690); the band itself is picture pixels 44, 698 to 314, 820
-    paintOn("assets/rvf_fence.webp", RVP.w, [0, 0], [RVP.at(0, 0).x, RVP.at(0, 0).y], .003).m.renderOrder = 1; RVP.protect("the fence and the ribbon", [20, 640, 310, 912]);
-    const rb = paintOn("assets/rvf_ribbon.webp", 330 * RVP.k, [0, 0], [RVP.at(14, 690).x, RVP.at(14, 690).y], .005, [330, 250]), rg = new THREE.PlaneGeometry(rb.w, rb.h, 30, 8), rp = rg.attributes.position, r0 = rp.array.slice(); rb.m.geometry = rg; rb.m.renderOrder = 2; Object.assign(rb.m.material, { emissive: new THREE.Color(0xffffff), emissiveMap: rb.m.material.map, emissiveIntensity: .5 }); // the band stays yellow in the shade of the wall
-    RVF_FLUTTER = t => { for (let i = 0; i < rp.count; i++) { const x = r0[i * 3], y = r0[i * 3 + 1], u = (x + rb.w / 2) / rb.w, v = (rb.h / 2 - y) / rb.h, free = Math.max(0, u - .2), tail = Math.max(0, v - .5) * 2, ph = t * 3.2;
-        rp.setXYZ(i, x + Math.sin(ph * .8 + v * 5) * .03 * tail * (1 - u), y + Math.sin(ph * 1.1 + u * 9) * .012 * free, .045 + Math.sin(ph + u * 8) * .02 * free + Math.sin(ph * 1.3 + v * 6) * .02 * tail); } // always in front of the wall: a ribbon never goes through it
-      rp.needsUpdate = true; rg.computeVertexNormals(); };
-    RVF_BOX = [44, 698, 314, 820]; const RIBB = { at: (u, v) => RVP.at(14 + u, 690 + v), k: RVP.k }; RVF_GLOW = () => makeGlow("assets/rvf_ribbon.webp", RIBB, [30, 8, 300, 130], { colour: "#ffd54a" }); }
-  else { // the chalk, 4.2 x 2.1 m flat on the pavement in front of the wall, drawn deeper than it is high, as a flat thing is seen from a low angle
-    const CK = NARROW ? { w: 4.8, d: 3.0, x: RVP.at(590, 0).x, z0: .1 } : { w: 4.2, d: 2.1, x: RVP.at(420, 0).x, z0: .5 }, ckm = new THREE.Mesh(new THREE.PlaneGeometry(CK.w, CK.d), new THREE.MeshStandardMaterial({ map: tex("assets/rvf_chalk.webp", true, 1, 1), transparent: true, depthWrite: false, roughness: 1, emissive: 0xffffff, emissiveIntensity: .8, polygonOffset: true, polygonOffsetFactor: -4 }));
-    ckm.material.emissiveMap = ckm.material.map; ckm.rotation.x = -Math.PI / 2; ckm.position.set(CK.x, G3 + .004, CK.z0 + CK.d / 2); scene.add(ckm); PROT.push(["the chalk on the pavement", V(CK.x - CK.w / 2, G3, CK.z0 + CK.d), V(CK.x + CK.w / 2, G3, CK.z0)]);
-    const CKB = { at: (u, v) => V(CK.x - CK.w / 2 + u * CK.w / 1500, G3, CK.z0 + v * CK.d / 640), k: CK.w / 1500, kv: CK.d / 640, flat: true };
-    RVF_BOX = [30, 40, 1480, 600]; RVF_B = CKB; RVF_GLOW = () => makeGlow("assets/rvf_chalk.webp", CKB, RVF_BOX); }
+      .map(([t, b, c], i) => makeSpray({ key: "rvfTag" + i, name: "raddavarfruberga's tag " + t, colour: c, stack: [t], row: true, fill: .62, rect: R(b) }));
+  }
   const lamp3 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp3.position.set(RX - 9, 3.8 - 2 * DROP, 4.4); lamp3.target.position.set(RX - 1.6, .3 - 2 * DROP, 0); lamp3.castShadow = false; scene.add(lamp3, lamp3.target);
   document.querySelector(".hud").insertAdjacentHTML("beforeend", '<a class="hot" id="hot3" href="https://raddavarfruberga.se" target="_blank" rel="noopener" aria-label="Open the site" tabindex="-1"></a>'
     + '<div class="tag facts" id="tagRvf"><b>raddavarfruberga.se</b>We started this site to collect signatures for our preschool.</div>');
   const hot3 = document.getElementById("hot3"), tagRvf = document.getElementById("tagRvf");
-  const RVF_SP = BAN ? { fade() {} } : makeSpray({ key: "rvf", name: "raddavarfruberga's stack", colour: "#8cc7ee", stack: ["Next.js", "TypeScript", "Supabase", "Resend", "Vercel"], row: true, rect: [RVP.at(40, 0).x, RVP.at(0, 235).y, RVP.at(900, 0).x, RVP.at(0, 70).y] });
   svg.insertAdjacentHTML("beforeend", '<line id="l7"/><circle id="c7" r="4"/>'); const l7 = svg.querySelector("#l7"), c7 = svg.querySelector("#c7");
-  let rvfStart = 0; const RVF_END = BAN ? 1.8 : RIB0 + 2.9; // the tag and the facts come while the last ribbons are tied
+  let rvfStart = 0; const RVF_END = 1.8; // the label comes once the banner's words are on
   let endK = 0; // how far the camera has left raddavarfruberga for the manhole
   function rvfAt(now, walk3, end3) {
-    lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3)); rU.uTm.value = now / 1000;
+    lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3));
     if (introOver && walk3 > .5 && !rvfStart) rvfStart = now; // once per visit
-    const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1; rU.uClk.value = sec;
-    // the break: cracks run, then the wall gives, chunks fall out onto the street, dust, daylight floods through
-    const tb = BAN ? -1 : sec - BRK, op = tb < 0 ? 0 : 1 - Math.pow(1 - cl(tb / .45), 3);
-    holeU.uCrack.value = sec < 0 || BAN ? 0 : sm(cl(sec / BRK)) * .95 + .35 * sm(cl(tb / .6)); holeU.uOpen.value = op;
-    const open = op > .01; edge3.visible = open; edge3.scale.set(op, op, 1); rebar.visible = op > .95; ribs.visible = !BAN && open; photo3.visible = yard3.visible = open;
-    chunks.visible = open; if (open) fall3(tb);
-    const dk = tb < 0 ? 0 : cl(tb / 4.5); dust.visible = tb > 0 && dk < 1;
-    if (dust.visible) { const dr = 1 - Math.exp(-tb * 1.6); for (let i = 0; i < dustN; i++) { const o = dust0[i], v = dustV[i]; dustP[i * 3] = o.x + v.x * dr; dustP[i * 3 + 1] = Math.max(G3 + .05, o.y + v.y * dr - .12 * tb); dustP[i * 3 + 2] = o.z + v.z * dr; }
-      dustGeo.attributes.position.needsUpdate = true; dust.material.opacity = .7 * (1 - dk) * sm(cl(tb / .15)); dust.material.size = 1.4 + 2.4 * dk; }
-    const day = tb < 0 ? 0 : sm(cl(tb / 1.2)) * sm(cl((walk3 - .3) / .3)); sun3.intensity = (NARROW ? 9 : 18) * day; fill3.intensity = 7 * day;
-    const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0); RVF_SP.fade(showL);
-    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - HRX * .4, G3 + .1, .3) : RVP.at(BAN ? 1560 : RVF_LINK === "ribbon" ? 308 : 300, 650), NARROW ? 14 : 8, NARROW ? 70 : 20); // phone: below the street, where there is room; laptop: on the bare concrete between the link mark and the house
-    if (RVF_FLUTTER && walk3 > .3 && end3 < .8) RVF_FLUTTER(now / 1000);
-    if (RVF_PAINT) RVF_PAINT(REDUCED ? 1 : sec < 0 ? 0 : cl((sec - .3) / 1.6)); RVF_TAGS.forEach((t, i) => t.fade(showL && sec > RVF_END + .2 + i * .3));
-    placeHots([hot3], [RVF_BOX], RVF_B, sec >= .3 && walk3 > .5 && endK < .5); } // the link is the mark of this wall (the ribbon or the chalk), once the camera is at the wall
+    const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1;
+    const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0);
+    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - .84, G3 + .1, .3) : RVP.at(1300, 872), NARROW ? 14 : 8, NARROW ? 70 : 34); // below the painting's foot, on the dark street, where the neon box has room
+    RVF_PAINT(REDUCED ? 1 : sec < 0 ? 0 : cl((sec - .3) / 1.6)); RVF_TAGS.forEach((t, i) => t.fade(showL && sec > RVF_END + .2 + i * .3));
+    placeHots([hot3], [RVF_BOX], RVP, sec >= .3 && walk3 > .5 && endK < .5); } // the banner is the link, once the camera is at the wall
 
   // ---- the ending (storyboard 11-16): past raddavarfruberga a hatch in the pavement, steps down along the wall into a workshop under the street.
   // In it Tom's own tools in a row, biggest first: the self-hosted platform, ttoolbox, dot, tthermal. Steps up at the far end climb out to EDGE,
@@ -1449,16 +1234,16 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   { const w = XW1 - XW0, h = XWT - G3 + .6, m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), conc(w, h, XW0, G3 - .6, 0xc9ccd0)); m.position.set((XW0 + XW1) / 2, G3 - .6 + h / 2, 0); scene.add(m);
     const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, .5 / TILE), envMapIntensity: .3 })); cap.position.set((XW0 + XW1) / 2, XWT - .02, -.17); scene.add(cap); }
   // dawn: a sky that lightens from night, the city's roofs against it, a low warm light over the last wall
-  const skyU = { uDawn: { value: 0 }, uGrey: { value: 0 } };
+  const skyU = { uDawn: { value: 0 } };
   const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(220, 110), new THREE.ShaderMaterial({ uniforms: skyU, depthWrite: false, fog: false,
     vertexShader: "varying vec3 vP; void main(){ vP = (modelMatrix * vec4(position, 1.)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vP, 1.); }",
-    fragmentShader: `varying vec3 vP; uniform float uDawn, uGrey;
+    fragmentShader: `varying vec3 vP; uniform float uDawn;
       void main(){ float h = clamp((vP.y - ${(G3 + 1).toFixed(2)}) / 36., 0., 1.);
         vec3 night = mix(vec3(.012, .015, .026), vec3(.003, .004, .009), h);
         vec3 dawn = mix(mix(vec3(1.05, .46, .22), vec3(.5, .3, .45), smoothstep(.1, .4, h)), vec3(.05, .08, .19), smoothstep(.35, .95, h)); /* the warm band high enough to show over the last wall */
         float sun = exp(-length((vP.xy - vec2(100., ${(G3 + 1.5).toFixed(2)})) * vec2(.05, .14)));
         dawn += vec3(1.4, .7, .32) * sun * .7;
-        gl_FragColor = vec4(mix(mix(night, dawn, uDawn), mix(vec3(.55, .58, .63), vec3(.8, .83, .87), h), uGrey), 1.); }` }));
+        gl_FragColor = vec4(mix(night, dawn, uDawn), 1.); }` }));
   skyMesh.position.set(103, G3 + 30, -80); scene.add(skyMesh);
   // the city against the sky: a hazy far row and a dark near row of roofs, a few windows still lit
   const roofs = (col, hMin, hMax, lit) => { const c = document.createElement("canvas"); c.width = 2048; c.height = 410; const g = c.getContext("2d"); let x = 0;
@@ -1475,8 +1260,8 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   const dawnL = new THREE.SpotLight(0xffc4a8, 0, 45, .65, .9, 1.1); dawnL.position.set(92, G3 + 9, 18); dawnL.target.position.set(76, G3 + 1, 0); scene.add(dawnL, dawnL.target);
   cityFar.material.color.setScalar(.6); const FOG0 = scene.fog.color.clone(), FOG1 = new THREE.Color(0x221c26), SKY0 = sky.color.clone(), SKYW = new THREE.Color(0xd69a86);
   // EDGE (Tom 11-16, storyboard 6): client work stands apart from my own. Up out of the workshop, in the open: a clean plastered wall, a lamp over it,
-  // and one blockbuster painting on it (Tom 11-19; it replaced the printed sheet), "EDGE". Its two links are marks of its own story (Tom 11-19, ?edgelink=): two banners sprayed under
-  // the letters in the piece's blue, a small pasted billboard beside it, or the addresses lit on a painted laptop and monitor; each is its own picture over the painting. Spray, no pen tag.
+  // and one blockbuster painting on it (Tom 11-19; it replaced the printed sheet), "EDGE". Its two links are marks of its own story (Tom 11-19): two banners sprayed under
+  // the letters in the piece's blue, their own picture over the painting. Spray, no pen tag.
   const EDGE_X = 75, EDGE_W = NARROW ? 3.7 : 6.2, EDGE_H = 4;
   { const w = EDGE_W, h = EDGE_H, m = new THREE.Mesh(new THREE.BoxGeometry(w, h, .05), new THREE.MeshStandardMaterial({ color: 0x9c9a95, roughness: .78, envMapIntensity: .35,
       normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (EDGE_X - w / 2 + 21) / TILE, 0), normalScale: new THREE.Vector2(.12, .12) }));
@@ -1489,10 +1274,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   // laptop, on a phone, the picture pixel that stands at the stop, its height over the floor, the painted areas (picture pixels: left, top, right, bottom)];
   // the link marks are picture pixels too.
   const N_ = NARROW;
-  const EDGE_V = { // the three link marks: the picture over the painting, the two tap areas and the painted areas, all in picture pixels (left, top, right, bottom)
-    banner: { ov: "assets/edge_banner.webp", marks: [[481, 739, 1059, 821], [411, 825, 1129, 907]], areas: [[411, 739, 1129, 907]] },
-    billboard: { ov: "assets/edge_billboard.webp", marks: [[48, 740, 372, 800], [48, 830, 372, 890]], areas: [[14, 698, 406, 912]] },
-    screens: { ov: "assets/edge_screens.webp", marks: [[84, 710, 416, 840], [944, 784, 1312, 906]], areas: [[40, 700, 460, 870], [930, 772, 1320, 950]] } }[document.documentElement.dataset.edgelink];
+  const EDGE_V = { ov: "assets/edge_banner.webp", marks: [[481, 739, 1059, 821], [411, 825, 1129, 907]], areas: [[411, 739, 1129, 907]] }; // the two banners (the links): the picture over the painting, the two tap areas and the painted area, in picture pixels (left, top, right, bottom)
   const tool = (x, key, name, link, plate, more) => Object.assign({ x, key, leave: key + 25, floor: WF, name, links: link ? [{ t: "Code for " + link, href: GHUB + link }] : [], plate }, more);
   const U4 = [
     tool(41, 700, "Self-hosted platform", null, "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool. Built alone.",
@@ -1557,20 +1339,16 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
       if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
       why = WHY[((await a.json().catch(() => ({}))).error) || ""] || "The mail service didn't answer."; } catch (_) { why = "The page couldn't reach the server."; }
     mailErr.textContent = "Couldn't send your message. " + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
-  // ==== STYLE PITCH, PITCH ONLY (Tom 11-19): the end wall is one painting on the graphics card (CREDITS.txt), the bare concrete keyed out so the wall
-  // shows through, the day light on it; the can is the Leave your tag button, the form sits in the painted frame, the two sprayed stencils (GitHub's and LinkedIn's own marks, drawn from their vector shapes) are the links to GitHub and
-  // LinkedIn, the arrow on the ground is Back to the start. ?end=17|29|67 picks the picture (default 29). Picture pixels: 1536 x 960; foot: the row
+  // the end wall (Tom 11-19, try 67): one painting on the graphics card (CREDITS.txt), the bare concrete keyed out so the wall
+  // shows through; the can is the Leave your tag button, the form sits in the painted frame, the two sprayed stencils (GitHub's and LinkedIn's own marks, drawn from their vector shapes) are the links to GitHub and
+  // LinkedIn, the arrow on the ground is Back to the start. Picture pixels: 1536 x 960; foot: the row
   // where the wall meets the ground (what is below it lies flat on the street); form: the dark panel's inside.
-  const ENDS = {
-    17: { foot: 792, can: [570, 295, 760, 705], form: [808, 322, 1396, 664], signs: [[90, 530, 202, 642], [90, 664, 202, 776]], arrow: [470, 828, 985, 902], bbox: [64, 151, 1488, 900] },
-    29: { foot: 797, can: [572, 300, 735, 695], form: [804, 337, 1393, 653], signs: [[80, 530, 192, 642], [80, 664, 192, 776]], arrow: [385, 853, 1130, 915], bbox: [37, 180, 1476, 914] },
-    67: { foot: 795, can: [540, 305, 745, 715], form: [820, 356, 1403, 650], signs: [[80, 530, 192, 642], [80, 664, 192, 776]], arrow: [468, 835, 1080, 915], bbox: [35, 209, 1517, 915] } };
-  const ENDN = document.documentElement.dataset.end, FORM = document.documentElement.dataset.form, E = ENDS[ENDN];
+  const E = { foot: 795, can: [540, 305, 745, 715], form: [820, 356, 1403, 650], signs: [[80, 530, 192, 642], [80, 664, 192, 776]], arrow: [468, 835, 1080, 915], bbox: [35, 209, 1517, 915] };
   const EPW = 13, EK = EPW / 1536, EFLOOR = 2.2, ECX = -1.2; // the painting 13 m wide, centred left of the opening; the floor part is drawn 2.2 times deeper than it is high (a flat arrow seen from a low angle)
   const eU = u => ECX - EPW / 2 + u * EK, eV = v => GROUND + (E.foot - v) * EK;
   const eAt = (u, v) => V(eU(u), eV(v), 0), eFlat = (u, v) => V(eU(u), GROUND, (v - E.foot) * EK * EFLOOR), EB = { at: eAt, k: EK };
   const endMat = extra => new THREE.MeshStandardMaterial(Object.assign({ transparent: true, depthWrite: false, roughness: .55, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }, extra));
-  const eHW = E.foot / 960, eHF = 1 - eHW, eFile = `assets/end_wall_${ENDN}.webp`, eWallH = E.foot * EK, eFD = (960 - E.foot) * EK * EFLOOR;
+  const eHW = E.foot / 960, eHF = 1 - eHW, eFile = "assets/end_wall.webp", eWallH = E.foot * EK, eFD = (960 - E.foot) * EK * EFLOOR;
   const eMapW = tex(eFile, true, 1, eHW, 0, eHF), eMapF = tex(eFile, true, 1, eHF, 0, 0);
   for (const t of [eMapW, eMapF]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   const eWall = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eWallH), endMat({ map: eMapW, normalMap: tex("assets/wall4_nor_gl.jpg", false, EPW / TILE, eWallH / TILE, (ECX - EPW / 2 - (WX - WW / 2)) / TILE, 0), normalScale: new THREE.Vector2(.9, .9) }));
@@ -1630,8 +1408,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
     const { leaveHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(NARROW && ePanT); // a phone looking at the form has no marks to tap: nothing may lie over the form
     if (endS.show) { const [ax, ay] = proj(eAt(E.form[0], E.form[1])), [bx, by] = proj(eAt(E.form[2], E.form[3])), w = bx - ax, h = by - ay;
-      const fw = FORM === "glass" ? Math.max(Math.min(w, 290), w * .66) : FORM === "poster" ? w + 8 : w;
-      mail.style.left = ax + (w - fw) / 2 + "px"; mail.style.width = fw + "px"; mail.style.minHeight = (FORM === "glass" ? 0 : h + (FORM === "poster" ? 8 : 0)) + "px"; mail.style.top = (FORM === "glass" ? ay : (ay + by) / 2 - mail.offsetHeight / 2) + "px"; } // the glass pane hangs from the panel's top edge: the painted title stays clear
+      mail.style.left = ax + "px"; mail.style.width = w + "px"; mail.style.minHeight = h + "px"; mail.style.top = (ay + by) / 2 - mail.offsetHeight / 2 + "px"; } // the form fills the painted frame's dark panel
     const grow = ([a, b, c, d]) => [a - 4, b - 4, c + 4, d + 4];
     placeHots([leaveHot], [E.can], EB, marks && !leaveHot.hidden); placeHots([gitHot, liHot], E.signs.map(grow), EB, marks);
     { const [x0, y0, x1, y1] = E.arrow, p = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([u, v]) => proj(eFlat(u, v)));
@@ -2018,68 +1795,6 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
       saved: (() => { try { return !!localStorage.getItem(TAG_KEY); } catch (_) { return false; } })(), leave: !leaveB.hidden,
       sent: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).sent || null; } catch (_) { return null; } })(), id: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).id || null; } catch (_) { return null; } })() }),
     held: () => HELD.length, layer: () => storeW && { stretches: storeW.want, up: storeW.done, shown: storeW.meshes.filter(m => m && m.material.map !== wallEmpty).length }, store: () => document.documentElement.dataset.storeTags || null, paintAt: (u, v) => tgc.getImageData(u, v, 1, 1).data[3], size: [TW, TFH, TH], drips: () => tag.strokes.reduce((n, s) => n + s.dr.length, 0), running: () => tag.runs.length };
-  // ==== STYLE PITCH, PITCH ONLY (Tom 11-19): ?light=night|dusk|day and ?street=bare|some|busy. The defaults (night, bare) change nothing. ====
-  // light: before each render the lights and the sky colours are set to the look, after it they are put back as the walk set them.
-  const LOOKS = { dusk: { sky: [0xffa684, 0x3a2430, 1.1], bg: 0x3a2a3c, fog: 0x4a3340, fogK: .85, dir: [0xffa070, .85], lamp: 1, tube: [0xffe6cc, .5], expo: 1, dawn: .55, grey: 0 },
-    day: { sky: [0xe3e8ee, 0x8f8d88, 1.35], bg: 0xa9b2bc, fog: 0xa3aab2, fogK: .6, dir: [0xffffff, .9], lamp: 0, tube: [0xfff1de, .4], expo: 1.1, dawn: 0, grey: 1 } }[document.documentElement.dataset.light];
-  const lookDir = LOOKS && new THREE.DirectionalLight(LOOKS.dir[0], LOOKS.dir[1]), lookTube = new Set([tubeLight, roomFill]), lookDay = new Set([sun3, fill3, bounce]);
-  if (lookDir) { lookDir.position.set(-3, 5, 9); scene.add(lookDir); }
-  const kBg = new THREE.Color(), kFog = new THREE.Color(), kSun = new THREE.Color();
-  let lookLights = null, lookSaved = null;
-  function lookOn(sv) { if (!LOOKS || duskAt || adm.view) return;
-    if (!lookLights) { lookLights = []; scene.traverse(o => { if (o.isLight && o !== sky && o !== lookDir && o !== sun) lookLights.push(o); }); }
-    const full = sv < CUT; // from the cut on, the walk is in its own morning: only the sky colour is tinted
-    lookSaved = { sky: [sky.color.getHex(), sky.groundColor.getHex(), sky.intensity], bg: scene.background.getHex(), fog: scene.fog.color.getHex(), dens: scene.fog.density, expo: renderer.toneMappingExposure, dawn: skyU.uDawn.value,
-      bulb: bulbM.emissiveIntensity, tube: [tubeM.emissive.getHex(), tubeM.emissiveIntensity, tubeBad.emissiveIntensity], lights: [] };
-    if (!full) { if (LOOKS.grey) { lookSaved = null; return; } scene.background.lerp(kBg.set(LOOKS.bg), .6); scene.fog.color.lerp(kFog.set(LOOKS.fog), .6); lookSaved.sun = true; return; }
-    for (const L of lookLights) { lookSaved.lights.push([L, L.intensity, L.color.getHex()]);
-      if (lookTube.has(L)) { L.color.set(LOOKS.tube[0]); L.intensity *= LOOKS.tube[1] * (LOOKS.lamp ? 1 : 1.8); } else if (!lookDay.has(L)) L.intensity *= LOOKS.lamp; }
-    sky.color.set(LOOKS.sky[0]); sky.groundColor.set(LOOKS.sky[1]); sky.intensity += LOOKS.sky[2];
-    scene.background.set(LOOKS.bg); scene.fog.color.set(LOOKS.fog); scene.fog.density *= LOOKS.fogK; renderer.toneMappingExposure *= LOOKS.expo;
-    skyU.uDawn.value = Math.max(skyU.uDawn.value * (1 - LOOKS.grey), LOOKS.dawn); skyU.uGrey.value = LOOKS.grey; bulbM.emissiveIntensity *= LOOKS.lamp;
-    tubeM.emissive.set(LOOKS.tube[0]); tubeBad.emissive.set(LOOKS.tube[0]); if (!LOOKS.lamp) { tubeM.emissiveIntensity *= .5; tubeBad.emissiveIntensity *= .5; } }
-  function lookOff() { const k = lookSaved; if (!k) return; lookSaved = null;
-    if (k.sun) { scene.background.setHex(k.bg); scene.fog.color.setHex(k.fog); return; }
-    for (const [L, i, c] of k.lights) { L.intensity = i; L.color.setHex(c); }
-    sky.color.setHex(k.sky[0]); sky.groundColor.setHex(k.sky[1]); sky.intensity = k.sky[2]; scene.background.setHex(k.bg); scene.fog.color.setHex(k.fog); scene.fog.density = k.dens; renderer.toneMappingExposure = k.expo;
-    skyU.uDawn.value = k.dawn; skyU.uGrey.value = 0; bulbM.emissiveIntensity = k.bulb; tubeM.emissive.setHex(k.tube[0]); tubeBad.emissive.setHex(k.tube[0]); tubeM.emissiveIntensity = k.tube[1]; tubeBad.emissiveIntensity = k.tube[2]; }
-  // street: small extras on and in front of each wall, from simple textured planes and boxes; every picture is drawn here (no files), the same few shared by all
-  { const mode = document.documentElement.dataset.street;
-    if (mode !== "bare") { const busy = mode === "busy"; let seed = 7; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }, pickOf = a => a[Math.floor(rnd() * a.length)];
-      const INK = ["#ff4f1a", "#f1c25a", "#3fd0c9", "#e8e2d2", "#ff4fa0", "#7aa2ff"], mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return [c, c.getContext("2d")]; };
-      const asTex = c => { const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; };
-      const stickers = [0, 1, 2, 3, 4, 5].map(i => { const [c, g] = mk(128, 128), col = INK[i % INK.length]; g.translate(64, 64); g.fillStyle = "#f1eee6"; g.beginPath();
-        if (i % 3 === 0) g.arc(0, 0, 60, 0, 6.3); else if (i % 3 === 1) g.roundRect(-58, -42, 116, 84, 14); else for (let k = 0; k < 10; k++) { const a = k * .628 - 1.57, r = k % 2 ? 26 : 60; g[k ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r); }
-        g.fill(); g.fillStyle = col; g.beginPath(); if (i % 3 === 0) g.arc(0, 0, 50, 0, 6.3); else if (i % 3 === 1) g.roundRect(-50, -34, 100, 68, 8); else g.arc(0, 0, 30, 0, 6.3); g.fill();
-        g.fillStyle = "#15171a"; g.fillRect(-42, -6, 84, 12); g.beginPath(); g.arc(i % 2 ? -22 : 22, -18, 9, 0, 6.3); g.fill(); g.fillStyle = "rgba(255,255,255,.18)"; g.fillRect(-60, -60, 120, 36);
-        return asTex(c); });
-      const scribbles = [0, 1, 2, 3].map(i => { const [c, g] = mk(256, 128); g.lineCap = g.lineJoin = "round"; g.strokeStyle = INK[(i * 2) % INK.length]; g.lineWidth = 7 - i; g.beginPath(); let x = 18, y = 70;
-        g.moveTo(x, y); for (let k = 0; k < 9; k++) { const nx = x + 20 + rnd() * 14, ny = 30 + rnd() * 70; g.quadraticCurveTo(x + 25 + rnd() * 20, 8 + rnd() * 110, nx, ny); x = nx; } g.stroke();
-        g.lineWidth = 3; g.beginPath(); g.moveTo(14, 112); g.quadraticCurveTo(120, 100 + rnd() * 20, 240, 108); g.stroke(); return asTex(c); });
-      const posters = [0, 1, 2].map(i => { const [c, g] = mk(256, 352), col = INK[(i * 2 + 1) % INK.length]; g.fillStyle = "#e9e4d4"; g.fillRect(0, 0, 256, 352); g.fillStyle = col; g.fillRect(16, 16, 224, 120 + i * 14);
-        g.fillStyle = "#15171a"; g.fillRect(28, 150 + i * 14, 150, 18); for (let k = 0; k < 8; k++) { g.fillStyle = "rgba(21,23,26," + (.35 + .2 * rnd()) + ")"; g.fillRect(28, 190 + k * 15 + i * 6, 120 + rnd() * 90, 6); }
-        g.fillStyle = "#15171a"; g.beginPath(); g.arc(128, 60, 28 + i * 6, 0, 6.3); g.fill(); const w = g.createLinearGradient(0, 0, 256, 352); w.addColorStop(0, "rgba(255,255,255,.2)"); w.addColorStop(.45, "rgba(0,0,0,.12)"); w.addColorStop(.5, "rgba(255,255,255,.18)"); w.addColorStop(1, "rgba(0,0,0,.14)"); g.fillStyle = w; g.fillRect(0, 0, 256, 352);
-        return asTex(c); });
-      const flat = new THREE.PlaneGeometry(1, 1), curl = new THREE.PlaneGeometry(1, 1, 3, 3); { const p = curl.attributes.position; for (let k = 0; k < p.count; k++) p.setZ(k, .012 * Math.sin(p.getX(k) * 7 + p.getY(k) * 4) + (p.getY(k) > .3 ? .016 * (p.getX(k) + .5) : 0)); curl.computeVertexNormals(); }
-      const skin = (map, extra) => new THREE.MeshStandardMaterial(Object.assign({ map, roughness: .85, metalness: 0, transparent: true, polygonOffset: true, polygonOffsetFactor: -4, envMapIntensity: .3 }, extra));
-      const sMat = stickers.map(t => skin(t)), tMat = scribbles.map(t => skin(t, { depthWrite: false })), pMat = posters.map(t => skin(t));
-      const onWall = (geo, mat, x, y, w, h, rot) => { const m = new THREE.Mesh(geo, mat); m.scale.set(w, h, 1); m.position.set(x, y, .007); m.rotation.z = rot; scene.add(m); return m; };
-      const sticker = (x, y, s) => onWall(flat, pickOf(sMat), x, y, s, s, (rnd() - .5) * .7), tagAt = (x, y, w) => onWall(flat, pickOf(tMat), x, y, w, w / 2, (rnd() - .5) * .25), poster = (x, y, w) => onWall(curl, pickOf(pMat), x, y, w, w * 1.375, (rnd() - .5) * .08);
-      const binM = new THREE.MeshStandardMaterial({ color: 0x2f5d3a, roughness: .7 }), lidM = new THREE.MeshStandardMaterial({ color: 0x1f3d27, roughness: .6 }), blackM = new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: .8 }), greyM = new THREE.MeshStandardMaterial({ color: 0x5b6066, roughness: .5, metalness: .6 });
-      const bin = (x, g, z, col) => { const b = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(.58, .95, .68), new THREE.MeshStandardMaterial({ color: col, roughness: .7 })), lid = new THREE.Mesh(new THREE.BoxGeometry(.62, .06, .72), lidM);
-        body.position.y = .55; lid.position.y = 1.05; const wh = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .5, 10), blackM); wh.rotation.z = Math.PI / 2; wh.position.set(0, .08, -.28); b.add(body, lid, wh); b.position.set(x, g, z); b.rotation.y = (rnd() - .5) * .5; scene.add(b); };
-      const bike = (x, g, z) => { const b = new THREE.Group(), wheel = dx => { const w = new THREE.Mesh(new THREE.TorusGeometry(.34, .018, 6, 24), blackM); w.position.set(dx, .36, 0); return w; }, bar = (a, c, r = .014) => { const d = new THREE.Vector3(c[0] - a[0], c[1] - a[1], 0), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 6), greyM); m.position.set((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, 0); m.rotation.z = Math.atan2(d.y, d.x) - Math.PI / 2; return m; };
-        b.add(wheel(-.52), wheel(.52), bar([-.52, .36], [-.1, .38]), bar([-.1, .38], [.2, .72]), bar([.2, .72], [.52, .36]), bar([-.1, .38], [.52, .36]), bar([-.1, .38], [-.18, .78]), bar([.2, .72], [.5, .78]), bar([-.28, .8], [-.06, .8], .03), bar([.4, .8], [.58, .8], .02)); b.position.set(x, g, z); b.rotation.y = -.15; b.rotation.z = -.12; scene.add(b); };
-      // where: each wall's own free spots (stickers s, posters p, tags t as [x, y]; bins b and bikes k as [x] on the floor); the opening wall's by the camera's width
-      const n = NARROW ? .5 : 1, W = [
-        { g: GROUND, s: [[-2.4 * n, -1.95], [-.9 * n, -1.9], [1.3 * n, -1.97], [2.6 * n, -1.9]], p: [[-3.7 * n, -1.2], [3.6 * n, -1.15]], t: [[2.2 * n, NARROW ? 3.1 : 2.2], [-2.6 * n, NARROW ? 3.3 : 2.1]], b: [[-3.9 * n]], k: [[3.9 * n]] },
-        { g: G2, s: [[EX - 4.2, G2 + .6], [EX + 4.1, G2 + 1.2], [EX + 4.4, G2 + .45]], p: [[EX - 4.45, G2 + 1.6], [EX + 4.5, G2 + 2.1]], t: [[EX + 4.6, G2 + 2.9], [EX - 4.3, G2 + .5]], b: [[EX + 4.3]], k: [[EX - 4.3]] },
-        { g: G3, s: [[RX - 6.2, G3 + .8], [RX + 5.9, G3 + 1.1], [RX + 6.3, G3 + .5]], p: [[RX - 6.5, G3 + 1.7], [RX + 6.6, G3 + 1.9]], t: [[RX + 6.4, G3 + 2.8]], b: [[RX + 5.7]], k: [[RX - 5.8]] },
-        ...U4.slice(0, 4).map((u, i) => ({ g: WF, s: [[u.x + 3.1, WF + .7 + .2 * i], [u.x - 3.1, WF + 1 - .2 * i]], p: i === 3 ? [] : [[u.x + 3.3, WF + 1.5]], t: [[u.x - 3.2, WF + .45]], b: i % 2 ? [] : [[u.x + 3.0]], k: [] })),
-        { g: G3, s: [[75 - 3.5, G3 + .8], [75 + 3.4, G3 + 1.2]], p: [[75 + 3.6, G3 + 1.8]], t: [[75 - 3.6, G3 + 2.6]], b: [[75 + 3.6]], k: [[75 - 3.8]] } ];
-      for (const w of W) { for (const [x, y] of w.s) sticker(x, y, .22 + rnd() * .1); for (const [x, y] of w.t.slice(0, busy ? 9 : 1)) tagAt(x, y, .8 + rnd() * .4); for (const [x, y] of w.p.slice(0, busy ? 9 : 1)) poster(x, y, .62 + rnd() * .1);
-        if (busy) { for (const [x, y] of w.s) { sticker(x + .3 + rnd() * .3, y + .35 + rnd() * .3, .16 + rnd() * .1); tagAt(x - .4, y - .35, .6); }
-          for (const [x] of w.b) bin(x, w.g, .55 + rnd() * .2, pickOf([0x2f5d3a, 0x3a4a5e, 0x6a6a6a])); for (const [x] of w.k) bike(x, w.g, .45); } } } }
   let mornAt = 0;
   function morning(now, sv, cp, look) { // after endCam: the white, the cut, the day light; returns nothing
     const dusk = duskAt; // the dusk's last frame clears duskAt; the form must not show for that frame
@@ -2227,7 +1942,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
     [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);
     pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);
     if (muralPin) pin(tagHand, l2, c2, muralPin, NARROW ? 30 : 50, NARROW ? -70 : -60);
-    lookOn(sv); composer.render(); lookOff();
+    composer.render();
   });
 })();
 </script>
