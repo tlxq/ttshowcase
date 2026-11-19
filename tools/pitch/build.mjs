@@ -152,6 +152,9 @@ if (/__[A-Z_]{3,}__/.test(front))
   throw new Error("pitch/front.src.html asks for a part the build doesn't fill");
 front = withScriptRule(front);
 writeFileSync(join(out, "front.html"), front);
+// its product screens: /projects/ on the site (public/projects); the same path in the local pitch folder
+rmSync(join(out, "projects"), { force: true, recursive: true });
+symlinkSync(join(root, "public/projects"), join(out, "projects"));
 
 // Pictures: pitch/assets holds only what is free to publish (CC0, or from a public repo).
 const assets = join(out, "assets");
