@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Tom Larsson · product engineer</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <style>
+      __EMBED__
+__TOKENS__
+/* The front page (pitch, Tom 11-19: Extrafazant's way). Fast: no 3D, no library, one small scroll script.
+   Cream and black parts take turns. Big words: Clash Display caps mixed with the walk's marker hand. */
+:root {
+        --f-big: "Clash Display", "Arial Narrow", sans-serif;
+        --f-hand: "Sedgwick Ave Display", "Comic Sans MS", cursive;
+        --f-text: "Inter", system-ui, sans-serif;
+        --frame: 14px; /* a card's painted frame */
+        --stack-top: 18svh; /* where a work card stops while the next one rises over it */
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        background: var(--look-ground);
+      }
+      body {
+        margin: 0;
+        font: 400 17px/1.55 var(--f-text);
+        color: var(--look-text);
+        background: var(--look-ground);
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: inherit;
+      }
+      .g {
+        padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+        padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+      }
+      .cream {
+        background: var(--look-cream);
+        color: var(--look-dark);
+      }
+
+      /* top bar */
+      .bar {
+        position: fixed;
+        inset: 0 0 auto;
+        z-index: 20;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: calc(var(--s2) + env(safe-area-inset-top, 0px));
+        padding-bottom: var(--s2);
+        pointer-events: none;
+      }
+      .bar > * {
+        pointer-events: auto;
+      }
+      .mark {
+        font: 700 22px/1 var(--f-hand);
+        color: var(--look-spray);
+        text-decoration: none;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: var(--tap);
+        padding: 0 18px;
+        border-radius: 999px;
+        background: var(--look-dark);
+        color: var(--look-text);
+        font: 600 14px/1 var(--f-text);
+        text-decoration: none;
+        border: 1px solid var(--look-rule);
+      }
+      .pill:hover,
+      .pill:focus-visible {
+        background: var(--look-spray);
+        border-color: var(--look-spray);
+        color: var(--look-dark);
+        outline: none;
+      }
+
+      /* big words: each line rises out of its own mask */
+      .big {
+        margin: 0;
+        font: 700 var(--sz, clamp(56px, 11vw, 168px))/0.9 var(--f-big);
+        text-transform: uppercase;
+        letter-spacing: -0.01em;
+        text-align: center;
+      }
+      .big .ln {
+        display: block;
+        overflow: clip;
+        padding-bottom: 0.06em;
+      }
+      .big .ln > span {
+        display: inline-block;
+        transform: translateY(105%);
+        transition: transform 900ms var(--ease);
+      }
+      .big.up .ln > span {
+        transform: none;
+      }
+      .big .ln:nth-child(2) > span {
+        transition-delay: 90ms;
+      }
+      .big .ln:nth-child(3) > span {
+        transition-delay: 180ms;
+      }
+      .hand {
+        font-family: var(--f-hand);
+        text-transform: none;
+        font-weight: 400;
+        letter-spacing: 0;
+        color: var(--look-spray);
+        font-size: 1.04em;
+      }
+      .kicker {
+        text-align: center;
+        font: 500 clamp(16px, 1.6vw, 20px)/1.35 var(--f-text);
+        margin: 0 auto var(--s3);
+        max-width: 30ch;
+      }
+
+      /* 1. first screen */
+      .hero {
+        min-height: 100svh;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: var(--s4);
+        padding-top: 96px;
+        padding-bottom: var(--s6);
+        position: relative;
+        overflow: clip;
+      }
+      .hero .who {
+        font: 500 15px/1.4 var(--f-text);
+        color: var(--look-dark-soft);
+        text-align: center;
+      }
+      .down {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font: 600 15px/1 var(--f-text);
+        color: var(--look-dark);
+        text-decoration: none;
+        min-height: var(--tap);
+      }
+      .down b {
+        display: inline-grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        background: var(--look-spray);
+        color: var(--look-dark);
+        border-radius: 4px;
+      }
+      /* two paintings pinned like photos at the edges, turning a little with the scroll */
+      .pin {
+        position: absolute;
+        width: clamp(150px, 20vw, 300px);
+        border: 8px solid #fff;
+        box-shadow: 0 18px 40px rgb(0 0 0 / 0.28);
+        transform: rotate(var(--r)) translateY(calc(var(--p, 0) * -60px));
+      }
+      .pin img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+      }
+      .pin.a {
+        left: -2vw;
+        bottom: 8svh;
+        --r: -7deg;
+      }
+      .pin.b {
+        right: -1vw;
+        top: 14svh;
+        --r: 6deg;
+      }
+      .tag {
+        position: absolute;
+        font: 400 clamp(20px, 2.4vw, 34px)/1 var(--f-hand);
+        background: var(--look-neon-pink);
+        color: var(--look-dark);
+        padding: 4px 10px 8px;
+        transform: rotate(-8deg);
+        right: -14px;
+        bottom: -14px;
+        box-shadow: 0 6px 16px rgb(0 0 0 / 0.25);
+      }
+      .pin.b .tag {
+        background: var(--look-neon-blue);
+        left: -16px;
+        right: auto;
+        top: -16px;
+        bottom: auto;
+        transform: rotate(7deg);
+      }
+
+      /* 2. work: the three lead projects as cards that stack */
+      .work {
+        padding-top: var(--s7);
+        padding-bottom: var(--s7);
+      }
+      .work-head {
+        position: sticky;
+        top: calc(var(--s5) + env(safe-area-inset-top, 0px));
+        z-index: 1;
+        padding-bottom: var(--s3);
+      }
+      .work-head .big {
+        --sz: clamp(52px, 9vw, 132px);
+      }
+      .stack {
+        display: grid;
+        gap: 22svh;
+        margin-top: var(--s4);
+      }
+      .card {
+        position: sticky;
+        top: calc(var(--stack-top) + var(--i) * 12px + 9vw);
+        z-index: 2;
+        width: min(100%, 980px);
+        margin: 0 auto;
+        padding-bottom: var(--s3);
+        background: var(--look-ground);
+        transform-origin: 50% 0;
+        will-change: transform;
+      }
+      .card .shot {
+        position: relative;
+        border: var(--frame) solid var(--c);
+        background: var(--c);
+        box-shadow:
+          0 -10px 0 0 var(--look-ground),
+          0 30px 60px rgb(0 0 0 / 0.5);
+      }
+      .card img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        object-fit: cover;
+      }
+      /* the painting already spells the name: the heading is for screen readers only */
+      .card .name {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        margin: 0;
+      }
+      .card .meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--s2);
+        padding: var(--s2) 0 0;
+      }
+      .card .line {
+        margin: 0;
+        max-width: 46ch;
+        color: var(--look-soft);
+      }
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--s1);
+      }
+      .links a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: var(--tap);
+        padding: 0 16px;
+        background: var(--c);
+        color: var(--look-dark);
+        font: 600 14px/1 var(--f-text);
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      .links a:hover,
+      .links a:focus-visible {
+        outline: 3px solid var(--look-text);
+        outline-offset: 2px;
+      }
+
+      /* 3. more: four tools as tilted cards in a row */
+      .more {
+        padding-top: var(--s7);
+        padding-bottom: var(--s7);
+      }
+      .more .big {
+        --sz: clamp(52px, 9vw, 132px);
+      }
+      .fan {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: var(--s3);
+        margin-top: var(--s6);
+      }
+      .tool {
+        display: block;
+        text-decoration: none;
+        color: var(--look-dark);
+        transform: rotate(var(--r)) translateY(calc((1 - var(--p, 1)) * 80px));
+        transition: transform 300ms var(--ease);
+      }
+      .tool:hover,
+      .tool:focus-visible {
+        transform: rotate(0deg) translateY(-8px);
+        outline: none;
+      }
+      .tool .shot {
+        display: block;
+        border: 10px solid var(--c);
+        background: var(--c);
+      }
+      .tool img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: contain;
+      }
+      .tool .nm {
+        display: block;
+        margin-top: -2px;
+        background: var(--c);
+        color: var(--look-dark);
+        font: 700 clamp(22px, 2.6vw, 36px)/1 var(--f-big);
+        text-transform: uppercase;
+        text-align: center;
+        padding: 6px 4px 10px;
+      }
+      .tool p {
+        margin: var(--s2) 4px 0;
+        font-size: 15px;
+        color: var(--look-dark-soft);
+      }
+
+      /* 4. the door into the walk */
+      .door {
+        padding-top: var(--s7);
+        padding-bottom: var(--s7);
+        display: grid;
+        justify-items: center;
+        gap: var(--s5);
+      }
+      .door .big {
+        --sz: clamp(56px, 12vw, 180px);
+      }
+      .portal {
+        display: block;
+        position: relative;
+        width: min(100%, 1100px);
+        border: var(--frame) solid var(--look-spray);
+        overflow: clip;
+        text-decoration: none;
+      }
+      .portal img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 21 / 9;
+        object-fit: cover;
+        transform: scale(calc(1 + var(--p, 0) * 0.12));
+        transition: transform 600ms var(--ease);
+      }
+      .portal:hover img,
+      .portal:focus-visible img {
+        transform: scale(1.18);
+      }
+      .portal span {
+        position: absolute;
+        left: 50%;
+        bottom: 8%;
+        transform: translateX(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 56px;
+        padding: 0 26px;
+        background: var(--look-spray);
+        color: var(--look-dark);
+        font: 700 18px/1 var(--f-text);
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+      .portal:focus-visible {
+        outline: 3px solid var(--look-text);
+        outline-offset: 4px;
+      }
+      .door small {
+        color: var(--look-quiet);
+        font-size: 14px;
+      }
+
+      /* 5. foot */
+      .foot {
+        padding-top: var(--s6);
+        padding-bottom: calc(var(--s6) + env(safe-area-inset-bottom, 0px));
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--s3);
+        border-top: 1px solid var(--look-dark-quiet);
+      }
+      .foot .links a {
+        background: var(--look-dark);
+        color: var(--look-text);
+      }
+
+      @media (max-width: 760px) {
+        .pin {
+          width: 38vw;
+        }
+        .pin.a {
+          bottom: 4svh;
+          left: -6vw;
+        }
+        .pin.b {
+          top: 11svh;
+          right: -8vw;
+        }
+        .stack {
+          gap: 14svh;
+        }
+        .card {
+          top: calc(var(--stack-top) + var(--i) * 10px + 14vw);
+        }
+        .card img {
+          aspect-ratio: 4 / 3;
+        }
+        .fan {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .portal img {
+          aspect-ratio: 4 / 3;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .big .ln > span {
+          transform: none;
+          transition: none;
+        }
+        .card {
+          position: static;
+          transform: none !important;
+        }
+        .work-head {
+          position: static;
+        }
+        .pin,
+        .tool,
+        .portal img {
+          transform: rotate(var(--r, 0deg)) !important;
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="bar g">
+      <a class="mark" href="#top">tlxq</a>
+      <a class="pill" href="/next">Walk through it</a>
+    </header>
+
+    <main id="top">
+      <section class="hero cream g">
+        <p class="who">Tom Larsson · product engineer · TypeScript, React and C#/.NET</p>
+        <h1 class="big">
+          <span class="ln"><span>Screens,</span></span
+          ><span class="ln"><span>code and</span></span
+          ><span class="ln"><span class="hand">servers.</span></span>
+        </h1>
+        <a class="down" href="#work"><b>↓</b> See the work</a>
+        <figure class="pin a" data-p>
+          <img src="assets/epa_wall.webp" alt="" /><span class="tag">epaRadar</span>
+        </figure>
+        <figure class="pin b" data-p>
+          <img src="assets/dot_wall.webp" alt="" /><span class="tag">dot</span>
+        </figure>
+      </section>
+
+      <section class="work g" id="work">
+        <div class="work-head">
+          <p class="kicker" style="color: var(--look-soft)">Three things I built and run.</p>
+          <h2 class="big">
+            <span class="ln"
+              ><span>Selected <span class="hand">work</span></span></span
+            >
+          </h2>
+        </div>
+        <div class="stack">
+          <article class="card" style="--c: var(--look-spray); --i: 0">
+            <div class="shot">
+              <img src="assets/epa_wall.webp" alt="epaRadar's painting on the walk's wall" />
+              <h3 class="name">epaRadar</h3>
+            </div>
+            <div class="meta">
+              <p class="line">
+                Friends on a live map. Only friends see where you are. Degree project, built alone.
+                React Native, Expo, Supabase.
+              </p>
+              <div class="links">
+                <a href="https://eparadar.se">Open the site ↗</a
+                ><a href="https://github.com/tlxq/eparadar">Code ↗</a>
+              </div>
+            </div>
+          </article>
+          <article class="card" style="--c: var(--look-neon-pink); --i: 1">
+            <div class="shot">
+              <img
+                src="assets/rvf_wall.webp"
+                alt="raddavarfruberga's painting on the walk's wall"
+              />
+              <h3 class="name">Rädda vår Fruberga</h3>
+            </div>
+            <div class="meta">
+              <p class="line">
+                We started this site to collect signatures for our preschool. Next.js, Supabase,
+                Resend.
+              </p>
+              <div class="links"><a href="https://raddavarfruberga.se">Open the site ↗</a></div>
+            </div>
+          </article>
+          <article class="card" style="--c: var(--look-neon-blue); --i: 2">
+            <div class="shot">
+              <img src="assets/edge_wall.webp" alt="EDGE's painting on the walk's wall" />
+              <h3 class="name">EDGE</h3>
+            </div>
+            <div class="meta">
+              <p class="line">
+                Two landing pages for EDGE Associates, on one code base. Work project, built alone.
+                Astro.
+              </p>
+              <div class="links">
+                <a href="https://app-utveckling.se">app-utveckling.se ↗</a
+                ><a href="https://mjukvaruutvecklare.com">mjukvaruutvecklare.com ↗</a>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="more cream g">
+        <p class="kicker">My own tools, in daily use.</p>
+        <h2 class="big">
+          <span class="ln"
+            ><span>More <span class="hand">tools</span></span></span
+          >
+        </h2>
+        <div class="fan">
+          <div class="tool" data-p style="--c: var(--look-neon-orange); --r: -4deg">
+            <span class="shot"><img src="assets/self_wall.webp" alt="" /></span
+            ><span class="nm">Self-hosted</span>
+            <p>My own server with web apps, a TV app and a job tool.</p>
+          </div>
+          <a
+            class="tool"
+            data-p
+            style="--c: var(--look-neon-pink); --r: 3deg"
+            href="https://github.com/tlxq/ttoolbox"
+            ><span class="shot"><img src="assets/ttoolbox_wall.webp" alt="" /></span
+            ><span class="nm">ttoolbox</span>
+            <p>
+              Claude Code plugin with skills and agents to plan, build, review and prove work.
+            </p></a
+          >
+          <a
+            class="tool"
+            data-p
+            style="--c: var(--look-neon-blue); --r: -2deg"
+            href="https://github.com/tlxq/dot"
+            ><span class="shot"><img src="assets/dot_wall.webp" alt="" /></span
+            ><span class="nm">dot</span>
+            <p>Keeps one GNU Stow dotfiles repo the same on every Linux PC.</p></a
+          >
+          <a
+            class="tool"
+            data-p
+            style="--c: var(--look-spray); --r: 5deg"
+            href="https://github.com/tlxq/tthermal"
+            ><span class="shot"><img src="assets/tthermal_wall.webp" alt="" /></span
+            ><span class="nm">tthermal</span>
+            <p>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.</p></a
+          >
+        </div>
+      </section>
+
+      <section class="door g">
+        <p class="kicker" style="color: var(--look-soft)">
+          Every project above is a painting on one street at night.
+        </p>
+        <h2 class="big">
+          <span class="ln"><span>Walk</span></span
+          ><span class="ln"><span class="hand">through it</span></span>
+        </h2>
+        <a class="portal" href="/next" data-p
+          ><img src="assets/end_wall.webp" alt="The walk's last wall at night" /><span
+            >Walk through it →</span
+          ></a
+        >
+        <small>About a minute of scrolling. Works best on a laptop.</small>
+      </section>
+
+      <footer class="foot g">
+        <span style="color: var(--look-soft)">Tom Larsson</span>
+        <div class="links">
+          <a href="https://github.com/tlxq">GitHub ↗</a
+          ><a href="https://linkedin.com/in/tlxq">LinkedIn ↗</a>
+        </div>
+      </footer>
+    </main>
+
+    <script>
+      (() => {
+        const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        // big words: each rises out of its mask when it comes into view
+        const io = new IntersectionObserver(
+          (es) =>
+            es.forEach((e) => {
+              if (e.isIntersecting) {
+                e.target.classList.add("up");
+                io.unobserve(e.target);
+              }
+            }),
+          { threshold: 0.2 },
+        );
+        document.querySelectorAll(".big").forEach((b) => io.observe(b));
+        if (still) return;
+        // one scroll loop: a card shrinks and darkens as the next one rises over it; pinned photos and tools move with the scroll
+        const cards = [...document.querySelectorAll(".card")],
+          movers = [...document.querySelectorAll("[data-p]")];
+        let queued = false;
+        const frame = () => {
+          queued = false;
+          const vh = innerHeight;
+          cards.forEach((c, i) => {
+            const next = cards[i + 1];
+            if (!next) {
+              c.style.transform = "";
+              return;
+            }
+            const a = c.getBoundingClientRect().top,
+              b = next.getBoundingClientRect().top;
+            const k = Math.min(1, Math.max(0, 1 - (b - a) / (vh * 0.7))); // 0 while the next is far below, 1 when it sits on top
+            c.style.transform = `scale(${1 - k * 0.08})`;
+            c.style.filter = `brightness(${1 - k * 0.45})`;
+          });
+          movers.forEach((m) => {
+            const r = m.getBoundingClientRect();
+            m.style.setProperty(
+              "--p",
+              Math.min(1, Math.max(0, 1 - (r.top - vh * 0.25) / vh)).toFixed(3),
+            );
+          });
+        };
+        const ask = () => {
+          if (!queued) {
+            queued = true;
+            requestAnimationFrame(frame);
+          }
+        };
+        addEventListener("scroll", ask, { passive: true });
+        addEventListener("resize", ask);
+        frame();
+      })();
+    </script>
+  </body>
+</html>

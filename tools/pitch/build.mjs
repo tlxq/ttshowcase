@@ -144,6 +144,15 @@ function withScriptRule(html) {
 }
 writeFileSync(join(out, "paint.html"), withScriptRule(page));
 
+// The front page (pitch, 11-19): the same fonts and tokens, no 3D. /next/front on the site.
+let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
+  .replaceAll("__EMBED__", () => embed)
+  .replaceAll("__TOKENS__", () => parts.__TOKENS__);
+if (/__[A-Z_]{3,}__/.test(front))
+  throw new Error("pitch/front.src.html asks for a part the build doesn't fill");
+front = withScriptRule(front);
+writeFileSync(join(out, "front.html"), front);
+
 // Pictures: pitch/assets holds only what is free to publish (CC0, or from a public repo).
 const assets = join(out, "assets");
 rmSync(assets, { force: true, recursive: true });
@@ -166,5 +175,10 @@ if (process.argv.includes("--site")) {
   mkdirSync(siteAssets, { recursive: true });
   for (const name of readdirSync(assets))
     copyFileSync(realpathSync(join(assets, name)), join(siteAssets, name));
+  mkdirSync(join(site, "next"), { recursive: true });
+  writeFileSync(
+    join(site, "next/front.html"),
+    front.replace(/(["'`])assets\//g, "$1/next/assets/"),
+  );
   console.log("Put the pitch into out/next.html (/next)");
 }
