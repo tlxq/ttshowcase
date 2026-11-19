@@ -3,6 +3,9 @@
 node = "26.7.0"
 "npm:@playwright/cli" = "0.1.22"
 "npm:vercel" = "58.4.4"
+# the git hooks (lefthook.yml): without them a fresh clone's first commit fails
+gitleaks = "8.30.1"
+lefthook = "2.2.2"
 # tools/osv-gate needs it
 "aqua:google/osv-scanner" = "2.7.1"
 
@@ -11,9 +14,10 @@ node = "26.7.0"
 _.path = ["{{config_root}}/bin"]
 
 [tasks.install]
-description = "Install the npm packages if they are missing"
+description = "Install the npm packages and the git hooks if they are missing"
 hide = true
-run = "[ -d node_modules ] || npm ci"
+# a fresh clone has neither; GitHub's check (CI) needs no hooks
+run = ["[ -d node_modules ] || npm ci", "[ -n \"${CI:-}\" ] || [ -f \"$(git rev-parse --git-path hooks/pre-commit)\" ] || lefthook install"]
 
 [tasks.build]
 description = "Build the static site into out/"
