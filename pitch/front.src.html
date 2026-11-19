@@ -144,15 +144,15 @@ a { color: inherit; }
 .bar .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
 .fly { position: fixed; z-index: 21; object-fit: cover; object-position: 50% 30%; pointer-events: none; will-change: left, top, width, height; }
 [data-only] { display: none; }
-:is([data-scroll="1"], [data-scroll="mix"]) [data-only~="1"], :is([data-scroll="2"], [data-scroll="mix"]) [data-only~="2"], [data-scroll="3"] [data-only~="3"], [data-scroll="4"] [data-only~="4"], [data-scroll="mix"] [data-only~="1"], [data-scroll="mix"] [data-only~="3"] { display: block; }
+:is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) [data-only~="1"], :is([data-scroll="2"], [data-scroll="mix"], [data-scroll="live"]) [data-only~="2"], [data-scroll="3"] [data-only~="3"], [data-scroll="4"] [data-only~="4"], [data-scroll="mix"] [data-only~="1"], [data-scroll="mix"] [data-only~="3"] { display: block; }
 
 /* 1: a pinned phone */
-:is([data-scroll="1"], [data-scroll="mix"]) .stack { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 30svh var(--s6); }
-:is([data-scroll="1"], [data-scroll="mix"]) .card { grid-column: 1; position: relative; top: auto; grid-template-columns: 1fr; transform: none !important; filter: none !important; box-shadow: none; }
-:is([data-scroll="1"], [data-scroll="mix"]) .card:nth-child(1) { grid-row: 1; } :is([data-scroll="1"], [data-scroll="mix"]) .card:nth-child(2) { grid-row: 2; } :is([data-scroll="1"], [data-scroll="mix"]) .card:nth-child(3) { grid-row: 3; }
-:is([data-scroll="1"], [data-scroll="mix"]) .card .screens { padding: 0; order: 2; }
-:is([data-scroll="1"], [data-scroll="mix"]) .card .phone { display: none; }
-:is([data-scroll="1"], [data-scroll="mix"]) .work-head { position: static; }
+:is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .stack { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 30svh var(--s6); }
+:is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .card { grid-column: 1; position: relative; top: auto; grid-template-columns: 1fr; transform: none !important; filter: none !important; box-shadow: none; }
+:is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .card:nth-child(1) { grid-row: 1; } :is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .card:nth-child(2) { grid-row: 2; } :is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .card:nth-child(3) { grid-row: 3; }
+:is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .card .screens { padding: 0; order: 2; }
+:is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .card .phone { display: none; }
+:is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .work-head { position: static; }
 .pin { grid-column: 2; grid-row: 1 / span 3; align-self: start; position: sticky; top: 16svh; perspective: 1200px; z-index: 3; }
 .pphone { position: relative; width: min(100%, 300px); margin-left: auto; aspect-ratio: 300 / 650; border-radius: 34px; overflow: clip; border: 9px solid #1b1d22; background: #1b1d22; box-shadow: 0 40px 80px rgb(0 0 0 / .6); transform-style: preserve-3d; }
 .pphone > * { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity 300ms var(--ease); }
@@ -160,9 +160,9 @@ a { color: inherit; }
 .pname { margin: var(--s2) 0 0; text-align: right; font: 700 15px/1 var(--f-text); color: var(--look-quiet); }
 
 /* 2: the ground per project */
-:is([data-scroll="2"], [data-scroll="mix"]) .work { background: var(--work-bg, var(--look-ground)); color: var(--work-ink, var(--look-text)); transition: background 700ms cubic-bezier(.6, 0, .3, 1), color 700ms cubic-bezier(.6, 0, .3, 1); }
-:is([data-scroll="2"], [data-scroll="mix"]) .card { color: var(--look-text); }
-:is([data-scroll="2"], [data-scroll="mix"]) .work .work-head .label, :is([data-scroll="2"], [data-scroll="mix"]) .pname { color: var(--work-quiet, var(--look-quiet)); transition: color 700ms cubic-bezier(.6, 0, .3, 1); }
+:is([data-scroll="2"], [data-scroll="mix"], [data-scroll="live"]) .work { background: var(--work-bg, var(--look-ground)); color: var(--work-ink, var(--look-text)); transition: background 700ms cubic-bezier(.6, 0, .3, 1), color 700ms cubic-bezier(.6, 0, .3, 1); }
+:is([data-scroll="2"], [data-scroll="mix"], [data-scroll="live"]) .card { color: var(--look-text); }
+:is([data-scroll="2"], [data-scroll="mix"], [data-scroll="live"]) .work .work-head .label, :is([data-scroll="2"], [data-scroll="mix"], [data-scroll="live"]) .pname { color: var(--work-quiet, var(--look-quiet)); transition: color 700ms cubic-bezier(.6, 0, .3, 1); }
 
 /* 3: numbers that count */
 .count { height: 190svh; }
@@ -181,14 +181,14 @@ a { color: inherit; }
 .track:active { cursor: grabbing; }
 [data-scroll="4"] .card { position: relative; top: auto; flex: none; width: min(1040px, 82vw); transform: none !important; filter: none !important; box-shadow: none; user-select: none; }
 [data-scroll="4"] .card img { pointer-events: none; }
-:is([data-scroll="1"], [data-scroll="mix"]) .card > *, [data-scroll="4"] .card > * { min-width: 0; }
+:is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .card > *, [data-scroll="4"] .card > * { min-width: 0; }
 @media (max-width: 860px) {
-  :is([data-scroll="1"], [data-scroll="mix"]) .stack { grid-template-columns: minmax(0, 1fr); gap: 8svh; }
-  :is([data-scroll="1"], [data-scroll="mix"]) .pin { grid-column: 1; justify-self: end; top: 58svh; width: 30vw; }
-  :is([data-scroll="1"], [data-scroll="mix"]) .pphone { border-width: 5px; border-radius: 20px; }
-  :is([data-scroll="1"], [data-scroll="mix"]) .pname { display: none; }
-  :is([data-scroll="1"], [data-scroll="mix"]) .card { padding-right: calc(30vw + var(--s2)); }
-  :is([data-scroll="1"], [data-scroll="mix"]) .card .btns .btn { padding: 0 12px; }
+  :is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .stack { grid-template-columns: minmax(0, 1fr); gap: 8svh; }
+  :is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .pin { grid-column: 1; justify-self: end; top: 58svh; width: 30vw; }
+  :is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .pphone { border-width: 5px; border-radius: 20px; }
+  :is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .pname { display: none; }
+  :is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .card { padding-right: calc(30vw + var(--s2)); }
+  :is([data-scroll="1"], [data-scroll="mix"], [data-scroll="live"]) .card .btns .btn { padding: 0 12px; }
   [data-scroll="4"] .card { width: 86vw; }
   [data-scroll="4"] .card dl { display: none; }
   .bar .role { display: none; }
@@ -196,17 +196,17 @@ a { color: inherit; }
 }
 
 /* mix (Tom 11-19: "variety, but feeling synced"): count → phone + ground on one beat → the tools on a sideways shelf */
-[data-scroll="mix"] .count { height: 140svh; }
-[data-scroll="mix"] .more .wrap { max-width: none; }
-[data-scroll="mix"] .more { padding-top: 0; padding-bottom: 0; }
-[data-scroll="mix"] .more .vp { padding-left: max(var(--gutter), calc((100vw - 1180px) / 2)); }
-[data-scroll="mix"] .more .list { border: 0; margin: 0; gap: var(--s3); }
-[data-scroll="mix"] .more .list li { flex: none; width: min(400px, 78vw); min-height: min(420px, 56svh); grid-template-columns: 1fr; align-content: space-between; gap: var(--s3); padding: var(--s4); border: 0; border-radius: 18px; background: var(--look-dark); color: var(--look-cream); box-shadow: inset 0 6px 0 var(--c); user-select: none; }
-[data-scroll="mix"] .more .list li span { grid-column: auto; grid-row: auto; color: var(--look-soft); font-size: 18px; }
-[data-scroll="mix"] .more .list b { font-size: clamp(34px, 3.4vw, 48px); color: var(--c); }
-[data-scroll="mix"] .more .list a { justify-self: start; border-color: var(--look-cream); }
-[data-scroll="mix"] .more .list a:hover { background: var(--look-cream); color: var(--look-dark); }
-[data-scroll="mix"] .more .list em { color: var(--look-quiet); }
+:is([data-scroll="mix"], [data-scroll="live"]) .count { height: 140svh; }
+:is([data-scroll="mix"], [data-scroll="live"]) .more .wrap { max-width: none; }
+:is([data-scroll="mix"], [data-scroll="live"]) .more { padding-top: 0; padding-bottom: 0; }
+:is([data-scroll="mix"], [data-scroll="live"]) .more .vp { padding-left: max(var(--gutter), calc((100vw - 1180px) / 2)); }
+:is([data-scroll="mix"], [data-scroll="live"]) .more .list { border: 0; margin: 0; gap: var(--s3); }
+:is([data-scroll="mix"], [data-scroll="live"]) .more .list li { flex: none; width: min(400px, 78vw); min-height: min(420px, 56svh); grid-template-columns: 1fr; align-content: space-between; gap: var(--s3); padding: var(--s4); border: 0; border-radius: 18px; background: var(--look-dark); color: var(--look-cream); box-shadow: inset 0 6px 0 var(--c); user-select: none; }
+:is([data-scroll="mix"], [data-scroll="live"]) .more .list li span { grid-column: auto; grid-row: auto; color: var(--look-soft); font-size: 18px; }
+:is([data-scroll="mix"], [data-scroll="live"]) .more .list b { font-size: clamp(34px, 3.4vw, 48px); color: var(--c); }
+:is([data-scroll="mix"], [data-scroll="live"]) .more .list a { justify-self: start; border-color: var(--look-cream); }
+:is([data-scroll="mix"], [data-scroll="live"]) .more .list a:hover { background: var(--look-cream); color: var(--look-dark); }
+:is([data-scroll="mix"], [data-scroll="live"]) .more .list em { color: var(--look-quiet); }
 
 /* live (Tom 11-19: "too static, framed into boxes, want something more alive"): one project as a scene, no box.
    Everything follows the scroll all the time: the screen tilts up and grows to fill the screen, the phone rises faster
@@ -216,7 +216,6 @@ a { color: inherit; }
 [data-scroll="live"] .work-head { position: static; }
 .scene { height: 360svh; background: var(--g); position: relative; }
 .scene .st { position: sticky; top: 0; height: 100svh; overflow: clip; perspective: 1400px; }
-.scene .huge { position: absolute; left: 0; top: 50%; margin: 0; white-space: nowrap; font: 700 36vw/.8 var(--f-big); text-transform: uppercase; letter-spacing: -.02em; color: rgb(255 255 255 / .07); will-change: transform; }
 .scene .big-s, .scene .small-s { position: absolute; left: 0; top: 0; overflow: clip; will-change: transform, width, height; box-shadow: 0 40px 90px rgb(0 0 0 / .55); }
 .scene .big-s img, .scene .small-s img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% var(--pan, 0%); }
 .scene .scrim { position: absolute; inset: 0; background: linear-gradient(90deg, rgb(8 14 30 / .97) 0%, rgb(8 14 30 / .9) 34%, rgb(8 14 30 / .4) 55%, transparent 75%); opacity: 0; pointer-events: none; }
@@ -232,14 +231,17 @@ a { color: inherit; }
    growing rule, letters that rise one by one, the walk's hand marker drawing its underline, the stack as tags that drop
    in, a live line with a beating dot); everything still runs on the scroll value. */
 .scene .ground { position: absolute; inset: -10% 0; overflow: clip; }
-.scene .mapbg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(1.5px) saturate(.8) brightness(.55); opacity: .35; transform: translateY(var(--mp, 0)) scale(1.15); }
 .scene .glow { position: absolute; inset: 0; background: radial-gradient(42vmax 42vmax at var(--gx, 70%) var(--gy, 40%), rgb(80 140 255 / .28), transparent 70%); mix-blend-mode: screen; }
 .scene .f { position: absolute; left: var(--x); top: var(--y); width: 12px; height: 12px; border-radius: 50%; background: #6fd3ff; box-shadow: 0 0 12px #6fd3ff; }
 .scene .f::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid #6fd3ff; animation: ping 2.4s var(--d, 0s) infinite cubic-bezier(.2, .6, .3, 1); }
 @keyframes ping { from { transform: scale(.4); opacity: .9; } to { transform: scale(3.2); opacity: 0; } }
 .scene .grain { position: absolute; inset: -50%; opacity: .09; background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: grain 1s steps(6) infinite; pointer-events: none; }
 @keyframes grain { 0% { transform: translate(0, 0); } 33% { transform: translate(-4%, 3%); } 66% { transform: translate(3%, -5%); } 100% { transform: translate(-2%, 2%); } }
-.scene .huge { color: transparent; -webkit-text-stroke: 1.5px rgb(111 211 255 / .22); }
+/* adjust 11-19 ("messy"): the blown-up map read as smudges and the outlined name doubled the heading; the ground is now
+   the radar itself: quiet rings round the app and one sweep that turns with the scroll */
+.scene .radar { position: absolute; left: 74%; top: 50%; width: 160vmax; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: repeating-radial-gradient(circle, transparent 0 calc(8vmax - 1px), rgb(111 211 255 / .09) calc(8vmax - 1px) 8vmax); -webkit-mask: radial-gradient(circle, #000 15%, transparent 62%); mask: radial-gradient(circle, #000 15%, transparent 62%); }
+.scene .radar::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgb(111 211 255 / .12), rgb(111 211 255 / 0) 70deg, transparent); transform: rotate(var(--sw, 0deg)); }
+@media (max-width: 700px) { .scene .radar { left: 50%; top: 32%; } }
 .scene .tx { gap: var(--s3); }
 .scene .idx { display: flex; align-items: center; gap: var(--s2); font: 600 13px/1 var(--f-text); letter-spacing: .1em; text-transform: uppercase; color: var(--look-soft); }
 .scene .idx .no { font: 700 22px/1 var(--f-big); color: #6fd3ff; letter-spacing: 0; }
@@ -256,6 +258,7 @@ a { color: inherit; }
 .scene .pulse { display: flex; align-items: center; gap: 10px; font: 600 15px/1.2 var(--f-text); color: var(--look-text); font-variant-numeric: tabular-nums; }
 .scene .dot { width: 9px; height: 9px; border-radius: 50%; background: #46e08a; box-shadow: 0 0 0 0 rgb(70 224 138 / .7); animation: beat 1.6s infinite; }
 @keyframes beat { 0% { box-shadow: 0 0 0 0 rgb(70 224 138 / .6); } 70% { box-shadow: 0 0 0 10px rgb(70 224 138 / 0); } 100% { box-shadow: 0 0 0 0 rgb(70 224 138 / 0); } }
+@media (max-width: 700px) { .scene .idx { font-size: 12px; letter-spacing: .06em; gap: 10px; } .scene .idx .rule { width: 24px; } }
 .btn.go span { display: inline-block; transition: transform var(--toggle) var(--ease); }
 .btn.go:hover span, .btn.go:focus-visible span { transform: translate(3px, -3px); }
 @media (prefers-reduced-motion: reduce) { .scene .grain, .scene .f::after, .scene .dot { animation: none; } .scene .idx .rule { transform: none; } .scene .hand path { stroke-dashoffset: 0; } }
@@ -298,8 +301,7 @@ a { color: inherit; }
   </div></section>
 
   <section class="scene" id="s-epa" data-only="live" style="--g:#0f1c36" aria-label="epaRadar"><div class="st">
-    <div class="ground" aria-hidden="true"><img class="mapbg" src="/projects/eparadar-karta.webp" alt=""><i class="glow"></i><i class="f" style="--x:22%;--y:30%"></i><i class="f" style="--x:71%;--y:22%;--d:.7s"></i><i class="f" style="--x:58%;--y:74%;--d:1.3s"></i><i class="f" style="--x:12%;--y:68%;--d:2s"></i><i class="grain"></i></div>
-    <p class="huge" aria-hidden="true">epaRadar</p>
+    <div class="ground" aria-hidden="true"><i class="radar"></i><i class="glow"></i><i class="f" style="--x:22%;--y:30%"></i><i class="f" style="--x:71%;--y:22%;--d:.7s"></i><i class="f" style="--x:58%;--y:74%;--d:1.3s"></i><i class="f" style="--x:12%;--y:68%;--d:2s"></i><i class="grain"></i></div>
     <span class="lap-s"><img src="/projects/eparadar-laptop.webp" alt="eparadar.se on a laptop"></span>
     <span class="ph-s"><img src="/projects/eparadar-karta.webp" alt="The epaRadar app: friends on the map"></span>
     <div class="scrim"></div>
@@ -440,7 +442,7 @@ a { color: inherit; }
   // live scenes: every layer follows the scroll value k (0..1 through the scene), nothing waits on a timer
   const sm = (a, b, k) => { const t = clamp((k - a) / (b - a)); return t * t * (3 - 2 * t); };
   document.querySelectorAll(".scene .split").forEach(h => { h.innerHTML = [...h.textContent].map(ch => `<span aria-hidden="true">${ch}</span>`).join(""); });
-  const scenes = [...document.querySelectorAll(".scene")].map(el => ({ ground: el.querySelector(".ground"), letters: [...el.querySelectorAll(".split > span")], pills: [...el.querySelectorAll(".pills li")], rule: el.querySelector(".rule"), hand: el.querySelector(".hand"), el, st: el.querySelector(".st"), huge: el.querySelector(".huge"), lap: el.querySelector(".lap-s"), ph: el.querySelector(".ph-s"), scrim: el.querySelector(".scrim"), tx: [...el.querySelector(".tx").children] }));
+  const scenes = [...document.querySelectorAll(".scene")].map(el => ({ ground: el.querySelector(".ground"), letters: [...el.querySelectorAll(".split > span")], pills: [...el.querySelectorAll(".pills li")], rule: el.querySelector(".rule"), hand: el.querySelector(".hand"), el, st: el.querySelector(".st"), lap: el.querySelector(".lap-s"), ph: el.querySelector(".ph-s"), scrim: el.querySelector(".scrim"), tx: [...el.querySelector(".tx").children] }));
   let mx = 0, my = 0;
   addEventListener("pointermove", e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; ask(); }, { passive: true });
   const runScene = (s, vh, vw) => {
@@ -465,22 +467,21 @@ a { color: inherit; }
     if (gone) big.style.transform += ` scale(${1 + gone * .08})`;
     // the small one rises faster than the page and crosses in front, turning with the pointer
     const sw = narrow ? vw * .42 : Math.min(vw * .17, 300), sh = sw * smallAR;
-    const sx = narrow ? vw * .54 : vw * .74, sy = lerp(vh * 1.15, vh * (narrow ? .08 : .2), sm(.1, .5, k)) - sm(.5, 1, k) * vh * .9;
+    const sx = narrow ? vw - sw - 16 : vw * .74, sy = lerp(vh * 1.15, vh * (narrow ? .1 : .18), sm(.1, .5, k)) - out * vh * 1.1;
     small.style.width = sw + "px"; small.style.height = sh + "px"; small.style.borderRadius = (narrow ? 10 : 26) + "px";
     small.style.zIndex = 2;
     small.style.transform = `translate(${sx + mx * 18}px, ${sy + my * 18}px) rotate(${lerp(14, -6, sm(.1, .6, k)) + mx * 6}deg)`;
     // the name slides huge behind; the text rises in once the screen is full, line by line
-    s.huge.style.transform = `translate(${lerp(vw * .6, -s.huge.offsetWidth + vw * .2, k)}px, -50%)`;
+    s.ground.style.setProperty("--sw", (k * 540).toFixed(1) + "deg");
     s.scrim.style.opacity = sm(.3, .45, k) * (1 - out * .6);
     s.tx.forEach((el, i) => { const t = sm(.36 + i * .035, .48 + i * .035, k); el.style.opacity = t; el.style.transform = el.classList.contains("split") || el.classList.contains("pills") ? "none" : `translateY(${(1 - t) * 40}px)`; });
     // the ground: the map drifts slower than the page, the light follows the pointer
-    s.ground.style.setProperty("--mp", (k * -8).toFixed(2) + "%");
     s.ground.style.setProperty("--gx", (50 + mx * 60).toFixed(1) + "%"); s.ground.style.setProperty("--gy", (45 + my * 50).toFixed(1) + "%");
     // index rule grows, letters rise one by one with a small turn, the marker draws its line, the tags drop in
     s.rule.style.setProperty("--r", sm(.36, .5, k).toFixed(3));
     s.letters.forEach((l, i) => { const t = sm(.38 + i * .012, .47 + i * .012, k); l.style.transform = `translateY(${(1 - t) * 110}%) rotate(${(1 - t) * 12}deg)`; l.style.opacity = t; });
     s.hand.style.setProperty("--draw", (1 - sm(.46, .56, k)).toFixed(3));
-    s.pills.forEach((p, i) => { const t = sm(.48 + i * .015, .55 + i * .015, k); p.style.transform = `translateY(${(1 - t) * -26}px) rotate(${(1 - t) * (i % 2 ? 8 : -8)}deg)`; p.style.opacity = t; });
+    s.pills.forEach((p, i) => { const t = sm(.48 + i * .015, .55 + i * .015, k); p.style.transform = `translateY(${(1 - t) * 18}px) rotate(${(1 - t) * (i % 2 ? 6 : -6)}deg)`; p.style.opacity = t; });
   };
   let queued = false;
   const frame = () => {
