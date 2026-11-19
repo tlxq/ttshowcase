@@ -251,7 +251,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
 // pitch only: the style switch is read from the URL once; unknown or missing values mean today's look
 (() => { const q = new URLSearchParams(location.search), pick = (k, ok) => ok.includes(q.get(k)) ? q.get(k) : ok[0], d = document.documentElement.dataset;
   d.plate = pick("plate", ["dark", "poster", "stencil", "uv", "neon", "projected", "panel"]); d.form = pick("form", ["wall", "glass", "poster"]); d.end = pick("end", ["29", "17", "67"]); d.font = pick("font", ["today", "hand", "sans"]); d.light = pick("light", ["night", "dusk", "day"]); d.street = pick("street", ["bare", "some", "busy"]);
-  d.rvflink = pick("rvflink", ["ribbon", "chalk"]); d.edgelink = pick("edgelink", ["banner", "billboard", "screens"]); })(); // the link marks: raddavarfruberga a ribbon on a fence or chalk on the pavement; EDGE banners, a billboard or screens
+  d.rvflink = pick("rvflink", ["banner", "ribbon", "chalk"]); d.edgelink = pick("edgelink", ["banner", "billboard", "screens"]); })(); // the link marks: raddavarfruberga a ribbon on a fence or chalk on the pavement; EDGE banners, a billboard or screens
 </script>
 
 <canvas id="c"></canvas>
@@ -1222,6 +1222,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   const hots = links.map((l, i) => document.getElementById("hot" + i));
   // ---- moment 3: raddavarfruberga. 1,024 people signed for the preschool: one yellow ribbon each, tied on a fence in front of the
   // preschool painted on the wall (Tom 11-16). No words from the site (it is Swedish), no signers' names. Words from src/content/look.ts.
+  const BAN = document.documentElement.dataset.rvflink === "banner"; // (Tom 11-19) the wall stays whole: a fence in front of the painting, ribbons on it and the parents' painted sheet
   const RX = 31, RN = 1024, // RX: 4.5 m further on than before, so the painted house (Tom 11-19) stands where the wall breaks and the sign beside it is clear of the underpass
      RYEL = new THREE.Color(0xffc81a), NAVY = "15,27,51";
   // the hole: centre and size; the preschool's yard and its own photo stand behind the wall, seen through it once it breaks
@@ -1240,7 +1241,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   // behind: the yard (gravel, daylight) and the preschool's own public photo (raddavarfruberga public/img/vardfruberga-entre.jpg), unlit and out of the fog
   const PW3 = NARROW ? 9 : 10.5, PH3 = PW3 * 900 / 1600, PZ = -6;
   const photo3 = new THREE.Mesh(new THREE.PlaneGeometry(PW3, PH3), new THREE.MeshBasicMaterial({ map: tex("assets/rvf_photo.jpg", true, 1, 1), fog: false, color: 0xf2f2f2 }));
-  photo3.material.map.wrapS = photo3.material.map.wrapT = THREE.ClampToEdgeWrapping; photo3.position.set(RX, G3 + PH3 / 2 - .35, PZ); photo3.visible = false; scene.add(photo3); PROT.push(["the preschool photo", V(RX - HRX * .8, HC - HRY * .8, 0), V(RX + HRX * .8, HC + HRY * .8, 0)]); // what shows through the hole (its rough edge swings 12 %: the box is 80 % of it)
+  photo3.material.map.wrapS = photo3.material.map.wrapT = THREE.ClampToEdgeWrapping; photo3.position.set(RX, G3 + PH3 / 2 - .35, PZ); photo3.visible = false; scene.add(photo3); if (!BAN) PROT.push(["the preschool photo", V(RX - HRX * .8, HC - HRY * .8, 0), V(RX + HRX * .8, HC + HRY * .8, 0)]); // what shows through the hole (its rough edge swings 12 %: the box is 80 % of it)
 
   const yard3 = new THREE.Mesh(new THREE.PlaneGeometry(PW3 + 2, -PZ), new THREE.MeshBasicMaterial({ map: tex("assets/road_diff.jpg", true, (PW3 + 2) / 3, -PZ / 3), color: 0xc9b493, fog: false }));
   yard3.rotation.x = -Math.PI / 2; yard3.position.set(RX, G3 + .004, PZ / 2); yard3.visible = false; scene.add(yard3);
@@ -1267,14 +1268,15 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
       const fl = G3 + c.s.y * .7; if (c.p.y < fl) { c.p.y = fl; c.v.y *= -.28; c.v.x *= .55; c.v.z *= .55; c.w.multiplyScalar(.5); if (Math.abs(c.v.y) < .25 && c.v.length() < .3) c.rest = true; } } }
     CH.forEach((c, i) => { M.compose(c.p, c.q, simT < c.d ? Z : c.s); chunks.setMatrixAt(i, M); }); chunks.instanceMatrix.needsUpdate = true; }
   // the fence: posts, a top rail and chain-link mesh
-  const FW = NARROW ? 5 : 7.4, FH = 1.85, FZ = -1.3, FX0 = RX - FW / 2;
+  const MK = (NARROW ? 6.4 : 9.2) / 1536, FXC = BAN ? RX + (760 - 1290) * MK : RX; // the painting's scale and the middle of its picture (paintOn below)
+  const FW = BAN ? (NARROW ? 5.6 : 8) : NARROW ? 5 : 7.4, FH = BAN ? 1.2 : 1.85, FZ = BAN ? 1.1 : -1.3, FX0 = FXC - FW / 2;
   const metal3 = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: .8, roughness: .45 });
   for (let x = FX0; x <= FX0 + FW + .01; x += FW / Math.round(FW / 2.1)) { const po = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, FH + .06, 10), metal3); po.position.set(x, G3 + (FH + .06) / 2, FZ); scene.add(po); }
-  { const rail = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, FW, 8), metal3); rail.rotation.z = Math.PI / 2; rail.position.set(RX, G3 + FH, FZ); scene.add(rail); }
+  { const rail = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, FW, 8), metal3); rail.rotation.z = Math.PI / 2; rail.position.set(FXC, G3 + FH, FZ); scene.add(rail); }
   const lc = document.createElement("canvas"); lc.width = lc.height = 128; { const g = lc.getContext("2d"); g.strokeStyle = "#ffffff"; g.lineWidth = 11; g.beginPath(); g.moveTo(0, 0); g.lineTo(128, 128); g.moveTo(128, 0); g.lineTo(0, 128); g.stroke(); }
   const lTex = new THREE.CanvasTexture(lc); lTex.wrapS = lTex.wrapT = THREE.RepeatWrapping; lTex.repeat.set(FW / .1, FH / .1); lTex.anisotropy = maxAniso;
   const link3 = new THREE.Mesh(new THREE.PlaneGeometry(FW, FH), new THREE.MeshStandardMaterial({ color: 0x9aa0a6, metalness: .7, roughness: .4, alphaMap: lTex, transparent: true, depthWrite: false, opacity: .9, side: THREE.DoubleSide }));
-  link3.material.map = null; link3.position.set(RX, G3 + FH / 2, FZ); scene.add(link3);
+  link3.material.map = null; link3.position.set(FXC, G3 + FH / 2, FZ); scene.add(link3);
   // the ribbons: one instanced strip pair (a knot and two tails), tied at points of the mesh; each appears at its own time and moves in the wind
   const rib = (() => { const pos = [], idx = []; const tail = (ang, L, w) => { const b = pos.length / 3; for (let i = 0; i <= 6; i++) { const t = i / 6 * L; for (const sx of [-1, 1]) pos.push(Math.sin(ang) * t + sx * w / 2 * Math.cos(ang), -Math.cos(ang) * t, 0); if (i < 6) { const k = b + i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); } } };
     tail(.13, .19, .036); tail(-.1, .16, .036); const g = new THREE.InstancedBufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; })();
@@ -1288,7 +1290,12 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
         transformed.x += sin(uTm * 3.1 + aIn.y * 2.3) * .35 * s;
         transformed *= pop * aIn.z;`); };
   const ribs = new THREE.InstancedMesh(rib, ribMat, RN); ribs.frustumCulled = false; scene.add(ribs);
-  { const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = V(1, 1, 1), cols = Math.round(Math.sqrt(RN * FW / (FH * .78))), rows = Math.ceil(RN / cols), order = [...Array(RN).keys()].sort(() => Math.random() - .5);
+  if (BAN) { const N = Math.round(FW / .15), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = V(1, 1, 1), order = [...Array(N).keys()].sort(() => Math.random() - .5); ribs.count = N; // one by one along the rail, then faster
+    for (let i = 0; i < N; i++) { const x = FX0 + .08 + (i + .5 + (Math.random() - .5) * .6) / N * (FW - .16), y = G3 + FH - .015 - Math.random() * .03;
+      Q.setFromAxisAngle(V(0, 0, 1), (Math.random() - .5) * .5); M.compose(V(x, y, FZ + .2), Q, V(1.5, 1.5, 1.5)); ribs.setMatrixAt(i, M); // in front of the sheet: they hang over its top edge
+      const j = order[i], at = RIB0 - 1.2 + (j < 6 ? j * .3 : 1.8 + 2 * Math.pow((j - 6) / (N - 6), .7)); aIn.set([at, Math.random() * 6.28, .8 + Math.random() * .45, 0], i * 4); }
+    rib.setAttribute("aIn", new THREE.InstancedBufferAttribute(aIn, 4)); ribs.instanceMatrix.needsUpdate = true; }
+  else { const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = V(1, 1, 1), cols = Math.round(Math.sqrt(RN * FW / (FH * .78))), rows = Math.ceil(RN / cols), order = [...Array(RN).keys()].sort(() => Math.random() - .5);
     for (let i = 0; i < RN; i++) { const c = i % cols, r = (i / cols) | 0, x = FX0 + .1 + (c + .5 + (Math.random() - .5) * .5) / cols * (FW - .2), y = G3 + .3 + (r + .5 + (Math.random() - .5) * .4) / rows * (FH * .78);
       Q.setFromAxisAngle(V(0, 0, 1), (Math.random() - .5) * .5); M.compose(V(x, y, FZ + .012), Q, S); ribs.setMatrixAt(i, M);
       const j = order.indexOf(i), at = RIB0 + (j < 6 ? j * .35 : 2.1 + 2.6 * Math.pow((j - 6) / (RN - 6), .62)); // a few one by one, then faster and faster
@@ -1301,7 +1308,32 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   for (const [n, b] of [["raddavarfruberga's name", [40, 260, 1135, 560]], ["raddavarfruberga's house", [940, 260, 1535, 850]]]) RVP.protect(n, b);
   const RVF_LINK = document.documentElement.dataset.rvflink;
   let RVF_BOX, RVF_B = RVP, RVF_FLUTTER = null, RVF_GLOW; // the mark's tap area (in its own space: left, top, right, bottom), that space, the ribbon's wind, its glow
-  if (RVF_LINK === "ribbon") { // the fence stretch and the ribbon (its own picture, 330 x 250 px, tied at picture pixel 14, 690); the band itself is picture pixels 44, 698 to 314, 820
+  if (BAN) { // the sheet: tied to the rail at its two top corners and in the middle, painted by hand, the link; it moves in the wind
+    const BW = NARROW ? 3.6 : 3.4, CW = 1500, CH = 520, BH = BW * CH / CW, bk = BW / CW, BX = FX0 + FW * (NARROW ? .5 : .36), BTOP = G3 + FH - .07, BZ = FZ + .035;
+    const bc = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), bt = new THREE.CanvasTexture(bc); bt.encoding = THREE.sRGBEncoding; bt.anisotropy = maxAniso;
+    const sheet = () => { const g = bc.getContext("2d"); g.fillStyle = "#e9e3d5"; g.fillRect(0, 0, CW, CH);
+      for (let k = 0; k < 9000; k++) { const v = 200 + Math.random() * 40 | 0; g.fillStyle = `rgba(${v},${v - 6},${v - 18},${.05 + Math.random() * .08})`; g.fillRect(Math.random() * CW, Math.random() * CH, 1 + Math.random() * 3, 1); } // the cloth's weave
+      for (const y of [CH * .33, CH * .66]) { const gr = g.createLinearGradient(0, y - 14, 0, y + 14); gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(.5, "rgba(90,80,60,.10)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, y - 14, CW, 28); } // where it was folded
+      const eg = g.createRadialGradient(CW / 2, CH / 2, CH * .4, CW / 2, CH / 2, CW * .62); eg.addColorStop(0, "rgba(0,0,0,0)"); eg.addColorStop(1, "rgba(80,66,40,.22)"); g.fillStyle = eg; g.fillRect(0, 0, CW, CH); // grubby edges
+      const RED = "#b0231c"; g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = RED;
+      const lines = ["Don't kick", "our kids out"], fs = 196, ys = [CH * .44, CH * .86];
+      lines.forEach((t, i) => { g.font = `${fs}px "Sedgwick Ave Display", cursive`; const x = CW / 2 + (i ? 18 : -22), y = ys[i];
+        g.globalAlpha = .9; g.fillText(t, x, y); g.globalAlpha = .35; g.fillText(t, x + 3, y - 2); g.globalAlpha = 1; // a brush goes over twice
+        const w = g.measureText(t).width; for (let d = 0; d < 5; d++) { const dx = x - w / 2 + w * (.08 + Math.random() * .84), L = 14 + Math.random() * 46, dw = 4 + Math.random() * 4; // paint that ran
+          g.beginPath(); g.moveTo(dx - dw / 2, y - 8); g.lineTo(dx - dw / 2.6, y + L); g.arc(dx, y + L, dw / 2.2, Math.PI, 0, true); g.lineTo(dx + dw / 2, y - 8); g.fill(); } });
+      bt.needsUpdate = true; };
+    document.fonts.load('196px "Sedgwick Ave Display"').then(sheet, sheet);
+    const bg = new THREE.PlaneGeometry(BW, BH, 40, 14), bp = bg.attributes.position, b0 = bp.array.slice();
+    const ban = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ map: bt, roughness: .95, side: THREE.DoubleSide })); ban.position.set(BX, BTOP - BH / 2, BZ); scene.add(ban);
+    RVF_FLUTTER = t => { for (let i = 0; i < bp.count; i++) { const x = b0[i * 3], y = b0[i * 3 + 1], u = (x + BW / 2) / BW, v = Math.max(0, (BH / 2 - y) / BH), hang = Math.pow(v, 1.25), ph = t * 1.7; // max: the top row sits a hair above 0, and a power of it would be NaN
+        const sag = (1 - v) * .035 * Math.abs(Math.sin(u * 2 * Math.PI)); // the top edge between the three ties
+        const rp_z = hang * (.05 + .035 * Math.sin(ph + u * 6.5) + .018 * Math.sin(ph * 2.3 + u * 13 + v * 4)) + .012 * Math.sin(u * 2 * Math.PI) ** 2;
+        bp.setXYZ(i, x + hang * .025 * Math.sin(ph * .9 + v * 3), y - sag + hang * .01 * Math.sin(ph * 1.4 + u * 9), rp_z); }
+      bp.needsUpdate = true; bg.computeVertexNormals(); };
+    const BANB = { at: (u, v) => V(BX - BW / 2 + u * bk, BTOP - v * bk, BZ + .07), k: bk };
+    RVF_BOX = [0, 0, CW, CH]; RVF_B = BANB; RVF_GLOW = () => makeGlow(bc.toDataURL(), BANB, RVF_BOX, { rect: true, colour: "#ffe9a8", fill: 0, hole: 1 });
+    PROT.push(["the banner", BANB.at(0, CH), BANB.at(CW, 0)]); }
+  else if (RVF_LINK === "ribbon") { // the fence stretch and the ribbon (its own picture, 330 x 250 px, tied at picture pixel 14, 690); the band itself is picture pixels 44, 698 to 314, 820
     paintOn("assets/rvf_fence.webp", RVP.w, [0, 0], [RVP.at(0, 0).x, RVP.at(0, 0).y], .003).m.renderOrder = 1; RVP.protect("the fence and the ribbon", [20, 640, 310, 912]);
     const rb = paintOn("assets/rvf_ribbon.webp", 330 * RVP.k, [0, 0], [RVP.at(14, 690).x, RVP.at(14, 690).y], .005, [330, 250]), rg = new THREE.PlaneGeometry(rb.w, rb.h, 30, 8), rp = rg.attributes.position, r0 = rp.array.slice(); rb.m.geometry = rg; rb.m.renderOrder = 2; Object.assign(rb.m.material, { emissive: new THREE.Color(0xffffff), emissiveMap: rb.m.material.map, emissiveIntensity: .5 }); // the band stays yellow in the shade of the wall
     RVF_FLUTTER = t => { for (let i = 0; i < rp.count; i++) { const x = r0[i * 3], y = r0[i * 3 + 1], u = (x + rb.w / 2) / rb.w, v = (rb.h / 2 - y) / rb.h, free = Math.max(0, u - .2), tail = Math.max(0, v - .5) * 2, ph = t * 3.2;
@@ -1326,16 +1358,16 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
     if (introOver && walk3 > .5 && !rvfStart) rvfStart = now; // once per visit
     const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1; rU.uClk.value = sec;
     // the break: cracks run, then the wall gives, chunks fall out onto the street, dust, daylight floods through
-    const tb = sec - BRK, op = tb < 0 ? 0 : 1 - Math.pow(1 - cl(tb / .45), 3);
-    holeU.uCrack.value = sec < 0 ? 0 : sm(cl(sec / BRK)) * .95 + .35 * sm(cl(tb / .6)); holeU.uOpen.value = op;
-    const open = op > .01; edge3.visible = open; edge3.scale.set(op, op, 1); rebar.visible = op > .95; ribs.visible = open; photo3.visible = yard3.visible = open;
+    const tb = BAN ? -1 : sec - BRK, op = tb < 0 ? 0 : 1 - Math.pow(1 - cl(tb / .45), 3);
+    holeU.uCrack.value = sec < 0 || BAN ? 0 : sm(cl(sec / BRK)) * .95 + .35 * sm(cl(tb / .6)); holeU.uOpen.value = op;
+    const open = op > .01; edge3.visible = open; edge3.scale.set(op, op, 1); rebar.visible = op > .95; ribs.visible = BAN ? sec >= 0 || REDUCED : open; photo3.visible = yard3.visible = open;
     chunks.visible = open; if (open) fall3(tb);
     const dk = tb < 0 ? 0 : cl(tb / 4.5); dust.visible = tb > 0 && dk < 1;
     if (dust.visible) { const dr = 1 - Math.exp(-tb * 1.6); for (let i = 0; i < dustN; i++) { const o = dust0[i], v = dustV[i]; dustP[i * 3] = o.x + v.x * dr; dustP[i * 3 + 1] = Math.max(G3 + .05, o.y + v.y * dr - .12 * tb); dustP[i * 3 + 2] = o.z + v.z * dr; }
       dustGeo.attributes.position.needsUpdate = true; dust.material.opacity = .7 * (1 - dk) * sm(cl(tb / .15)); dust.material.size = 1.4 + 2.4 * dk; }
     const day = tb < 0 ? 0 : sm(cl(tb / 1.2)) * sm(cl((walk3 - .3) / .3)); sun3.intensity = (NARROW ? 9 : 18) * day; fill3.intensity = 7 * day;
     const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0); RVF_SP.fade(showL);
-    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - HRX * .4, G3 + .1, .3) : RVP.at(RVF_LINK === "ribbon" ? 308 : 300, 650), NARROW ? 14 : 8, NARROW ? 70 : 20); // phone: below the street, where there is room; laptop: on the bare concrete between the link mark and the house
+    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - HRX * .4, G3 + .1, .3) : RVP.at(BAN ? 1560 : RVF_LINK === "ribbon" ? 308 : 300, 650), NARROW ? 14 : 8, NARROW ? 70 : 20); // phone: below the street, where there is room; laptop: on the bare concrete between the link mark and the house
     if (RVF_FLUTTER && walk3 > .3 && end3 < .8) RVF_FLUTTER(now / 1000);
     placeHots([hot3], [RVF_BOX], RVF_B, sec >= .3 && walk3 > .5 && endK < .5); } // the link is the mark of this wall (the ribbon or the chalk), once the camera is at the wall
 
