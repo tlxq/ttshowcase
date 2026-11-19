@@ -150,12 +150,107 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
 .tag.facts { width: min(270px, 70vw); font-size: calc(var(--look-label) * .9); line-height: 1.4; padding: 6px 9px; }
 .tag.facts b { margin-bottom: 1px; }
 @media (max-aspect-ratio: 4/5) { .tag.facts { font-size: calc(var(--look-label-phone) * .9); width: min(300px, 76vw); } }
+/* ==== STYLE PITCH, PITCH ONLY (Tom 11-19): ?plate= adds uv|neon|projected|panel; ?form=wall|glass|poster; ?end=17|29|67; the hover on every painted link.
+   Every value here moves to tokens.css after Tom picks. ==== */
+/* hover on a painted link: a spray-can cursor, no box; the glow and the label are drawn by the page (hotOn in paint.src.html) */
+.hot { cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cg%20stroke='%23101010'%20stroke-width='1.6'%20stroke-linejoin='round'%3E%3Crect%20x='13'%20y='13'%20width='12'%20height='17'%20rx='2'%20fill='%23e8e2d4'/%3E%3Crect%20x='14.5'%20y='7'%20width='9'%20height='6'%20rx='1.5'%20fill='%23ff6a1f'/%3E%3Crect%20x='17.5'%20y='3'%20width='3'%20height='4'%20fill='%23e8e2d4'/%3E%3C/g%3E%3Cg%20fill='%23ff6a1f'%20stroke='%23101010'%20stroke-width='.5'%3E%3Ccircle%20cx='14'%20cy='4'%20r='1.3'/%3E%3Ccircle%20cx='10'%20cy='3'%20r='1'/%3E%3Ccircle%20cx='11'%20cy='6.5'%20r='.9'/%3E%3Ccircle%20cx='7'%20cy='5'%20r='.7'/%3E%3Ccircle%20cx='6'%20cy='1.8'%20r='.6'/%3E%3C/g%3E%3C/svg%3E") 6 2, pointer; -webkit-tap-highlight-color: transparent; }
+.hot:hover { background: none; }
+.hl { position: fixed; z-index: 30; pointer-events: none; opacity: 0; transition: opacity 140ms cubic-bezier(.2, 0, 0, 1); white-space: nowrap; font: 500 13px/1 ui-monospace, "IBM Plex Mono", monospace; letter-spacing: .04em; color: #f4efe4; background: #0e1013; border: 1px solid rgba(244, 239, 228, .28); border-radius: 3px; padding: 8px 10px; box-shadow: 0 4px 14px rgba(0, 0, 0, .5); }
+.hl.on { opacity: 1; }
+button.hot { background: none; border: 0; padding: 0; }
+#endPan { display: none; position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); min-width: 120px; min-height: 48px; padding: 0 18px; font: 500 15px/1 "Inter", system-ui, sans-serif; color: #f4efe4; background: rgba(14, 16, 19, .88); border: 1px solid rgba(244, 239, 228, .35); border-radius: 24px; cursor: pointer; pointer-events: auto; z-index: 5; }
+#endPan:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
+/* the end form: it sits on the painted frame's dark panel (the page puts it there); three looks */
+html form#mail { position: absolute; left: 0; top: 0; right: auto; bottom: auto; transform: none; rotate: none; width: 400px; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; align-content: center; gap: 8px 14px; padding: 12px 18px; background: none; border: 0; border-radius: 0; filter: none; text-shadow: none; box-shadow: none;
+  font: 500 14px/1.3 "Inter", system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: var(--ink); --panel: #16181c; --ink: #f4efe4; --ink2: #bdb7a8; --line: #f4efe4; --acc: #ff7a2a; }
+html form#mail::before, html form#mail::after { display: none; }
+form#mail label { position: relative; display: block; margin: 0; color: var(--ink2); font-size: 15px; letter-spacing: 0; text-transform: none; }
+form#mail label.f-msg { grid-column: 1 / -1; }
+form#mail label.trap { position: absolute; left: -9999px; }
+form#mail input, form#mail textarea { display: block; width: 100%; box-sizing: border-box; font: 500 16px/1.3 "Inter", system-ui, sans-serif; color: var(--ink); background: transparent; border: 0; border-radius: 0; padding: 22px 2px 6px; min-height: 48px; resize: none; outline: none; }
+form#mail textarea { min-height: 64px; max-height: 140px; field-sizing: content; } /* grows with what is typed, so the words never slide under the label */
+form#mail label span { position: absolute; left: 2px; top: 15px; font-size: 15px; line-height: 1; pointer-events: none; transform-origin: left top; transition: transform 160ms cubic-bezier(.2, 0, 0, 1); color: var(--ink2); }
+form#mail input:focus ~ span, form#mail input:not(:placeholder-shown) ~ span, form#mail textarea:focus ~ span, form#mail textarea:not(:placeholder-shown) ~ span { transform: translateY(-11px) scale(.78); }
+@media (prefers-reduced-motion: reduce) { form#mail label span { transition: none; } }
+form#mail .err { grid-column: 1; grid-row: 3; align-self: center; margin: 0; color: #ffb59a; font-size: 13px; line-height: 1.3; }
+form#mail button { grid-column: 2; grid-row: 3; justify-self: end; position: relative; min-width: 132px; min-height: 48px; padding: 0 22px; font: 400 16px/1 "Saira Stencil One", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #16110c; background: var(--acc); border: 0; border-radius: 3px; cursor: pointer; transition: filter 160ms cubic-bezier(.2, 0, 0, 1); }
+form#mail button:hover { filter: brightness(1.12); }
+form#mail button:disabled { opacity: .7; cursor: default; }
+form#mail button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; margin: 0; font: 500 20px/1.35 "Inter", system-ui, sans-serif; color: var(--ink); text-align: center; }
+/* wall: no box; the fields are lines sprayed on the dark panel, typed text in clean light letters, a sprayed button */
+html[data-form="wall"] form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); opacity: .75; filter: url(#rough); transition: background 160ms, box-shadow 160ms; }
+html[data-form="wall"] form#mail label.trap::after { display: none; }
+html[data-form="wall"] form#mail label:focus-within::after { background: var(--acc); opacity: 1; box-shadow: 0 0 10px var(--acc); }
+html[data-form="wall"] form#mail button { filter: url(#rough); box-shadow: 0 0 0 2px rgba(255, 122, 42, .25), 0 0 18px rgba(255, 122, 42, .4); }
+html[data-form="wall"] form#mail button:hover { filter: url(#rough) brightness(1.12); }
+/* glass: a slim frosted pane in the frame, one column */
+html[data-form="glass"] form#mail { --panel: #2b2e35; --ink: #ffffff; --ink2: #d9dce2; grid-template-columns: 1fr; gap: 8px; padding: 14px; background: rgba(255, 255, 255, .13); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); border: 1px solid rgba(255, 255, 255, .32); border-radius: 14px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .38), 0 12px 36px rgba(0, 0, 0, .42); }
+html[data-form="glass"] form#mail label.f-msg { grid-column: 1; }
+html[data-form="glass"] form#mail input, html[data-form="glass"] form#mail textarea { background: rgba(0, 0, 0, .24); border: 1px solid rgba(255, 255, 255, .24); border-radius: 8px; padding: 22px 10px 6px; transition: border-color 160ms; }
+html[data-form="glass"] form#mail label span { left: 10px; }
+html[data-form="glass"] form#mail input:focus, html[data-form="glass"] form#mail textarea:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(255, 122, 42, .28); }
+html[data-form="glass"] form#mail .err, html[data-form="glass"] form#mail button { grid-column: 1; grid-row: auto; justify-self: stretch; }
+html[data-form="glass"] form#mail .err { color: #ffd9cb; }
+html[data-form="glass"] form#mail button { color: #14110e; background: #f6f2e8; border-radius: 8px; }
+/* poster: a printed sheet pasted in the frame, taped at two corners, lines to write on */
+html[data-form="poster"] form#mail { --panel: #ebe5d2; --ink: #1b1814; --ink2: #4a4436; --line: rgba(27, 24, 20, .7); --acc: #a8280a; color: #1b1814; background-color: #ebe5d2; border-radius: 1px; rotate: -.5deg; padding: 12px 20px;
+  background-image: linear-gradient(104deg, rgba(0, 0, 0, 0) 0 18%, rgba(0, 0, 0, .07) 19%, rgba(255, 255, 255, .28) 21%, rgba(0, 0, 0, 0) 24% 61%, rgba(0, 0, 0, .06) 63%, rgba(255, 255, 255, .22) 65%, rgba(0, 0, 0, 0) 68%), linear-gradient(172deg, rgba(0, 0, 0, 0) 0 40%, rgba(0, 0, 0, .05) 41%, rgba(255, 255, 255, .2) 43%, rgba(0, 0, 0, 0) 46%), radial-gradient(120% 90% at 20% 10%, rgba(255, 255, 255, .35), rgba(120, 100, 60, .12));
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .35), 0 8px 18px rgba(0, 0, 0, .5); }
+html[data-form="poster"] form#mail::before, html[data-form="poster"] form#mail::after { display: block; content: ""; position: absolute; top: -9px; width: 54px; height: 17px; background: rgba(226, 214, 160, .76); box-shadow: 0 1px 2px rgba(0, 0, 0, .25); }
+html[data-form="poster"] form#mail::before { left: 14px; rotate: -6deg; } html[data-form="poster"] form#mail::after { right: 14px; rotate: 5deg; }
+html[data-form="poster"] form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 4px; height: 2px; background: var(--line); }
+html[data-form="poster"] form#mail label.trap::after { display: none; }
+html[data-form="poster"] form#mail label:focus-within::after { background: var(--acc); height: 3px; }
+html[data-form="poster"] form#mail .err { color: #8f1d00; }
+html[data-form="poster"] form#mail button { color: #ebe5d2; background: #1b1814; border-radius: 1px; }
+@media (max-aspect-ratio: 4/5) { html form#mail { gap: 6px 10px; padding: 10px 12px; } html[data-form="glass"] form#mail { padding: 12px; } }
+/* plate = uv: the facts are written in invisible UV ink; a black light sweeps over them once and they glow violet-white (dim ghost before) */
+@property --uvx { syntax: "<percentage>"; inherits: false; initial-value: -30%; }
+@keyframes uvsweep { from { --uvx: -30%; } to { --uvx: 130%; } }
+@keyframes uvglow { 0%, 100% { filter: drop-shadow(0 0 4px rgba(160, 110, 255, .85)) drop-shadow(0 0 14px rgba(120, 70, 255, .5)); } 50% { filter: drop-shadow(0 0 7px rgba(190, 150, 255, 1)) drop-shadow(0 0 22px rgba(130, 80, 255, .7)); } }
+html[data-plate="uv"] .tag { --uvx: -30%; background-color: transparent; border: 0; border-radius: 0; padding: 6px 8px; font-family: "Saira Stencil One", sans-serif; text-transform: uppercase; letter-spacing: .05em; -webkit-text-fill-color: transparent; color: transparent; text-shadow: none;
+  background-image: linear-gradient(100deg, #f1e9ff 0, #f1e9ff calc(var(--uvx) - 6%), rgba(170, 140, 255, .13) calc(var(--uvx) + 6%), rgba(170, 140, 255, .13) 100%); -webkit-background-clip: text; background-clip: text; }
+html[data-plate="uv"] .tag b, html[data-plate="uv"] .tag.facts span { color: transparent; -webkit-text-fill-color: transparent; font-family: "Saira Stencil One", sans-serif; font-weight: 400; letter-spacing: .06em; }
+html[data-plate="uv"] .tag.facts { text-transform: uppercase; }
+html[data-plate="uv"] .tag[style*="opacity: 1"] { animation: uvsweep 3.2s cubic-bezier(.4, 0, .3, 1) forwards, uvglow 4s ease-in-out 3.2s infinite; }
+html[data-plate="uv"] .tag::before { content: ""; position: absolute; top: -26px; bottom: -26px; left: var(--uvx); width: 130px; margin-left: -65px; pointer-events: none; background: radial-gradient(closest-side, rgba(165, 120, 255, .42), rgba(110, 60, 255, .14) 62%, transparent); opacity: 0; }
+html[data-plate="uv"] .tag[style*="opacity: 1"]::before { animation: uvbeam 3.2s linear forwards; }
+@keyframes uvbeam { 0% { opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { html[data-plate="uv"] .tag[style*="opacity: 1"] { animation: none; --uvx: 130%; } html[data-plate="uv"] .tag::before { display: none; } }
+/* plate = neon: a small neon sign / light box on the wall, glowing */
+@keyframes neonflick { 0%, 17%, 19%, 23%, 100% { opacity: 1; } 18%, 21% { opacity: .55; } 22% { opacity: .85; } }
+html[data-plate="neon"] .tag { --neon: #ff4fa3; width: auto; max-width: min(340px, 74vw); background: #0b0c10; border: 2px solid var(--neon); border-radius: 8px; padding: 8px 14px 10px; color: #f6eef2; font-family: "Inter", system-ui, sans-serif; font-weight: 500; text-transform: none; letter-spacing: 0; filter: none; text-shadow: none;
+  box-shadow: 0 0 5px var(--neon), 0 0 16px var(--neon), 0 0 38px rgba(255, 79, 163, .35), inset 0 0 12px rgba(255, 79, 163, .4); }
+html[data-plate="neon"] .tag b { font-family: "Sedgwick Ave Display", cursive; font-weight: 400; font-size: 1.9em; line-height: 1.05; letter-spacing: .01em; text-transform: none; color: #fff; text-shadow: 0 0 3px #fff, 0 0 9px var(--neon), 0 0 20px var(--neon), 0 0 42px var(--neon); }
+html[data-plate="neon"] #tagFacts { --neon: #ff8a3d; } html[data-plate="neon"] #tagRvf { --neon: #6fd3ff; }
+html[data-plate="neon"] .tag[style*="opacity: 1"] { animation: neonflick 9s linear infinite; }
+html[data-plate="neon"] .tag.facts { text-transform: none; }
+@media (prefers-reduced-motion: reduce) { html[data-plate="neon"] .tag[style*="opacity: 1"] { animation: none; } }
+/* plate = projected: a projector beam throws the facts onto the concrete; a little flicker, dust in the beam */
+@keyframes projflick { 0%, 100% { opacity: 1; } 8% { opacity: .9; } 9% { opacity: 1; } 47% { opacity: .94; } 48% { opacity: 1; } 71% { opacity: .88; } 72% { opacity: .97; } }
+@keyframes dust { from { background-position: 0 0, 0 0, 0 0; } to { background-position: -90px 140px, 70px 210px, -40px 90px; } }
+html[data-plate="projected"] .tag { background: rgba(255, 244, 214, .09); border: 0; border-radius: 1px; padding: 8px 12px; color: #fff4d8; font-family: "Inter", system-ui, sans-serif; font-weight: 600; text-transform: none; letter-spacing: .01em; filter: blur(.25px); text-shadow: 0 0 6px rgba(255, 236, 190, .55);
+  transform: perspective(700px) rotateY(-9deg); transform-origin: 0 50%; box-shadow: 0 0 30px rgba(255, 240, 200, .16); }
+html[data-plate="projected"] .tag b { color: #fff; font-family: "Saira Stencil One", sans-serif; font-weight: 400; letter-spacing: .06em; text-transform: uppercase; }
+html[data-plate="projected"] .tag.facts { text-transform: none; }
+html[data-plate="projected"] .tag::before, html[data-plate="projected"] .tag::after { content: ""; position: absolute; top: -230px; right: -380px; bottom: -6px; left: -8px; z-index: -1; pointer-events: none; clip-path: polygon(100% 0, 0 100%, calc(100% - 372px) 100%); }
+html[data-plate="projected"] .tag::before { background: linear-gradient(to bottom left, rgba(255, 244, 214, .02), rgba(255, 244, 214, .15)); }
+html[data-plate="projected"] .tag::after { background-image: radial-gradient(circle, rgba(255, 246, 220, .85) 0 1px, transparent 1.6px), radial-gradient(circle, rgba(255, 246, 220, .6) 0 1.2px, transparent 2px), radial-gradient(circle, rgba(255, 246, 220, .5) 0 .8px, transparent 1.4px); background-size: 57px 83px, 91px 119px, 37px 61px; animation: dust 14s linear infinite; opacity: .8; }
+html[data-plate="projected"] .tag[style*="opacity: 1"] { animation: projflick 6s steps(1, end) infinite; }
+@media (prefers-reduced-motion: reduce) { html[data-plate="projected"] .tag[style*="opacity: 1"], html[data-plate="projected"] .tag::after { animation: none; } }
+/* plate = panel: a hand-sprayed rectangle with masking-tape edges, the facts stencilled inside */
+html[data-plate="panel"] .tag { background: #e8e1cd; border: 0; border-radius: 0; padding: 12px 18px; color: #15120e; filter: url(#rough); text-shadow: none; font-family: "Saira Stencil One", sans-serif; text-transform: uppercase; letter-spacing: .05em; box-shadow: 0 0 0 3px rgba(232, 225, 205, .2), 0 0 26px 6px rgba(232, 225, 205, .24); }
+html[data-plate="panel"] .tag b { color: #a8280a; font-family: "Saira Stencil One", sans-serif; font-weight: 400; font-size: 1.3em; letter-spacing: .06em; }
+html[data-plate="panel"] .tag.facts { text-transform: uppercase; }
+html[data-plate="panel"] .tag::before, html[data-plate="panel"] .tag::after { content: ""; position: absolute; width: 64px; height: 17px; background: rgba(215, 196, 138, .86); box-shadow: 0 1px 2px rgba(0, 0, 0, .22); clip-path: polygon(0 12%, 4% 0, 8% 14%, 12% 0, 92% 0, 96% 14%, 100% 0, 100% 100%, 96% 86%, 92% 100%, 12% 100%, 8% 86%, 4% 100%, 0 88%); }
+html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; } html[data-plate="panel"] .tag::after { right: -22px; bottom: -6px; rotate: -34deg; }
 </style>
 <svg class="pitch-svg" aria-hidden="true"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></svg>
 <script>
 // pitch only: the style switch is read from the URL once; unknown or missing values mean today's look
 (() => { const q = new URLSearchParams(location.search), pick = (k, ok) => ok.includes(q.get(k)) ? q.get(k) : ok[0], d = document.documentElement.dataset;
-  d.plate = pick("plate", ["dark", "poster", "stencil"]); d.font = pick("font", ["today", "hand", "sans"]); d.light = pick("light", ["night", "dusk", "day"]); d.street = pick("street", ["bare", "some", "busy"]); })();
+  d.plate = pick("plate", ["dark", "poster", "stencil", "uv", "neon", "projected", "panel"]); d.form = pick("form", ["wall", "glass", "poster"]); d.end = pick("end", ["29", "17", "67"]); d.font = pick("font", ["today", "hand", "sans"]); d.light = pick("light", ["night", "dusk", "day"]); d.street = pick("street", ["bare", "some", "busy"]); })();
 </script>
 
 <canvas id="c"></canvas>
@@ -312,11 +407,12 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
   // a street light on the pavement's edge, its pool of light on the road; the rain in the dips reflects it (Tom 11-16)
   const POST = V(-4.4, 0, 2.45), postM = new THREE.MeshStandardMaterial({ color: 0x1a1b1d, metalness: .6, roughness: .55, envMapIntensity: .5 });
   const bulbM = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xffd9a8, emissiveIntensity: 0 });
+  const POSTMESH = []; // the street light's parts: by day, at the end, the pole is not in front of the painting
   { const pole = new THREE.Mesh(new THREE.CylinderGeometry(.06, .09, 6.6, 16), postM); pole.position.set(POST.x, GROUND + 3.3, POST.z);
     const arm = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, 1.3, 10), postM); arm.rotation.x = Math.PI / 2 - .2; arm.position.set(POST.x, GROUND + 6.5, POST.z + .62);
     const head = new THREE.Mesh(new THREE.CylinderGeometry(.13, .32, .18, 20), postM); head.position.set(POST.x, GROUND + 6.45, POST.z + 1.25);
     const bulb = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .02, 20), bulbM); bulb.position.set(POST.x, GROUND + 6.35, POST.z + 1.25);
-    scene.add(pole, arm, head, bulb); }
+    scene.add(pole, arm, head, bulb); POSTMESH.push(pole, arm, head, bulb); }
   // the steps: worn yellow paint on each edge, a handrail by the wall, a wall lamp over each flight; one light, moved to the flight in view
   { const prev = ground.material.onBeforeCompile; ground.material.onBeforeCompile = sh => { prev(sh);
     sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", `float nose = 0.;
@@ -1352,15 +1448,18 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
   const white = document.getElementById("white"), EXPO = renderer.toneMappingExposure;
   const sun = new THREE.DirectionalLight(0xffe4c8, 0); sun.position.set(14, 7, 9); sun.target.position.set(0, .5, 0); scene.add(sun, sun.target);
   const BG0 = scene.background.clone(), BGM = new THREE.Color(0xb9c3cf), FOGM = new THREE.Color(0xa7adb5), SKYM = new THREE.Color(0xdfe6ef), GND0 = sky.groundColor.clone(), GNDM = new THREE.Color(0x6d6862);
-  const MCAM = NARROW ? [V(0, -.6, 16.2), V(0, -.7, 15), V(0, -1.1, 0)] : [V(2.2, 1.5, 16.6), V(2.2, 1.4, 15), V(2.2, .5, 0)]; // from, to (a small step in), look
-  // the form: the same fields and words as the live site's (src/look/MailForm.tsx), sent by the server (api/contact.ts); signum W3, W5, W6
-  document.querySelector(".hud").insertAdjacentHTML("beforeend", `<form class="mail" id="mail" inert><b>Write to me</b><div class="fields" style="display: contents">
-    <label>Name<input name="name" autocomplete="name" required maxlength="100" enterkeyhint="next"></label>
-    <label>Email<input name="email" type="email" autocomplete="email" required maxlength="200" enterkeyhint="next"></label>
-    <label>Message<textarea name="message" rows="3" required maxlength="4000"></textarea></label>
+    // the form: the same fields and words as the live site's (src/look/MailForm.tsx), sent by the server (api/contact.ts); signum W3, W5, W6
+  document.querySelector(".hud").insertAdjacentHTML("beforeend", `<form class="mail" id="mail" inert><span class="head">Write to me</span><div class="fields" style="display: contents">
+    <label class="f-name"><input name="name" autocomplete="name" required maxlength="100" enterkeyhint="next" placeholder=" "><span>Name</span></label>
+    <label class="f-email"><input name="email" type="email" autocomplete="email" required maxlength="200" enterkeyhint="next" placeholder=" "><span>Email</span></label>
+    <label class="f-msg"><textarea name="message" rows="2" required maxlength="4000" placeholder=" "></textarea><span>Message</span></label>
     <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
-    <p class="err" role="alert" hidden></p><button>Send</button></div>
-    <nav><a href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener">GitHub \u203a</a><a href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener">LinkedIn \u203a</a><button type="button" class="again leave" id="leave">Leave your tag</button><button type="button" class="again" id="again">Back to the start</button></nav></form>`);
+    <p class="err" role="alert" hidden></p><button>Send</button></div></form>
+    <button type="button" class="hot" id="leave" aria-label="Leave your tag" tabindex="-1" style="display: none"></button>
+    <a class="hot" id="endGit" href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener" aria-label="GitHub" tabindex="-1" style="display: none"></a>
+    <a class="hot" id="endLi" href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener" aria-label="LinkedIn" tabindex="-1" style="display: none"></a>
+    <button type="button" class="hot" id="again" aria-label="Back to the start" tabindex="-1" style="display: none"></button>
+    <button type="button" id="endPan">Form &rsaquo;</button>`);
   const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
   const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
   mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true; let why;
@@ -1368,6 +1467,100 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
       if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
       why = WHY[((await a.json().catch(() => ({}))).error) || ""] || "The mail service didn't answer."; } catch (_) { why = "The page couldn't reach the server."; }
     mailErr.textContent = "Couldn't send your message. " + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
+  // ==== STYLE PITCH, PITCH ONLY (Tom 11-19): the end wall is one painting on the graphics card (CREDITS.txt), the bare concrete keyed out so the wall
+  // shows through, the day light on it; the can is the Leave your tag button, the form sits in the painted frame, the two blue signs are GitHub and
+  // LinkedIn, the arrow on the ground is Back to the start. ?end=17|29|67 picks the picture (default 29). Picture pixels: 1536 x 960; foot: the row
+  // where the wall meets the ground (what is below it lies flat on the street); form: the dark panel's inside.
+  const ENDS = {
+    17: { foot: 792, can: [570, 295, 760, 705], form: [808, 322, 1396, 664], signs: [[65, 535, 202, 593], [77, 610, 223, 668]], arrow: [470, 828, 985, 902], bbox: [64, 151, 1488, 900] },
+    29: { foot: 797, can: [572, 300, 735, 695], form: [804, 337, 1393, 653], signs: [[40, 545, 178, 598], [43, 605, 203, 660]], arrow: [385, 853, 1130, 915], bbox: [37, 180, 1476, 914] },
+    67: { foot: 795, can: [540, 305, 745, 715], form: [820, 356, 1403, 650], signs: [[40, 513, 170, 573], [57, 586, 203, 647]], arrow: [468, 835, 1080, 915], bbox: [35, 209, 1517, 915] } };
+  const ENDN = document.documentElement.dataset.end, FORM = document.documentElement.dataset.form, E = ENDS[ENDN];
+  const EPW = 13, EK = EPW / 1536, EFLOOR = 2.2, ECX = -1.2; // the painting 13 m wide, centred left of the opening; the floor part is drawn 2.2 times deeper than it is high (a flat arrow seen from a low angle)
+  const eU = u => ECX - EPW / 2 + u * EK, eV = v => GROUND + (E.foot - v) * EK;
+  const eAt = (u, v) => V(eU(u), eV(v), 0), eFlat = (u, v) => V(eU(u), GROUND, (v - E.foot) * EK * EFLOOR), EB = { at: eAt, k: EK };
+  const endMat = extra => new THREE.MeshStandardMaterial(Object.assign({ transparent: true, depthWrite: false, roughness: .55, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }, extra));
+  const eHW = E.foot / 960, eHF = 1 - eHW, eFile = `assets/end_wall_${ENDN}.webp`, eWallH = E.foot * EK, eFD = (960 - E.foot) * EK * EFLOOR;
+  const eMapW = tex(eFile, true, 1, eHW, 0, eHF), eMapF = tex(eFile, true, 1, eHF, 0, 0);
+  for (const t of [eMapW, eMapF]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  const eWall = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eWallH), endMat({ map: eMapW, normalMap: tex("assets/wall4_nor_gl.jpg", false, EPW / TILE, eWallH / TILE, (ECX - EPW / 2 - (WX - WW / 2)) / TILE, 0), normalScale: new THREE.Vector2(.9, .9) }));
+  eWall.position.set(ECX, GROUND + eWallH / 2, .003);
+  const eFloor = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eFD), endMat({ map: eMapF, roughness: .8 })); eFloor.rotation.x = -Math.PI / 2; eFloor.position.set(ECX, GROUND + .004, eFD / 2);
+  eWall.visible = eFloor.visible = false; scene.add(eWall, eFloor);
+  window.endDbg2 = () => { const out = []; scene.traverse(o => { if (o.isMesh && o.visible) { o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld); if (b.max.y - b.min.y > 3 && b.min.x > -9 && b.max.x < 3) out.push([o.geometry.type, b.min.toArray().map(v => +v.toFixed(1)), b.max.toArray().map(v => +v.toFixed(1))]); } }); return out; };
+  window.endDbg = () => ({ fl: [eFloor.visible, eFloor.material.opacity, eFloor.position.toArray(), eFD], map: eMapF.repeat.toArray(), off: eMapF.offset.toArray() });
+  const endS = { day: false, dusk: false, show: false }; let eOp = 0, eLast = 0, eFog = false;
+  // the phone sees a third of the painting at a time: the left side (title, can, signs, arrow) or the form; a swipe or the button moves between them
+  let ePan = 0, ePanT = 0, eAuto = 0, eDrag = null;
+  function endCams() { if (!NARROW) return [V(ECX, 1.4, 17.2), V(ECX, 1.3, 15.8), V(ECX, .1, 0)];
+    const x = eU(400) + (eU(1100) - eU(400)) * ePan, z = 18.5 - 5.2 * ePan, y = .2 + .1 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
+  function endWallState(now, show, dusk) { const dt = Math.min(.1, (now - eLast) / 1000); eLast = now;
+    eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) { m.visible = eOp > .01; m.material.opacity = eOp; }
+    paint.visible = !show; pourMesh.visible = pourReady && !show; puddle.visible = !show; if (creep) creep.mesh.visible = !show; POSTMESH.forEach(m => m.visible = !show); // the poured line, its run and the street light are not drawn by day, in front of the painting
+    if (show && !pick.mode) { scene.fog.density = .012; eFog = true; } else if (!show && eFog && !pick.mode) { scene.fog.density = .04; eFog = false; } // the painting is 16 m away: the haze of the opening would wash it out
+    endS.show = show; endS.dusk = dusk; if (!show) { ePan = ePanT = 0; eAuto = 0; } }
+  // phone: swipe sideways on the wall, or the button at the bottom; once the form shows the camera slides to it by itself
+  const panBtn = document.getElementById("endPan");
+  panBtn.addEventListener("click", () => { ePanT = ePanT ? 0 : 1; });
+  if (NARROW) { canvas.style.touchAction = "pan-y";
+    canvas.addEventListener("pointerdown", e => { eDrag = endS.show && !pick.mode ? { x: e.clientX, y: e.clientY } : null; });
+    canvas.addEventListener("pointermove", e => { if (!eDrag) return; const dx = e.clientX - eDrag.x, dy = e.clientY - eDrag.y; if (Math.abs(dx) > 40 && Math.abs(dx) > 1.5 * Math.abs(dy)) { ePanT = dx < 0 ? 1 : 0; eDrag = null; } });
+    canvas.addEventListener("pointerup", () => { eDrag = null; }); canvas.addEventListener("pointercancel", () => { eDrag = null; }); }
+  // ---- hover on every painted link (Tom 11-19): the mark's shape lights up with a soft outline glow in its own colour, the cursor is a spray can, a small label
+  // says what it does; keyboard focus shows the same; on a phone the mark pulses once, faintly, when it first comes into view
+  function makeGlow(file, B, [x0, y0, x1, y1], o = {}) { const g = { op: 0, pulse: -1, pulsed: false, started: false, mesh: null };
+    g.build = () => { if (g.started) return; g.started = true; const img = new Image(); img.onload = () => {
+      const M = 26, bw = x1 - x0, bh = y1 - y0, GW = bw + 2 * M, GH = bh + 2 * M, mk = () => Object.assign(document.createElement("canvas"), { width: GW, height: GH });
+      const src = mk(), sg = src.getContext("2d", { willReadFrequently: true }); sg.drawImage(img, x0 - M, y0 - M, GW, GH, 0, 0, GW, GH); const px = sg.getImageData(0, 0, GW, GH).data;
+      const mask = mk(), mg = mask.getContext("2d"), md = mg.createImageData(GW, GH), ch = [];
+      for (let y = M; y < M + bh; y++) for (let x = M; x < M + bw; x++) { const i = (y * GW + x) * 4; if (px[i + 3] > 140) { md.data.set([255, 255, 255, 255], i); ch.push([Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]), px[i], px[i + 1], px[i + 2]]); } }
+      mg.putImageData(md, 0, 0); let col = o.colour;
+      if (!col) { ch.sort((a, b) => b[0] - a[0]); const top = ch.slice(0, Math.max(1, ch.length >> 2)), m = [1, 2, 3].map(j => top.reduce((s, c) => s + c[j], 0) / top.length);
+        col = top.length && top[0][0] > 40 ? `rgb(${m.map(v => Math.min(255, Math.round(v * .55 + 130))).join(",")})` : "#ffffff"; } // its own colour, lifted so it glows
+      const out = mk(), og = out.getContext("2d"); og.shadowColor = col; og.shadowBlur = 22; og.shadowOffsetX = 4000; for (let i = 0; i < 5; i++) og.drawImage(mask, -4000, 0);
+      og.shadowColor = "transparent"; og.shadowOffsetX = 0; og.globalCompositeOperation = "destination-out"; og.globalAlpha = .6; og.drawImage(mask, 0, 0); og.globalCompositeOperation = "source-over"; // the glow round the shape; the shape itself only a little lighter, so its words stay readable
+      const tint = mk(), tg = tint.getContext("2d"); tg.fillStyle = col; tg.fillRect(0, 0, GW, GH); tg.globalCompositeOperation = "destination-in"; tg.drawImage(mask, 0, 0); og.globalAlpha = .14; og.drawImage(tint, 0, 0);
+      const map = new THREE.CanvasTexture(out), cu = (x0 + x1) / 2, cv = (y0 + y1) / 2; map.encoding = THREE.sRGBEncoding;
+      g.mesh = new THREE.Mesh(new THREE.PlaneGeometry(GW * B.k, GH * B.k * (o.floor ? EFLOOR : 1)), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false, toneMapped: false }));
+      if (o.floor) { g.mesh.rotation.x = -Math.PI / 2; g.mesh.position.copy(eFlat(cu, cv)).y += .012; } else g.mesh.position.copy(B.at(cu, cv)).z += .012;
+      g.mesh.visible = false; scene.add(g.mesh); }; img.src = file; };
+    return g; }
+  const hlEl = document.createElement("div"); hlEl.className = "hl"; hlEl.setAttribute("aria-hidden", "true"); document.querySelector(".hud").append(hlEl);
+  const HOTL = [], PULSE = NARROW || matchMedia("(pointer: coarse)").matches, hostOf = h => h.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
+  const labelOf = el => el.hostname === "github.com" ? "Opens GitHub" : el.hostname.includes("linkedin") ? "Opens LinkedIn" : "Opens " + hostOf(el.href);
+  const hotOn = (el, label, glow) => { el.dataset.hl = label; HOTL.push({ el, label, glow }); };
+  { const EPAB = { at: (u, v) => V(EX - EW / 2 + u / 1536 * EW, EY + EH / 2 - v / 960 * EH, 0), k: EW / 1536 };
+    [[121, 567, 501, 662], [189, 672, 442, 762]].forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAB, b)));
+    hotOn(hot3, labelOf(hot3), makeGlow("assets/rvf_wall.webp", RVP, RVF_SIGN));
+    U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), makeGlow(u.art[0], u.B, u.links[j].box))));
+    const leaveHot = document.getElementById("leave"), gitHot = document.getElementById("endGit"), liHot = document.getElementById("endLi"), backHot = document.getElementById("again");
+    hotOn(leaveHot, "Leave your tag", makeGlow(eFile, EB, E.can, { colour: "#ff8a2a" }));
+    E.signs.forEach((b, i) => hotOn([gitHot, liHot][i], labelOf([gitHot, liHot][i]), makeGlow(eFile, EB, b)));
+    hotOn(backHot, "Back to the start", makeGlow(eFile, EB, E.arrow, { colour: "#ffffff", floor: true }));
+    endS.hots = { leaveHot, gitHot, liHot, backHot }; }
+  function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
+    const { leaveHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(NARROW && ePanT); // a phone looking at the form has no marks to tap: nothing may lie over the form
+    if (endS.show) { const [ax, ay] = proj(eAt(E.form[0], E.form[1])), [bx, by] = proj(eAt(E.form[2], E.form[3])), w = bx - ax, h = by - ay;
+      const fw = FORM === "glass" ? Math.max(Math.min(w, 290), w * .66) : FORM === "poster" ? w + 8 : w;
+      mail.style.left = ax + (w - fw) / 2 + "px"; mail.style.width = fw + "px"; mail.style.minHeight = (FORM === "glass" ? 0 : h + (FORM === "poster" ? 8 : 0)) + "px"; mail.style.top = (FORM === "glass" ? ay : (ay + by) / 2 - mail.offsetHeight / 2) + "px"; } // the glass pane hangs from the panel's top edge: the painted title stays clear
+    const grow = ([a, b, c, d]) => [a - 4, b - 4, c + 4, d + 4];
+    placeHots([leaveHot], [E.can], EB, marks && !leaveHot.hidden); placeHots([gitHot, liHot], E.signs.map(grow), EB, marks);
+    { const [x0, y0, x1, y1] = E.arrow, p = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([u, v]) => proj(eFlat(u, v)));
+      let l = Math.max(8, Math.min(...p.map(q => q[0]))), r = Math.min(innerWidth - 8, Math.max(...p.map(q => q[0]))), t = Math.min(...p.map(q => q[1])), b = Math.max(...p.map(q => q[1]));
+      if (!marks || !p.every(q => q[2]) || r - l < 40 || b < 0 || t > innerHeight) { backHot.style.display = "none"; backHot.tabIndex = -1; }
+      else { const w = Math.max(48, r - l), h = Math.max(48, b - t); Object.assign(backHot.style, { display: "block", left: (l + r) / 2 - w / 2 + "px", top: (t + b) / 2 - h / 2 + "px", width: w + "px", height: h + "px" }); backHot.tabIndex = 0; } }
+    // the phone: the button at the bottom, and the slide to the form once it shows
+    if (NARROW) { if (pick.mode && eAuto > 0) eAuto = -1; if (ui && !eAuto) eAuto = now; // the visitor chose the tag flow: the camera does not slide away when it comes back
+      if (ui && eAuto > 0 && now - eAuto > 2400) { ePanT = 1; eAuto = -1; }
+      ePan += (ePanT - ePan) * (REDUCED ? 1 : Math.min(1, .06)); panBtn.style.display = ui ? "block" : "none"; panBtn.textContent = ePanT ? "‹ Links" : "Form ›"; }
+    // hover: the glow, the label
+    let act = null, dt = Math.min(.1, (now - (endPlace.last || now)) / 1000); endPlace.last = now;
+    for (const h of HOTL) { const el = h.el, shown = el.style.display === "block" && !el.hidden, on = shown && el.matches(":hover, :focus-visible"), g = h.glow; let target = on ? 1 : 0;
+      if (shown) { g.build(); if (!g.pulsed && PULSE && !REDUCED) { g.pulsed = true; g.pulse = now; } }
+      if (g.pulse >= 0) { const t = (now - g.pulse) / 1400; if (t < 1) target = Math.max(target, .5 * Math.sin(Math.PI * t)); else g.pulse = -1; }
+      g.op += (target - g.op) * (REDUCED ? 1 : Math.min(1, dt * 10)); if (g.mesh) { g.mesh.material.opacity = g.op; g.mesh.visible = g.op > .01; } if (on) act = h; }
+    if (act) { const r = act.el.getBoundingClientRect(); hlEl.textContent = act.label; hlEl.classList.add("on"); const lw = hlEl.offsetWidth, lh = hlEl.offsetHeight;
+      hlEl.style.left = cl((r.left + r.right) / 2 - lw / 2, 8, innerWidth - lw - 8) + "px"; hlEl.style.top = (r.top - lh - 8 < 8 ? r.bottom + 8 : r.top - lh - 8) + "px"; } else hlEl.classList.remove("on"); }
   // Back to the start (Tom 11-17, the loop): on the same wall the sun goes down, the street light flickers on and the camera steps in to the
   // night view; then the scroll jumps to the park (svY(0)), which shows the same picture. The scroll is held while it happens.
   const DUSK_S = 2.6, again = document.getElementById("again"); let duskAt = 0, looped = false;
@@ -1382,7 +1575,8 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
   const FRAME = { w: 2.4, h: 1.35 }, AREA = { x0: VISITOR_WALL.x0, x1: 8.5, y0: GROUND + .4, y1: WALL_TOP - 1 }; // x1: short of the step down to the epaRadar wall
   let CLEAR = []; // kept-clear boxes [x0, y0, x1, y1], made when the pour is done (the line's run is known then)
   function clearBoxes() { const m = .3, b = [[-PW / 2 - m, PCY - PH / 2 - m, PW / 2 + m, PCY + PH / 2 + m], [LEDGE.x - 1.2, WALL_TOP - 2, LEDGE.x + 1.6, WALL_TOP]];
-    if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); } return b; }
+    if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); }
+    if (endS.show) b.push([eU(E.bbox[0]) - m, GROUND - .2, eU(E.bbox[2]) + m, eV(E.bbox[1]) + m]); return b; }
   const inArea = (x, y) => [cl(x, AREA.x0 + FRAME.w / 2, AREA.x1 - FRAME.w / 2), cl(y, AREA.y0 + FRAME.h / 2, AREA.y1 - FRAME.h / 2)];
   const hits = (x, y) => c => x + FRAME.w / 2 > c[0] && x - FRAME.w / 2 < c[2] && y + FRAME.h / 2 > c[1] && y - FRAME.h / 2 < c[3];
   const keptBy = (x, y) => CLEAR.some(hits(x, y)) ? "clear" : HELD.some(hits(x, y)) ? "held" : null, kept = (x, y) => !!keptBy(x, y); // HELD: where a waiting tag of someone else is (the store); it stays lit, only the frame turns yellow
@@ -1428,7 +1622,7 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
   addEventListener("keydown", e => { if (e.key === "Escape" && pick.mode > 0) pickBack(); });
   function pickCam(now, dt, cp, look) { // after the morning set the form's view: from there to the wide shot, or in close to the spot, or back
     skyMesh.visible = !pick.mode; // the dawn sky ends above the opening: the wide shot would show its edge, and by day the plain sky is right
-    if (!pick.mode) { pick.last[0].copy(cp); pick.last[1].copy(look); if (pick.refocus && !mail.inert) { pick.refocus = false; (leaveB.hidden ? again : leaveB).focus({ preventScroll: true }); } return; } // after Cancel the keyboard is back where it left
+    if (!pick.mode) { pick.last[0].copy(cp); pick.last[1].copy(look); if (pick.refocus && !mail.inert) { const t = leaveB.hidden ? again : leaveB; if (t.style.display === "block") { pick.refocus = false; t.focus({ preventScroll: true }); } } return; } // the painted marks show a frame after the form (endPlace) // after Cancel the keyboard is back where it left
     const tk = REDUCED ? 1 : sm(cl((now - pick.t0) / 1000 / pick.dur));
     { const f = Math.min(1, (REDUCED ? 60 : 3) * dt); pick.cx += (pick.x - pick.cx) * f; pick.cy += (pick.y - pick.cy) * f; } // the camera follows the spot
     let P, L; if (pick.mode === 1) { const oy = (AREA.y0 + AREA.y1) / 2; P = V(pick.ox, oy, ovD()); L = V(pick.ox, oy, 0); } else if (pick.mode === 2) { P = V(pick.cx, pick.cy, closeD()); L = V(pick.cx, pick.cy, 0); } else { P = cp.clone(); L = look.clone(); }
@@ -1445,11 +1639,11 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
       pickOv.firstChild.setAttribute("d", `M-9 -9H${innerWidth + 9}V${innerHeight + 9}H-9Z` + box(AREA.x0, AREA.y0, AREA.x1, AREA.y1)); // dark outside the area
       pickOv.lastChild.setAttribute("d", CLEAR.map(c => box(Math.max(c[0], AREA.x0), Math.max(c[1], AREA.y0), Math.min(c[2], AREA.x1), Math.min(c[3], AREA.y1))).join("")); } } // and over what stays clear
   window.plateTest = { // for the plates check: the pictures and the mural on the screen now, and every plate that shows
-    pictures: () => PROT.map(([name, a, b, only]) => { const [x0, y0, o0] = proj(a), [x1, y1, o1] = proj(b); return o0 && o1 ? { name, only, l: Math.min(x0, x1), t: Math.min(y0, y1), r: Math.max(x0, x1), b: Math.max(y0, y1) } : null; }).filter(Boolean) };
+    pictures: () => PROT.filter(([name]) => paint.visible || !/^the mural/.test(name)).map(([name, a, b, only]) => { const [x0, y0, o0] = proj(a), [x1, y1, o1] = proj(b); return o0 && o1 ? { name, only, l: Math.min(x0, x1), t: Math.min(y0, y1), r: Math.max(x0, x1), b: Math.max(y0, y1) } : null; }).filter(Boolean) };
   window.pickTest = { // for the pickspot check: where things are on the screen now
     clearOnScreen: () => { const c = CLEAR[0], [px, py] = proj(V(c[0] + .4, c[3] - .2, 0)); return { x: px, y: py }; }, // the title's top left corner
     freeOnScreen: () => { for (let y = AREA.y1 - 1; y > AREA.y0 + 1; y -= .4) for (let x = AREA.x0 + 1; x < AREA.x1 - 1; x += .4) { if (kept(...inArea(x, y)) || Math.hypot(x - pick.x, y - pick.y) < 1) continue; /* a tap puts the frame at inArea's place */ const [px, py] = proj(V(x, y, 0)); if (px > 80 && px < innerWidth - 80 && py > 140 && py < innerHeight - 140) return { x: px, y: py }; } return null; },
-    restored: () => scene.fog.density === .04 && skyMesh.visible && root.style.touchAction === "",
+    restored: () => scene.fog.density === (endS.show ? .012 : .04) && skyMesh.visible && root.style.touchAction === "",
     heldOnScreen: () => { const h = HELD[0]; if (!h) return null; const [px, py] = proj(V((h[0] + h[2]) / 2, (h[1] + h[3]) / 2, 0)); return { x: px, y: py }; },
     worldAt: (px, py) => wallAt(px, py),
     spotOnScreen: () => { const [px, py] = proj(V(pick.x, pick.y, 0)); return { x: px, y: py }; } };
@@ -1802,7 +1996,7 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
     const dusk = duskAt; // the dusk's last frame clears duskAt; the form must not show for that frame
     const wIn = sm(cl((sv - WHITE_IN) / (CUT - WHITE_IN))), wOut = 1 - sm(cl((sv - CUT) / (WHITE_OUT - CUT))), w = sv < CUT ? wIn : wOut, day = sv >= CUT;
     white.style.opacity = cl((w - .45) / .5); renderer.toneMappingExposure = EXPO * (1 + 5 * w * w);
-    if (day) { const k = sm(cl((sv - CUT) / (SV_END - CUT))); cp.lerpVectors(MCAM[0], MCAM[1], k); look.copy(MCAM[2]);
+    if (day) { const k = sm(cl((sv - CUT) / (SV_END - CUT))); const mc = endCams(); cp.lerpVectors(mc[0], mc[1], k); look.copy(mc[2]);
       lamp.intensity = pool.intensity = bulbM.emissiveIntensity = lamp2.intensity = work.intensity = stairLight.intensity = manL.intensity = dawnL.intensity = 0;
       sky.color.copy(SKYM); sky.groundColor.copy(GNDM); sky.intensity = .75; sun.intensity = 2.1; scene.background.copy(BGM); scene.fog.color.copy(FOGM); lens.uniforms.uAper.value = .5;
       if (duskAt) { const dk = cl((now - duskAt) / 1000 / DUSK_S), sunK = sm(cl(dk / .7)), lampK = sm(cl((dk - .35) / .4)), flick = lampK > 0 && lampK < .6 && Math.random() < .3 ? .2 : 1, camK = sm(cl((dk - .15) / .85));
@@ -1815,7 +2009,8 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
     if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
     const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
     const on = day && !dusk && !pick.mode && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
-    if (on !== mail.classList.contains("on")) { mail.classList.toggle("on", on); mail.inert = !on; } }
+    if (on !== mail.classList.contains("on")) { mail.classList.toggle("on", on); mail.inert = !on; }
+    endWallState(now, day && !dusk, !!dusk); }
   // the camera's way: over the cover, straight down the shaft, back into the room and a stop in front of each tool, under the far shaft,
   // straight up it, out to EDGE, on towards the sunrise (then morning() cuts to the opening wall). In a shaft it stays on its centre line, so it never touches the concrete.
   const stop = (x, y, z, ly) => [V(x + .1, y, z), V(x, ly, 0)];
@@ -1923,7 +2118,7 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
     lamp.position.set(-8.5 + 2.5 * lookL, 4.2 + .6 * lookL, 1.6 + .8 * lookL); lamp.target.position.set(.5 - 12.5 * lookL, .2 + 2.4 * lookL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = (1 - inShaft(cp)) * (1 - pick.k); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now);
+    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); endPlace(now);
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);
