@@ -1,7 +1,7 @@
 // The whole walk: tap the bucket, then each stop down to the end; a picture at each stop (__SHOTS__pitch-<width>-<stop>.png).
-// Fails on a console or page error, or when the morning's form doesn't show at the end, or its four painted marks have no 48 px tap area of their own.
+// Fails on a console or page error, a three.js warning (THREE.…), or when the morning's form doesn't show at the end, or its four painted marks have no 48 px tap area of their own.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
-  page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
+  page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('THREE.'))) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   await page.goto('__URL__'); await page.waitForTimeout(3500);
   await page.mouse.click(W / 2, H / 2);
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);

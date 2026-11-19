@@ -219,8 +219,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // each picture is loaded and sent to the graphics card once; every surface that uses it shares it (own repeat/offset only)
   const texCache = {};
   const tex = (u, srgb, rx, ry, ox = 0, oy = 0) => { let c = texCache[u];
-    if (!c) { c = texCache[u] = { all: [] }; c.base = tl.load(u, () => { c.all.forEach(t => t.needsUpdate = true); renderer.initTexture(c.base); }); }
-    const t = c.all.length ? c.base.clone() : c.base; c.all.push(t); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.offset.set(ox, oy); t.anisotropy = maxAniso; if (srgb) t.encoding = THREE.sRGBEncoding; return t; };
+    if (!c) { c = texCache[u] = { all: [] }; c.base = tl.load(u, () => { c.all.forEach(t => { if (t !== c.base) { t.source = c.base.source; t.needsUpdate = true; } }); renderer.initTexture(c.base); }); }
+    // a surface asking before the picture is in gets an empty texture that takes the picture on load: clone() marks it for upload at once, and an upload with no picture warns every frame
+    const t = !c.all.length ? c.base : c.base.image ? c.base.clone() : new THREE.Texture(); c.all.push(t); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.offset.set(ox, oy); t.anisotropy = maxAniso; if (srgb) t.encoding = THREE.sRGBEncoding; return t; };
   const WW = 90, WX = 24, WH = 10, GROUND = -2.2, TILE = 6;
   // downhill (Tom 11-16: scrolling down should go down): the street steps down 1.8 m twice, between the scenes
   const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, STAIRS = [[5, 8, GROUND, G2], [19.3, 22.3, G2, G3]], NSTEP = 12;
