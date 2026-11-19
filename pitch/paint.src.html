@@ -1056,8 +1056,11 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
       // the layout: the stats big, their words small under them, the stack small; the stack alone sits in the middle of its place
       const parts = []; // [text, size, x, y, align]
       const fit = (t, px, maxW) => Math.min(px, px * maxW / wide(t, px));
-      if (o.row) { const cells = Math.max(items.length, 1), cw = (W - 2 * pad) / cells; let nfs = H * .5;
-        for (const [n] of items) nfs = Math.min(nfs, fit(n, 1000, cw * .86)); nfs = Math.min(nfs, H * (items.length ? .4 : 0));
+      if (o.inline && items.length) { // (phone) number and word on one line, the word smaller, both on the number's foot
+        const cw = (W - 2 * pad) / items.length; let nfs = H * .8; for (const [n, wd] of items) nfs = Math.min(nfs, cw * .92 / ((wide(n, 1000) + wide(wd, 1000) * .5 + 160) / 1000)); // 160: the gap, in thousandths of the size
+        const y = (H - nfs) / 2; items.forEach(([n, wd], i) => { const tw = wide(n, nfs) + wide(wd, nfs) * .5 + nfs * .16, x = pad + cw * (i + .5) - tw / 2; parts.push([n, nfs, x, y, "left"], [wd, nfs * .5, x + wide(n, nfs) + nfs * .16, y + nfs * .42, "left"]); });
+      } else if (o.row) { const cells = Math.max(items.length, 1), cw = (W - 2 * pad) / cells; let nfs = H * .5;
+        for (const [n] of items) nfs = Math.min(nfs, fit(n, 1000, cw * .86)); nfs = Math.min(nfs, H * (!items.length ? 0 : stack.length ? .4 : .58)); // numbers alone take their whole place
         const half = Math.ceil(stack.length / 2), lines = !stack.length ? [] : stack.length > 5 ? [stack.slice(0, half).join("  \u00b7  "), stack.slice(half).join("  \u00b7  ")] : [stack.join("  \u00b7  ")];
         const wfs = nfs * .4; let sfs = H * (o.fill || .2); for (const t of lines) sfs = Math.min(sfs, fit(t, 1000, W - 2 * pad)); sfs = Math.min(sfs, items.length ? (H - nfs - wfs * 1.5) / (lines.length * 1.3 + .3) : 1e9);
         const blockH = (items.length ? nfs + wfs * 1.5 + sfs * .3 : 0) + lines.length * sfs * 1.2;
@@ -1101,8 +1104,8 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   { const yT = EY + EH / 2 - 98 / 960 * EH, x0 = NARROW ? EX - EW / 2 + .9 : EX - EW / 2 + 1.2;
     // (Tom 11-19) the numbers painted big in the piece's own style, one each side above the skyline; each tool its own small tag round them; sprayed in one after another
     const R = ([u0, v0, u1, v1]) => [EPAB.at(u0, 0).x, EPAB.at(0, v1).y, EPAB.at(u1, 0).x, EPAB.at(0, v0).y];
-    var EPA_PARTS = [makeSpray({ key: "epa", only: 0, name: "epaRadar's commits", colour: "#f3ead8", piece: "#f0902a", font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, rect: R([40, -200, 520, 70]) }),
-      makeSpray({ key: "epa", only: 1, name: "epaRadar's merged pull requests", colour: "#f3ead8", piece: "#f0902a", font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, rect: R([800, -200, 1440, 70]) }),
+    var EPA_PARTS = [makeSpray({ key: "epa", only: 0, name: "epaRadar's commits", colour: "#f3ead8", piece: "#f0902a", font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, inline: NARROW, rect: R([40, -200, 520, 70]) }),
+      makeSpray({ key: "epa", only: 1, name: "epaRadar's merged pull requests", colour: "#f3ead8", piece: "#f0902a", font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, inline: NARROW, rect: R([800, -200, 1440, 70]) }),
       ...[["React Native", [560, -300, 860, -215]], ["Supabase", [560, -40, 860, 45]], ["Postgres", [1250, 70, 1480, 150]], ["pgTAP", [0, 80, 210, 160]], ["Expo", [0, 290, 140, 380]]]
         .map(([t, b], i) => makeSpray({ key: "epaTag" + i, name: "epaRadar's tag " + t, colour: i % 2 ? "#f3ead8" : "#ffb03a", stack: [t], row: true, fill: .62, rect: R(b) }))]; }
   // the underpass (Tom 11-18): the street goes down its second flight under a bridge, from the painting's right edge to just short of
@@ -1509,7 +1512,13 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
     { const [key, colour, stack] = { "Self-hosted platform": ["self", "#2d3a5c", ["TypeScript", "Next.js", "Hono", "SQLite", "Java", "Docker", "Caddy", "Tailscale"]], ttoolbox: ["ttoolbox", "#c8402a", ["Claude Code", "Python", "Bash"]],
         dot: ["dot", "#25407a", ["Bash", "bats", "GNU Stow", "mise"]], tthermal: ["tthermal", "#d8435f", ["JavaScript", "QML", "Shell"]], "app-utveckling.se": ["edge", "#1f5fc4", ["Astro", "TypeScript"]] }[u.name];
       const xr = u.B.at(u.bb[2], 0).x, yb = u.B.at(0, u.bb[3]).y, ym = u.B.at(0, (u.bb[1] + u.bb[3]) / 2).y; // beside the painting on a laptop; under it, above the floor, on a phone
-      if (N_) u.parts = [makeSpray({ key, name: u.name + "'s numbers and stack", colour, stack, row: true, rect: [u.x - 1.4, u.floor + .06, u.x + 1.4, yb - .04] })]; // phone: under the painting, above the floor
+      if (N_) { // (Tom 11-19) phone: under the painting, above the floor: the numbers big in the piece's style, then each tool its own tag, staggered
+        const z = (u.art[6] || 0) + .004, top = yb - .04, bot = u.floor + .06, hg = top - bot, nums = (LIVE[key] || []).length, nh = nums ? hg * .58 : 0, long = (LIVE[key] || []).some(s => s.word[1].length > 12);
+        const per = Math.ceil(stack.length / (stack.length > 4 ? 2 : 1)), rows = Math.ceil(stack.length / per), th = (hg - nh) / rows, tw = 2.8 / per;
+        u.parts = [...[...Array(nums).keys()].map(i => makeSpray({ key, only: i, name: u.name + "'s number " + (i + 1), colour: "#f3ead8", piece: colour, font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, inline: true, z,
+            rect: long ? [u.x - 1.4, top - (i + 1) * nh / nums, u.x + 1.4, top - i * nh / nums] : [u.x - 1.4 + i * 2.8 / nums + .05, top - nh, u.x - 1.4 + (i + 1) * 2.8 / nums - .05, top] })), // a long word: each number its own line
+          ...stack.map((t, i) => { const r = Math.floor(i / per), c = i % per, y = top - nh - (r + 1) * th + (c % 2 ? th * .12 : 0);
+            return makeSpray({ key: key + "Tag" + i, name: u.name + "'s tag " + t, colour: i % 2 ? "#20232b" : colour, stack: [t], row: true, fill: .8, z, rect: [u.x - 1.4 + c * tw, y, u.x - 1.4 + (c + 1) * tw, y + th * .88] }); })]; }
       else { // (Tom 11-19) laptop: the numbers painted big in the piece's style on the right, one over the other; each tool its own tag on the sides, staggered
         const [b0, b1, b2, b3] = u.bb, bh = b3 - b1, R = ([p0, q0, p1, q1]) => [u.B.at(p0, 0).x, u.B.at(0, q1).y, u.B.at(p1, 0).x, u.B.at(0, q0).y], nums = (LIVE[key] || []).length;
         const NUM = i => makeSpray({ key, only: i, name: u.name + "'s number " + (i + 1), colour: "#f3ead8", piece: colour, font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, rect: R([b2 + 30, b1 + i * bh / 2, b2 + 340, b1 + (i + 1) * bh / 2 - 30]) }); // inside what the camera sees beside a wide painting
