@@ -122,7 +122,37 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 #tagName:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 2px; }
 @media (max-aspect-ratio: 4/5) { .mail { right: 16px; left: 16px; width: auto; top: auto; bottom: 16px; transform: none; padding: 12px 16px; gap: 4px; } .mail textarea { min-height: 72px; } }
 .nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--look-soft); font: 16px system-ui; }
+/* ==== STYLE PITCH, PITCH ONLY (Tom 11-19): ?plate=dark|poster|stencil &font=today|hand|sans &light=night|dusk|day &street=bare|some|busy.
+   The defaults (dark, today, night, bare) are today's look: nothing below applies. Every value here moves to tokens.css after Tom picks. ==== */
+.pitch-svg { position: absolute; width: 0; height: 0; }
+/* plate = poster: paper pasted on the wall, a little wrinkled, taped at the top, dark text */
+html[data-plate="poster"] :is(.tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm) {
+  --look-text: #1b1814; --look-soft: #3a352c; --look-quiet: #56503f; --look-spray: #a8280a;
+  background-color: #ebe5d3; color: #1b1814; border: 0; border-radius: 1px; rotate: -.7deg;
+  background-image: linear-gradient(104deg, rgba(0,0,0,0) 0 18%, rgba(0,0,0,.07) 19%, rgba(255,255,255,.28) 21%, rgba(0,0,0,0) 24% 61%, rgba(0,0,0,.06) 63%, rgba(255,255,255,.22) 65%, rgba(0,0,0,0) 68%),
+    linear-gradient(172deg, rgba(0,0,0,0) 0 40%, rgba(0,0,0,.05) 41%, rgba(255,255,255,.2) 43%, rgba(0,0,0,0) 46%), radial-gradient(120% 90% at 20% 10%, rgba(255,255,255,.35), rgba(120,100,60,.12));
+  box-shadow: 0 1px 1px rgba(0,0,0,.35), 0 8px 18px rgba(0,0,0,.5); }
+html[data-plate="poster"] :is(.tag, .mail)::before { content: ""; position: absolute; top: -9px; left: 50%; width: 54px; height: 17px; margin-left: -27px; rotate: -3deg; background: rgba(226, 214, 160, .72); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+html[data-plate="poster"] .tag:nth-of-type(2n) { rotate: .6deg; }
+html[data-plate="poster"] .mail input, html[data-plate="poster"] .mail textarea { border-bottom-color: rgba(27, 24, 20, .5); }
+html[data-plate="poster"] .mail button:hover { background: rgba(168, 40, 10, .14); }
+/* plate = stencil: no box, sprayed straight on the concrete: stencil heading, rough edge, a soft overspray so it reads on light concrete too */
+html[data-plate="stencil"] :is(.tag, .mail) { background: none; border: 0; border-radius: 0; filter: url(#rough); text-shadow: 0 0 2px rgba(0,0,0,.9), 0 0 10px rgba(0,0,0,.85); color: #f3eee1; padding: 4px 6px; font-family: "Saira Stencil One", sans-serif; text-transform: uppercase; letter-spacing: .05em; font-size: 14px; }
+html[data-plate="stencil"] :is(.tag, .mail) b { font-family: "Saira Stencil One", sans-serif; font-weight: 400; font-size: 1.45em; letter-spacing: .06em; color: #ece7da; }
+html[data-plate="stencil"] .tag.facts, html[data-plate="stencil"] .tag.facts span { text-transform: uppercase; } html[data-plate="stencil"] .tag.facts span { color: #e2dccb; }
+html[data-plate="stencil"] .mail input, html[data-plate="stencil"] .mail textarea { background: rgba(0,0,0,.28); }
+/* font = hand: a marker hand for the headings, Inter for the text; font = sans: Inter for everything */
+html[data-font="hand"] :is(.tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm), html[data-font="sans"] :is(.tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm) { font-family: "Inter", system-ui, sans-serif; letter-spacing: .005em; }
+html[data-font="hand"] :is(.tag, .mail) b { font-family: "Sedgwick Ave Display", cursive; font-weight: 400; font-size: 2.3em; line-height: 1.05; letter-spacing: .01em; text-transform: none; }
+html[data-font="sans"] :is(.tag, .mail) b { font-family: "Inter", system-ui, sans-serif; font-weight: 700; font-size: 1.1em; letter-spacing: .01em; text-transform: none; }
+html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts) { text-transform: none; }
 </style>
+<svg class="pitch-svg" aria-hidden="true"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></svg>
+<script>
+// pitch only: the style switch is read from the URL once; unknown or missing values mean today's look
+(() => { const q = new URLSearchParams(location.search), pick = (k, ok) => ok.includes(q.get(k)) ? q.get(k) : ok[0], d = document.documentElement.dataset;
+  d.plate = pick("plate", ["dark", "poster", "stencil"]); d.font = pick("font", ["today", "hand", "sans"]); d.light = pick("light", ["night", "dusk", "day"]); d.street = pick("street", ["bare", "some", "busy"]); })();
+</script>
 
 <canvas id="c"></canvas>
 <div class="track"></div>
@@ -1173,16 +1203,16 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
   { const w = XW1 - XW0, h = XWT - G3 + .6, m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), conc(w, h, XW0, G3 - .6, 0xc9ccd0)); m.position.set((XW0 + XW1) / 2, G3 - .6 + h / 2, 0); scene.add(m);
     const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, .5 / TILE), envMapIntensity: .3 })); cap.position.set((XW0 + XW1) / 2, XWT - .02, -.17); scene.add(cap); }
   // dawn: a sky that lightens from night, the city's roofs against it, a low warm light over the last wall
-  const skyU = { uDawn: { value: 0 } };
+  const skyU = { uDawn: { value: 0 }, uGrey: { value: 0 } };
   const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(220, 110), new THREE.ShaderMaterial({ uniforms: skyU, depthWrite: false, fog: false,
     vertexShader: "varying vec3 vP; void main(){ vP = (modelMatrix * vec4(position, 1.)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vP, 1.); }",
-    fragmentShader: `varying vec3 vP; uniform float uDawn;
+    fragmentShader: `varying vec3 vP; uniform float uDawn, uGrey;
       void main(){ float h = clamp((vP.y - ${(G3 + 1).toFixed(2)}) / 36., 0., 1.);
         vec3 night = mix(vec3(.012, .015, .026), vec3(.003, .004, .009), h);
         vec3 dawn = mix(mix(vec3(1.05, .46, .22), vec3(.5, .3, .45), smoothstep(.1, .4, h)), vec3(.05, .08, .19), smoothstep(.35, .95, h)); /* the warm band high enough to show over the last wall */
         float sun = exp(-length((vP.xy - vec2(100., ${(G3 + 1.5).toFixed(2)})) * vec2(.05, .14)));
         dawn += vec3(1.4, .7, .32) * sun * .7;
-        gl_FragColor = vec4(mix(night, dawn, uDawn), 1.); }` }));
+        gl_FragColor = vec4(mix(mix(night, dawn, uDawn), mix(vec3(.55, .58, .63), vec3(.8, .83, .87), h), uGrey), 1.); }` }));
   skyMesh.position.set(103, G3 + 30, -80); scene.add(skyMesh);
   // the city against the sky: a hazy far row and a dark near row of roofs, a few windows still lit
   const roofs = (col, hMin, hMax, lit) => { const c = document.createElement("canvas"); c.width = 2048; c.height = 410; const g = c.getContext("2d"); let x = 0;
@@ -1622,6 +1652,68 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
       saved: (() => { try { return !!localStorage.getItem(TAG_KEY); } catch (_) { return false; } })(), leave: !leaveB.hidden,
       sent: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).sent || null; } catch (_) { return null; } })(), id: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).id || null; } catch (_) { return null; } })() }),
     held: () => HELD.length, layer: () => storeW && { stretches: storeW.want, up: storeW.done, shown: storeW.meshes.filter(m => m && m.material.map !== wallEmpty).length }, store: () => document.documentElement.dataset.storeTags || null, paintAt: (u, v) => tgc.getImageData(u, v, 1, 1).data[3], size: [TW, TFH, TH], drips: () => tag.strokes.reduce((n, s) => n + s.dr.length, 0), running: () => tag.runs.length };
+  // ==== STYLE PITCH, PITCH ONLY (Tom 11-19): ?light=night|dusk|day and ?street=bare|some|busy. The defaults (night, bare) change nothing. ====
+  // light: before each render the lights and the sky colours are set to the look, after it they are put back as the walk set them.
+  const LOOKS = { dusk: { sky: [0xffa684, 0x3a2430, 1.1], bg: 0x3a2a3c, fog: 0x4a3340, fogK: .85, dir: [0xffa070, .85], lamp: 1, tube: [0xffe6cc, .5], expo: 1, dawn: .55, grey: 0 },
+    day: { sky: [0xe3e8ee, 0x8f8d88, 1.35], bg: 0xa9b2bc, fog: 0xa3aab2, fogK: .6, dir: [0xffffff, .9], lamp: 0, tube: [0xfff1de, .4], expo: 1.1, dawn: 0, grey: 1 } }[document.documentElement.dataset.light];
+  const lookDir = LOOKS && new THREE.DirectionalLight(LOOKS.dir[0], LOOKS.dir[1]), lookTube = new Set([tubeLight, roomFill]), lookDay = new Set([sun3, fill3, bounce]);
+  if (lookDir) { lookDir.position.set(-3, 5, 9); scene.add(lookDir); }
+  const kBg = new THREE.Color(), kFog = new THREE.Color(), kSun = new THREE.Color();
+  let lookLights = null, lookSaved = null;
+  function lookOn(sv) { if (!LOOKS || duskAt || adm.view) return;
+    if (!lookLights) { lookLights = []; scene.traverse(o => { if (o.isLight && o !== sky && o !== lookDir && o !== sun) lookLights.push(o); }); }
+    const full = sv < CUT; // from the cut on, the walk is in its own morning: only the sky colour is tinted
+    lookSaved = { sky: [sky.color.getHex(), sky.groundColor.getHex(), sky.intensity], bg: scene.background.getHex(), fog: scene.fog.color.getHex(), dens: scene.fog.density, expo: renderer.toneMappingExposure, dawn: skyU.uDawn.value,
+      bulb: bulbM.emissiveIntensity, tube: [tubeM.emissive.getHex(), tubeM.emissiveIntensity, tubeBad.emissiveIntensity], lights: [] };
+    if (!full) { if (LOOKS.grey) { lookSaved = null; return; } scene.background.lerp(kBg.set(LOOKS.bg), .6); scene.fog.color.lerp(kFog.set(LOOKS.fog), .6); lookSaved.sun = true; return; }
+    for (const L of lookLights) { lookSaved.lights.push([L, L.intensity, L.color.getHex()]);
+      if (lookTube.has(L)) { L.color.set(LOOKS.tube[0]); L.intensity *= LOOKS.tube[1] * (LOOKS.lamp ? 1 : 1.8); } else if (!lookDay.has(L)) L.intensity *= LOOKS.lamp; }
+    sky.color.set(LOOKS.sky[0]); sky.groundColor.set(LOOKS.sky[1]); sky.intensity += LOOKS.sky[2];
+    scene.background.set(LOOKS.bg); scene.fog.color.set(LOOKS.fog); scene.fog.density *= LOOKS.fogK; renderer.toneMappingExposure *= LOOKS.expo;
+    skyU.uDawn.value = Math.max(skyU.uDawn.value * (1 - LOOKS.grey), LOOKS.dawn); skyU.uGrey.value = LOOKS.grey; bulbM.emissiveIntensity *= LOOKS.lamp;
+    tubeM.emissive.set(LOOKS.tube[0]); tubeBad.emissive.set(LOOKS.tube[0]); if (!LOOKS.lamp) { tubeM.emissiveIntensity *= .5; tubeBad.emissiveIntensity *= .5; } }
+  function lookOff() { const k = lookSaved; if (!k) return; lookSaved = null;
+    if (k.sun) { scene.background.setHex(k.bg); scene.fog.color.setHex(k.fog); return; }
+    for (const [L, i, c] of k.lights) { L.intensity = i; L.color.setHex(c); }
+    sky.color.setHex(k.sky[0]); sky.groundColor.setHex(k.sky[1]); sky.intensity = k.sky[2]; scene.background.setHex(k.bg); scene.fog.color.setHex(k.fog); scene.fog.density = k.dens; renderer.toneMappingExposure = k.expo;
+    skyU.uDawn.value = k.dawn; skyU.uGrey.value = 0; bulbM.emissiveIntensity = k.bulb; tubeM.emissive.setHex(k.tube[0]); tubeBad.emissive.setHex(k.tube[0]); tubeM.emissiveIntensity = k.tube[1]; tubeBad.emissiveIntensity = k.tube[2]; }
+  // street: small extras on and in front of each wall, from simple textured planes and boxes; every picture is drawn here (no files), the same few shared by all
+  { const mode = document.documentElement.dataset.street;
+    if (mode !== "bare") { const busy = mode === "busy"; let seed = 7; const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }, pickOf = a => a[Math.floor(rnd() * a.length)];
+      const INK = ["#ff4f1a", "#f1c25a", "#3fd0c9", "#e8e2d2", "#ff4fa0", "#7aa2ff"], mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return [c, c.getContext("2d")]; };
+      const asTex = c => { const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; };
+      const stickers = [0, 1, 2, 3, 4, 5].map(i => { const [c, g] = mk(128, 128), col = INK[i % INK.length]; g.translate(64, 64); g.fillStyle = "#f1eee6"; g.beginPath();
+        if (i % 3 === 0) g.arc(0, 0, 60, 0, 6.3); else if (i % 3 === 1) g.roundRect(-58, -42, 116, 84, 14); else for (let k = 0; k < 10; k++) { const a = k * .628 - 1.57, r = k % 2 ? 26 : 60; g[k ? "lineTo" : "moveTo"](Math.cos(a) * r, Math.sin(a) * r); }
+        g.fill(); g.fillStyle = col; g.beginPath(); if (i % 3 === 0) g.arc(0, 0, 50, 0, 6.3); else if (i % 3 === 1) g.roundRect(-50, -34, 100, 68, 8); else g.arc(0, 0, 30, 0, 6.3); g.fill();
+        g.fillStyle = "#15171a"; g.fillRect(-42, -6, 84, 12); g.beginPath(); g.arc(i % 2 ? -22 : 22, -18, 9, 0, 6.3); g.fill(); g.fillStyle = "rgba(255,255,255,.18)"; g.fillRect(-60, -60, 120, 36);
+        return asTex(c); });
+      const scribbles = [0, 1, 2, 3].map(i => { const [c, g] = mk(256, 128); g.lineCap = g.lineJoin = "round"; g.strokeStyle = INK[(i * 2) % INK.length]; g.lineWidth = 7 - i; g.beginPath(); let x = 18, y = 70;
+        g.moveTo(x, y); for (let k = 0; k < 9; k++) { const nx = x + 20 + rnd() * 14, ny = 30 + rnd() * 70; g.quadraticCurveTo(x + 25 + rnd() * 20, 8 + rnd() * 110, nx, ny); x = nx; } g.stroke();
+        g.lineWidth = 3; g.beginPath(); g.moveTo(14, 112); g.quadraticCurveTo(120, 100 + rnd() * 20, 240, 108); g.stroke(); return asTex(c); });
+      const posters = [0, 1, 2].map(i => { const [c, g] = mk(256, 352), col = INK[(i * 2 + 1) % INK.length]; g.fillStyle = "#e9e4d4"; g.fillRect(0, 0, 256, 352); g.fillStyle = col; g.fillRect(16, 16, 224, 120 + i * 14);
+        g.fillStyle = "#15171a"; g.fillRect(28, 150 + i * 14, 150, 18); for (let k = 0; k < 8; k++) { g.fillStyle = "rgba(21,23,26," + (.35 + .2 * rnd()) + ")"; g.fillRect(28, 190 + k * 15 + i * 6, 120 + rnd() * 90, 6); }
+        g.fillStyle = "#15171a"; g.beginPath(); g.arc(128, 60, 28 + i * 6, 0, 6.3); g.fill(); const w = g.createLinearGradient(0, 0, 256, 352); w.addColorStop(0, "rgba(255,255,255,.2)"); w.addColorStop(.45, "rgba(0,0,0,.12)"); w.addColorStop(.5, "rgba(255,255,255,.18)"); w.addColorStop(1, "rgba(0,0,0,.14)"); g.fillStyle = w; g.fillRect(0, 0, 256, 352);
+        return asTex(c); });
+      const flat = new THREE.PlaneGeometry(1, 1), curl = new THREE.PlaneGeometry(1, 1, 3, 3); { const p = curl.attributes.position; for (let k = 0; k < p.count; k++) p.setZ(k, .012 * Math.sin(p.getX(k) * 7 + p.getY(k) * 4) + (p.getY(k) > .3 ? .016 * (p.getX(k) + .5) : 0)); curl.computeVertexNormals(); }
+      const skin = (map, extra) => new THREE.MeshStandardMaterial(Object.assign({ map, roughness: .85, metalness: 0, transparent: true, polygonOffset: true, polygonOffsetFactor: -4, envMapIntensity: .3 }, extra));
+      const sMat = stickers.map(t => skin(t)), tMat = scribbles.map(t => skin(t, { depthWrite: false })), pMat = posters.map(t => skin(t));
+      const onWall = (geo, mat, x, y, w, h, rot) => { const m = new THREE.Mesh(geo, mat); m.scale.set(w, h, 1); m.position.set(x, y, .007); m.rotation.z = rot; scene.add(m); return m; };
+      const sticker = (x, y, s) => onWall(flat, pickOf(sMat), x, y, s, s, (rnd() - .5) * .7), tagAt = (x, y, w) => onWall(flat, pickOf(tMat), x, y, w, w / 2, (rnd() - .5) * .25), poster = (x, y, w) => onWall(curl, pickOf(pMat), x, y, w, w * 1.375, (rnd() - .5) * .08);
+      const binM = new THREE.MeshStandardMaterial({ color: 0x2f5d3a, roughness: .7 }), lidM = new THREE.MeshStandardMaterial({ color: 0x1f3d27, roughness: .6 }), blackM = new THREE.MeshStandardMaterial({ color: 0x15171a, roughness: .8 }), greyM = new THREE.MeshStandardMaterial({ color: 0x5b6066, roughness: .5, metalness: .6 });
+      const bin = (x, g, z, col) => { const b = new THREE.Group(), body = new THREE.Mesh(new THREE.BoxGeometry(.58, .95, .68), new THREE.MeshStandardMaterial({ color: col, roughness: .7 })), lid = new THREE.Mesh(new THREE.BoxGeometry(.62, .06, .72), lidM);
+        body.position.y = .55; lid.position.y = 1.05; const wh = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .5, 10), blackM); wh.rotation.z = Math.PI / 2; wh.position.set(0, .08, -.28); b.add(body, lid, wh); b.position.set(x, g, z); b.rotation.y = (rnd() - .5) * .5; scene.add(b); };
+      const bike = (x, g, z) => { const b = new THREE.Group(), wheel = dx => { const w = new THREE.Mesh(new THREE.TorusGeometry(.34, .018, 6, 24), blackM); w.position.set(dx, .36, 0); return w; }, bar = (a, c, r = .014) => { const d = new THREE.Vector3(c[0] - a[0], c[1] - a[1], 0), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 6), greyM); m.position.set((a[0] + c[0]) / 2, (a[1] + c[1]) / 2, 0); m.rotation.z = Math.atan2(d.y, d.x) - Math.PI / 2; return m; };
+        b.add(wheel(-.52), wheel(.52), bar([-.52, .36], [-.1, .38]), bar([-.1, .38], [.2, .72]), bar([.2, .72], [.52, .36]), bar([-.1, .38], [.52, .36]), bar([-.1, .38], [-.18, .78]), bar([.2, .72], [.5, .78]), bar([-.28, .8], [-.06, .8], .03), bar([.4, .8], [.58, .8], .02)); b.position.set(x, g, z); b.rotation.y = -.15; b.rotation.z = -.12; scene.add(b); };
+      // where: each wall's own free spots (stickers s, posters p, tags t as [x, y]; bins b and bikes k as [x] on the floor); the opening wall's by the camera's width
+      const n = NARROW ? .5 : 1, W = [
+        { g: GROUND, s: [[-2.4 * n, -1.95], [-.9 * n, -1.9], [1.3 * n, -1.97], [2.6 * n, -1.9]], p: [[-3.7 * n, -1.2], [3.6 * n, -1.15]], t: [[2.2 * n, NARROW ? 3.1 : 2.2], [-2.6 * n, NARROW ? 3.3 : 2.1]], b: [[-3.9 * n]], k: [[3.9 * n]] },
+        { g: G2, s: [[EX - 4.2, G2 + .6], [EX + 4.1, G2 + 1.2], [EX + 4.4, G2 + .45]], p: [[EX - 4.45, G2 + 1.6], [EX + 4.5, G2 + 2.1]], t: [[EX + 4.6, G2 + 2.9], [EX - 4.3, G2 + .5]], b: [[EX + 4.3]], k: [[EX - 4.3]] },
+        { g: G3, s: [[RX - 6.2, G3 + .8], [RX + 5.9, G3 + 1.1], [RX + 6.3, G3 + .5]], p: [[RX - 6.5, G3 + 1.7], [RX + 6.6, G3 + 1.9]], t: [[RX + 6.4, G3 + 2.8]], b: [[RX + 5.7]], k: [[RX - 5.8]] },
+        ...U4.slice(0, 4).map((u, i) => ({ g: WF, s: [[u.x + 3.1, WF + .7 + .2 * i], [u.x - 3.1, WF + 1 - .2 * i]], p: i === 3 ? [] : [[u.x + 3.3, WF + 1.5]], t: [[u.x - 3.2, WF + .45]], b: i % 2 ? [] : [[u.x + 3.0]], k: [] })),
+        { g: G3, s: [[75 - 3.5, G3 + .8], [75 + 3.4, G3 + 1.2]], p: [[75 + 3.6, G3 + 1.8]], t: [[75 - 3.6, G3 + 2.6]], b: [[75 + 3.6]], k: [[75 - 3.8]] } ];
+      for (const w of W) { for (const [x, y] of w.s) sticker(x, y, .22 + rnd() * .1); for (const [x, y] of w.t.slice(0, busy ? 9 : 1)) tagAt(x, y, .8 + rnd() * .4); for (const [x, y] of w.p.slice(0, busy ? 9 : 1)) poster(x, y, .62 + rnd() * .1);
+        if (busy) { for (const [x, y] of w.s) { sticker(x + .3 + rnd() * .3, y + .35 + rnd() * .3, .16 + rnd() * .1); tagAt(x - .4, y - .35, .6); }
+          for (const [x] of w.b) bin(x, w.g, .55 + rnd() * .2, pickOf([0x2f5d3a, 0x3a4a5e, 0x6a6a6a])); for (const [x] of w.k) bike(x, w.g, .45); } } } }
   let mornAt = 0;
   function morning(now, sv, cp, look) { // after endCam: the white, the cut, the day light; returns nothing
     const dusk = duskAt; // the dusk's last frame clears duskAt; the form must not show for that frame
@@ -1773,7 +1865,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
     [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);
     pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);
     if (muralPin) pin(tagHand, l2, c2, muralPin, NARROW ? 30 : 50, NARROW ? -70 : -60);
-    composer.render();
+    lookOn(sv); composer.render(); lookOff();
   });
 })();
 </script>
