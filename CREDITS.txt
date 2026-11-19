@@ -15,6 +15,10 @@ The paint pitch (pitch/):
   (SIL Open Font License, Google Fonts): fetched at build time, never stored in this repo.
   The epaRadar painting (pitch/assets/epa_wall.webp) was made by Tom on his own computer with
   stable-diffusion.cpp (MIT) and the Z-Image Turbo model (Apache 2.0), around the car from epaRadar's
-  own photo (its public repo). The app-utveckling.se still is a frame of the recording in public/projects.
+  own photo (its public repo).
+  The other six paintings (pitch/assets/ttoolbox_wall.webp, dot_wall.webp, tthermal_wall.webp,
+  self_wall.webp, rvf_wall.webp, edge_wall.webp) were made by Tom the same way, on his own computer with
+  stable-diffusion.cpp (MIT) and the Z-Image Turbo model (Apache 2.0); the sign text on the EDGE painting
+  is set by hand. The concrete round each is keyed out to transparency.
   The raddavarfruberga photo is fetched from raddavarfruberga.se at build time (its repo is private),
   never stored here.
