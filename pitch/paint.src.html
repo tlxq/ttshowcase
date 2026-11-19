@@ -1038,11 +1038,11 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
   const SPRAYS = {}, liveHead = document.createElement("p"); liveHead.className = "head"; liveHead.id = "liveHead"; document.querySelector(".hud").append(liveHead);
   const liveText = () => liveHead.textContent = Object.entries(LIVE).map(([k, a]) => { const got = a.filter(s => s.n != null).map(s => `${s.n.toLocaleString("en-US")} ${s.n === 1 ? s.word[0] : s.word[1]}`); return got.length ? `${k}: ${got.join(", ")}.` : ""; }).filter(Boolean).join(" ");
   for (const [key, defs] of Object.entries(LIVE)) { LIVE[key] = defs.map(([one, many, get]) => ({ word: [one, many], n: null })); // fetched now, once per page load
-    defs.forEach(([, , get], i) => get().then(n => { LIVE[key][i].n = n; SPRAYS[key]?.draw(); liveText(); }).catch(() => {})); } // a failed fetch leaves n empty: nothing is drawn for it
+    defs.forEach(([, , get], i) => get().then(n => { LIVE[key][i].n = n; SPRAYS[key]?.forEach(sp => sp.draw()); liveText(); }).catch(() => {})); } // a failed fetch leaves n empty: nothing is drawn for it
   // a sprayed text on a wall: canvas drawn at runtime (a soft overspray halo, a speckle round the edges, a few drips), laid on the wall like a painting.
   // o: key (LIVE's), colour, stack (words), rect (wall space: x0, y0, x1, y1), row (stats side by side, else one under the other), name (for the plates check)
   const SPRAY_FONT = '"Saira Stencil One", sans-serif';
-  function makeSpray(o) { const [x0, y0, x1, y1] = o.rect, w = x1 - x0, h = y1 - y0, PPM = 400, W = Math.round(w * PPM), H = Math.round(h * PPM);
+  function makeSpray(o) { const FONT = o.font || SPRAY_FONT, WT = o.weight || "", [x0, y0, x1, y1] = o.rect, w = x1 - x0, h = y1 - y0, PPM = 400, W = Math.round(w * PPM), H = Math.round(h * PPM);
     const mk = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return c; }, out = mk(), og = out.getContext("2d", { willReadFrequently: true });
     const map = new THREE.CanvasTexture(out); map.encoding = THREE.sRGBEncoding; map.anisotropy = maxAniso;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .6, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }));
@@ -1050,15 +1050,15 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
     PROT.push([o.name, V(x0, y0, 0), V(x1, y1, 0)]);
     let seed = [...o.key].reduce((a, c) => a + c.charCodeAt(0), 7); const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
     const sp = { mesh, op: 0, at: 0, draw() { seed = [...o.key].reduce((a, c) => a + c.charCodeAt(0), 7);
-      const items = (LIVE[o.key] || []).filter(s => s.n != null).map(s => [s.n.toLocaleString("en-US"), s.n === 1 ? s.word[0] : s.word[1]]), stack = o.stack, pad = W * .04;
+      const items = (LIVE[o.key] || []).filter((s, i) => s.n != null && (o.only == null || o.only === i)).map(s => [s.n.toLocaleString("en-US"), s.n === 1 ? s.word[0] : s.word[1]]), stack = o.stack, pad = W * .04;
       const mask = mk(), mg = mask.getContext("2d", { willReadFrequently: true }); mg.fillStyle = "#000"; mg.textBaseline = "top";
-      const wide = (t, px) => { mg.font = `${px}px ${SPRAY_FONT}`; return mg.measureText(t).width; };
+      const wide = (t, px) => { mg.font = `${WT} ${px}px ${FONT}`; return mg.measureText(t).width; };
       // the layout: the stats big, their words small under them, the stack small; the stack alone sits in the middle of its place
       const parts = []; // [text, size, x, y, align]
       const fit = (t, px, maxW) => Math.min(px, px * maxW / wide(t, px));
       if (o.row) { const cells = Math.max(items.length, 1), cw = (W - 2 * pad) / cells; let nfs = H * .5;
         for (const [n] of items) nfs = Math.min(nfs, fit(n, 1000, cw * .86)); nfs = Math.min(nfs, H * (items.length ? .4 : 0));
-        const half = Math.ceil(stack.length / 2), lines = stack.length > 5 ? [stack.slice(0, half).join("  \u00b7  "), stack.slice(half).join("  \u00b7  ")] : [stack.join("  \u00b7  ")];
+        const half = Math.ceil(stack.length / 2), lines = !stack.length ? [] : stack.length > 5 ? [stack.slice(0, half).join("  \u00b7  "), stack.slice(half).join("  \u00b7  ")] : [stack.join("  \u00b7  ")];
         const wfs = nfs * .4; let sfs = H * (o.fill || .2); for (const t of lines) sfs = Math.min(sfs, fit(t, 1000, W - 2 * pad)); sfs = Math.min(sfs, items.length ? (H - nfs - wfs * 1.5) / (lines.length * 1.3 + .3) : 1e9);
         const blockH = (items.length ? nfs + wfs * 1.5 + sfs * .3 : 0) + lines.length * sfs * 1.2;
         let y = Math.max(0, (H - blockH) / 2);
@@ -1070,7 +1070,18 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
         for (const [n, wd] of items) { parts.push([n, nfs, pad, y, "left"], [wd, Math.min(wfs, fit(wd, 1000, W - 2 * pad)), pad, y + nfs * 1.02, "left"]); y += nfs + wfs * 1.6 + H * .02; }
         y += items.length ? H * .03 : 0;
         for (const t of stack) { parts.push([t, sfs, pad, y, "left"]); y += sfs * 1.3; } }
-      for (const [t, px, x, y, al] of parts) { mg.font = `${px}px ${SPRAY_FONT}`; mg.textAlign = al; mg.fillText(t, x, y); }
+      for (const [t, px, x, y, al] of parts) { mg.font = `${WT} ${px}px ${FONT}`; mg.textAlign = al; mg.fillText(t, x, y); }
+      if (o.piece) { // (Tom 11-19) painted like the piece's own letters: a thick black outline, a drop shadow in the piece's colour, the fill, overspray in the shadow colour
+        const ol = mk(), lg = ol.getContext("2d"); lg.lineJoin = "round"; lg.strokeStyle = lg.fillStyle = "#15110d"; lg.textBaseline = "top";
+        for (const [t, px, x, y, al] of parts) { lg.font = `${WT} ${px}px ${FONT}`; lg.textAlign = al; lg.lineWidth = px * .17; lg.strokeText(t, x, y); lg.fillText(t, x, y); }
+        const paint = (src, col) => { const c = mk(), g = c.getContext("2d"); g.drawImage(src, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, W, H); return c; };
+        const sh = paint(ol, o.piece), fill = paint(mask, o.colour), d = Math.max(3, H * .035); og.clearRect(0, 0, W, H);
+        if ("filter" in og) { og.filter = `blur(${H * .06}px)`; og.globalAlpha = .45; og.drawImage(sh, 0, 0); og.filter = "none"; }
+        og.globalAlpha = 1; og.drawImage(sh, d, d); og.drawImage(ol, 0, 0); og.drawImage(fill, 0, 0);
+        const md = mg.getImageData(0, 0, W, H).data; og.strokeStyle = og.fillStyle = o.piece; og.lineCap = "round";
+        for (let j = 0, nd = 2 + (W / 160 | 0); j < nd; j++) { const x = rnd() * W | 0; let y = H - 1; while (y > 0 && md[(y * W + x) * 4 + 3] < 200) y--; const len = 8 + rnd() * H * .12, lw = 2 + rnd() * 2;
+          if (y < 4 || y + len > H - 3) continue; og.lineWidth = lw; og.beginPath(); og.moveTo(x, y + 2); og.lineTo(x, y + len); og.stroke(); og.beginPath(); og.arc(x, y + len, lw * .85, 0, 6.3); og.fill(); }
+        map.needsUpdate = true; return; }
       // the paint: tinted text, a wide soft halo, a tight one, the text itself, a speckle where the halo is, drips off the lowest edges
       const tint = mk(), tg = tint.getContext("2d"); tg.drawImage(mask, 0, 0); tg.globalCompositeOperation = "source-in"; tg.fillStyle = o.colour; tg.fillRect(0, 0, W, H);
       og.clearRect(0, 0, W, H); const blurred = mk(), bg = blurred.getContext("2d", { willReadFrequently: true });
@@ -1085,10 +1096,15 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
         if (y < 4 || y + len > H - 3) continue; og.globalAlpha = .9; og.lineWidth = lw; og.beginPath(); og.moveTo(x, y - 2); og.lineTo(x, y + len); og.stroke(); og.beginPath(); og.arc(x, y + len, lw * .85, 0, 6.3); og.fillStyle = o.colour; og.fill(); }
       og.globalAlpha = 1; map.needsUpdate = true; },
       fade(on) { const now = performance.now(), dt = Math.min(.1, (now - sp.at) / 1000 || 0); sp.at = now; sp.op = cl(sp.op + (on ? dt / .6 : -dt / .6)); sp.mesh.visible = sp.op > .01; sp.mesh.material.opacity = sp.op; } };
-    SPRAYS[o.key] = sp; document.fonts.load(`40px ${SPRAY_FONT}`).then(() => sp.draw(), () => sp.draw()); return sp; }
+    (SPRAYS[o.key] ||= []).push(sp); document.fonts.load(`${WT} 40px ${FONT}`).then(() => sp.draw(), () => sp.draw()); return sp; }
   // epaRadar: above the painting
   { const yT = EY + EH / 2 - 98 / 960 * EH, x0 = NARROW ? EX - EW / 2 + .9 : EX - EW / 2 + 1.2;
-    var EPA_SP = makeSpray({ key: "epa", name: "epaRadar's numbers and stack", colour: "#ffc23d", stack: ["React Native", "Expo", "Supabase", "Postgres", "pgTAP"], row: true, rect: [x0, yT + .12, NARROW ? EX + EW / 2 - .9 : x0 + 4.4, yT + 1.15] }); }
+    // (Tom 11-19) the numbers painted big in the piece's own style, one each side above the skyline; each tool its own small tag round them; sprayed in one after another
+    const R = ([u0, v0, u1, v1]) => [EPAB.at(u0, 0).x, EPAB.at(0, v1).y, EPAB.at(u1, 0).x, EPAB.at(0, v0).y];
+    var EPA_PARTS = [makeSpray({ key: "epa", only: 0, name: "epaRadar's commits", colour: "#f3ead8", piece: "#f0902a", font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, rect: R([40, -200, 520, 70]) }),
+      makeSpray({ key: "epa", only: 1, name: "epaRadar's merged pull requests", colour: "#f3ead8", piece: "#f0902a", font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, rect: R([800, -200, 1440, 70]) }),
+      ...[["React Native", [560, -300, 860, -215]], ["Supabase", [560, -40, 860, 45]], ["Postgres", [1250, 70, 1480, 150]], ["pgTAP", [0, 80, 210, 160]], ["Expo", [0, 290, 140, 380]]]
+        .map(([t, b], i) => makeSpray({ key: "epaTag" + i, name: "epaRadar's tag " + t, colour: i % 2 ? "#f3ead8" : "#ffb03a", stack: [t], row: true, fill: .62, rect: R(b) }))]; }
   // the underpass (Tom 11-18): the street goes down its second flight under a bridge, from the painting's right edge to just short of
   // raddavarfruberga. The deck rests on its abutment, a wall that stands forward of the street wall: the car drives in behind its corner.
   const UP0 = EX + EW / 2 - .05, UP1 = 22.9, UD = .22, DECK = G2 + 3.8, DECK_Z = 30;
@@ -2187,7 +2203,7 @@ html[data-plate="panel"] .tag::before { left: -22px; top: -6px; rotate: -34deg; 
     tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
     // the label and the links on the painted marks, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
-    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn); EPA_SP.fade(!!factsOn);
+    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn); EPA_PARTS.forEach((p, i) => p.fade(!!factsOn && sec > .8 + i * .3));
     pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .25, EY - EH / 2 + .3, 0) : V(EX - EW * .3, EY - EH / 2 + .1, 0), NARROW ? 18 : 24, NARROW ? 60 : 60); // phone: under the painting, on the empty floor
     placeHots(hots, EPA_MARKS, EPAB, sec >= .3 && pan > .5 && walk3 < .5); // at this wall, each mark that is in view
     const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
