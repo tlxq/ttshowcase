@@ -18,8 +18,10 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
       for (let n = e; n; n = n.parentElement) { const c = rgb(getComputedStyle(n).backgroundColor); if (c[3] > 0) { layers.push(c); if (c[3] >= .99) { bg = c; break; } } }
       const name = (e.id ? '#' + e.id : e.className ? '.' + String(e.className).split(' ').join('.') : e.tagName.toLowerCase()) + ' "' + t.textContent.trim().slice(0, 30) + '"';
       const size = parseFloat(s.fontSize), bold = +s.fontWeight >= 700;
+      let from = layers.length - 2; const form = e.closest('#mail');
+      if (!bg && form) { bg = rgb(getComputedStyle(form).getPropertyValue('--panel')); from = layers.length - 1; } // the end form sits on a painted panel: its own colour stands for it
       if (!bg) { out.push({ name, size, ratio: null, where }); continue; }
-      for (let i = layers.length - 2; i >= 0; i--) bg = over(layers[i], bg);
+      for (let i = from; i >= 0; i--) bg = over(layers[i], bg);
       fg = over(fg, bg); const a = lum(fg), b = lum(bg), ratio = (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
       out.push({ name, size, ratio: +ratio.toFixed(2), large: size >= 24 || (bold && size >= 18.66), where }); }
     return out; }, where);

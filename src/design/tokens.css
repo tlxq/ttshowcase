@@ -74,6 +74,20 @@
   --look-plate: rgb(10 10 10 / 0.9);
   --look-plate-edge: rgb(240 236 226 / 0.16);
   --look-ask: #f1c25a;
+  /* The walk's look Tom picked (OK'd 11-19): neon boxes for the labels (each wall may glow its own colour), the form sprayed on the end wall, the hover label on a painted link */
+  --look-neon-pink: #ff4fa3;
+  --look-neon-orange: #ff8a3d;
+  --look-neon-blue: #6fd3ff;
+  --look-neon-box: #0b0c10;
+  --look-neon-text: #f6eef2;
+  --look-neon-width: 340px;
+  --look-neon-flicker: 9s;
+  --look-form-panel: #16181c;
+  --look-form-ink: #f4efe4;
+  --look-form-ink-soft: #bdb7a8;
+  --look-form-accent: #ff7a2a;
+  --look-form-error: #ffb59a;
+  --look-hover-box: #0e1013;
   /* The mail form in Questions: its width and its key column (Tom OK'd 11-15) */
   --look-form: 64ch;
   --look-form-key: 8ch;

@@ -40,6 +40,11 @@ job() { # check, then "desktop" or "phone": its own servers and browser session;
   sed -e "s#__URL__#http://127.0.0.1:$port/paint.html#g" -e "s#__SHOTS__#$root/.cache/shots/#g" "tools/pitch/checks/$1.js" > "$script"
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
+  # The walls' live numbers come from GitHub's public API, which a visitor's IP may ask only 60 times an hour: a whole run would use that up
+  # and every later load would see a 403 in its console. So the checks answer those two hosts with nothing: no number is drawn, which is also
+  # the page's own "fetch failed" look. (The real numbers are looked at by eye, in the pictures.)
+  playwright-cli -s="$s" route "https://api.github.com/**" --status=200 --body='[]' >/dev/null 2>&1
+  playwright-cli -s="$s" route "https://raw.githubusercontent.com/**" --status=200 --body='' >/dev/null 2>&1
   result=$(playwright-cli --raw -s="$s" run-code --filename="$root/$script" 2>&1 | grep -v '^$' | tail -1)
   playwright-cli -s="$s" close >/dev/null 2>&1
   kill "$srv" "$tags" 2>/dev/null

@@ -6,7 +6,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.mouse.click(W / 2, H / 2);
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   await page.waitForTimeout(1500);
-  const at = () => page.evaluate(() => ({ y: Math.round(scrollY), park: Math.round(svY(0)), label: +getComputedStyle(document.getElementById('tagUp')).opacity, over: getComputedStyle(document.documentElement).overscrollBehaviorY }));
+  const at = () => page.evaluate(() => ({ y: Math.round(scrollY), park: Math.round(svY(0)), label: +(document.getElementById('tagUp').style.opacity || getComputedStyle(document.getElementById('tagUp')).opacity), over: getComputedStyle(document.documentElement).overscrollBehaviorY })); // label: what the page sets; the neon flicker (--look-neon-flicker) dips the drawn opacity for a moment by design
   res.park = await at();
   if (res.park.park < 50 || Math.abs(res.park.y - res.park.park) > 2) errs.push('the page did not park below the top after the pour: ' + JSON.stringify(res.park));
   if (res.park.label < .9) errs.push('the "Scroll up" label is not showing at the park');

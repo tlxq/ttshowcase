@@ -73,12 +73,31 @@ async function saira() {
   return file;
 }
 
+// Two more free fonts (both SIL OFL): Sedgwick Ave Display, a marker hand taken from graffiti handwriting (raddavarfruberga's
+// banner words); Inter, the clean text face of the neon labels and the form (one variable file, weights 400 to 700).
+async function google(name, family, what) {
+  const file = join(fonts, name);
+  if (existsSync(file)) return file;
+  const css = await (
+    await get(`https://fonts.googleapis.com/css2?family=${family}&display=block`, what)
+  ).text();
+  const url = css
+    .match(/url\((https:[^)]+\.woff2)\)/g)
+    ?.at(-1)
+    ?.slice(4, -1);
+  if (!url) throw new Error(`Couldn't find ${what}'s woff2 in Google Fonts' answer`);
+  writeFileSync(file, Buffer.from(await (await get(url, what)).arrayBuffer()));
+  return file;
+}
+
 mkdirSync(fonts, { recursive: true });
 mkdirSync(out, { recursive: true });
 const b64 = (f) => readFileSync(f).toString("base64");
 const embed =
   `@font-face{font-family:'Clash Display';src:url(data:font/woff2;base64,${b64(await clash())}) format('woff2');font-weight:700;font-display:swap}` +
-  `@font-face{font-family:'Saira Stencil One';src:url(data:font/woff2;base64,${b64(await saira())}) format('woff2');font-display:block}`;
+  `@font-face{font-family:'Saira Stencil One';src:url(data:font/woff2;base64,${b64(await saira())}) format('woff2');font-display:block}` +
+  `@font-face{font-family:'Sedgwick Ave Display';src:url(data:font/woff2;base64,${b64(await google("SedgwickAveDisplay.woff2", "Sedgwick+Ave+Display", "Sedgwick Ave Display"))}) format('woff2');font-display:block}` +
+  `@font-face{font-family:'Inter';src:url(data:font/woff2;base64,${b64(await google("Inter.woff2", "Inter:wght@400..700", "Inter"))}) format('woff2');font-weight:400 700;font-display:block}`;
 
 const parts = {
   __EMBED__: embed,
@@ -125,22 +144,12 @@ function withScriptRule(html) {
 }
 writeFileSync(join(out, "paint.html"), withScriptRule(page));
 
-// Pictures: pitch/assets holds only what is free to publish (CC0, or from a public repo). Pictures from a project
-// whose repo is private come from its live site, fetched once into .cache/pitch-media and never put in git.
-const remote = { "rvf_photo.jpg": "https://raddavarfruberga.se/img/vardfruberga-entre.jpg" };
-const media = join(root, ".cache/pitch-media");
-mkdirSync(media, { recursive: true });
-for (const [name, url] of Object.entries(remote)) {
-  const file = join(media, name);
-  if (!existsSync(file))
-    writeFileSync(file, Buffer.from(await (await get(url, name)).arrayBuffer()));
-}
+// Pictures: pitch/assets holds only what is free to publish (CC0, or from a public repo).
 const assets = join(out, "assets");
 rmSync(assets, { force: true, recursive: true });
 mkdirSync(assets);
 for (const name of readdirSync(join(root, "pitch/assets")))
   symlinkSync(join(root, "pitch/assets", name), join(assets, name));
-for (const name of Object.keys(remote)) symlinkSync(join(media, name), join(assets, name));
 console.log("Built .cache/pitch/paint.html");
 
 if (process.argv.includes("--site")) {
