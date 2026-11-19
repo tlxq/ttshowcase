@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-hero="a">
+<html lang="en" data-hero="a" data-scroll="mix">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -130,6 +130,83 @@ a { color: inherit; }
   .list li span { grid-column: 1 / -1; grid-row: 2; }
   .portal img { aspect-ratio: 4 / 3; }
 }
+
+/* round 2 (Tom 11-19): the scroll moment behind ?scroll=1|2|3|4. In all four the photo flies into a round avatar in a top bar.
+   1 = one pinned phone whose screen changes per project, 2 = the ground changes colour per project (NEW colours),
+   3 = live GitHub numbers count up with the scroll, 4 = the three products on a shelf that slides sideways (drag works too). */
+.bar { position: fixed; inset: 0 0 auto; z-index: 20; padding-top: env(safe-area-inset-top, 0px); background: rgb(10 10 10 / .82); backdrop-filter: blur(12px); border-bottom: 1px solid var(--look-dark-quiet); opacity: 0; pointer-events: none; }
+.bar.on { opacity: 1; pointer-events: auto; }
+.barin { display: flex; align-items: center; gap: var(--s2); min-height: 60px; }
+.av-slot { width: 40px; height: 40px; flex: none; }
+.bar b { font: 700 18px/1 var(--f-big); text-transform: uppercase; }
+.bar .role { color: var(--look-quiet); font-size: 14px; }
+.bar .btns { margin-left: auto; }
+.bar .btn { min-height: 40px; padding: 0 14px; font-size: 14px; }
+.fly { position: fixed; z-index: 21; object-fit: cover; object-position: 50% 30%; pointer-events: none; will-change: left, top, width, height; }
+[data-only] { display: none; }
+:is([data-scroll="1"], [data-scroll="mix"]) [data-only~="1"], :is([data-scroll="2"], [data-scroll="mix"]) [data-only~="2"], [data-scroll="3"] [data-only~="3"], [data-scroll="4"] [data-only~="4"], [data-scroll="mix"] [data-only~="1"], [data-scroll="mix"] [data-only~="3"] { display: block; }
+
+/* 1: a pinned phone */
+:is([data-scroll="1"], [data-scroll="mix"]) .stack { grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: 30svh var(--s6); }
+:is([data-scroll="1"], [data-scroll="mix"]) .card { grid-column: 1; position: relative; top: auto; grid-template-columns: 1fr; transform: none !important; filter: none !important; box-shadow: none; }
+:is([data-scroll="1"], [data-scroll="mix"]) .card:nth-child(1) { grid-row: 1; } :is([data-scroll="1"], [data-scroll="mix"]) .card:nth-child(2) { grid-row: 2; } :is([data-scroll="1"], [data-scroll="mix"]) .card:nth-child(3) { grid-row: 3; }
+:is([data-scroll="1"], [data-scroll="mix"]) .card .screens { padding: 0; order: 2; }
+:is([data-scroll="1"], [data-scroll="mix"]) .card .phone { display: none; }
+:is([data-scroll="1"], [data-scroll="mix"]) .work-head { position: static; }
+.pin { grid-column: 2; grid-row: 1 / span 3; align-self: start; position: sticky; top: 16svh; perspective: 1200px; z-index: 3; }
+.pphone { position: relative; width: min(100%, 300px); margin-left: auto; aspect-ratio: 300 / 650; border-radius: 34px; overflow: clip; border: 9px solid #1b1d22; background: #1b1d22; box-shadow: 0 40px 80px rgb(0 0 0 / .6); transform-style: preserve-3d; }
+.pphone > * { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0; transition: opacity 300ms var(--ease); }
+.pphone > .on { opacity: 1; }
+.pname { margin: var(--s2) 0 0; text-align: right; font: 700 15px/1 var(--f-text); color: var(--look-quiet); }
+
+/* 2: the ground per project */
+:is([data-scroll="2"], [data-scroll="mix"]) .work { background: var(--work-bg, var(--look-ground)); color: var(--work-ink, var(--look-text)); transition: background 700ms cubic-bezier(.6, 0, .3, 1), color 700ms cubic-bezier(.6, 0, .3, 1); }
+:is([data-scroll="2"], [data-scroll="mix"]) .card { color: var(--look-text); }
+:is([data-scroll="2"], [data-scroll="mix"]) .work .work-head .label, :is([data-scroll="2"], [data-scroll="mix"]) .pname { color: var(--work-quiet, var(--look-quiet)); transition: color 700ms cubic-bezier(.6, 0, .3, 1); }
+
+/* 3: numbers that count */
+.count { height: 190svh; }
+.count .wrap { position: sticky; top: 0; min-height: 100svh; display: grid; align-content: center; gap: var(--s2); }
+.count .num { margin: 0; font: 700 clamp(64px, 13vw, 200px)/.9 var(--f-big); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.count .num small { font-size: .32em; letter-spacing: 0; color: var(--look-soft); }
+.count .sub { margin: 0; font: 500 clamp(18px, 2vw, 26px)/1.4 var(--f-text); color: var(--look-soft); font-variant-numeric: tabular-nums; }
+.count .src { margin: 0; color: var(--look-quiet); font-size: 14px; }
+
+/* 4: a shelf that slides sideways */
+[data-scroll="4"] .work { padding-top: 0; }
+[data-scroll="4"] .stack { display: block; margin-top: 0; }
+.vp { position: sticky; top: 0; height: 100svh; overflow: clip; display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; gap: var(--s4); }
+.vp .work-head { position: static; }
+.track { display: flex; gap: var(--s4); width: max-content; cursor: grab; touch-action: pan-y; will-change: transform; }
+.track:active { cursor: grabbing; }
+[data-scroll="4"] .card { position: relative; top: auto; flex: none; width: min(1040px, 82vw); transform: none !important; filter: none !important; box-shadow: none; user-select: none; }
+[data-scroll="4"] .card img { pointer-events: none; }
+:is([data-scroll="1"], [data-scroll="mix"]) .card > *, [data-scroll="4"] .card > * { min-width: 0; }
+@media (max-width: 860px) {
+  :is([data-scroll="1"], [data-scroll="mix"]) .stack { grid-template-columns: minmax(0, 1fr); gap: 8svh; }
+  :is([data-scroll="1"], [data-scroll="mix"]) .pin { grid-column: 1; justify-self: end; top: 58svh; width: 30vw; }
+  :is([data-scroll="1"], [data-scroll="mix"]) .pphone { border-width: 5px; border-radius: 20px; }
+  :is([data-scroll="1"], [data-scroll="mix"]) .pname { display: none; }
+  :is([data-scroll="1"], [data-scroll="mix"]) .card { padding-right: calc(30vw + var(--s2)); }
+  :is([data-scroll="1"], [data-scroll="mix"]) .card .btns .btn { padding: 0 12px; }
+  [data-scroll="4"] .card { width: 86vw; }
+  [data-scroll="4"] .card dl { display: none; }
+  .bar .role { display: none; }
+  .bar .btns .btn:first-child { display: none; }
+}
+
+/* mix (Tom 11-19: "variety, but feeling synced"): count → phone + ground on one beat → the tools on a sideways shelf */
+[data-scroll="mix"] .count { height: 140svh; }
+[data-scroll="mix"] .more .wrap { max-width: none; }
+[data-scroll="mix"] .more { padding-top: 0; padding-bottom: 0; }
+[data-scroll="mix"] .more .vp { padding-left: max(var(--gutter), calc((100vw - 1180px) / 2)); }
+[data-scroll="mix"] .more .list { border: 0; margin: 0; gap: var(--s3); }
+[data-scroll="mix"] .more .list li { flex: none; width: min(400px, 78vw); min-height: min(420px, 56svh); grid-template-columns: 1fr; align-content: space-between; gap: var(--s3); padding: var(--s4); border: 0; border-radius: 18px; background: var(--look-dark); color: var(--look-cream); box-shadow: inset 0 6px 0 var(--c); user-select: none; }
+[data-scroll="mix"] .more .list li span { grid-column: auto; grid-row: auto; color: var(--look-soft); font-size: 18px; }
+[data-scroll="mix"] .more .list b { font-size: clamp(34px, 3.4vw, 48px); color: var(--c); }
+[data-scroll="mix"] .more .list a { justify-self: start; border-color: var(--look-cream); }
+[data-scroll="mix"] .more .list a:hover { background: var(--look-cream); color: var(--look-dark); }
+[data-scroll="mix"] .more .list em { color: var(--look-quiet); }
 @media (prefers-reduced-motion: reduce) {
   .big .ln > span { transform: none; transition: none; }
   .card, .work-head { position: static; transform: none !important; filter: none !important; }
@@ -138,6 +215,8 @@ a { color: inherit; }
 </style>
 </head>
 <body>
+<header class="bar g"><div class="wrap barin"><span class="av-slot"></span><b>Tom Larsson</b><span class="role">Product engineer</span><nav class="btns" aria-label="Contact"><a class="btn" href="https://github.com/tlxq">GitHub ↗</a><a class="btn main" href="https://linkedin.com/in/tlxq">LinkedIn ↗</a></nav></div></header>
+<img class="fly" src="assets/tom.webp" alt="" aria-hidden="true" hidden>
 <main>
   <section class="hero g"><div class="wrap hero-in">
     <figure class="me"><img src="assets/tom.webp" alt="Tom Larsson" width="900" height="1173"></figure>
@@ -155,6 +234,13 @@ a { color: inherit; }
     <ul class="jump" aria-label="Projects">
       <li><a href="#eparadar">epaRadar</a></li><li><a href="#rvf">Rädda vår Fruberga</a></li><li><a href="#edge">EDGE</a></li><li><a href="#more">More</a></li>
     </ul>
+  </div></section>
+
+  <section class="count g" data-only="3" aria-label="My public GitHub"><div class="wrap">
+    <p class="label">On my public GitHub, live</p>
+    <p class="num"><span id="nCommits">0</span> <small>commits</small></p>
+    <p class="sub"><span id="nPrs">0</span> merged pull requests in <span id="nRepos">0</span> repos</p>
+    <p class="src" id="nSrc">Counted from GitHub as the page loads.</p>
   </div></section>
 
   <section class="work g" id="work"><div class="wrap">
@@ -187,6 +273,7 @@ a { color: inherit; }
         </div>
         <span class="screens" data-p><span class="laptop"><video src="/projects/app-utveckling-laptop.webm" poster="/projects/app-utveckling-laptop.webp" muted loop playsinline preload="none" aria-label="app-utveckling.se on a laptop"></video></span><span class="phone"><video src="/projects/mjukvaruutvecklare-phone.webm" poster="/projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" aria-label="mjukvaruutvecklare.com on a phone"></video></span></span>
       </article>
+      <div class="pin" data-only="1" aria-hidden="true"><div class="pphone"><img class="on" src="/projects/eparadar-karta.webp" alt=""><img src="/projects/raddavarfruberga-phone.webp" alt=""><video src="/projects/mjukvaruutvecklare-phone.webm" poster="/projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none"></video></div><p class="pname">epaRadar</p></div>
     </div>
   </div></section>
 
@@ -194,10 +281,10 @@ a { color: inherit; }
     <p class="label" style="color:var(--look-dark-quiet)">My own tools, in daily use</p>
     <h2 class="big"><span class="ln"><span>More</span></span></h2>
     <ul class="list">
-      <li><b>Self-hosted</b><span>My own server with web apps, a TV app and a job tool.</span><em>Private</em></li>
-      <li><b>ttoolbox</b><span>Claude Code plugin with skills and agents to plan, build, review and prove work.</span><a href="https://github.com/tlxq/ttoolbox">Code ↗</a></li>
-      <li><b>dot</b><span>Keeps one GNU Stow dotfiles repo the same on every Linux PC.</span><a href="https://github.com/tlxq/dot">Code ↗</a></li>
-      <li><b>tthermal</b><span>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.</span><a href="https://github.com/tlxq/tthermal">Code ↗</a></li>
+      <li style="--c:var(--look-neon-blue)"><b>Self-hosted</b><span>My own server with web apps, a TV app and a job tool.</span><em>Private</em></li>
+      <li style="--c:var(--look-neon-pink)"><b>ttoolbox</b><span>Claude Code plugin with skills and agents to plan, build, review and prove work.</span><a href="https://github.com/tlxq/ttoolbox">Code ↗</a></li>
+      <li style="--c:var(--look-spray)"><b>dot</b><span>Keeps one GNU Stow dotfiles repo the same on every Linux PC.</span><a href="https://github.com/tlxq/dot">Code ↗</a></li>
+      <li style="--c:var(--look-neon-orange)"><b>tthermal</b><span>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.</span><a href="https://github.com/tlxq/tthermal">Code ↗</a></li>
     </ul>
   </div></section>
 
@@ -216,6 +303,9 @@ a { color: inherit; }
 
 <script>
 (() => {
+  // round 2: which scroll moment (?scroll=1..4)
+  const opt = (/[?&]scroll=([1-4]|mix)/.exec(location.search) || [0, "mix"])[1], mix = opt === "mix";
+  document.documentElement.dataset.scroll = opt;
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   // big words rise out of their masks when they come into view
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("up"); io.unobserve(e.target); } }), { threshold: .2 });
@@ -233,21 +323,80 @@ a { color: inherit; }
     const dd = document.getElementById("epaLive");
     dd.textContent = parts.join(", "); dd.hidden = false; document.getElementById("epaLiveKey").hidden = false;
   });
-  if (still) return;
-  // one scroll loop: a card shrinks and darkens as the next one rises over it; screens move with the scroll
+  // 3: live public GitHub numbers (only this option asks GitHub); nothing found = the section says so, never an old number
+  const live = { commits: 0, prs: 0, repos: 0 };
+  if (opt === "3" || mix) (async () => {
+    try {
+      const repos = (await (await gh("users/tlxq/repos?per_page=100")).json()).filter(r => !r.fork && !r.private);
+      const counts = await Promise.all(repos.map(r => gh(`repos/tlxq/${r.name}/commits?per_page=1`).then(x => +((/[?&]page=(\d+)>; rel="last"/.exec(x.headers.get("Link") || "") || [0, 1])[1])).catch(() => 0)));
+      const prs = await gh("search/issues?q=" + encodeURIComponent("user:tlxq is:pr is:merged") + "&per_page=1").then(r => r.json()).then(d => d.total_count || 0).catch(() => 0);
+      Object.assign(live, { commits: counts.reduce((a, b) => a + b, 0), prs, repos: repos.length }); ask();
+    } catch { document.getElementById("nSrc").textContent = "GitHub didn't answer just now, so there are no numbers."; }
+  })();
+  const bar = document.querySelector(".bar"), me = document.querySelector(".me"), meImg = me.querySelector("img"), slot = document.querySelector(".av-slot"), fly = document.querySelector(".fly");
   const cards = [...document.querySelectorAll(".card")], movers = [...document.querySelectorAll("[data-p]")];
+  const lerp = (a, b, t) => a + (b - a) * t, clamp = v => Math.min(1, Math.max(0, v));
+  if (!still) { fly.hidden = false; meImg.style.visibility = "hidden"; }
+  // 4: the cards go on one track inside a pinned window; dragging the track scrolls the page
+  // a shelf: a track inside a pinned window, moved sideways by the page's scroll; dragging the track scrolls the page
+  const shelves = [];
+  const shelf = (holder, track, heads) => {
+    const vp = document.createElement("div"); vp.className = "vp"; track.classList.add("track");
+    vp.append(...heads, track); holder.append(vp);
+    let x0 = null;
+    track.addEventListener("pointerdown", e => { x0 = e.clientX; track.setPointerCapture(e.pointerId); });
+    track.addEventListener("pointermove", e => { if (x0 === null) return; const run = holder.offsetHeight - innerHeight, shift = track.scrollWidth - vp.clientWidth; scrollBy(0, -(e.clientX - x0) * run / Math.max(1, shift)); x0 = e.clientX; });
+    track.addEventListener("pointerup", () => { x0 = null; });
+    const size = () => { holder.style.height = `calc(100svh + ${Math.max(0, track.scrollWidth - innerWidth + 64) * 1.3}px)`; };
+    size(); addEventListener("resize", size);
+    shelves.push({ holder, vp, track });
+  };
+  if (opt === "4" && !still) { const t = document.createElement("div"); cards.forEach(c => t.append(c)); shelf(document.querySelector(".stack"), t, [document.querySelector(".work-head")]); }
+  if (mix && !still) { const w = document.querySelector(".more .wrap"); shelf(w, w.querySelector(".list"), [...w.querySelectorAll(":scope > .label, :scope > .big")]); }
+  // 1: the pinned phone changes screen, with a small turn
+  const pph = document.querySelector(".pphone"), pname = document.querySelector(".pname"), names = ["epaRadar", "Rädda vår Fruberga", "EDGE"];
+  let shown = 0;
+  const show = i => {
+    if (i === shown) return; shown = i;
+    const swap = () => { [...pph.children].forEach((el, k) => { el.classList.toggle("on", k === i); if (el.tagName === "VIDEO") { if (k === i) { el.preload = "auto"; el.play().catch(() => {}); } else el.pause(); } }); pname.textContent = names[i]; };
+    if (still) return swap();
+    pph.animate([{ transform: "rotateY(0) scale(1)" }, { transform: "rotateY(-38deg) scale(.94)" }, { transform: "rotateY(0) scale(1)" }], { duration: 700, easing: "cubic-bezier(.6,0,.3,1)" });
+    setTimeout(swap, 300);
+  };
+  // 2: the ground per project (NEW colours, need Tom's OK for tokens.css)
+  const grounds = [["#0f1c36", "var(--look-text)", ""], ["#1d2a5c", "#f2c230", ""], ["#d6e6f2", "var(--look-dark)", "var(--look-dark-quiet)"]];
+  const work = document.querySelector(".work");
   let queued = false;
   const frame = () => {
     queued = false;
-    const vh = innerHeight;
-    cards.forEach((c, i) => {
+    const vh = innerHeight, y = scrollY;
+    // the photo flies into the bar
+    // it scrolls with the page until its top reaches the bar, then shrinks into the bar's round slot
+    const a = me.getBoundingClientRect(), b = slot.getBoundingClientRect(), dock = b.bottom + 12;
+    const t = clamp((dock - a.top) / (a.height * .55)), e = t * t * (3 - 2 * t);
+    bar.classList.toggle("on", t > .6 || a.bottom < 0);
+    if (!still) {
+      const top0 = Math.min(a.top, dock);
+      Object.assign(fly.style, { left: lerp(a.left, b.left, e) + "px", top: lerp(top0, b.top, e) + "px", width: lerp(a.width, b.width, e) + "px", height: lerp(a.height, b.height, e) + "px", borderRadius: lerp(18, b.width / 2, e) + "px" });
+    }
+    // the card nearest the middle of the screen
+    let near = 0, best = Infinity;
+    cards.forEach((c, i) => { const r = c.getBoundingClientRect(), d = Math.abs((opt === "4" ? r.left + r.width / 2 - innerWidth / 2 : r.top + r.height / 2 - vh / 2)); if (d < best) { best = d; near = i; } });
+    if (opt === "1" || mix) show(near);
+    if (opt === "2" || mix) { const r = work.getBoundingClientRect(), inside = r.top < vh * .5 && r.bottom > vh * .5; work.style.setProperty("--work-bg", inside ? grounds[near][0] : ""); work.style.setProperty("--work-ink", inside ? grounds[near][1] : ""); work.style.setProperty("--work-quiet", inside ? grounds[near][2] : ""); }
+    if (opt === "3" || mix) { const c = document.querySelector(".count"), r = c.getBoundingClientRect(), k = clamp((vh - r.top) / (c.offsetHeight)), q = 1 - Math.pow(1 - k, 3);
+      document.getElementById("nCommits").textContent = Math.round(live.commits * q).toLocaleString("en-US"); document.getElementById("nPrs").textContent = Math.round(live.prs * q); document.getElementById("nRepos").textContent = Math.round(live.repos * q); }
+    shelves.forEach(({ holder, vp, track }) => { const st = holder.getBoundingClientRect(), run = st.height - vh, k = clamp(-st.top / Math.max(1, run)); track.style.transform = `translateX(${-k * Math.max(0, track.scrollWidth - vp.clientWidth + 32)}px)`; });
+    if (still) return;
+    // the old stack: a card shrinks and darkens as the next rises over it (option 2 and 3)
+    if (opt === "2" || opt === "3") cards.forEach((c, i) => {
       const next = cards[i + 1];
       if (!next) { c.style.transform = ""; c.style.filter = ""; return; }
-      const k = Math.min(1, Math.max(0, 1 - (next.getBoundingClientRect().top - c.getBoundingClientRect().top) / (vh * .7)));
+      const k = clamp(1 - (next.getBoundingClientRect().top - c.getBoundingClientRect().top) / (vh * .7));
       c.style.transform = `scale(${1 - k * .06})`;
       c.style.filter = `brightness(${1 - k * .5})`;
     });
-    movers.forEach(m => { const r = m.getBoundingClientRect(); m.style.setProperty("--p", Math.min(1, Math.max(0, 1 - (r.top - vh * .2) / vh)).toFixed(3)); });
+    movers.forEach(m => { const r = m.getBoundingClientRect(); m.style.setProperty("--p", clamp(1 - (r.top - vh * .2) / vh).toFixed(3)); });
   };
   const ask = () => { if (!queued) { queued = true; requestAnimationFrame(frame); } };
   addEventListener("scroll", ask, { passive: true }); addEventListener("resize", ask); frame();
