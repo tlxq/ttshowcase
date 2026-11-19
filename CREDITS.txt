@@ -15,14 +15,20 @@ The paint pitch (pitch/):
   (SIL Open Font License, Google Fonts): fetched at build time, never stored in this repo.
   The epaRadar painting (pitch/assets/epa_wall.webp) was made by Tom on his own computer with
   stable-diffusion.cpp (MIT) and the Z-Image Turbo model (Apache 2.0), around the car from epaRadar's
-  own photo (its public repo).
+  own photo (its public repo). Its green exit sign was painted the same way (the blank sign) and its
+  text is set by hand; the number plate on the car is drawn by hand (Nimbus Sans, URW base-35 fonts, AGPL
+  with the font exception).
   The other six paintings (pitch/assets/ttoolbox_wall.webp, dot_wall.webp, tthermal_wall.webp,
   self_wall.webp, rvf_wall.webp, edge_wall.webp) were made by Tom the same way, on his own computer with
-  stable-diffusion.cpp (MIT) and the Z-Image Turbo model (Apache 2.0); the sign text on the EDGE painting
-  is set by hand. The concrete round each is keyed out to transparency.
+  stable-diffusion.cpp (MIT) and the Z-Image Turbo model (Apache 2.0). The concrete round each is keyed
+  out to transparency. The link marks over them (pitch/assets/rvf_fence.webp, rvf_ribbon.webp,
+  rvf_chalk.webp, edge_banner.webp, edge_billboard.webp, edge_screens.webp) are drawn by hand in code, and
+  all their text is set by hand (Nimbus Sans and URW Gothic from the URW base-35 fonts).
   The end wall painting (pitch/assets/end_wall_17.webp, end_wall_29.webp, end_wall_67.webp: three
-  versions of one picture) was made by Tom the same way; the text on its two signs is set by hand, and
-  the concrete round it is keyed out to transparency. Inter (SIL Open Font License) and Sedgwick Ave
+  versions of one picture) was made by Tom the same way. The two stencils on it are the GitHub and
+  LinkedIn marks, drawn from the vector shapes in Simple Icons (CC0 1.0): they are the companies' own
+  marks, used only to link to them, and stay their owners' trademarks. The concrete round the
+  painting is keyed out to transparency. Inter (SIL Open Font License) and Sedgwick Ave
   Display (SIL Open Font License, Google Fonts) are used for the pitch's looks and are fetched at build
   time.
   The raddavarfruberga photo is fetched from raddavarfruberga.se at build time (its repo is private),
