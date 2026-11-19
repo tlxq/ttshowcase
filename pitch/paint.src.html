@@ -146,6 +146,10 @@ html[data-font="hand"] :is(.tag, .mail, .pick .top, .pick .bar, .pick .menu, .ad
 html[data-font="hand"] :is(.tag, .mail) b { font-family: "Sedgwick Ave Display", cursive; font-weight: 400; font-size: 2.3em; line-height: 1.05; letter-spacing: .01em; text-transform: none; }
 html[data-font="sans"] :is(.tag, .mail) b { font-family: "Inter", system-ui, sans-serif; font-weight: 700; font-size: 1.1em; letter-spacing: .01em; text-transform: none; }
 html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts) { text-transform: none; }
+/* ==== PROJECT LABELS (Tom 11-19): one sentence per project, beside its painting (the plates check); the numbers and the stack are sprayed on the wall, not here. ==== */
+.tag.facts { width: min(270px, 70vw); font-size: calc(var(--look-label) * .9); line-height: 1.4; padding: 6px 9px; }
+.tag.facts b { margin-bottom: 1px; }
+@media (max-aspect-ratio: 4/5) { .tag.facts { font-size: calc(var(--look-label-phone) * .9); width: min(300px, 76vw); } }
 </style>
 <svg class="pitch-svg" aria-hidden="true"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></svg>
 <script>
@@ -156,7 +160,7 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
 
 <canvas id="c"></canvas>
 <div class="track"></div>
-<div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag edge" id="tagUp"><b>Scroll up</b>Visitors' tags</div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map. Only friends see where you are.<br>Degree project, built by me<br><span>React Native &middot; Expo &middot; Supabase &middot; Postgres &middot; pgTAP</span></div></div>
+<div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag edge" id="tagUp"><b>Scroll up</b>Visitors' tags</div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map that only friends can see. Degree project, built alone.</div></div>
 <div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div id="admFrames" hidden></div><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="tagMoveB" hidden>Move it</button><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"><i class="hs" id="admSize" hidden aria-hidden="true"></i><i class="ht" id="admTurn" hidden aria-hidden="true"></i></div><div class="menu" id="tagTools" role="group" aria-label="Tool" hidden></div><div class="menu cols" id="tagCols" role="group" aria-label="Colour" hidden></div><div class="bar" id="admSel" hidden><button type="button" class="go" id="admApprove" hidden>Approve</button><button type="button" id="admRemove" hidden>Remove</button><button type="button" id="admUndo" hidden>Undo</button><button type="button" id="admDone">Done</button></div><div class="bar" id="tagBar" hidden><button type="button" id="tagTool" aria-expanded="false" aria-controls="tagTools"><span class="ic"></span><span class="nm"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagCol" aria-expanded="false" aria-controls="tagCols" aria-label="Colour"><span class="dot"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagUndo" aria-label="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="go" id="tagDone" disabled>Done</button></div><div class="bar" id="tagSend" hidden><input id="tagName" maxlength="24" placeholder="Your name (optional)" aria-label="Your name, optional" autocomplete="nickname" enterkeyhint="done" spellcheck="false"><button type="button" id="tagBack">Back</button><button type="button" class="go" id="tagPut">Put it on the wall</button></div></div>
 <div class="adm" id="adm" hidden><span id="admNote">Admin</span><button type="button" id="admOpen">Edit the wall</button></div>
 <div class="white" id="white"></div>
@@ -910,6 +914,80 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
     els.forEach((h, i) => { if (!show) { h.style.display = "none"; h.tabIndex = -1; return; }
       const b = sg[i], w = Math.max(48, b.bx - b.ax + 8), hgt = Math.max(48, sg.length > 1 ? (i ? b.by - seam : seam - b.ay) : b.by - b.ay), top = sg.length > 1 ? (i ? seam : seam - hgt) : (b.ay + b.by) / 2 - hgt / 2;
       Object.assign(h.style, { display: "block", left: (b.ax + b.bx) / 2 - w / 2 + "px", top: top + "px", width: w + "px", height: hgt + "px" }); h.tabIndex = 0; }); }
+  // ---- live numbers sprayed on the walls (Tom 11-19). RULE: every visible number is fetched from a PUBLIC source when the page loads; nothing is typed in or baked into a picture.
+  // If a fetch fails that number is not drawn (no old value, no placeholder) and the wall still looks complete (the stack stays). Self-hosted, EDGE and raddavarfruberga show no numbers:
+  // the first two are private, and raddavarfruberga.se offers no public count (its page is prerendered and sends no CORS header, so a browser can't read it).
+  // The browser asks GitHub's public API directly (no server, no token): a visitor's IP may make 60 core and 10 search requests an hour; this page makes 6 core + 2 search + 1 raw per load.
+  const GH_API = "https://api.github.com/", GH_RAW = "https://raw.githubusercontent.com/tlxq/";
+  const ghGet = async url => { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r; };
+  const treeOf = {}; // one tree request per repo
+  const filesOf = (repo, branch) => treeOf[repo] || (treeOf[repo] = ghGet(`${GH_API}repos/tlxq/${repo}/git/trees/${branch}?recursive=1`).then(r => r.json()).then(d => { if (d.truncated) throw 0; return d.tree.filter(t => t.type === "blob").map(t => t.path); }));
+  const positive = n => { if (!(n > 0)) throw 0; return n; };
+  // commits: the page count of a one-per-page listing, from its Link header (exact)
+  const commitsOf = async repo => { const r = await ghGet(`${GH_API}repos/tlxq/${repo}/commits?per_page=1`), last = /[?&]page=(\d+)>; rel="last"/.exec(r.headers.get("Link") || ""); return positive(last ? +last[1] : (await r.json()).length); };
+  const mergedOf = async repo => { const d = await (await ghGet(`${GH_API}search/issues?q=${encodeURIComponent(`repo:tlxq/${repo} is:pr is:merged`)}&per_page=1`)).json(); if (d.incomplete_results) throw 0; return positive(d.total_count); };
+  const testsOf = async (repo, branch) => { const files = (await filesOf(repo, branch)).filter(p => p.endsWith(".bats")); if (!files.length) throw 0;
+    return positive((await Promise.all(files.map(async f => ((await (await ghGet(`${GH_RAW}${repo}/${branch}/${f}`)).text()).match(/^@test\b/gm) || []).length))).reduce((a, b) => a + b, 0)); };
+  const skillsOf = async (repo, branch) => positive((await filesOf(repo, branch)).filter(p => /^plugins\/[^/]+\/skills\/[^/]+\/SKILL\.md$/.test(p)).length);
+  const LIVE = { // wall: [singular, plural, how to get it]
+    dot: [["commit", "commits", () => commitsOf("dot")], ["test", "tests", () => testsOf("dot", "main")]],
+    ttoolbox: [["commit", "commits", () => commitsOf("ttoolbox")], ["skill", "skills", () => skillsOf("ttoolbox", "main")]],
+    tthermal: [["commit", "commits", () => commitsOf("tthermal")], ["merged pull request", "merged pull requests", () => mergedOf("tthermal")]],
+    epa: [["commit", "commits", () => commitsOf("eparadar")], ["merged pull request", "merged pull requests", () => mergedOf("eparadar")]] };
+  const SPRAYS = {}, liveHead = document.createElement("p"); liveHead.className = "head"; liveHead.id = "liveHead"; document.querySelector(".hud").append(liveHead);
+  const liveText = () => liveHead.textContent = Object.entries(LIVE).map(([k, a]) => { const got = a.filter(s => s.n != null).map(s => `${s.n.toLocaleString("en-US")} ${s.n === 1 ? s.word[0] : s.word[1]}`); return got.length ? `${k}: ${got.join(", ")}.` : ""; }).filter(Boolean).join(" ");
+  for (const [key, defs] of Object.entries(LIVE)) { LIVE[key] = defs.map(([one, many, get]) => ({ word: [one, many], n: null })); // fetched now, once per page load
+    defs.forEach(([, , get], i) => get().then(n => { LIVE[key][i].n = n; SPRAYS[key]?.draw(); liveText(); }).catch(() => {})); } // a failed fetch leaves n empty: nothing is drawn for it
+  // a sprayed text on a wall: canvas drawn at runtime (a soft overspray halo, a speckle round the edges, a few drips), laid on the wall like a painting.
+  // o: key (LIVE's), colour, stack (words), rect (wall space: x0, y0, x1, y1), row (stats side by side, else one under the other), name (for the plates check)
+  const SPRAY_FONT = '"Saira Stencil One", sans-serif';
+  function makeSpray(o) { const [x0, y0, x1, y1] = o.rect, w = x1 - x0, h = y1 - y0, PPM = 400, W = Math.round(w * PPM), H = Math.round(h * PPM);
+    const mk = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return c; }, out = mk(), og = out.getContext("2d", { willReadFrequently: true });
+    const map = new THREE.CanvasTexture(out); map.encoding = THREE.sRGBEncoding; map.anisotropy = maxAniso;
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .6, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }));
+    mesh.position.set(x0 + w / 2, y0 + h / 2, .004); mesh.visible = false; mesh.material.onBeforeCompile = wall.material.onBeforeCompile; scene.add(mesh);
+    PROT.push([o.name, V(x0, y0, 0), V(x1, y1, 0)]);
+    let seed = [...o.key].reduce((a, c) => a + c.charCodeAt(0), 7); const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const sp = { mesh, op: 0, at: 0, draw() { seed = [...o.key].reduce((a, c) => a + c.charCodeAt(0), 7);
+      const items = (LIVE[o.key] || []).filter(s => s.n != null).map(s => [s.n.toLocaleString("en-US"), s.n === 1 ? s.word[0] : s.word[1]]), stack = o.stack, pad = W * .04;
+      const mask = mk(), mg = mask.getContext("2d", { willReadFrequently: true }); mg.fillStyle = "#000"; mg.textBaseline = "top";
+      const wide = (t, px) => { mg.font = `${px}px ${SPRAY_FONT}`; return mg.measureText(t).width; };
+      // the layout: the stats big, their words small under them, the stack small; the stack alone sits in the middle of its place
+      const parts = []; // [text, size, x, y, align]
+      const fit = (t, px, maxW) => Math.min(px, px * maxW / wide(t, px));
+      if (o.row) { const cells = Math.max(items.length, 1), cw = (W - 2 * pad) / cells; let nfs = H * .5;
+        for (const [n] of items) nfs = Math.min(nfs, fit(n, 1000, cw * .86)); nfs = Math.min(nfs, H * (items.length ? .4 : 0));
+        const half = Math.ceil(stack.length / 2), lines = stack.length > 5 ? [stack.slice(0, half).join("  \u00b7  "), stack.slice(half).join("  \u00b7  ")] : [stack.join("  \u00b7  ")];
+        const wfs = nfs * .4; let sfs = H * .2; for (const t of lines) sfs = Math.min(sfs, fit(t, 1000, W - 2 * pad)); sfs = Math.min(sfs, items.length ? (H - nfs - wfs * 1.5) / (lines.length * 1.3 + .3) : 1e9);
+        const blockH = (items.length ? nfs + wfs * 1.5 + sfs * .3 : 0) + lines.length * sfs * 1.2;
+        let y = Math.max(0, (H - blockH) / 2);
+        if (items.length) { items.forEach(([n, wd], i) => { const cx = pad + cw * (i + .5); parts.push([n, nfs, cx, y, "center"], [wd, Math.min(wfs, fit(wd, 1000, cw * .92)), cx, y + nfs * 1.02, "center"]); }); y += nfs + wfs * 1.5 + sfs * .3; }
+        lines.forEach(t => { parts.push([t, sfs, W / 2, y, "center"]); y += sfs * 1.2; });
+      } else { let nfs = 1e9; for (const [n] of items) nfs = Math.min(nfs, fit(n, 1000, W - 2 * pad)); nfs = Math.min(nfs, W * .5, H * (stack.length > 4 ? .2 : .17)); const wfs = nfs * .3;
+        let sfs = 1e9; for (const t of stack) sfs = Math.min(sfs, fit(t, 1000, W - 2 * pad)); sfs = Math.min(sfs, W * .1, (H * .98 - items.length * (nfs * 1.5 + H * .02) - (items.length ? H * .03 : 0)) / (stack.length * 1.3));
+        const blockH = items.length * (nfs + wfs * 1.6 + H * .02) + (items.length ? H * .03 : 0) + stack.length * sfs * 1.3; let y = Math.max(0, (H - blockH) / 2);
+        for (const [n, wd] of items) { parts.push([n, nfs, pad, y, "left"], [wd, Math.min(wfs, fit(wd, 1000, W - 2 * pad)), pad, y + nfs * 1.02, "left"]); y += nfs + wfs * 1.6 + H * .02; }
+        y += items.length ? H * .03 : 0;
+        for (const t of stack) { parts.push([t, sfs, pad, y, "left"]); y += sfs * 1.3; } }
+      for (const [t, px, x, y, al] of parts) { mg.font = `${px}px ${SPRAY_FONT}`; mg.textAlign = al; mg.fillText(t, x, y); }
+      // the paint: tinted text, a wide soft halo, a tight one, the text itself, a speckle where the halo is, drips off the lowest edges
+      const tint = mk(), tg = tint.getContext("2d"); tg.drawImage(mask, 0, 0); tg.globalCompositeOperation = "source-in"; tg.fillStyle = o.colour; tg.fillRect(0, 0, W, H);
+      og.clearRect(0, 0, W, H); const blurred = mk(), bg = blurred.getContext("2d", { willReadFrequently: true });
+      if ("filter" in og) { og.filter = `blur(${W * .03}px)`; og.globalAlpha = .38; og.drawImage(tint, 0, 0); og.filter = `blur(${W * .008}px)`; og.globalAlpha = .55; og.drawImage(tint, 0, 0); og.filter = "none"; bg.filter = `blur(${W * .045}px)`; }
+      const dark = mk(), dg = dark.getContext("2d"); dg.drawImage(mask, 0, 0); dg.globalCompositeOperation = "source-in"; dg.fillStyle = "#0c0e12"; dg.fillRect(0, 0, W, H); // a dark edge under the paint, so it reads on any wall
+      og.globalAlpha = .6; og.drawImage(dark, W * .007, W * .007); og.drawImage(dark, -W * .004, W * .004);
+      og.globalAlpha = 1; og.drawImage(tint, 0, 0); bg.drawImage(tint, 0, 0);
+      const halo = bg.getImageData(0, 0, W, H).data; og.fillStyle = o.colour;
+      for (let i = 0, n = W * H / 28; i < n; i++) { const x = rnd() * W | 0, y = rnd() * H | 0, a = halo[(y * W + x) * 4 + 3] / 255; if (a > .03 && rnd() < a * .9) { og.globalAlpha = .3 + .5 * rnd(); const r = .6 + rnd() * 1.3; og.fillRect(x, y, r, r); } }
+      const md = mg.getImageData(0, 0, W, H).data; og.strokeStyle = o.colour; og.lineCap = "round";
+      for (let j = 0, nd = 3 + (W / 90 | 0); j < nd; j++) { const x = rnd() * W | 0; let y = H - 1; while (y > 0 && md[(y * W + x) * 4 + 3] < 200) y--; const len = 10 + rnd() * H * .07, lw = 1.5 + rnd() * 1.5;
+        if (y < 4 || y + len > H - 3) continue; og.globalAlpha = .9; og.lineWidth = lw; og.beginPath(); og.moveTo(x, y - 2); og.lineTo(x, y + len); og.stroke(); og.beginPath(); og.arc(x, y + len, lw * .85, 0, 6.3); og.fillStyle = o.colour; og.fill(); }
+      og.globalAlpha = 1; map.needsUpdate = true; },
+      fade(on) { const now = performance.now(), dt = Math.min(.1, (now - sp.at) / 1000 || 0); sp.at = now; sp.op = cl(sp.op + (on ? dt / .6 : -dt / .6)); sp.mesh.visible = sp.op > .01; sp.mesh.material.opacity = sp.op; } };
+    SPRAYS[o.key] = sp; document.fonts.load(`40px ${SPRAY_FONT}`).then(() => sp.draw(), () => sp.draw()); return sp; }
+  // epaRadar: above the painting
+  { const yT = EY + EH / 2 - 98 / 960 * EH, x0 = NARROW ? EX - EW / 2 + .9 : EX - EW / 2 + 1.2;
+    var EPA_SP = makeSpray({ key: "epa", name: "epaRadar's numbers and stack", colour: "#ffc23d", stack: ["React Native", "Expo", "Supabase", "Postgres", "pgTAP"], row: true, rect: [x0, yT + .12, NARROW ? EX + EW / 2 - .9 : x0 + 4.4, yT + 1.15] }); }
   // the underpass (Tom 11-18): the street goes down its second flight under a bridge, from the painting's right edge to just short of
   // raddavarfruberga. The deck rests on its abutment, a wall that stands forward of the street wall: the car drives in behind its corner.
   const UP0 = EX + EW / 2 - .05, UP1 = 22.9, UD = .22, DECK = G2 + 3.8, DECK_Z = 30;
@@ -1122,8 +1200,9 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
   const RVF_SIGN = [48, 585, 274, 738]; // the blue "Open the site" sign, in picture pixels (left, top, right, bottom)
   const lamp3 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp3.position.set(RX - 9, 3.8 - 2 * DROP, 4.4); lamp3.target.position.set(RX - 1.6, .3 - 2 * DROP, 0); lamp3.castShadow = false; scene.add(lamp3, lamp3.target);
   document.querySelector(".hud").insertAdjacentHTML("beforeend", '<a class="hot" id="hot3" href="https://raddavarfruberga.se" target="_blank" rel="noopener" aria-label="Open the site" tabindex="-1"></a>'
-    + '<div class="tag facts" id="tagRvf"><b>raddavarfruberga.se</b>Petition site for our preschool\'s parents. I\'m one of the parents.<br>1,000+ signatures, stored in the EU, no one\'s row public<br>Volunteer project, live<br><span>Next.js &middot; TypeScript &middot; Supabase &middot; Resend &middot; Vercel</span></div>');
+    + '<div class="tag facts" id="tagRvf"><b>raddavarfruberga.se</b>Petition site for our preschool\'s parents. Volunteer project.</div>');
   const hot3 = document.getElementById("hot3"), tagRvf = document.getElementById("tagRvf");
+  const RVF_SP = makeSpray({ key: "rvf", name: "raddavarfruberga's stack", colour: "#8cc7ee", stack: ["Next.js", "TypeScript", "Supabase", "Resend", "Vercel"], row: true, rect: [RVP.at(40, 0).x, RVP.at(0, 235).y, RVP.at(900, 0).x, RVP.at(0, 70).y] });
   svg.insertAdjacentHTML("beforeend", '<line id="l7"/><circle id="c7" r="4"/>'); const l7 = svg.querySelector("#l7"), c7 = svg.querySelector("#c7");
   let rvfStart = 0; const RVF_END = RIB0 + 2.9; // the tag and the facts come while the last ribbons are tied
   let endK = 0; // how far the camera has left raddavarfruberga for the manhole
@@ -1140,7 +1219,7 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
     if (dust.visible) { const dr = 1 - Math.exp(-tb * 1.6); for (let i = 0; i < dustN; i++) { const o = dust0[i], v = dustV[i]; dustP[i * 3] = o.x + v.x * dr; dustP[i * 3 + 1] = Math.max(G3 + .05, o.y + v.y * dr - .12 * tb); dustP[i * 3 + 2] = o.z + v.z * dr; }
       dustGeo.attributes.position.needsUpdate = true; dust.material.opacity = .7 * (1 - dk) * sm(cl(tb / .15)); dust.material.size = 1.4 + 2.4 * dk; }
     const day = tb < 0 ? 0 : sm(cl(tb / 1.2)) * sm(cl((walk3 - .3) / .3)); sun3.intensity = (NARROW ? 9 : 18) * day; fill3.intensity = 7 * day;
-    const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0);
+    const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0); RVF_SP.fade(showL);
     if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - HRX * .4, G3 + .1, .3) : RVP.at(300, 650), NARROW ? 14 : 24, NARROW ? 70 : 20); // phone: below the street, where there is room; laptop: on the bare concrete between the sign and the house
     placeHots([hot3], [RVF_SIGN], RVP, sec >= .3 && walk3 > .5 && endK < .5); } // the link is the painted sign, once the camera is at the wall
 
@@ -1244,20 +1323,24 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
   const N_ = NARROW;
   const tool = (x, key, name, link, plate, more) => Object.assign({ x, key, leave: key + 25, floor: WF, name, links: link ? [{ t: "Code for " + link, href: GHUB + link }] : [], plate }, more);
   const U4 = [
-    tool(41, 700, "Self-hosted platform", null, "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool.<br>About ten services in Docker, running day and night; close to 300 pull requests<br>Built alone<br><span>TypeScript &middot; Next.js &middot; Hono &middot; SQLite &middot; Java &middot; Docker &middot; Caddy &middot; Tailscale</span>",
+    tool(41, 700, "Self-hosted platform", null, "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool. Built alone.",
       { art: ["assets/self_wall.webp", 4.2, 3.8, [776, 488], 1.7, [[247, 89, 1305, 400], [420, 290, 1175, 888]]], marks: [] }),
-    tool(47.5, 770, "ttoolbox", "ttoolbox", "<b>ttoolbox</b>Claude Code plugin: skills and agents to plan, build, review and prove work the same careful way every time.<br>Built and used daily by me<br><span>Claude Code &middot; Python &middot; Bash</span>",
+    tool(47.5, 770, "ttoolbox", "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.",
       { art: ["assets/ttoolbox_wall.webp", 5.6, 3.7, [754, 507], 1.5, [[136, 309, 1372, 706]]], marks: [[180, 620, 360, 706]] }),
-    tool(54, 840, "dot", "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC: dot push on one, dot pull on the other.<br>2,302 lines of Bash, 92 bats tests<br>Built and used daily by me<br><span>Bash &middot; bats &middot; GNU Stow &middot; mise</span>",
+    tool(54, 840, "dot", "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.",
       { art: ["assets/dot_wall.webp", 5, 3.7, [756, 524], 1.5, [[140, 164, 1373, 885]]], marks: [[140, 735, 372, 860]] }),
-    tool(60.5, 910, "tthermal", "tthermal", "<b>tthermal</b>Omarchy bar plugin: keeps an Intel laptop under one temperature you choose, and shows CPU, GPU and fans on a desktop.<br>Built for my machines<br><span>JavaScript &middot; QML &middot; Shell</span>",
+    tool(60.5, 910, "tthermal", "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.",
       { leave: 935, art: ["assets/tthermal_wall.webp", 5.6, 3.4, [775, 525], 1.5, [[104, 254, 1447, 796]]], marks: [[162, 675, 390, 775]] }),
     { x: 75, key: 1045, leave: 1070, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       art: ["assets/edge_wall.webp", 6.6, 3.5, [714, 518], 1.9, [[20, 200, 1409, 835]], .056], marks: [[22, 651, 322, 730], [22, 737, 322, 818]],
-      plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base.<br>51 pull requests, from the first sketch to live<br>Work project, built alone<br><span>Astro &middot; TypeScript</span>" } ];
+      plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base. Work project, built alone." } ];
   U4.forEach((u, i) => { const [file, wL, wP, c, y, areas, z] = u.art; u.B = paintOn(file, N_ ? wP : wL, c, [u.x, u.floor + y], z); areas.forEach((a, j) => u.B.protect(u.name + "'s painting" + (j ? " " + (j + 1) : ""), a));
     u.bb = [0, 1, 2, 3].map(n => Math[n < 2 ? "min" : "max"](...areas.map(a => a[n]))); u.start = 0; // the painted area as one box
     u.links.forEach((l, j) => l.box = u.marks[j]);
+    { const [key, colour, stack] = { "Self-hosted platform": ["self", "#2d3a5c", ["TypeScript", "Next.js", "Hono", "SQLite", "Java", "Docker", "Caddy", "Tailscale"]], ttoolbox: ["ttoolbox", "#c8402a", ["Claude Code", "Python", "Bash"]],
+        dot: ["dot", "#25407a", ["Bash", "bats", "GNU Stow", "mise"]], tthermal: ["tthermal", "#d8435f", ["JavaScript", "QML", "Shell"]], "app-utveckling.se": ["edge", "#1f5fc4", ["Astro", "TypeScript"]] }[u.name];
+      const xr = u.B.at(u.bb[2], 0).x, yb = u.B.at(0, u.bb[3]).y, ym = u.B.at(0, (u.bb[1] + u.bb[3]) / 2).y; // beside the painting on a laptop; under it, above the floor, on a phone
+      u.sp = makeSpray({ key, name: u.name + "'s numbers and stack", colour, stack, row: N_, rect: N_ ? [u.x - 1.4, u.floor + .06, u.x + 1.4, yb - .04] : [xr + .08, ym - .95, xr + 1.38, ym + .95] }); }
     u.hots = u.links.map((l, j) => { const a = document.createElement("a"); a.className = "hot"; a.href = l.href; a.target = "_blank"; a.rel = "noopener"; a.setAttribute("aria-label", l.t); a.tabIndex = -1; a.style.display = "none"; document.querySelector(".hud").append(a); return a; });
     if (u.plate) { const el = document.createElement("div"); el.className = "tag facts"; el.innerHTML = u.plate; document.querySelector(".hud").append(el); u.el = el;
       svg.insertAdjacentHTML("beforeend", `<line id="lu${i}"/><circle id="cu${i}" r="4"/>`); u.l = svg.querySelector("#lu" + i); u.c = svg.querySelector("#cu" + i); } });
@@ -1756,7 +1839,7 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1, t0 = .35, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / FADE)), shown = k >= 1;
       u.B.m.visible = k > 0; u.B.m.material.opacity = k;
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
-      if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0);
+      if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0); u.sp.fade(show);
         if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); } }); } // phone: on the floor below the wall, where nothing is painted
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
@@ -1853,8 +1936,8 @@ html[data-font="hand"] .tag:not(.facts), html[data-font="sans"] .tag:not(.facts)
     tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
     // the label and the links on the painted signs, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
-    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn);
-    pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .25, EY - EH / 2 + .3, 0) : V(EX - EW * .3, EY + EH / 2 - .25, 0), NARROW ? 18 : 24, NARROW ? 60 : -112); // phone: under the painting, on the empty floor
+    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn); EPA_SP.fade(!!factsOn);
+    pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .25, EY - EH / 2 + .3, 0) : V(EX - EW * .3, EY - EH / 2 + .1, 0), NARROW ? 18 : 24, NARROW ? 60 : 60); // phone: under the painting, on the empty floor
     // the two signs hang one under the other: each tap area is at least 48 px tall, growing away from the line between them, so they never overlap
     const sgn = SIGNS.map(([a, b]) => [...proj(a), ...proj(b)]), seam = (sgn[0][4] + sgn[1][1]) / 2;
     const signsIn = sec >= .3 && pan > .5 && walk3 < .5 && sgn.every(b => b[2] && b[3] > 0 && b[0] < innerWidth && b[4] > 0 && b[1] < innerHeight); // at this wall, both signs in view
