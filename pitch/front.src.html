@@ -458,6 +458,11 @@ a { color: inherit; }
     big.style.borderRadius = lerp(18, 0, grow) + lerp(0, 18, out) + "px";
     big.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotateX(${lerp(26, 0, grow) + my * -3}deg) rotateY(${mx * 4 * (1 - grow)}deg) rotateZ(${lerp(-4, 0, grow)}deg)`;
     big.style.setProperty("--pan", (sm(.38, .72, k) * 30).toFixed(1) + "%");
+    // once the text comes, the site steps through and leaves: one set of words on screen at a time
+    const gone = sm(.32, .44, k);
+    big.style.opacity = 1 - gone * (narrow ? .7 : 1);
+    big.style.filter = gone ? `blur(${(gone * 12).toFixed(1)}px)` : "";
+    if (gone) big.style.transform += ` scale(${1 + gone * .08})`;
     // the small one rises faster than the page and crosses in front, turning with the pointer
     const sw = narrow ? vw * .42 : Math.min(vw * .17, 300), sh = sw * smallAR;
     const sx = narrow ? vw * .54 : vw * .74, sy = lerp(vh * 1.15, vh * (narrow ? .08 : .2), sm(.1, .5, k)) - sm(.5, 1, k) * vh * .9;
