@@ -1,0 +1,20 @@
+[
+  {
+    "name": "eparadar",
+    "url": "https://eparadar.se",
+    "stills": ["laptop"],
+    "hide": []
+  },
+  {
+    "name": "raddavarfruberga",
+    "url": "https://raddavarfruberga.se",
+    "stills": ["laptop", "phone-full"],
+    "hide": [
+      "section#rosterna",
+      "[class*='_crowd']",
+      "[class^='name-style-']",
+      "li:has(figure)",
+      "main > div:has(> .page-width > h2)"
+    ]
+  }
+]
