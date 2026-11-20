@@ -197,6 +197,7 @@ a { color: inherit; }
 
 /* mix (Tom 11-19: "variety, but feeling synced"): count → phone + ground on one beat → the tools on a sideways shelf */
 :is([data-scroll="mix"], [data-scroll="live"]) .count { height: 140svh; }
+[data-scroll="live"] .count .wrap { top: 15svh; min-height: 70svh; } /* Tom 11-20: the scene starts right under the number */
 :is([data-scroll="mix"], [data-scroll="live"]) .more .wrap { max-width: none; }
 :is([data-scroll="mix"], [data-scroll="live"]) .more { padding-top: 0; padding-bottom: 0; }
 :is([data-scroll="mix"], [data-scroll="live"]) .more .vp { padding-left: max(var(--gutter), calc((100vw - 1180px) / 2)); }
@@ -214,7 +215,7 @@ a { color: inherit; }
 [data-scroll="live"] [data-only~="live"], [data-scroll="live"] [data-only~="3"], [data-scroll="live"] [data-only~="1"] { display: block; }
 [data-scroll="live"] .card:first-child { display: none; }
 [data-scroll="live"] .work-head { position: static; }
-.scene { height: 360svh; background: var(--g); position: relative; }
+.scene { height: 300svh; background: var(--g); position: relative; }
 .scene .st { position: sticky; top: 0; height: 100svh; overflow: clip; perspective: 1400px; }
 .scene .big-s, .scene .small-s { position: absolute; left: 0; top: 0; overflow: clip; will-change: transform, width, height; box-shadow: 0 40px 90px rgb(0 0 0 / .55); }
 .scene .big-s img, .scene .small-s img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% var(--pan, 0%); }
@@ -232,15 +233,15 @@ a { color: inherit; }
    in, a live line with a beating dot); everything still runs on the scroll value. */
 .scene .ground { position: absolute; inset: -10% 0; overflow: clip; }
 .scene .glow { position: absolute; inset: 0; background: radial-gradient(42vmax 42vmax at var(--gx, 70%) var(--gy, 40%), rgb(80 140 255 / .28), transparent 70%); mix-blend-mode: screen; }
-.scene .f { position: absolute; left: var(--x); top: var(--y); width: 12px; height: 12px; border-radius: 50%; background: #6fd3ff; box-shadow: 0 0 12px #6fd3ff; }
+.scene .f { position: absolute; left: var(--x); top: var(--y); width: 12px; height: 12px; border-radius: 50%; background: #6fd3ff; box-shadow: 0 0 18px 2px #6fd3ff; }
 .scene .f::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid #6fd3ff; animation: ping 2.4s var(--d, 0s) infinite cubic-bezier(.2, .6, .3, 1); }
 @keyframes ping { from { transform: scale(.4); opacity: .9; } to { transform: scale(3.2); opacity: 0; } }
 .scene .grain { position: absolute; inset: -50%; opacity: .09; background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); animation: grain 1s steps(6) infinite; pointer-events: none; }
 @keyframes grain { 0% { transform: translate(0, 0); } 33% { transform: translate(-4%, 3%); } 66% { transform: translate(3%, -5%); } 100% { transform: translate(-2%, 2%); } }
 /* adjust 11-19 ("messy"): the blown-up map read as smudges and the outlined name doubled the heading; the ground is now
    the radar itself: quiet rings round the app and one sweep that turns with the scroll */
-.scene .radar { position: absolute; left: 74%; top: 50%; width: 160vmax; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: repeating-radial-gradient(circle, transparent 0 calc(8vmax - 1px), rgb(111 211 255 / .09) calc(8vmax - 1px) 8vmax); -webkit-mask: radial-gradient(circle, #000 15%, transparent 62%); mask: radial-gradient(circle, #000 15%, transparent 62%); }
-.scene .radar::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgb(111 211 255 / .12), rgb(111 211 255 / 0) 70deg, transparent); transform: rotate(var(--sw, 0deg)); }
+.scene .radar { position: absolute; left: 74%; top: 50%; width: 160vmax; aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: repeating-radial-gradient(circle, transparent 0 calc(8vmax - 1px), rgb(111 211 255 / .16) calc(8vmax - 1px) 8vmax); -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%); mask: radial-gradient(circle, #000 20%, transparent 68%); }
+.scene .radar::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgb(111 211 255 / .22), rgb(111 211 255 / 0) 70deg, transparent); transform: rotate(var(--sw, 0deg)); }
 @media (max-width: 700px) { .scene .radar { left: 50%; top: 32%; } }
 .scene .tx { gap: var(--s3); }
 .scene .idx { display: flex; align-items: center; gap: var(--s2); font: 600 13px/1 var(--f-text); letter-spacing: .1em; text-transform: uppercase; color: var(--look-soft); }
@@ -446,13 +447,13 @@ a { color: inherit; }
   let mx = 0, my = 0;
   addEventListener("pointermove", e => { mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5; ask(); }, { passive: true });
   const runScene = (s, vh, vw) => {
-    const r = s.el.getBoundingClientRect(), k = clamp(-r.top / (r.height - vh));
+    const r = s.el.getBoundingClientRect(), k = clamp(-r.top / (r.height - vh)) * .75; // Tom 11-20: the scene ends once the text is in, no empty stretch
     if (r.bottom < 0 || r.top > vh) return;
     const narrow = vw < 700;
     // the big one fills the screen (laptop on a laptop, the app on a phone); the small one rides in front
     const [big, small, bigAR, smallAR] = narrow ? [s.ph, s.lap, 650 / 300, 10 / 16] : [s.lap, s.ph, 10 / 16, 650 / 300];
     big.className = "big-s"; small.className = "small-s";
-    const grow = sm(.04, .38, k), out = sm(.72, 1, k);
+    const grow = sm(.04, .38, k), out = 0; // Tom 11-20: the phone stays beside the text to the end
     const w0 = narrow ? vw * .56 : vw * .42, fullW = Math.max(vw, vh / bigAR);
     const w = lerp(w0, fullW, grow) * lerp(1, .55, out), h = w * bigAR;
     const cx = lerp(vw * (narrow ? .5 : .62), vw / 2, grow) + lerp(0, -vw * .28, out), cy = lerp(vh * .62, vh / 2, grow) + lerp(0, -vh * .1, out);
@@ -474,7 +475,7 @@ a { color: inherit; }
     // the name slides huge behind; the text rises in once the screen is full, line by line
     s.ground.style.setProperty("--sw", (k * 540).toFixed(1) + "deg");
     s.scrim.style.opacity = sm(.3, .45, k) * (1 - out * .6);
-    s.tx.forEach((el, i) => { const t = sm(.36 + i * .035, .48 + i * .035, k); el.style.opacity = t; el.style.transform = el.classList.contains("split") || el.classList.contains("pills") ? "none" : `translateY(${(1 - t) * 40}px)`; });
+    s.tx.forEach((el, i) => { const t = sm(.36 + i * .035, .48 + i * .035, k); el.style.opacity = el.classList.contains("btns") ? sm(.36 + i * .035, .39 + i * .035, k) : t; /* Tom 11-20: the button never sits half-faded grey */ el.style.transform = el.classList.contains("split") || el.classList.contains("pills") ? "none" : `translateY(${(1 - t) * 40}px)`; });
     // the ground: the map drifts slower than the page, the light follows the pointer
     s.ground.style.setProperty("--gx", (50 + mx * 60).toFixed(1) + "%"); s.ground.style.setProperty("--gy", (45 + my * 50).toFixed(1) + "%");
     // index rule grows, letters rise one by one with a small turn, the marker draws its line, the tags drop in
