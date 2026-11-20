@@ -19,7 +19,7 @@ __TOKENS__
   --f-big: "Clash Display", "Arial Narrow", sans-serif;
   --f-text: "Inter", system-ui, sans-serif;
   /* the photo on the first screen: its height and top, as parts of the screen height */
-  --hp: 66svh; /* Tom 11-20: smaller */
+  --hp: 54svh; /* Tom 11-20: smaller, then smaller again */
   --pt: calc(50svh - var(--hp) * .4); /* so the point he shrinks to (40% down the photo) sits at the middle of the screen */
 }
 * { box-sizing: border-box; }
@@ -82,8 +82,11 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 .row { white-space: nowrap; text-transform: uppercase; will-change: transform; }
 .row.a { font: 400 min(6.4vw, 11svh)/1 var(--f-text); letter-spacing: -.03em; color: var(--look-quiet); }
 .row.b { font: 700 min(7.6vw, 13svh)/.92 var(--f-big); letter-spacing: -.015em; color: var(--look-cream); opacity: .9; }
-.sig { position: absolute; left: 50%; top: 50%; width: min(66vw, 112svh); translate: -50% -46%; overflow: visible; pointer-events: none; }
-.sig path { fill: none; stroke: var(--front-spray); stroke-linecap: round; stroke-linejoin: round; }
+.sig { position: absolute; left: 50%; top: 50%; width: min(46vw, 78svh); translate: -50% -46%; /* Tom 11-20: smaller */ overflow: visible; pointer-events: none; }
+.sig .ink { fill: var(--front-spray); } /* one clean ink (Tom 11-20): each stroke a shape, thick in the middle, thin at the ends */
+/* joint 1: the ring's front leaves the loop and runs to where the signature starts, in the stage's own pixels */
+.lead { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.lead path { fill: none; stroke: var(--front-spray); stroke-linecap: round; opacity: 0; }
 
 /* moment 3: the statement. Lines brighten and rise with the scroll, two voices like his; a loop draws round one word */
 .say { position: relative; padding: 12svh max(var(--gutter), env(safe-area-inset-right)) 30svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
@@ -176,7 +179,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
   .rows { top: 60%; translate: 0 0; }
   .row.a { font-size: 8.4vw; }
   .row.b { font-size: 10.5vw; }
-  .sig { width: 92vw; top: 40%; translate: -50% -50%; }
+  .sig { width: 64vw; top: 40%; translate: -50% -50%; }
   .say h2 { font-size: 10.4vw; max-width: 12ch; }
   .say .loop path { stroke-width: 6; }
   .say h2 { line-height: 1.1; }
@@ -189,7 +192,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 @media (prefers-reduced-motion: reduce) {
   .hero { height: auto; }
   .stage { position: relative; height: 100svh; }
-  .sig { display: none; } /* it draws on the pane, which only exists with motion */
+  .sig, .lead { display: none; } /* they draw on the pane, which only exists with motion */
   .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 22svh; background: linear-gradient(transparent, var(--look-dark-soft)); pointer-events: none; }
 }
 </style>
@@ -219,6 +222,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
         <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
         <p class="hint">Scroll</p>
       </div></div>
+      <svg class="lead" aria-hidden="true"><path/></svg>
       <svg class="sig" aria-hidden="true"></svg>
     </div>
   </section>
@@ -294,15 +298,42 @@ __LIBS__
   const NS = "http://www.w3.org/2000/svg";
   const svg = document.querySelector(".sig");
   svg.setAttribute("viewBox", SIGN.viewBox.join(" "));
-  const LINE = 34; // line width in the signature's own units: about 12 px at laptop size, like his
-  const strokes = SIGN.strokes.map((s) => {
-    const p = document.createElementNS(NS, "path");
-    p.setAttribute("d", s.d);
-    p.setAttribute("stroke-width", LINE);
-    // the hidden part sits a whole line width past the start, so the round end never shows as a dot before it draws
-    p.setAttribute("stroke-dasharray", `${s.len} ${s.len + 2 * LINE}`);
-    p.setAttribute("stroke-dashoffset", still ? 0 : s.len + LINE);
-    svg.appendChild(p);
+  const LINE = 40; // the widest the line gets, in the signature's own units: about 14 px at laptop size
+  const MASK = LINE * 1.6; // the reveal is wider than the ink, so only the dash's end decides what shows
+  // a brush's width along one stroke (0 start .. 1 end): sets down quickly, runs full, lifts off in a longer taper
+  const brush = (t) => 0.22 + 0.78 * Math.min(1, t / 0.12) ** 0.7 * Math.min(1, (1 - t) / 0.3) ** 0.8;
+  // the stroke as one shape: a round dab at every step and a band between each two, all wound the same way so they add up.
+  // One outline round the whole stroke folded over itself where the pen turns back (the m's humps): flat cuts (Tom 11-20)
+  const inkOf = (path, width, profile) => {
+    const L = path.getTotalLength(), n = Math.max(24, Math.ceil(L / 4)), pts = [];
+    for (let i = 0; i <= n; i++) { const q = path.getPointAtLength((i / n) * L); pts.push([q.x, q.y, (width * profile(i / n)) / 2]); }
+    const f = (v) => v.toFixed(1), parts = [];
+    const dab = ([x, y, r]) => `M${f(x - r)},${f(y)}a${f(r)},${f(r)} 0 1,1 ${f(2 * r)},0a${f(r)},${f(r)} 0 1,1 ${f(-2 * r)},0Z`;
+    pts.forEach((q, i) => {
+      parts.push(dab(q));
+      if (i === n) return;
+      const p2 = pts[i + 1], dx = p2[0] - q[0], dy = p2[1] - q[1], l = Math.hypot(dx, dy);
+      if (l < 0.01) return;
+      const nx = -dy / l, ny = dx / l; // the band's corners, in the dab's turning direction
+      const c = [[q[0] - nx * q[2], q[1] - ny * q[2]], [p2[0] - nx * p2[2], p2[1] - ny * p2[2]], [p2[0] + nx * p2[2], p2[1] + ny * p2[2]], [q[0] + nx * q[2], q[1] + ny * q[2]]];
+      parts.push(`M${c.map((k) => `${f(k[0])},${f(k[1])}`).join("L")}Z`);
+    });
+    return parts.join("");
+  };
+  const defs = document.createElementNS(NS, "defs"); svg.appendChild(defs);
+  const strokes = SIGN.strokes.map((s, i) => {
+    const m = document.createElementNS(NS, "mask"), p = document.createElementNS(NS, "path"), ink = document.createElementNS(NS, "path");
+    m.id = `sig-m${i}`; m.setAttribute("maskUnits", "userSpaceOnUse");
+    // the mask's own area, in the signature's units: the browser's default (a % of the box) cut the lower half off (Tom 11-20)
+    const [vx, vy, vw, vh] = SIGN.viewBox;
+    m.setAttribute("x", vx - vw); m.setAttribute("y", vy - vh); m.setAttribute("width", vw * 3); m.setAttribute("height", vh * 3);
+    p.setAttribute("d", s.d); p.setAttribute("fill", "none"); p.setAttribute("stroke", "#fff"); p.setAttribute("stroke-width", MASK); p.setAttribute("stroke-linecap", "round");
+    // the hidden part sits a whole reveal width past the start, so nothing shows before it draws
+    p.setAttribute("stroke-dasharray", `${s.len} ${s.len + 2 * MASK}`);
+    p.setAttribute("stroke-dashoffset", still ? 0 : s.len + MASK);
+    m.appendChild(p); defs.appendChild(m);
+    ink.setAttribute("class", "ink"); ink.setAttribute("d", inkOf(p, LINE, brush)); ink.setAttribute("mask", `url(#${m.id})`);
+    svg.appendChild(ink);
     return p;
   });
 
@@ -360,12 +391,11 @@ __LIBS__
   // moment 1 in depth: the photo bent over its depth map (made on the desk's graphics card, Depth Anything V2), turning
   // a little with the mouse, and an orange spray ribbon that wraps round the head, behind him and in front of him.
   // Plain WebGL 2, no library. Without it the two pictures stay as they are.
-  const look = { grey: 0, ribbon: 0, fade: 1, spin: 0 };
+  const look = { grey: 0, ribbon: 0, fade: 1, spin: 0, unwind: 0, leadTail: 0 };
   const startGL = () => {
     const cv = document.querySelector(".gl"), g = cv.getContext("webgl2", { premultipliedAlpha: true, antialias: true });
     if (!g) return false;
-    const img = document.querySelector(".photo.col"), dimg = new Image(), simg = new Image();
-    simg.src = "assets/spray-stroke.webp";
+    const img = document.querySelector(".photo.col"), dimg = new Image();
     dimg.src = "assets/tom_depth.webp";
     const sh = (type, src) => { const s = g.createShader(type); g.shaderSource(s, src); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s)); return s; };
     const prog = (vs, fs) => { const p = g.createProgram(); g.attachShader(p, sh(g.VERTEX_SHADER, vs)); g.attachShader(p, sh(g.FRAGMENT_SHADER, fs)); g.linkProgram(p); return p; };
@@ -396,13 +426,18 @@ __LIBS__
         gl_Position = place(p); }`,
       `#version 300 es
       precision highp float;
-      in vec2 vUv; in float vLit; uniform float uDraw, uFade, uSlide, uLen; uniform sampler2D uStroke; uniform vec3 uCol; out vec4 o;
+      in vec2 vUv; in float vLit; uniform float uDraw, uFade, uSlide, uLen, uTail, uCore; uniform vec3 uCol; out vec4 o;
       void main() {
-        // one real spray stroke (made on the desk's graphics card) laid along the loop; it slides slowly round him
+        // one clean brush line along the loop (Tom 11-20: the same ink as the signature); it slides slowly round him
         float local = vUv.x - uSlide;
-        if (local < 0.0 || local > uLen * uDraw) discard;
-        float x = local / uLen;
-        float a = texture(uStroke, vec2(x, vUv.y)).r * smoothstep(0.0, 0.02, x) * smoothstep(uLen * uDraw, uLen * uDraw - 0.01, local) * uFade;
+        if (local < uLen * uTail || local > uLen * uDraw) discard; // joint 1: the tail eats forward, the front stays
+        float x = local / uLen, xt = (x - uTail) / max(1.0 - uTail, 0.001);
+        // thin where it sets down (the tail, also while the tail eats forward), full in the middle, a long lift at the front;
+        // once it unwinds the front stays full, because the line runs on from there
+        float lift = mix(0.22 + 0.78 * smoothstep(1.0, 0.7, x), 1.0, clamp(uTail * 25.0, 0.0, 1.0));
+        float prof = (0.22 + 0.78 * smoothstep(0.0, 0.14, xt)) * lift;
+        float d = abs(vUv.y - 0.5), half_ = uCore * 0.5 * prof, aa = fwidth(vUv.y) * 0.75;
+        float a = smoothstep(half_ + aa, half_ - aa, d) * smoothstep(uLen * uDraw, uLen * uDraw - 0.004, local) * uFade;
         if (a < 0.003) discard;
         vec3 c = uCol * (0.74 + 0.26 * vLit);
         o = vec4(c * a, a);
@@ -421,26 +456,30 @@ __LIBS__
     const tex = (im) => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // filtered edges stay clean (no light rim round the hair)
       g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, im); g.generateMipmap(g.TEXTURE_2D);
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR_MIPMAP_LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE); return t; };
-    let tImg, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, wob = 3, tStroke = null;
+    let tImg, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, wob = 3, band = 1, ringAt = null;
     const size = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);
       W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       const w = img.offsetWidth, h = img.offsetHeight;
       rect = [img.offsetLeft - w / 2, img.offsetTop, w, h]; // the picture is centred with translate -50%
-      D = w * 0.24;
+      D = w * 0.11; // Tom 11-20 "less scary": half the depth, so the face turns without bulging
       C = [rect[0] + w / 2, rect[1] + h * 0.4, D * 0.55];
       // one loop sprayed round the head by hand: a bit more than one turn, so the ends pass each other; under the chin
       // in front, high behind the crown, never over the face. Wobbly radius and height, pressure thick and thin, a long thin
       // flick at the end. It never reaches past the screen's sides (phone: the photo is wider than the screen).
       const R = Math.min(w * 0.42, (W / 2 - 14) / 1.12), N = 1400, data = [];
       const narrow = W <= 640; // phone: the loop is barely wider than his face, so it rides lower, round the jaw and neck
-      const mid = rect[1] + h * (narrow ? 0.57 : 0.47), amp = h * (narrow ? 0.17 : 0.25), zR = R * 0.62, band = Math.max(30, w * 0.135);
+      const mid = rect[1] + h * (narrow ? 0.57 : 0.47), amp = h * (narrow ? 0.17 : 0.25), zR = R * 0.62;
+      band = Math.max(30, w * 0.135);
       const a0 = Math.PI / 2 + 0.55;
-      for (let i = 0; i <= N; i++) {
-        const u = i / N, a = a0 + u * Math.PI * 4; // two turns: the stroke (under one turn long) slides along them
+      ringAt = (u) => { // the loop's centre line at u (0..1), before the wobble: the same numbers the band is built from
+        const a = a0 + u * Math.PI * 4; // two turns: the stroke (under one turn long) slides along them
         const r = R * (1 + 0.05 * Math.sin(2 * a + 1.3) + 0.025 * Math.sin(3 * a + 0.4));
         const x = C[0] + r * Math.cos(a), z = C[2] + zR * Math.sin(a);
-        const y = mid + Math.sin(a) * amp - (x - C[0]) * 0.1 + h * 0.01 * Math.sin(a + 2);
+        return [x, mid + Math.sin(a) * amp - (x - C[0]) * 0.1 + h * 0.01 * Math.sin(a + 2), z, a];
+      };
+      for (let i = 0; i <= N; i++) {
+        const u = i / N, [x, y, z, a] = ringAt(u);
         const lit = Math.max(0, Math.sin(a));
         data.push(x, y - band / 2, z, u, 0, lit, 0, x, y + band / 2, z, u, 1, lit, 0);
       }
@@ -457,12 +496,40 @@ __LIBS__
     const spiral = document.querySelector(".hero");
     let on = true;
     new IntersectionObserver(([e]) => (on = e.isIntersecting)).observe(spiral);
+    // joint 1 (Tom 11-20: one blue thing that never disappears): the ring's tail eats forward round his head while its
+    // front leaves the loop and runs, in one curve, to where the signature starts; the signature then writes on from there
+    const leadSvg = document.querySelector(".lead"), lead = leadSvg.querySelector("path"), stage = document.querySelector(".stage");
+    const ease = gsap.parseEase("power1.inOut");
+    const inkPx = () => LINE * svg.getScreenCTM().a; // the line's full width on screen, the same for ring, lead and signature
+    const leadAt = (t, rot, slide) => {
+      if (look.unwind <= 0.001 || look.leadTail >= 0.999 || !ringAt) { lead.style.opacity = 0; return; }
+      const T = still ? 0 : t / 1000, cr = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect(), k = cr.width / W;
+      const onScreen = (u) => { // the same wobble, turn and placing as the shader, then the pane's scale
+        const p = ringAt(u), a = u * 12.566;
+        p[1] += Math.sin(a * 1.5 + T * 0.7) * wob + Math.sin(a * 2.5 - T * 0.45) * wob * 0.6;
+        const v = [p[0] - C[0], p[1] - C[1], p[2] - C[2]];
+        const x = rot[0] * v[0] + rot[3] * v[1] + rot[6] * v[2] + C[0], y = rot[1] * v[0] + rot[4] * v[1] + rot[7] * v[2] + C[1];
+        return [cr.left - sr.left + x * k, cr.top - sr.top + y * k];
+      };
+      const uh = slide + 0.43 * look.ribbon - 0.012; // a little inside the front, where the spray is still full
+      const h = onScreen(uh), h2 = onScreen(uh + 0.004);
+      const m = svg.getScreenCTM(), s0 = strokes[0].getPointAtLength(0), s1 = strokes[0].getPointAtLength(8);
+      const sx = m.a * s0.x + m.e - sr.left, sy = m.d * s0.y + m.f - sr.top, tx = m.a * (s1.x - s0.x), ty = m.d * (s1.y - s0.y);
+      const hx = h2[0] - h[0], hy = h2[1] - h[1], hl = Math.hypot(hx, hy) || 1, tl2 = Math.hypot(tx, ty) || 1;
+      const reach = Math.hypot(sx - h[0], sy - h[1]) * 0.55;
+      lead.setAttribute("d", `M${h[0]},${h[1]} C${h[0] + (hx / hl) * reach},${h[1] + (hy / hl) * reach} ${sx - (tx / tl2) * reach},${sy - (ty / tl2) * reach} ${sx},${sy}`);
+      const L = lead.getTotalLength(), front = ease(look.unwind) * L, tail = look.leadTail * L;
+      lead.style.strokeWidth = inkPx();
+      lead.style.strokeDasharray = `${Math.max(0, front - tail)} ${L * 3}`;
+      lead.style.strokeDashoffset = -tail;
+      lead.style.opacity = front - tail > 0.5 ? 1 : 0;
+    };
     const draw = (t) => {
       requestAnimationFrame(draw);
       if (!on || !tImg) return;
       mouse.x += (mouse.tx - mouse.x) * 0.06; mouse.y += (mouse.ty - mouse.y) * 0.06;
-      const sway = phone() ? Math.sin(t / 1600) * 0.12 : 0;
-      const yaw = mouse.x * 0.7 + sway + look.spin * 0.4, pitch = -mouse.y * 0.22;
+      const sway = phone() ? Math.sin(t / 1600) * 0.07 : 0;
+      const yaw = mouse.x * 0.32 + sway + look.spin * 0.2, pitch = -mouse.y * 0.1; // a gentle turn (Tom 11-20: less scary)
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       const rot = new Float32Array([cy, sy * sp, -sy * cp, 0, cp, sp, sy, -cy * sp, cy * cp]);
       g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT | g.DEPTH_BUFFER_BIT);
@@ -473,11 +540,14 @@ __LIBS__
       g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tDep); g.uniform1i(loc(photoP, "uDepth"), 1);
       g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), D); g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
       g.drawElements(g.TRIANGLES, idx.length, g.UNSIGNED_INT, 0);
-      if (look.ribbon > 0.001 && look.fade > 0.001 && tStroke) {
+      const slide = still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08; // one lap in 48 s
+      leadAt(t, rot, slide);
+      if (look.ribbon > 0.001 && look.fade > 0.001 && look.unwind < 0.999) {
         g.useProgram(ribP); g.bindVertexArray(rVao);
+        g.uniform1f(loc(ribP, "uTail"), look.unwind);
         g.uniform1f(loc(ribP, "uDraw"), look.ribbon); g.uniform1f(loc(ribP, "uFade"), look.fade); g.uniform1f(loc(ribP, "uLen"), 0.43); g.uniform1f(loc(ribP, "uWob"), wob);
-        g.uniform1f(loc(ribP, "uTime"), still ? 0 : t / 1000); g.uniform1f(loc(ribP, "uSlide"), still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08); // one lap in 48 s
-        g.activeTexture(g.TEXTURE2); g.bindTexture(g.TEXTURE_2D, tStroke); g.uniform1i(loc(ribP, "uStroke"), 2);
+        g.uniform1f(loc(ribP, "uTime"), still ? 0 : t / 1000); g.uniform1f(loc(ribP, "uSlide"), slide);
+        g.uniform1f(loc(ribP, "uCore"), inkPx() / (cv.getBoundingClientRect().width / W) / band); // as wide on screen as the signature's line
         g.uniform3f(loc(ribP, "uCol"), ...SPRAY);
         g.drawArrays(g.TRIANGLE_STRIP, 0, rCount);
       }
@@ -486,7 +556,6 @@ __LIBS__
       return m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255) : [1, 0.33, 0.1]; })();
     Promise.all([img.decode(), dimg.decode()]).then(() => {
       tImg = tex(img); tDep = tex(dimg); size();
-      simg.decode().then(() => { tStroke = tex(simg); }).catch(() => {});
       document.documentElement.classList.add("has-gl");
       gsap.to(cv, { opacity: 1, duration: 0.6 });
       gsap.to(look, { ribbon: 1, duration: 1.5, ease: "power1.inOut", delay: 0.6 }); // at a hand's speed, once
@@ -533,7 +602,8 @@ __LIBS__
       .to(".photo.bw", { opacity: 1, duration: 0.2 }, 0.14)
       .to(look, { grey: 1, duration: 0.2 }, 0.14)
       .to(look, { spin: 0.9, duration: 0.3 }, 0.02)
-      .to(look, { fade: 0, duration: 0.08 }, 0.2) // gone well before the signature starts (0.36): one gesture at a time
+      .to(look, { unwind: 1, duration: 0.16 }, 0.2) // joint 1: the ring unwinds and its front arrives where the signature starts (0.36)
+      .to(look, { leadTail: 1, duration: 0.08 }, 0.34) // then the line it ran along is taken up into the first stroke
       .to(".rows", { opacity: 1, duration: 0.1 }, 0.3)
       .to(".ground.g2", { opacity: 0.12, duration: 0.14 }, 0.3)
       .fromTo(".ground.g2", { x: () => innerWidth * 0.05 }, { x: () => -innerWidth * 0.05, duration: 0.74 }, 0.26)
