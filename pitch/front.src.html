@@ -11,16 +11,16 @@ __TOKENS__
 /* The front page, rebuilt on landonorris.com's techniques (Tom picked it 11-20; Direction page in
    ~/.claude/plans/design-workflow.md). Moments 1 and 2 only, for Tom to judge first.
    1: name, role and the cut-out photo on cream; the whole first screen is the pane.
-   2: like his, the pane first crops in round the face (the face keeps its size), then shrinks; the warm dark ground
-   shows round it, so there is never an in-between colour. Names run behind it, the photo dims to black and white,
-   and the signature writes itself along its centre lines while you scroll.
+   2: no box (Tom 11-20): the cream fades to the warm dark while the name leaves, then he shrinks to the middle as a
+   cut-out; names run behind him, the photo dims to black and white, and the signature writes itself along its
+   centre lines while you scroll.
    Pitch: sizes inline until Tom says it feels right, then they go to tokens.css with his OK. */
 :root {
   --f-big: "Clash Display", "Arial Narrow", sans-serif;
   --f-text: "Inter", system-ui, sans-serif;
   /* the photo on the first screen: its height and top, as parts of the screen height */
   --hp: 80svh;
-  --pt: 18svh; /* so the crop point (40% down the photo) sits at the middle of the screen */
+  --pt: 18svh; /* so the point he shrinks to (40% down the photo) sits at the middle of the screen */
 }
 * { box-sizing: border-box; }
 html { background: var(--look-dark-soft); }
@@ -46,7 +46,9 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .pane, .inner { position: absolute; inset: 0; will-change: transform; }
 .pane { overflow: hidden; clip-path: inset(0); }
-.inner { background: var(--look-cream); box-shadow: 0 0 0 100vmax var(--look-cream); } /* the crop can be wider than the screen on a phone */
+.cream { --r: 160vmax; position: absolute; inset: -100vmax; background: var(--look-cream);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 var(--r), transparent calc(var(--r) + 30vmax));
+  mask-image: radial-gradient(circle at 50% 50%, #000 var(--r), transparent calc(var(--r) + 30vmax)); } /* the first screen's ground: it fades to the dark as he shrinks, no box */
 .name { position: absolute; left: 0; right: 0; top: 7svh; margin: 0; text-align: center; font: 700 min(9vw, 14svh)/.86 var(--f-big);
   letter-spacing: -.02em; text-transform: uppercase; color: var(--look-dark); white-space: nowrap; }
 .name .ln { display: inline-block; overflow: hidden; padding: .04em .12em 0; }
@@ -54,8 +56,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0;
   -webkit-mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%);
   -webkit-mask-composite: source-in; mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%); mask-composite: intersect; }
-.photo.bw { opacity: 0; }
-.dim { position: absolute; inset: -100vmax; background: var(--look-dark-soft); opacity: 0; }
+.photo.bw { opacity: 0; filter: brightness(.62); } /* dimmed, but solid: the names run behind him, never through */
 .role { position: absolute; left: max(var(--gutter), env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
   font-size: 14px; font-weight: 500; max-width: 24ch; color: var(--look-dark); }
 .hint { position: absolute; right: max(var(--gutter), env(safe-area-inset-right)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
@@ -178,10 +179,10 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
         <div class="row b" data-dir="1">TypeScript · React · C#/.NET · Postgres · TypeScript · React · C#/.NET · Postgres ·</div>
       </div>
       <div class="pane"><div class="inner">
+        <div class="cream"></div>
         <h1 class="name"><span class="ln"><span>Tom</span></span> <span class="ln"><span>Larsson</span></span></h1>
         <img class="photo col" src="assets/tom_cut.webp" alt="Tom Larsson" width="1200" height="1506" fetchpriority="high">
         <img class="photo bw" src="assets/tom_cut_bw.webp" alt="" width="1200" height="1506">
-        <div class="dim"></div>
         <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
         <p class="hint">Scroll</p>
       </div></div>
@@ -327,26 +328,25 @@ __LIBS__
     const Hf = Wf * (phone() ? 0.92 : 0.9);
     const cy = phone() ? vh * 0.4 : vh * 0.5;
     const kEnd = (0.4 * Hf) / faceH; // the face fills about 40% of the pane's height at the end: head and shoulders, like his
-    const Wc = Wf / kEnd, Hc = Hf / kEnd; // the crop, in the first screen's own pixels
     gsap.set([pane, inner], { transformOrigin: `${fx}px ${fy}px` });
-    const s = { crop: 0, shrink: 0 };
+    const s = { shrink: 0 };
     const ease = gsap.parseEase("power2.inOut");
     const apply = () => {
-      const c = ease(s.crop), k = 1 + (kEnd - 1) * ease(s.shrink), m = ease(s.shrink);
-      const cw = vw + (Wc - vw) * c, ch = vh + (Hc - vh) * c;
-      gsap.set(pane, { x: (vw / 2 - fx) * m, y: (cy - fy) * m, scaleX: (cw / vw) * k, scaleY: (ch / vh) * k });
-      gsap.set(inner, { scaleX: vw / cw, scaleY: vh / ch });
+      const k = 1 + (kEnd - 1) * ease(s.shrink), m = ease(s.shrink);
+      gsap.set(pane, { x: (vw / 2 - fx) * m, y: (cy - fy) * m, scale: k });
     };
     apply();
     // the signature writes along the scroll while the pane still shrinks, each stroke as long as its line
     const total = SIGN.strokes.reduce((a, x) => a + x.len, 0);
     tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom bottom", scrub: true } });
-    tl.to(s, { crop: 1, duration: 0.26, onUpdate: apply }, 0)
-      .to(s, { shrink: 1, duration: 0.32, onUpdate: apply }, 0.14)
+    // no box (Tom 11-20): the cream fades to the dark while the name leaves, then he shrinks to the middle as a cut-out
+    // the dark closes in from the edges, like a light going down: never one flat grey in between
+    tl.fromTo(".cream", { "--r": "160vmax" }, { "--r": "-32vmax", duration: 0.16, ease: "power1.in" }, 0.02)
+      .to(s, { shrink: 1, duration: 0.32, onUpdate: apply }, 0.1)
       .to([".role", ".hint"], { opacity: 0, duration: 0.06 }, 0.02)
-      .to(".name", { yPercent: -140, ease: "power2.in", duration: 0.13 }, 0.01)
+      .to(".name", { y: () => -(document.querySelector(".name").offsetTop + document.querySelector(".name").offsetHeight + 40), ease: "power2.in", duration: 0.13 }, 0.01)
       .to(".photo.bw", { opacity: 1, duration: 0.16 }, 0.14)
-      .to(".dim", { opacity: 0.66, duration: 0.2 }, 0.18)
+      .to(".photo.bw", { opacity: 1, duration: 0.2 }, 0.14)
       .to(".rows", { opacity: 1, duration: 0.1 }, 0.26)
       .fromTo(".row[data-dir='-1']", { xPercent: 0 }, { xPercent: -46, duration: 0.74 }, 0.26)
       .fromTo(".row[data-dir='1']", { xPercent: -46 }, { xPercent: 0, duration: 0.74 }, 0.26);
