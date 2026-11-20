@@ -52,7 +52,8 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .name .ln { display: inline-block; overflow: hidden; padding: .04em .12em 0; }
 .name .ln span { display: block; }
 .photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0;
-  -webkit-mask-image: linear-gradient(#000 52%, transparent 84%); mask-image: linear-gradient(#000 52%, transparent 84%); }
+  -webkit-mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%);
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%); mask-composite: intersect; }
 .photo.bw { opacity: 0; }
 .dim { position: absolute; inset: -100vmax; background: var(--look-dark-soft); opacity: 0; }
 .role { position: absolute; left: max(var(--gutter), env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
@@ -68,14 +69,14 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .sig path { fill: none; stroke: var(--look-spray); stroke-linecap: round; stroke-linejoin: round; }
 
 /* moment 3: the statement. Lines brighten and rise with the scroll, two voices like his; a loop draws round one word */
-.say { position: relative; padding: 26svh max(var(--gutter), env(safe-area-inset-right)) 30svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
+.say { position: relative; padding: 12svh max(var(--gutter), env(safe-area-inset-right)) 30svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
 .say .label { margin: 0 0 32px; font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
 .say h2 { margin: 0 auto; max-width: 14ch; font: 700 min(7.4vw, 120px)/1 var(--f-big); letter-spacing: -.015em; text-transform: uppercase; color: var(--look-cream); text-wrap: balance; }
-.say h2 .q { font: 400 .86em/1 var(--f-text); letter-spacing: -.045em; color: var(--look-quiet); }
+.say h2 .q { font: 400 .9em/1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); } /* the second voice: another face, same ink, like his */
 .say .w { display: inline-block; }
 .say .loop { position: relative; display: inline-block; }
 .say .loop svg { position: absolute; left: -13%; top: -20%; width: 126%; height: 140%; overflow: visible; pointer-events: none; }
-.say .loop path { fill: none; stroke: var(--look-spray); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.say .loop path { fill: none; stroke: var(--look-spray); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
 .next { padding: 0 0 20svh; text-align: center; font-size: 13px; color: var(--look-quiet); }
 
 /* moment 4: the work. The ground goes from warm dark to black; one pinned track moves sideways while you scroll down.
@@ -107,6 +108,19 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .go a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
 .go a:hover { color: var(--look-spray); }
 
+/* each project its own arrangement, like his scatter (laptop only; the phone has its own column) */
+@media (min-width: 641px) and (prefers-reduced-motion: no-preference) {
+  .proj.b { --ph: min(14vw, 27svh); --bx: calc(4vw + var(--ph) + 4vw); --by: calc(50svh - var(--bw) * .28 + 8svh); width: calc(var(--bx) + var(--bw) * .9 + 46vw); }
+  .proj.b .tall { left: 4vw; top: 12svh; width: var(--ph); }
+  .proj.b .big { left: var(--bx); top: var(--by); width: calc(var(--bw) * .9); }
+  .proj.b .big + .cap { left: var(--bx); top: calc(var(--by) - 24px); }
+  .proj.b .txt { left: calc(var(--bx) + var(--bw) * .9 + 6vw); top: 46svh; }
+  .proj.c { width: calc(var(--bw) * .8 + 54vw); }
+  .proj.c .big { top: 10svh; width: calc(var(--bw) * .8); }
+  .proj.c .big + .cap { top: calc(10svh - 24px); }
+  .proj.c .small { left: calc(2vw + var(--bw) * .16); top: 47svh; width: min(11vw, 21svh); }
+  .proj.c .txt { left: calc(2vw + var(--bw) * .8 + 8vw); top: 56svh; }
+}
 @media (max-width: 640px), (prefers-reduced-motion: reduce) {
   .work .stage { position: relative; height: auto; overflow: visible; }
   .track { position: relative; flex-direction: column; gap: 18svh; padding: 14svh 0 18svh; transform: none !important; }
@@ -171,7 +185,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
   </section>
   <section class="say" aria-labelledby="say-h">
     <p class="label">How I work</p>
-    <h2 id="say-h">I <span class="q">build and</span> <span class="loop">run<svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><path d=""/></svg></span> <span class="q">things</span> myself, <span class="q">from</span> data model <span class="q">to</span> server</h2>
+    <h2 id="say-h">I <span class="q">build and</span> <span class="loop">run<svg aria-hidden="true"><path d=""/></svg></span> <span class="q">things</span> myself, <span class="q">from</span> data model <span class="q">to</span> server</h2>
   </section>
   <section class="work" aria-labelledby="work-h">
     <div class="stage"><div class="track">
@@ -192,7 +206,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
           <div class="go"><a href="https://eparadar.se">Open the site ↗</a><a href="https://github.com/tlxq/eparadar">Code ↗</a></div>
         </div>
       </article>
-      <article class="proj" aria-labelledby="p2">
+      <article class="proj b" aria-labelledby="p2">
         <img class="shot big" src="projects/raddavarfruberga-laptop.webp" alt="raddavarfruberga.se on a laptop" width="1920" height="1200" loading="lazy">
         <span class="cap">raddavarfruberga.se</span>
         <div class="tall" data-speed="1"><img src="projects/raddavarfruberga-phone.webp" alt="The site on a phone" width="780" height="5233" loading="lazy"></div>
@@ -204,7 +218,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
           <div class="go"><a href="https://raddavarfruberga.se">Open the site ↗</a></div>
         </div>
       </article>
-      <article class="proj" aria-labelledby="p3">
+      <article class="proj c" aria-labelledby="p3">
         <video class="shot big" src="projects/app-utveckling-laptop.mp4" poster="projects/app-utveckling-laptop.webp" muted loop playsinline preload="none" width="1440" height="900" aria-label="app-utveckling.se scrolling on a laptop"></video>
         <span class="cap">app-utveckling.se</span>
         <video class="shot small" data-speed="1" src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video>
@@ -255,6 +269,32 @@ __LIBS__
     if (!parts.length) return;
     const dd = document.getElementById("epaLive"); dd.textContent = parts.join(", "); dd.hidden = false; document.getElementById("epaLiveKey").hidden = false;
   });
+
+  // the loop round RUN, drawn in its svg's own pixels, so the line's length and its dash are measured the same way
+  const loopSvg = document.querySelector(".say .loop svg"), loopPath = loopSvg.querySelector("path");
+  const makeLoop = () => {
+    const { width: w, height: h } = loopSvg.getBoundingClientRect();
+    loopSvg.setAttribute("viewBox", `0 0 ${w.toFixed(1)} ${h.toFixed(1)}`);
+    const sw = parseFloat(getComputedStyle(loopPath).strokeWidth) || 8;
+    const pts = [];
+    for (let i = 0; i <= 64; i++) {
+      // one and a bit turns round the word, the end overshooting past the start, like a quick pen
+      const a = -2.5 + (i / 64) * (Math.PI * 2 + 0.75);
+      const rx = 0.47 - i * 0.0005, ry = 0.43 + i * 0.0007;
+      pts.push([w * (0.5 + rx * Math.cos(a) + i * 0.0006), h * (0.52 + ry * Math.sin(a) - i * 0.0008)]);
+    }
+    let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const [x, y] = pts[i], [nx, ny] = pts[i + 1];
+      d += ` Q${x.toFixed(1)} ${y.toFixed(1)} ${((x + nx) / 2).toFixed(1)} ${((y + ny) / 2).toFixed(1)}`;
+    }
+    loopPath.setAttribute("d", d);
+    const L = loopPath.getTotalLength();
+    // hidden a whole line width past its start, so no round end shows before it draws
+    loopPath.style.strokeDasharray = `${L} ${L + 2 * sw}`;
+    loopPath.style.strokeDashoffset = still ? 0 : L + sw;
+  };
+  makeLoop();
 
   if (still || !window.gsap) return; // the plain page: first screen, signature already written
 
@@ -315,24 +355,6 @@ __LIBS__
   };
   // moment 3: split the statement into lines (by where the words land), then each line rises and brightens with the scroll
   const h2 = document.querySelector(".say h2");
-  const loopPath = document.querySelector(".say .loop path");
-  // a hand loop: one and a bit turns round the word, the end overshooting past the start, like a quick pen
-  (() => {
-    const pts = [];
-    for (let i = 0; i <= 64; i++) {
-      const a = -2.5 + (i / 64) * (Math.PI * 2 + 0.75);
-      const rx = 47 - i * 0.05, ry = 26 + i * 0.04;
-      pts.push([50 + rx * Math.cos(a) + i * 0.06, 31 + ry * Math.sin(a) - i * 0.05]);
-    }
-    let d = `M${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`;
-    for (let i = 1; i < pts.length - 1; i++) {
-      const [x, y] = pts[i], [nx, ny] = pts[i + 1];
-      d += ` Q${x.toFixed(2)} ${y.toFixed(2)} ${((x + nx) / 2).toFixed(2)} ${((y + ny) / 2).toFixed(2)}`;
-    }
-    loopPath.setAttribute("d", d);
-    const L = loopPath.getTotalLength();
-    gsap.set(loopPath, { strokeDasharray: `${L} ${L + 40}`, strokeDashoffset: L + 20 }); // past the start: no dot before it draws
-  })();
   // wrap bare text words in spans so every word can be measured
   for (const node of [...h2.childNodes]) {
     if (node.nodeType === 3) {
@@ -356,8 +378,9 @@ __LIBS__
     gsap.set(ws, { clearProps: "transform,opacity" });
     const lines = [];
     ws.forEach((w) => { const top = Math.round(w.offsetTop); let l = lines.find((x) => Math.abs(x.top - top) < 8); if (!l) lines.push((l = { top, els: [] })); l.els.push(w); });
-    sayTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: h2, start: "top 88%", end: "bottom 42%", scrub: true } });
-    lines.forEach((l, i) => sayTl.fromTo(l.els, { yPercent: 60, opacity: 0.08 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, i * 0.22));
+    makeLoop();
+    sayTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: h2, start: "top 92%", end: "bottom 45%", scrub: true } });
+    lines.forEach((l, i) => sayTl.fromTo(l.els, { yPercent: 60, opacity: 0.22 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, i * 0.22));
     sayTl.to(loopPath, { strokeDashoffset: 0, duration: 0.45, ease: "power1.inOut" }, 0.35);
   };
   // moment 4: the track. Its section is as tall as the sideways distance, the stage stays while the track moves
