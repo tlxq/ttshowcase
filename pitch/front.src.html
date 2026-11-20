@@ -146,8 +146,9 @@ __LIBS__
     const p = document.createElementNS(NS, "path");
     p.setAttribute("d", s.d);
     p.setAttribute("stroke-width", LINE);
-    p.setAttribute("stroke-dasharray", `${s.len + 1} ${s.len + 1}`);
-    p.setAttribute("stroke-dashoffset", still ? 0 : s.len + 1);
+    // the hidden part sits a whole line width past the start, so the round end never shows as a dot before it draws
+    p.setAttribute("stroke-dasharray", `${s.len} ${s.len + 2 * LINE}`);
+    p.setAttribute("stroke-dashoffset", still ? 0 : s.len + LINE);
     svg.appendChild(p);
     return p;
   });
@@ -227,7 +228,7 @@ __LIBS__
     }
     loopPath.setAttribute("d", d);
     const L = loopPath.getTotalLength();
-    gsap.set(loopPath, { strokeDasharray: L + 1, strokeDashoffset: L + 1 });
+    gsap.set(loopPath, { strokeDasharray: `${L} ${L + 40}`, strokeDashoffset: L + 20 }); // past the start: no dot before it draws
   })();
   // wrap bare text words in spans so every word can be measured
   for (const node of [...h2.childNodes]) {
