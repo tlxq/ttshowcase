@@ -28,13 +28,15 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 body { margin: 0; color: var(--look-cream); font: 400 16px/1.5 var(--f-text); -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
-a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
+a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the text's own ink: the spray is too faint on cream for a focus ring */
 
 /* header: one ink that flips with whatever is under it */
 .bar { position: fixed; inset: 0 0 auto; z-index: 20; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
   padding: max(20px, env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
   color: var(--look-cream); mix-blend-mode: difference; pointer-events: none; }
 .bar > * { pointer-events: auto; }
+.who { transition: opacity .3s; }
+.who.away { opacity: 0; visibility: hidden; } /* while the big name is on screen the header doesn't say it again */
 .who b { display: block; font-weight: 600; font-size: 15px; letter-spacing: -.005em; }
 .who span { display: block; font-size: 13px; opacity: .8; }
 .links { display: flex; gap: 20px; font-size: 14px; font-weight: 500; }
@@ -75,7 +77,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .row.a { font: 400 min(6.4vw, 11svh)/1 var(--f-text); letter-spacing: -.03em; color: var(--look-quiet); }
 .row.b { font: 700 min(7.6vw, 13svh)/.92 var(--f-big); letter-spacing: -.015em; color: var(--look-cream); opacity: .9; }
 .sig { position: absolute; left: 50%; top: 50%; width: min(66vw, 112svh); translate: -50% -46%; overflow: visible; pointer-events: none; }
-.sig path { fill: none; stroke: var(--look-spray); stroke-linecap: round; stroke-linejoin: round; }
+.sig path { fill: none; stroke: var(--front-spray); stroke-linecap: round; stroke-linejoin: round; }
 
 /* moment 3: the statement. Lines brighten and rise with the scroll, two voices like his; a loop draws round one word */
 .say { position: relative; padding: 12svh max(var(--gutter), env(safe-area-inset-right)) 30svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
@@ -85,7 +87,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .say .w { display: inline-block; }
 .say .loop { position: relative; display: inline-block; }
 .say .loop svg { position: absolute; left: -13%; top: -20%; width: 126%; height: 140%; overflow: visible; pointer-events: none; }
-.say .loop path { fill: none; stroke: var(--look-spray); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+.say .loop path { fill: none; stroke: var(--front-spray); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
 .next { padding: 0 0 20svh; text-align: center; font-size: 13px; color: var(--look-quiet); }
 
 /* moment 4: the work. The ground goes from warm dark to black; one pinned track moves sideways while you scroll down.
@@ -115,7 +117,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .txt dd { margin: 0; color: var(--look-soft); }
 .go { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 8px; font-size: 15px; font-weight: 600; }
 .go a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
-.go a:hover { color: var(--look-spray); }
+.go a:hover { color: var(--front-spray); }
 
 /* each project its own arrangement, like his scatter (laptop only; the phone has its own column) */
 @media (min-width: 641px) and (prefers-reduced-motion: no-preference) {
@@ -254,6 +256,12 @@ __LIBS__
 <script>
 (() => {
   const SIGN = __SIGN__;
+  // the header's name and role only once the big name has left: never the same words twice on one screen
+  const who = document.querySelector(".who");
+  const bigName = document.querySelector(".name");
+  const whoCheck = () => { const r = bigName.getBoundingClientRect(); // the name leaves by rising and fading, inside a pane that shrinks
+    who.classList.toggle("away", r.bottom > 0 && r.top < innerHeight && +getComputedStyle(bigName).opacity > 0.1); };
+  addEventListener("scroll", whoCheck, { passive: true }); addEventListener("resize", whoCheck); whoCheck();
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const phone = () => innerWidth <= 640;
 
@@ -355,25 +363,27 @@ __LIBS__
         o = vec4(rgb * a, a);
       }`);
     const ribP = prog(head + `
-      in vec3 aP; in vec2 aUv; in float aLit; out vec2 vUv; out float vLit;
-      void main() { vUv = aUv; vLit = aLit; gl_Position = place(aP); }`,
+      in vec3 aP; in vec2 aUv; in vec2 aLP; out vec2 vUv; out float vLit, vPr;
+      void main() { vUv = aUv; vLit = aLP.x; vPr = aLP.y; gl_Position = place(aP); }`,
       `#version 300 es
       precision highp float;
-      in vec2 vUv; in float vLit; uniform float uDraw, uFade, uTime; uniform vec3 uCol; out vec4 o;
+      in vec2 vUv; in float vLit, vPr; uniform float uDraw, uFade, uBand; uniform vec3 uCol; out vec4 o;
       float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       float n(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
         return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
       void main() {
-        // a stroke two thirds of the ring long, always travelling round him; it tapers at both ends
-        float L = 0.66 * uDraw, x = fract(vUv.x - uTime);
-        if (x > L) discard;
-        float taper = smoothstep(0.0, 0.12, x) * smoothstep(L, L - 0.05, x);
-        float e = abs(vUv.y - 0.5) * 2.0 / max(taper, 0.001);
-        if (e > 1.0) discard;
-        float sp = n(vUv * vec2(900.0, 14.0)) * 0.55 + n(vUv * vec2(240.0, 5.0)) * 0.45;
-        float a = smoothstep(1.0, 0.55, e + (sp - 0.5) * 0.55) * uFade;
+        // one hand-sprayed loop: drawn once along its path, thick where the hand pressed, a soft haze and loose dots round it
+        float head = uDraw * 1.02;
+        if (vUv.x > head) discard;
+        float pr = vPr * smoothstep(head, head - 0.02, vUv.x);
+        float e = abs(vUv.y - 0.5) * 2.0 * uBand / max(pr, 0.001); // 1.0 = the edge of the solid paint
+        float sp = n(vUv * vec2(1400.0, 10.0)) * 0.6 + n(vUv * vec2(300.0, 4.0)) * 0.4;
+        float core = smoothstep(1.0, 0.6, e + (sp - 0.5) * 0.5);
+        float haze = 0.16 * exp(-pow(max(e - 0.8, 0.0) * 1.3, 2.0)) * smoothstep(0.0, 0.25, pr);
+        float dots = step(0.955 + 0.04 * clamp((e - 1.0) / 2.5, 0.0, 1.0), h(floor(vUv * vec2(5200.0, 46.0)))) * step(e, 3.5) * smoothstep(0.0, 0.3, pr) * 0.85;
+        float a = max(core, max(haze, dots)) * uFade;
         if (a < 0.02) discard;
-        vec3 c = uCol * (0.62 + 0.38 * vLit) + (1.0 - e) * 0.06;
+        vec3 c = uCol * (0.7 + 0.3 * vLit) * (0.92 + 0.08 * (1.0 - min(e, 1.0)));
         o = vec4(c * a, a);
       }`);
     const loc = (p, n) => g.getUniformLocation(p, n);
@@ -390,7 +400,7 @@ __LIBS__
     const tex = (im) => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // filtered edges stay clean (no light rim round the hair)
       g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, im); g.generateMipmap(g.TEXTURE_2D);
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR_MIPMAP_LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE); return t; };
-    let tImg, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1;
+    let tImg, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, bandK = 3;
     const size = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);
       W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
@@ -398,21 +408,28 @@ __LIBS__
       rect = [img.offsetLeft - w / 2, img.offsetTop, w, h]; // the picture is centred with translate -50%
       D = w * 0.24;
       C = [rect[0] + w / 2, rect[1] + h * 0.4, D * 0.55];
-      // one tilted ring round the head: low across the chin in front, high behind the crown, so it never covers the eyes
-      const R = w * 0.5, N = 600, data = [];
+      // one loop sprayed round the head by hand: a bit more than one turn, so the ends pass each other; under the chin
+      // in front, high behind the crown, never over the face. Wobbly radius and height, pressure thick and thin, a long thin
+      // flick at the end. It never reaches past the screen's sides (phone: the photo is wider than the screen).
+      const R = Math.min(w * 0.42, (W / 2 - 14) / 1.12), N = 900, data = [];
+      const mid = rect[1] + h * 0.47, amp = h * 0.25, zR = R * 0.62, core = Math.max(10, w * 0.042), band = core * 3.2;
+      const T = 1.16, a0 = Math.PI / 2 + 0.55, sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
       for (let i = 0; i <= N; i++) {
-        const u = i / N, a = u * Math.PI * 2;
-        const x = C[0] + R * Math.cos(a), z = C[2] + R * 0.85 * Math.sin(a);
-        const y = C[1] + h * 0.03 + Math.sin(a) * R * 0.62;
-        const bw = w * 0.05, lit = Math.max(0, Math.sin(a));
-        data.push(x, y - bw / 2, z, u, 0, lit, x, y + bw / 2, z, u, 1, lit);
+        const u = i / N, a = a0 + u * T * Math.PI * 2;
+        const r = R * (1 + 0.055 * Math.sin(6.28 * 1.7 * u + 1.3) + 0.03 * Math.sin(6.28 * 3.1 * u + 0.4));
+        const x = C[0] + r * Math.cos(a), z = C[2] + zR * Math.sin(a);
+        const y = mid + Math.sin(a) * amp - (x - C[0]) * 0.1 + h * 0.012 * Math.sin(6.28 * 2.3 * u + 2) - u * h * 0.035;
+        const pr = sm(0, 0.07, u) * (1 - sm(0.7, 1, u) * 0.92) * (0.82 + 0.18 * Math.sin(6.28 * 1.3 * u + 0.7)) * (u > 0.995 ? 0 : 1);
+        const lit = Math.max(0, Math.sin(a)), bw = band;
+        data.push(x, y - bw / 2, z, u, 0, lit, pr, x, y + bw / 2, z, u, 1, lit, pr);
       }
+      bandK = band / core;
       rCount = (N + 1) * 2;
       g.bindVertexArray(rVao); g.bindBuffer(g.ARRAY_BUFFER, rb); g.bufferData(g.ARRAY_BUFFER, new Float32Array(data), g.STATIC_DRAW);
-      const s = 24, ap = g.getAttribLocation(ribP, "aP"), au = g.getAttribLocation(ribP, "aUv"), al = g.getAttribLocation(ribP, "aLit");
+      const s = 28, ap = g.getAttribLocation(ribP, "aP"), au = g.getAttribLocation(ribP, "aUv"), al = g.getAttribLocation(ribP, "aLP");
       g.enableVertexAttribArray(ap); g.vertexAttribPointer(ap, 3, g.FLOAT, false, s, 0);
       g.enableVertexAttribArray(au); g.vertexAttribPointer(au, 2, g.FLOAT, false, s, 12);
-      g.enableVertexAttribArray(al); g.vertexAttribPointer(al, 1, g.FLOAT, false, s, 20);
+      g.enableVertexAttribArray(al); g.vertexAttribPointer(al, 2, g.FLOAT, false, s, 20);
     };
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
     addEventListener("pointermove", (e) => { mouse.tx = e.clientX / innerWidth - 0.5; mouse.ty = e.clientY / innerHeight - 0.5; }, { passive: true });
@@ -437,18 +454,18 @@ __LIBS__
       g.drawElements(g.TRIANGLES, idx.length, g.UNSIGNED_INT, 0);
       if (look.ribbon > 0.001 && look.fade > 0.001) {
         g.useProgram(ribP); g.bindVertexArray(rVao);
-        g.uniform1f(loc(ribP, "uDraw"), look.ribbon); g.uniform1f(loc(ribP, "uFade"), look.fade); g.uniform1f(loc(ribP, "uTime"), t / 26000 + look.spin * 0.4);
+        g.uniform1f(loc(ribP, "uDraw"), look.ribbon); g.uniform1f(loc(ribP, "uFade"), look.fade); g.uniform1f(loc(ribP, "uBand"), bandK);
         g.uniform3f(loc(ribP, "uCol"), ...SPRAY);
         g.drawArrays(g.TRIANGLE_STRIP, 0, rCount);
       }
     };
-    const SPRAY = (() => { const c = getComputedStyle(document.documentElement).getPropertyValue("--look-spray").trim(); const m = c.match(/^#?([0-9a-f]{6})$/i);
+    const SPRAY = (() => { const c = new URLSearchParams(location.search).get("ink") || getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(); /* ?ink=hex: a pitch-only trial colour */ const m = c.match(/^#?([0-9a-f]{6})$/i);
       return m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255) : [1, 0.33, 0.1]; })();
     Promise.all([img.decode(), dimg.decode()]).then(() => {
       tImg = tex(img); tDep = tex(dimg); size();
       document.documentElement.classList.add("has-gl");
       gsap.to(cv, { opacity: 1, duration: 0.6 });
-      gsap.to(look, { ribbon: 1, duration: 2.2, ease: "power2.inOut", delay: 0.5 });
+      gsap.to(look, { ribbon: 1, duration: 1.5, ease: "power1.inOut", delay: 0.6 }); // at a hand's speed, once
       addEventListener("resize", size);
       requestAnimationFrame(draw);
     }).catch(() => {});
@@ -492,7 +509,7 @@ __LIBS__
       .to(".photo.bw", { opacity: 1, duration: 0.2 }, 0.14)
       .to(look, { grey: 1, duration: 0.2 }, 0.14)
       .to(look, { spin: 0.9, duration: 0.3 }, 0.02)
-      .to(look, { fade: 0, duration: 0.08 }, 0.3)
+      .to(look, { fade: 0, duration: 0.08 }, 0.2) // gone well before the signature starts (0.36): one gesture at a time
       .to(".rows", { opacity: 1, duration: 0.1 }, 0.3)
       .fromTo(".row[data-dir='-1']", { xPercent: 0 }, { xPercent: -46, duration: 0.74 }, 0.26)
       .fromTo(".row[data-dir='1']", { xPercent: -46 }, { xPercent: 0, duration: 0.74 }, 0.26);
