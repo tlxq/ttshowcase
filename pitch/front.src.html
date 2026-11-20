@@ -9,27 +9,28 @@
 __EMBED__
 __TOKENS__
 /* The front page, rebuilt on landonorris.com's techniques (Tom picked it 11-20; Direction page in
-   ~/.claude/plans/design-workflow.md). Moments 1 and 2 only, for Tom to judge first:
-   1 name, role and the cut-out photo on cream; 2 the photo shrinks into a pane, the ground eases to warm dark,
-   names run behind it and the signature draws itself. One fixed ground layer, every section see-through.
+   ~/.claude/plans/design-workflow.md). Moments 1 and 2 only, for Tom to judge first.
+   1: name, role and the cut-out photo on cream; the whole first screen is the pane.
+   2: like his, the pane first crops in round the face (the face keeps its size), then shrinks; the warm dark ground
+   shows round it, so there is never an in-between colour. Names run behind it, the photo dims to black and white,
+   and the signature writes itself along its centre lines while you scroll.
    Pitch: sizes inline until Tom says it feels right, then they go to tokens.css with his OK. */
 :root {
   --f-big: "Clash Display", "Arial Narrow", sans-serif;
   --f-text: "Inter", system-ui, sans-serif;
-  --pane-bg: #b9b4aa;
+  /* the photo on the first screen: its height and top, as parts of the screen height */
+  --hp: 100svh;
+  --pt: 20svh;
 }
 * { box-sizing: border-box; }
-html { background: var(--look-cream); }
+html { background: var(--look-dark-soft); }
 html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
-body { margin: 0; color: var(--look-dark); font: 400 16px/1.5 var(--f-text); -webkit-font-smoothing: antialiased; }
+body { margin: 0; color: var(--look-cream); font: 400 16px/1.5 var(--f-text); -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
 a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 
-/* the one ground: cream underneath, warm dark fades in over it */
-.ground { position: fixed; inset: 0; z-index: -1; background: var(--look-dark-soft); opacity: 0; pointer-events: none; }
-
-/* header: one ink that flips with the ground */
+/* header: one ink that flips with whatever is under it */
 .bar { position: fixed; inset: 0 0 auto; z-index: 20; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
   padding: max(20px, env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
   color: var(--look-cream); mix-blend-mode: difference; pointer-events: none; }
@@ -40,53 +41,58 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .links a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: flex-start; }
 .links a:hover { text-decoration: underline; text-underline-offset: 4px; }
 
-/* moments 1 + 2: one pinned stage */
-.hero { position: relative; height: 340svh; }
+/* moments 1 + 2: one pinned stage; the ground is the stage's own dark, the first screen sits on it as the pane */
+.hero { position: relative; height: 290svh; }
 .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
-.name { position: absolute; left: 0; right: 0; top: 8svh; margin: 0; text-align: center; font: 700 min(10.8vw, 19svh)/.86 var(--f-big);
+.pane, .inner { position: absolute; inset: 0; will-change: transform; }
+.pane { overflow: hidden; }
+.inner { background: var(--look-cream); }
+.name { position: absolute; left: 0; right: 0; top: 7svh; margin: 0; text-align: center; font: 700 min(10.5vw, 17svh)/.86 var(--f-big);
   letter-spacing: -.02em; text-transform: uppercase; color: var(--look-dark); white-space: nowrap; }
 .name .ln { display: inline-block; overflow: hidden; padding: .04em .12em 0; }
 .name .ln span { display: block; }
+.photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0; }
+.photo.bw { opacity: 0; }
+.dim { position: absolute; inset: 0; background: var(--look-dark-soft); opacity: 0; }
 .role { position: absolute; left: max(var(--gutter), env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
-  font-size: 14px; font-weight: 500; max-width: 26ch; color: var(--look-dark); }
+  font-size: 14px; font-weight: 500; max-width: 24ch; color: var(--look-dark); }
 .hint { position: absolute; right: max(var(--gutter), env(safe-area-inset-right)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
   font-size: 13px; color: var(--look-dark-quiet); }
-.rows { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); opacity: 0; pointer-events: none; }
-.row { font: 700 min(9.5vw, 15svh)/.95 var(--f-big); text-transform: uppercase; letter-spacing: -.01em; white-space: nowrap; color: var(--look-cream); will-change: transform; }
-.pane { position: absolute; left: 50%; top: 50%; height: 50svh; aspect-ratio: 1100 / 1391; translate: -50% -50%; overflow: hidden; will-change: transform; }
-.pane .pbg { position: absolute; inset: 0; background: var(--pane-bg); opacity: 0; }
-.pane img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; }
-.pane .bw { opacity: 0; }
-.sig { position: absolute; left: 50%; top: 50%; width: min(64vw, 120svh); translate: -50% -42%; overflow: visible; pointer-events: none; }
-.sig .shape { fill: var(--look-spray); }
-.sig .pen path { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; }
+/* the names behind the pane: two voices, like his mixed rows */
+.rows { position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; opacity: 0; pointer-events: none; display: grid; gap: .1em; }
+.row { white-space: nowrap; text-transform: uppercase; will-change: transform; }
+.row.a { font: 400 min(6.4vw, 11svh)/1 var(--f-text); letter-spacing: -.03em; color: var(--look-quiet); }
+.row.b { font: 700 min(7.6vw, 13svh)/.92 var(--f-big); letter-spacing: -.015em; color: var(--look-cream); opacity: .9; }
+.sig { position: absolute; left: 50%; top: 50%; width: min(56vw, 96svh); translate: -50% -46%; overflow: visible; pointer-events: none; }
+.sig path { fill: none; stroke: var(--look-spray); stroke-linecap: round; stroke-linejoin: round; }
 
 /* after the pin: moment 3 comes next */
-.after { min-height: 90svh; display: grid; place-content: center; gap: 24px; padding: 15svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; color: var(--look-cream); }
+.after { min-height: 90svh; display: grid; place-content: center; gap: 24px; padding: 15svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
 .after p { margin: 0 auto; font: 700 min(5.4vw, 64px)/1.02 var(--f-big); text-transform: uppercase; max-width: 17ch; text-wrap: balance; }
 .after small { font-size: 13px; color: var(--look-quiet); }
 
 @media (max-width: 640px) {
+  :root { --hp: 76svh; --pt: 30svh; }
   .name { top: 11svh; font-size: min(17.5vw, 15svh); }
-  .role { display: none; }
   .name .ln { display: block; }
-  .pane { height: 40svh; }
-  .sig { width: 124vw; translate: -50% -38%; }
-  .row { font-size: 15vw; }
+  .role, .hint { display: none; }
   .links { gap: 14px; font-size: 13px; }
-  .hint { display: none; }
+  /* phone: the pane sits higher, the names run under it where they can be read */
+  .rows { top: 71%; translate: 0 0; }
+  .row.a { font-size: 8.4vw; }
+  .row.b { font-size: 10.5vw; }
+  .sig { width: 92vw; top: 40%; translate: -50% -50%; }
   .after p { font-size: 9vw; }
 }
-/* without motion: the first screen, then the pane with the signature already written */
+/* without motion: the first screen as it is, then the signature written under it */
 @media (prefers-reduced-motion: reduce) {
   .hero { height: auto; }
   .stage { position: relative; }
-  .sig .pen path { stroke-dashoffset: 0 !important; }
+  .sig { top: auto; bottom: 4svh; translate: -50% 0; }
 }
 </style>
 </head>
 <body>
-<div class="ground" aria-hidden="true"></div>
 <header class="bar">
   <div class="who"><b>Tom Larsson</b><span>Product engineer</span></div>
   <nav class="links" aria-label="Elsewhere"><a href="https://github.com/tlxq">GitHub ↗</a><a href="https://linkedin.com/in/tlxq">LinkedIn ↗</a></nav>
@@ -94,19 +100,19 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 <main>
   <section class="hero" aria-label="Tom Larsson">
     <div class="stage">
-      <h1 class="name"><span class="ln"><span>Tom</span></span><span class="ln"><span>Larsson</span></span></h1>
       <div class="rows" aria-hidden="true">
-        <div class="row" data-dir="-1">epaRadar · raddavarfruberga · EDGE · ttoolbox · epaRadar · raddavarfruberga · EDGE · ttoolbox ·</div>
-        <div class="row" data-dir="1">TypeScript · React · C#/.NET · Postgres · TypeScript · React · C#/.NET · Postgres ·</div>
+        <div class="row a" data-dir="-1">epaRadar · raddavarfruberga · EDGE · ttoolbox · epaRadar · raddavarfruberga · EDGE · ttoolbox ·</div>
+        <div class="row b" data-dir="1">TypeScript · React · C#/.NET · Postgres · TypeScript · React · C#/.NET · Postgres ·</div>
       </div>
-      <div class="pane">
-        <div class="pbg"></div>
-        <img class="col" src="assets/tom_cut.webp" alt="Tom Larsson" width="1100" height="1391" fetchpriority="high">
-        <img class="bw" src="assets/tom_cut_bw.webp" alt="" width="1100" height="1391">
-      </div>
+      <div class="pane"><div class="inner">
+        <h1 class="name"><span class="ln"><span>Tom</span></span> <span class="ln"><span>Larsson</span></span></h1>
+        <img class="photo col" src="assets/tom_cut.webp" alt="Tom Larsson" width="1200" height="1506" fetchpriority="high">
+        <img class="photo bw" src="assets/tom_cut_bw.webp" alt="" width="1200" height="1506">
+        <div class="dim"></div>
+        <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
+        <p class="hint">Scroll</p>
+      </div></div>
       <svg class="sig" aria-hidden="true"></svg>
-      <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
-      <p class="hint">Scroll</p>
     </div>
   </section>
   <section class="after">
@@ -121,21 +127,22 @@ __LIBS__
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const phone = () => innerWidth <= 640;
 
-  // the signature: the traced shape, shown only where the pen has passed (one mask, one centre line per stroke)
+  // the signature: one even line along each traced centre line, drawn in writing order
   const NS = "http://www.w3.org/2000/svg";
   const svg = document.querySelector(".sig");
-  const [vx, vy, vw, vh] = SIGN.viewBox;
   svg.setAttribute("viewBox", SIGN.viewBox.join(" "));
-  const mk = (tag, attrs, parent) => { const el = document.createElementNS(NS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); parent.appendChild(el); return el; };
-  const defs = mk("defs", {}, svg);
-  const mask = mk("mask", { id: "pen", maskUnits: "userSpaceOnUse", x: vx, y: vy, width: vw, height: vh }, defs);
-  const pen = mk("g", { class: "pen" }, mask);
-  const strokes = SIGN.strokes.map((s) => mk("path", { d: s.d, "stroke-width": s.w, "stroke-dasharray": `${s.len + 2} ${s.len + 2}`, "stroke-dashoffset": s.len + 2 }, pen));
-  const shape = mk("g", { mask: "url(#pen)" }, svg);
-  const inner = mk("g", { transform: SIGN.transform, class: "shape" }, shape);
-  for (const d of SIGN.shape) mk("path", { d }, inner);
+  const LINE = 26; // line width in the signature's own units: about 15 px at laptop size, like his
+  const strokes = SIGN.strokes.map((s) => {
+    const p = document.createElementNS(NS, "path");
+    p.setAttribute("d", s.d);
+    p.setAttribute("stroke-width", LINE);
+    p.setAttribute("stroke-dasharray", `${s.len + 1} ${s.len + 1}`);
+    p.setAttribute("stroke-dashoffset", still ? 0 : s.len + 1);
+    svg.appendChild(p);
+    return p;
+  });
 
-  if (still || !window.gsap) return; // the plain page: first screen, then the stage as it stands, signature written by CSS
+  if (still || !window.gsap) return; // the plain page: first screen, signature already written
 
   gsap.registerPlugin(ScrollTrigger);
   const lenis = new Lenis({ lerp: 0.1 });
@@ -143,41 +150,58 @@ __LIBS__
   gsap.ticker.add((t) => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
 
-  // the signature writes itself once, at about pen speed; scroll back above the pane and it is cleared again
-  const write = gsap.timeline({ paused: true });
-  SIGN.strokes.forEach((s, i) => {
-    write.to(strokes[i], { strokeDashoffset: 0, duration: 0.12 + s.len / 3000, ease: "power1.inOut" }, i ? "+=0.06" : 0);
-  });
-
   // moment 1 on load: the name rises out of its lines, the photo settles
   gsap.from(".name .ln span", { yPercent: 105, duration: 1.1, ease: "expo.out", stagger: 0.08, delay: 0.1 });
-  gsap.from(".pane img.col", { yPercent: 6, opacity: 0, duration: 1.2, ease: "expo.out", delay: 0.15 });
+  gsap.from(".photo.col", { y: 30, opacity: 0, duration: 1.2, ease: "expo.out", delay: 0.15 });
 
-  // moment 2: one scrubbed timeline over the pinned stage
-  const pane = document.querySelector(".pane");
+  const pane = document.querySelector(".pane"), inner = document.querySelector(".inner"), photo = document.querySelector(".photo.col");
   let tl;
   const build = () => {
     tl?.scrollTrigger?.kill(); tl?.kill();
-    gsap.set([pane, ".name", ".rows .row", ".rows", ".role", ".hint", ".ground", ".pane .pbg", ".pane .bw", ".pane .col"], { clearProps: "transform,opacity,x,y,scale" });
-    // start: the photo fills the screen from the bottom (its chest cut below the edge); end: the pane in the middle
-    const h = pane.offsetHeight, vhpx = innerHeight;
-    const s0 = (phone() ? 0.66 : 0.76) * vhpx / h;
-    const y0 = vhpx - (vhpx / 2 + (h * s0) / 2) + h * s0 * 0.04;
-    tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom bottom", scrub: true,
-      onUpdate: (st) => { if (st.progress > 0.5 && write.progress() === 0) write.play(); if (st.progress < 0.3 && write.progress() > 0) write.pause(0); } } });
-    tl.fromTo(pane, { scale: s0, y: y0 }, { scale: 1, y: 0, ease: "power2.inOut", duration: 0.45 }, 0)
-      .to(".name", { yPercent: -40, opacity: 0, ease: "power1.in", duration: 0.16 }, 0.02)
-      .to([".role", ".hint"], { opacity: 0, duration: 0.12 }, 0.02)
-      .to(".ground", { opacity: 1, ease: "power1.inOut", duration: 0.07 }, 0.15)
-      .to(".pane .pbg", { opacity: 1, duration: 0.2 }, 0.26)
-      .to(".pane .bw", { opacity: 1, duration: 0.22 }, 0.2)
-      .to(".rows", { opacity: 1, duration: 0.1 }, 0.27)
-      .fromTo(".rows .row[data-dir='-1']", { xPercent: 0 }, { xPercent: -38, duration: 0.7 }, 0.3)
-      .fromTo(".rows .row[data-dir='1']", { xPercent: -38 }, { xPercent: 0, duration: 0.7 }, 0.3)
-      .to({}, { duration: 0 }, 1);
+    const vw = innerWidth, vh = innerHeight;
+    // the middle of the pane at the end: 40% down the photo (the face is at 35%), so the shoulders stay in
+    const r = photo.getBoundingClientRect();
+    const fx = vw / 2, fy = photo.offsetTop + photo.offsetHeight * 0.4;
+    const faceH = photo.offsetHeight * 0.33;
+    // the pane at the end: a near-square in the middle (phone: wider, higher)
+    const Wf = phone() ? vw * 0.78 : Math.min(vw * 0.26, vh * 0.4);
+    const Hf = Wf * (phone() ? 0.92 : 0.9);
+    const cy = phone() ? vh * 0.4 : vh * 0.5;
+    const kEnd = (0.4 * Hf) / faceH; // the face fills about 40% of the pane's height at the end: head and shoulders, like his
+    const Wc = Wf / kEnd, Hc = Hf / kEnd; // the crop, in the first screen's own pixels
+    gsap.set([pane, inner], { transformOrigin: `${fx}px ${fy}px` });
+    const s = { crop: 0, shrink: 0 };
+    const ease = gsap.parseEase("power2.inOut");
+    const apply = () => {
+      const c = ease(s.crop), k = 1 + (kEnd - 1) * ease(s.shrink), m = ease(s.shrink);
+      const cw = vw + (Wc - vw) * c, ch = vh + (Hc - vh) * c;
+      gsap.set(pane, { x: (vw / 2 - fx) * m, y: (cy - fy) * m, scaleX: (cw / vw) * k, scaleY: (ch / vh) * k });
+      gsap.set(inner, { scaleX: vw / cw, scaleY: vh / ch });
+    };
+    apply();
+    // the signature writes along the scroll while the pane still shrinks, each stroke as long as its line
+    const total = SIGN.strokes.reduce((a, x) => a + x.len, 0);
+    tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom bottom", scrub: true } });
+    tl.to(s, { crop: 1, duration: 0.26, onUpdate: apply }, 0)
+      .to(s, { shrink: 1, duration: 0.32, onUpdate: apply }, 0.14)
+      .to([".role", ".hint"], { opacity: 0, duration: 0.06 }, 0.02)
+      .to(".name", { opacity: 0, yPercent: -30, duration: 0.12 }, 0.03)
+      .to(".photo.bw", { opacity: 1, duration: 0.16 }, 0.14)
+      .to(".dim", { opacity: 0.42, duration: 0.2 }, 0.18)
+      .to(".rows", { opacity: 1, duration: 0.1 }, 0.26)
+      .fromTo(".row[data-dir='-1']", { xPercent: 0 }, { xPercent: -46, duration: 0.74 }, 0.26)
+      .fromTo(".row[data-dir='1']", { xPercent: -46 }, { xPercent: 0, duration: 0.74 }, 0.26);
+    let at = 0.3;
+    SIGN.strokes.forEach((x, i) => {
+      const d = (0.44 * x.len) / total;
+      tl.to(strokes[i], { strokeDashoffset: 0, duration: d, ease: "power1.inOut" }, at);
+      at += d + 0.012;
+    });
+    tl.to({}, { duration: 0 }, 1);
   };
-  build();
-  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { build(); ScrollTrigger.refresh(); }, 200); });
+  const ready = () => { build(); ScrollTrigger.refresh(); };
+  photo.complete ? ready() : photo.addEventListener("load", ready, { once: true });
+  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(ready, 200); });
 })();
 </script>
 </body>
