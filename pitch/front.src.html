@@ -92,6 +92,14 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 
 /* moment 4: the work. The ground goes from warm dark to black; one pinned track moves sideways while you scroll down.
    Screens sit unframed at two sizes and two speeds, each with a tiny caption; phone: the same as a vertical scatter */
+/* faint construction lines on the dark ground, made on the desk's graphics card (Z-Image: pencil and chalk layout lines on
+   black, cleaned to white lines on clear): one sheet per moment, each moving at its own depth behind the words */
+.ground { position: absolute; pointer-events: none; user-select: none; opacity: .13; max-width: none; height: auto;
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent); mask-image: radial-gradient(closest-side, #000 55%, transparent); } /* no edge: the sheet fades out before its border */
+.ground.g2 { left: 50%; top: 50%; width: 118vw; translate: -50% -50%; opacity: 0; }
+.say .ground { left: 50%; top: 2svh; width: min(150vw, 1800px); translate: -46% 0; }
+.say > :not(.ground) { position: relative; }
+.work .ground { left: -8vw; top: 50%; width: 125vw; translate: 0 -46%; }
 .night { position: fixed; inset: 0; z-index: -1; background: var(--look-ground); opacity: 0; pointer-events: none; }
 .work { position: relative; }
 .work .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
@@ -133,6 +141,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
   .proj.c .txt { left: calc(2vw + var(--bw) * .8 + 8vw); top: 56svh; }
 }
 @media (max-width: 640px), (prefers-reduced-motion: reduce) {
+  .work .ground { left: -70vw; top: 6svh; width: 240vw; translate: 0 0; } /* the work is one tall column here: the lines sit at its top */
   .work .stage { position: relative; height: auto; overflow: visible; }
   .track { position: relative; flex-direction: column; gap: 18svh; padding: 14svh 0 18svh; transform: none !important; }
   .intro { width: auto; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); }
@@ -185,6 +194,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 <main>
   <section class="hero" aria-label="Tom Larsson">
     <div class="stage">
+      <img class="ground g2" src="assets/ground-lineA-61.webp" alt="" width="1600" height="788" aria-hidden="true">
       <div class="rows" aria-hidden="true">
         <div class="row a" data-dir="-1">epaRadar · raddavarfruberga · EDGE · ttoolbox · epaRadar · raddavarfruberga · EDGE · ttoolbox ·</div>
         <div class="row b" data-dir="1">TypeScript · React · C#/.NET · Postgres · TypeScript · React · C#/.NET · Postgres ·</div>
@@ -202,11 +212,12 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
     </div>
   </section>
   <section class="say" aria-labelledby="say-h">
+    <img class="ground" src="assets/ground-lineB-23.webp" alt="" width="1600" height="788" loading="lazy" aria-hidden="true">
     <p class="label">How I work</p>
     <h2 id="say-h">I <span class="q">build and</span> <span class="loop">run<svg aria-hidden="true"><path d=""/></svg></span> <span class="q">things</span> myself, <span class="q">from</span> data model <span class="q">to</span> server</h2>
   </section>
   <section class="work" aria-labelledby="work-h">
-    <div class="stage"><div class="track">
+    <div class="stage"><img class="ground" src="assets/ground-lineA-23.webp" alt="" width="1600" height="788" loading="lazy" aria-hidden="true"><div class="track">
       <div class="intro">
         <p class="cap" style="position:static">Selected work</p>
         <h2 id="work-h">Three builds<br>I run</h2>
@@ -511,6 +522,8 @@ __LIBS__
       .to(look, { spin: 0.9, duration: 0.3 }, 0.02)
       .to(look, { fade: 0, duration: 0.08 }, 0.2) // gone well before the signature starts (0.36): one gesture at a time
       .to(".rows", { opacity: 1, duration: 0.1 }, 0.3)
+      .to(".ground.g2", { opacity: 0.12, duration: 0.14 }, 0.3)
+      .fromTo(".ground.g2", { x: () => innerWidth * 0.05 }, { x: () => -innerWidth * 0.05, duration: 0.74 }, 0.26)
       .fromTo(".row[data-dir='-1']", { xPercent: 0 }, { xPercent: -46, duration: 0.74 }, 0.26)
       .fromTo(".row[data-dir='1']", { xPercent: -46 }, { xPercent: 0, duration: 0.74 }, 0.26);
     let at = 0.36;
@@ -561,13 +574,17 @@ __LIBS__
     gsap.set(track, { clearProps: "transform" });
     // the ground turns black as the work comes in (both tones dark: no grey in between)
     extras.push(gsap.fromTo(".night", { opacity: 0 }, { opacity: 1, ease: "none", scrollTrigger: { trigger: work, start: "top 85%", end: "top 25%", scrub: true } }));
+    // the lines behind the statement drift up slower than the words; behind the work they slide a quarter as far as the track
+    extras.push(gsap.fromTo(".say .ground", { y: () => innerHeight * 0.12 }, { y: () => -innerHeight * 0.12, ease: "none", scrollTrigger: { trigger: ".say", start: "top bottom", end: "bottom top", scrub: true } }));
     if (flat) {
+      extras.push(gsap.fromTo(".work .ground", { y: 0 }, { y: () => -innerHeight * 0.4, ease: "none", scrollTrigger: { trigger: work, start: "top bottom", end: "bottom top", scrub: true } }));
       document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { y: 40 }, { y: -40, ease: "none", scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } })));
       const tall = document.querySelector(".tall img");
       extras.push(gsap.to(tall, { yPercent: -60, ease: "none", scrollTrigger: { trigger: tall.parentElement, start: "top bottom", end: "bottom top", scrub: true } }));
       return;
     }
     workTl = gsap.to(track, { x: () => -(track.scrollWidth - innerWidth), ease: "none", scrollTrigger: { trigger: work, start: "top top", end: "bottom bottom", scrub: true } });
+    extras.push(gsap.to(".work .ground", { x: () => -(track.scrollWidth - innerWidth) * 0.25, ease: "none", scrollTrigger: { trigger: work, start: "top top", end: "bottom bottom", scrub: true } }));
     // the phones move faster than the big screens: depth while the track slides
     document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { x: innerWidth * 0.05 }, { x: -innerWidth * 0.05, ease: "none",
       scrollTrigger: { trigger: el, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } })));
