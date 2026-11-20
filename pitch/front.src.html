@@ -298,7 +298,6 @@ a { color: inherit; }
     <p class="label">On my public GitHub, live</p>
     <p class="num"><span id="nCommits">0</span> <small>commits</small></p>
     <p class="sub"><span id="nPrs">0</span> merged pull requests in <span id="nRepos">0</span> repos</p>
-    <p class="src" id="nSrc">Counted from GitHub as the page loads.</p>
   </div></section>
 
   <section class="scene" id="s-epa" data-only="live" style="--g:#0f1c36" aria-label="epaRadar"><div class="st">
@@ -397,7 +396,7 @@ a { color: inherit; }
     dd.textContent = parts.join(", "); dd.hidden = false; document.getElementById("epaLiveKey").hidden = false;
     const pt = document.getElementById("epaPulseText"); if (pt) { pt.textContent = parts.join(" · ") + " on GitHub"; document.getElementById("epaPulse").hidden = false; }
   });
-  // 3: live public GitHub numbers (only this option asks GitHub); nothing found = the section says so, never an old number
+  // 3: live public GitHub numbers (only this option asks GitHub); nothing found = the section goes, never an old number
   const live = { commits: 0, prs: 0, repos: 0 };
   if (opt === "3" || mix) (async () => {
     try {
@@ -405,7 +404,7 @@ a { color: inherit; }
       const counts = await Promise.all(repos.map(r => gh(`repos/tlxq/${r.name}/commits?per_page=1`).then(x => +((/[?&]page=(\d+)>; rel="last"/.exec(x.headers.get("Link") || "") || [0, 1])[1])).catch(() => 0)));
       const prs = await gh("search/issues?q=" + encodeURIComponent("user:tlxq is:pr is:merged") + "&per_page=1").then(r => r.json()).then(d => d.total_count || 0).catch(() => 0);
       Object.assign(live, { commits: counts.reduce((a, b) => a + b, 0), prs, repos: repos.length }); ask();
-    } catch { document.getElementById("nSrc").textContent = "GitHub didn't answer just now, so there are no numbers."; }
+    } catch { document.querySelector(".count").style.display = "none"; } // no answer from GitHub = no numbers, the section goes
   })();
   const bar = document.querySelector(".bar"), me = document.querySelector(".me"), meImg = me.querySelector("img"), slot = document.querySelector(".av-slot"), fly = document.querySelector(".fly");
   const cards = [...document.querySelectorAll(".card")].filter((c, i) => !(isLive && i === 0)), movers = [...document.querySelectorAll("[data-p]")];
