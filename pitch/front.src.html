@@ -45,15 +45,16 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .hero { position: relative; height: 290svh; }
 .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .pane, .inner { position: absolute; inset: 0; will-change: transform; }
-.pane { overflow: hidden; }
-.inner { background: var(--look-cream); }
+.pane { overflow: hidden; clip-path: inset(0); }
+.inner { background: var(--look-cream); box-shadow: 0 0 0 100vmax var(--look-cream); } /* the crop can be wider than the screen on a phone */
 .name { position: absolute; left: 0; right: 0; top: 7svh; margin: 0; text-align: center; font: 700 min(10.5vw, 17svh)/.86 var(--f-big);
   letter-spacing: -.02em; text-transform: uppercase; color: var(--look-dark); white-space: nowrap; }
 .name .ln { display: inline-block; overflow: hidden; padding: .04em .12em 0; }
 .name .ln span { display: block; }
-.photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0; }
+.photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0;
+  -webkit-mask-image: linear-gradient(#000 52%, transparent 84%); mask-image: linear-gradient(#000 52%, transparent 84%); }
 .photo.bw { opacity: 0; }
-.dim { position: absolute; inset: 0; background: var(--look-dark-soft); opacity: 0; }
+.dim { position: absolute; inset: -100vmax; background: var(--look-dark-soft); opacity: 0; }
 .role { position: absolute; left: max(var(--gutter), env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
   font-size: 14px; font-weight: 500; max-width: 24ch; color: var(--look-dark); }
 .hint { position: absolute; right: max(var(--gutter), env(safe-area-inset-right)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
@@ -63,7 +64,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .row { white-space: nowrap; text-transform: uppercase; will-change: transform; }
 .row.a { font: 400 min(6.4vw, 11svh)/1 var(--f-text); letter-spacing: -.03em; color: var(--look-quiet); }
 .row.b { font: 700 min(7.6vw, 13svh)/.92 var(--f-big); letter-spacing: -.015em; color: var(--look-cream); opacity: .9; }
-.sig { position: absolute; left: 50%; top: 50%; width: min(56vw, 96svh); translate: -50% -46%; overflow: visible; pointer-events: none; }
+.sig { position: absolute; left: 50%; top: 50%; width: min(66vw, 112svh); translate: -50% -46%; overflow: visible; pointer-events: none; }
 .sig path { fill: none; stroke: var(--look-spray); stroke-linecap: round; stroke-linejoin: round; }
 
 /* after the pin: moment 3 comes next */
@@ -78,7 +79,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
   .role, .hint { display: none; }
   .links { gap: 14px; font-size: 13px; }
   /* phone: the pane sits higher, the names run under it where they can be read */
-  .rows { top: 71%; translate: 0 0; }
+  .rows { top: 60%; translate: 0 0; }
   .row.a { font-size: 8.4vw; }
   .row.b { font-size: 10.5vw; }
   .sig { width: 92vw; top: 40%; translate: -50% -50%; }
@@ -131,7 +132,7 @@ __LIBS__
   const NS = "http://www.w3.org/2000/svg";
   const svg = document.querySelector(".sig");
   svg.setAttribute("viewBox", SIGN.viewBox.join(" "));
-  const LINE = 26; // line width in the signature's own units: about 15 px at laptop size, like his
+  const LINE = 34; // line width in the signature's own units: about 12 px at laptop size, like his
   const strokes = SIGN.strokes.map((s) => {
     const p = document.createElementNS(NS, "path");
     p.setAttribute("d", s.d);
@@ -185,9 +186,9 @@ __LIBS__
     tl.to(s, { crop: 1, duration: 0.26, onUpdate: apply }, 0)
       .to(s, { shrink: 1, duration: 0.32, onUpdate: apply }, 0.14)
       .to([".role", ".hint"], { opacity: 0, duration: 0.06 }, 0.02)
-      .to(".name", { opacity: 0, yPercent: -30, duration: 0.12 }, 0.03)
+      .to(".name", { yPercent: -140, ease: "power2.in", duration: 0.13 }, 0.01)
       .to(".photo.bw", { opacity: 1, duration: 0.16 }, 0.14)
-      .to(".dim", { opacity: 0.42, duration: 0.2 }, 0.18)
+      .to(".dim", { opacity: 0.66, duration: 0.2 }, 0.18)
       .to(".rows", { opacity: 1, duration: 0.1 }, 0.26)
       .fromTo(".row[data-dir='-1']", { xPercent: 0 }, { xPercent: -46, duration: 0.74 }, 0.26)
       .fromTo(".row[data-dir='1']", { xPercent: -46 }, { xPercent: 0, duration: 0.74 }, 0.26);
