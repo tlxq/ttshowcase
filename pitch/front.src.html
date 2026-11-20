@@ -36,6 +36,12 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
   color: var(--look-cream); mix-blend-mode: difference; pointer-events: none; }
 .bar > * { pointer-events: auto; }
 .who { transition: opacity .3s; }
+/* under the header once the dark starts: words scrolling up soften and darken into a blur instead of running through it */
+.veil { position: fixed; inset: 0 0 auto; z-index: 19; height: calc(max(20px, env(safe-area-inset-top)) + 96px); pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: linear-gradient(color-mix(in srgb, var(--look-ground) 72%, transparent), transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); }
+.veil.on { opacity: 1; }
 .who.away { opacity: 0; visibility: hidden; } /* while the big name is on screen the header doesn't say it again */
 .who b { display: block; font-weight: 600; font-size: 15px; letter-spacing: -.005em; }
 .who span { display: block; font-size: 13px; opacity: .8; }
@@ -186,6 +192,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 </head>
 <body>
 <div class="night" aria-hidden="true"></div>
+<div class="veil" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 <header class="bar">
   <div class="who"><b>Tom Larsson</b><span>Product engineer</span></div>
@@ -271,7 +278,9 @@ __LIBS__
   const who = document.querySelector(".who");
   const bigName = document.querySelector(".name");
   const whoCheck = () => { const r = bigName.getBoundingClientRect(); // the name leaves by rising and fading, inside a pane that shrinks
-    who.classList.toggle("away", r.bottom > 0 && r.top < innerHeight && +getComputedStyle(bigName).opacity > 0.1); };
+    const big = r.bottom > 0 && r.top < innerHeight && +getComputedStyle(bigName).opacity > 0.1;
+    who.classList.toggle("away", big); veil.classList.toggle("on", scrollY > document.querySelector(".hero").offsetHeight - innerHeight * 0.5); };
+  const veil = document.querySelector(".veil");
   addEventListener("scroll", whoCheck, { passive: true }); addEventListener("resize", whoCheck); whoCheck();
   const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const phone = () => innerWidth <= 640;
