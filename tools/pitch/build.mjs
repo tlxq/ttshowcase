@@ -144,10 +144,20 @@ function withScriptRule(html) {
 }
 writeFileSync(join(out, "paint.html"), withScriptRule(page));
 
-// The front page (pitch, 11-19): the same fonts and tokens, no 3D. /next/front on the site.
+// The front page (pitch, 11-20, landonorris.com's techniques): the same fonts and tokens, no 3D. /next/front on the
+// site. GSAP (ScrollTrigger) and Lenis go into the page from node_modules as inline scripts, so the script rule
+// hashes them like the page's own; the signature is pitch/sign-d.json (a traced "Tom": its shape and the centre
+// lines it draws along).
+const lib = (f) =>
+  readFileSync(join(root, "node_modules", f), "utf8").replaceAll("</script", "<\\/script");
+const libs = ["gsap/dist/gsap.min.js", "gsap/dist/ScrollTrigger.min.js", "lenis/dist/lenis.min.js"]
+  .map((f) => `<script>${lib(f)}</script>`)
+  .join("\n");
 let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
   .replaceAll("__EMBED__", () => embed)
-  .replaceAll("__TOKENS__", () => parts.__TOKENS__);
+  .replaceAll("__TOKENS__", () => parts.__TOKENS__)
+  .replaceAll("__LIBS__", () => libs)
+  .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
 if (/__[A-Z_]{3,}__/.test(front))
   throw new Error("pitch/front.src.html asks for a part the build doesn't fill");
 front = withScriptRule(front);
