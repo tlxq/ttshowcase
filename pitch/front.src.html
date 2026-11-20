@@ -45,8 +45,8 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .hero { position: relative; height: 290svh; }
 .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .pane, .inner { position: absolute; inset: 0; will-change: transform; }
-.pane { overflow: hidden; clip-path: inset(0); }
-.cream { --r: 160vmax; position: absolute; inset: -100vmax; background: var(--look-cream);
+.pane { pointer-events: none; } /* no clip: nothing frames him, so no edge can show */
+.cream { --r: 62vmax; position: absolute; inset: -100vmax; background: var(--look-cream);
   -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 var(--r), transparent calc(var(--r) + 30vmax));
   mask-image: radial-gradient(circle at 50% 50%, #000 var(--r), transparent calc(var(--r) + 30vmax)); } /* the first screen's ground: it fades to the dark as he shrinks, no box */
 .name { position: absolute; left: 0; right: 0; top: 7svh; margin: 0; text-align: center; font: 700 min(9vw, 14svh)/.86 var(--f-big);
@@ -56,7 +56,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0;
   -webkit-mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%);
   -webkit-mask-composite: source-in; mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%); mask-composite: intersect; }
-.photo.bw { opacity: 0; filter: brightness(.62); } /* dimmed, but solid: the names run behind him, never through */
+.photo.bw { opacity: 0; filter: brightness(.74); } /* dimmed, but solid: the names run behind him, never through */
 .role { position: absolute; left: max(var(--gutter), env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
   font-size: 14px; font-weight: 500; max-width: 24ch; color: var(--look-dark); }
 .hint { position: absolute; right: max(var(--gutter), env(safe-area-inset-right)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
@@ -324,7 +324,7 @@ __LIBS__
     const fx = vw / 2, fy = photo.offsetTop + photo.offsetHeight * 0.4;
     const faceH = photo.offsetHeight * 0.33;
     // the pane at the end: a near-square in the middle (phone: wider, higher)
-    const Wf = phone() ? vw * 0.78 : Math.min(vw * 0.26, vh * 0.4);
+    const Wf = phone() ? vw * 0.78 : Math.min(vw * 0.36, vh * 0.56);
     const Hf = Wf * (phone() ? 0.92 : 0.9);
     const cy = phone() ? vh * 0.4 : vh * 0.5;
     const kEnd = (0.4 * Hf) / faceH; // the face fills about 40% of the pane's height at the end: head and shoulders, like his
@@ -341,18 +341,19 @@ __LIBS__
     tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom bottom", scrub: true } });
     // no box (Tom 11-20): the cream fades to the dark while the name leaves, then he shrinks to the middle as a cut-out
     // the dark closes in from the edges, like a light going down: never one flat grey in between
-    tl.fromTo(".cream", { "--r": "160vmax" }, { "--r": "-32vmax", duration: 0.16, ease: "power1.in" }, 0.02)
-      .to(s, { shrink: 1, duration: 0.32, onUpdate: apply }, 0.1)
+    // the whole range is on screen (62vmax is the screen's corner), over about 400 px of scroll, like his
+    tl.fromTo(".cream", { "--r": "62vmax" }, { "--r": "-32vmax", duration: 0.24, ease: "none" }, 0.02)
+      .to(s, { shrink: 1, duration: 0.34, onUpdate: apply }, 0.14)
       .to([".role", ".hint"], { opacity: 0, duration: 0.06 }, 0.02)
-      .to(".name", { y: () => -(document.querySelector(".name").offsetTop + document.querySelector(".name").offsetHeight + 40), ease: "power2.in", duration: 0.13 }, 0.01)
+      .to(".name", { y: () => -(document.querySelector(".name").offsetTop + document.querySelector(".name").offsetHeight + 40), opacity: 0, ease: "power2.in", duration: 0.13 }, 0.01)
       .to(".photo.bw", { opacity: 1, duration: 0.16 }, 0.14)
       .to(".photo.bw", { opacity: 1, duration: 0.2 }, 0.14)
-      .to(".rows", { opacity: 1, duration: 0.1 }, 0.26)
+      .to(".rows", { opacity: 1, duration: 0.1 }, 0.3)
       .fromTo(".row[data-dir='-1']", { xPercent: 0 }, { xPercent: -46, duration: 0.74 }, 0.26)
       .fromTo(".row[data-dir='1']", { xPercent: -46 }, { xPercent: 0, duration: 0.74 }, 0.26);
-    let at = 0.3;
+    let at = 0.36;
     SIGN.strokes.forEach((x, i) => {
-      const d = (0.44 * x.len) / total;
+      const d = (0.42 * x.len) / total;
       tl.to(strokes[i], { strokeDashoffset: 0, duration: d, ease: "power1.inOut" }, at);
       at += d + 0.012;
     });
