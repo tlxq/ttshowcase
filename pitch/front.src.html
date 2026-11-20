@@ -78,6 +78,50 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .say .loop path { fill: none; stroke: var(--look-spray); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .next { padding: 0 0 20svh; text-align: center; font-size: 13px; color: var(--look-quiet); }
 
+/* moment 4: the work. The ground goes from warm dark to black; one pinned track moves sideways while you scroll down.
+   Screens sit unframed at two sizes and two speeds, each with a tiny caption; phone: the same as a vertical scatter */
+.night { position: fixed; inset: 0; z-index: -1; background: var(--look-ground); opacity: 0; pointer-events: none; }
+.work { position: relative; }
+.work .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.track { position: absolute; top: 0; left: 0; height: 100%; display: flex; will-change: transform; }
+.intro { flex: none; width: 46vw; padding: 0 0 0 max(var(--gutter), env(safe-area-inset-left)); display: grid; align-content: center; gap: 20px; }
+.intro h2 { margin: 0; font: 700 min(7.4vw, 15svh)/.92 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
+.intro p { margin: 0; max-width: 30ch; color: var(--look-soft); }
+.proj { position: relative; flex: none; width: calc(var(--bw) + 52vw); height: 100%; }
+.proj .shot { position: absolute; display: block; height: auto; }
+.proj { --bw: min(58vw, 108svh); }
+.proj .big { left: 2vw; top: calc(50svh - var(--bw) * .3125 - 2svh); width: var(--bw); border-radius: 4px; }
+.proj .small { left: calc(2vw + var(--bw) - 7vw); top: calc(50svh - 4svh); width: min(13vw, 25svh); border-radius: 12px; }
+.proj .tall { position: absolute; left: calc(2vw + var(--bw) - 7vw); top: calc(50svh - 4svh); width: min(13vw, 25svh); aspect-ratio: 300 / 650; overflow: hidden; border-radius: 12px; }
+.proj .tall img { display: block; width: 100%; height: auto; will-change: transform; }
+.cap { position: absolute; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); white-space: nowrap; }
+.proj .big + .cap { left: 2vw; top: calc(50svh - var(--bw) * .3125 - 2svh - 24px); }
+.txt { position: absolute; left: calc(2vw + var(--bw) + 12vw); top: 50svh; translate: 0 -50%; width: min(32vw, 470px); display: grid; gap: 14px; }
+.txt .no { font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
+.txt h3 { margin: 0; font: 700 min(5.2vw, 10svh)/.92 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
+.txt .line { margin: 0; font-size: 19px; line-height: 1.35; color: var(--look-cream); }
+.txt dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 14px; }
+.txt dt { color: var(--look-quiet); }
+.txt dd { margin: 0; color: var(--look-soft); }
+.go { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 8px; font-size: 15px; font-weight: 600; }
+.go a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
+.go a:hover { color: var(--look-spray); }
+
+@media (max-width: 640px), (prefers-reduced-motion: reduce) {
+  .work .stage { position: relative; height: auto; overflow: visible; }
+  .track { position: relative; flex-direction: column; gap: 18svh; padding: 14svh 0 18svh; transform: none !important; }
+  .intro { width: auto; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); }
+  .intro h2 { font-size: 15vw; }
+  .proj { width: auto; height: auto; display: grid; gap: 22px; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); }
+  .proj .shot, .proj .tall, .cap, .txt { position: relative; left: auto; top: auto; }
+  .proj .big { width: 100%; }
+  .proj .big + .cap { order: -1; left: auto; top: auto; margin-bottom: -12px; }
+  .proj .small, .proj .tall { width: 44%; justify-self: end; margin-top: -26%; }
+  .txt { width: auto; translate: none; }
+  .txt h3 { font-size: 13vw; }
+}
+
+
 @media (max-width: 640px) {
   :root { --hp: 62svh; --pt: 28svh; }
   .name { top: 11svh; font-size: min(17.5vw, 15svh); }
@@ -102,6 +146,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 </style>
 </head>
 <body>
+<div class="night" aria-hidden="true"></div>
 <header class="bar">
   <div class="who"><b>Tom Larsson</b><span>Product engineer</span></div>
   <nav class="links" aria-label="Elsewhere"><a href="https://github.com/tlxq">GitHub ↗</a><a href="https://linkedin.com/in/tlxq">LinkedIn ↗</a></nav>
@@ -128,7 +173,52 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
     <p class="label">How I work</p>
     <h2 id="say-h">I <span class="q">build and</span> <span class="loop">run<svg viewBox="0 0 100 60" preserveAspectRatio="none" aria-hidden="true"><path d=""/></svg></span> <span class="q">things</span> myself, <span class="q">from</span> data model <span class="q">to</span> server</h2>
   </section>
-  <p class="next">Moment 4 comes next: the work</p>
+  <section class="work" aria-labelledby="work-h">
+    <div class="stage"><div class="track">
+      <div class="intro">
+        <p class="cap" style="position:static">Selected work</p>
+        <h2 id="work-h">Three builds<br>I run</h2>
+        <p>Each one is live. Open it, or read the code.</p>
+      </div>
+      <article class="proj" aria-labelledby="p1">
+        <img class="shot big" src="projects/eparadar-laptop.webp" alt="epaRadar.se on a laptop" width="960" height="600" loading="lazy">
+        <span class="cap">epaRadar.se · the site</span>
+        <img class="shot small" data-speed="1" src="projects/eparadar-karta.webp" alt="The epaRadar app: friends on a map" width="420" height="910" loading="lazy">
+        <div class="txt">
+          <span class="no">01 / 03 · Degree project, built alone</span>
+          <h3 id="p1">epaRadar</h3>
+          <p class="line">Friends on a live map. Only friends see where you are.</p>
+          <dl><dt>Stack</dt><dd>React Native, Expo, Supabase, Postgres, pgTAP</dd><dt id="epaLiveKey" hidden>GitHub</dt><dd id="epaLive" hidden></dd></dl>
+          <div class="go"><a href="https://eparadar.se">Open the site ↗</a><a href="https://github.com/tlxq/eparadar">Code ↗</a></div>
+        </div>
+      </article>
+      <article class="proj" aria-labelledby="p2">
+        <img class="shot big" src="projects/raddavarfruberga-laptop.webp" alt="raddavarfruberga.se on a laptop" width="960" height="600" loading="lazy">
+        <span class="cap">raddavarfruberga.se</span>
+        <div class="tall" data-speed="1"><img src="projects/raddavarfruberga-phone.webp" alt="The whole site on a phone" width="300" height="2462" loading="lazy"></div>
+        <div class="txt">
+          <span class="no">02 / 03 · Built alone, for the parents</span>
+          <h3 id="p2">Rädda vår Fruberga</h3>
+          <p class="line">We started this site to collect signatures for our preschool.</p>
+          <dl><dt>Stack</dt><dd>Next.js, TypeScript, Supabase, Resend, Vercel</dd></dl>
+          <div class="go"><a href="https://raddavarfruberga.se">Open the site ↗</a></div>
+        </div>
+      </article>
+      <article class="proj" aria-labelledby="p3">
+        <video class="shot big" src="projects/app-utveckling-laptop.mp4" poster="projects/app-utveckling-laptop.webp" muted loop playsinline preload="none" width="960" height="600" aria-label="app-utveckling.se scrolling on a laptop"></video>
+        <span class="cap">app-utveckling.se</span>
+        <video class="shot small" data-speed="1" src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="300" height="650" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video>
+        <div class="txt">
+          <span class="no">03 / 03 · Work project, built alone</span>
+          <h3 id="p3">EDGE</h3>
+          <p class="line">Two landing pages for EDGE Associates, on one code base.</p>
+          <dl><dt>Stack</dt><dd>Astro, TypeScript</dd></dl>
+          <div class="go"><a href="https://app-utveckling.se">app-utveckling.se ↗</a><a href="https://mjukvaruutvecklare.com">mjukvaruutvecklare.com ↗</a></div>
+        </div>
+      </article>
+    </div></div>
+  </section>
+  <p class="next">Moment 5 comes next: the street, full screen</p>
 </main>
 __LIBS__
 <script>
@@ -151,6 +241,19 @@ __LIBS__
     p.setAttribute("stroke-dashoffset", still ? 0 : s.len + LINE);
     svg.appendChild(p);
     return p;
+  });
+
+  // the EDGE films play only while on screen
+  const vids = new IntersectionObserver((es) => es.forEach((e) => { const v = e.target; if (e.isIntersecting && !still) { v.preload = "auto"; v.play().catch(() => {}); } else v.pause(); }), { threshold: 0.3 });
+  document.querySelectorAll("video").forEach((v) => vids.observe(v));
+  // epaRadar's numbers, live from GitHub at load (no token); no answer shows nothing, never an old number
+  const gh = async (u) => { const r = await fetch("https://api.github.com/" + u); if (!r.ok) throw 0; return r; };
+  const commits = gh("repos/tlxq/eparadar/commits?per_page=1").then((r) => { const m = /[?&]page=(\d+)>; rel="last"/.exec(r.headers.get("Link") || ""); if (!m) throw 0; return +m[1]; });
+  const merged = gh("search/issues?q=" + encodeURIComponent("repo:tlxq/eparadar is:pr is:merged") + "&per_page=1").then((r) => r.json()).then((d) => { if (d.incomplete_results || !(d.total_count > 0)) throw 0; return d.total_count; });
+  Promise.allSettled([commits, merged]).then(([c, m]) => {
+    const parts = [c.status === "fulfilled" && `${c.value.toLocaleString("en-US")} commits`, m.status === "fulfilled" && `${m.value.toLocaleString("en-US")} merged pull requests`].filter(Boolean);
+    if (!parts.length) return;
+    const dd = document.getElementById("epaLive"); dd.textContent = parts.join(", "); dd.hidden = false; document.getElementById("epaLiveKey").hidden = false;
   });
 
   if (still || !window.gsap) return; // the plain page: first screen, signature already written
@@ -257,7 +360,31 @@ __LIBS__
     lines.forEach((l, i) => sayTl.fromTo(l.els, { yPercent: 60, opacity: 0.08 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, i * 0.22));
     sayTl.to(loopPath, { strokeDashoffset: 0, duration: 0.45, ease: "power1.inOut" }, 0.35);
   };
-  const ready = () => { build(); buildSay(); ScrollTrigger.refresh(); };
+  // moment 4: the track. Its section is as tall as the sideways distance, the stage stays while the track moves
+  const work = document.querySelector(".work"), track = document.querySelector(".track");
+  let workTl, extras = [];
+  const buildWork = () => {
+    workTl?.scrollTrigger?.kill(); workTl?.kill(); extras.forEach((x) => { x.scrollTrigger?.kill(); x.kill(); }); extras = [];
+    const flat = phone();
+    work.style.height = flat ? "" : `${track.scrollWidth - innerWidth + innerHeight}px`;
+    gsap.set(track, { clearProps: "transform" });
+    // the ground turns black as the work comes in (both tones dark: no grey in between)
+    extras.push(gsap.fromTo(".night", { opacity: 0 }, { opacity: 1, ease: "none", scrollTrigger: { trigger: work, start: "top 85%", end: "top 25%", scrub: true } }));
+    if (flat) {
+      document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { y: 40 }, { y: -40, ease: "none", scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } })));
+      const tall = document.querySelector(".tall img");
+      extras.push(gsap.to(tall, { yPercent: -60, ease: "none", scrollTrigger: { trigger: tall.parentElement, start: "top bottom", end: "bottom top", scrub: true } }));
+      return;
+    }
+    workTl = gsap.to(track, { x: () => -(track.scrollWidth - innerWidth), ease: "none", scrollTrigger: { trigger: work, start: "top top", end: "bottom bottom", scrub: true } });
+    // the phones move faster than the big screens: depth while the track slides
+    document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { x: innerWidth * 0.05 }, { x: -innerWidth * 0.05, ease: "none",
+      scrollTrigger: { trigger: el, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } })));
+    // the long raddavarfruberga shot scrolls inside its phone as it passes
+    const tall = document.querySelector(".tall img");
+    extras.push(gsap.to(tall, { yPercent: -70, ease: "none", scrollTrigger: { trigger: tall.parentElement, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } }));
+  };
+  const ready = () => { build(); buildSay(); buildWork(); ScrollTrigger.refresh(); };
   photo.complete ? ready() : photo.addEventListener("load", ready, { once: true });
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(ready, 200); });
 })();
