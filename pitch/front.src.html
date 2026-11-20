@@ -19,8 +19,8 @@ __TOKENS__
   --f-big: "Clash Display", "Arial Narrow", sans-serif;
   --f-text: "Inter", system-ui, sans-serif;
   /* the photo on the first screen: its height and top, as parts of the screen height */
-  --hp: 100svh;
-  --pt: 20svh;
+  --hp: 80svh;
+  --pt: 18svh; /* so the crop point (40% down the photo) sits at the middle of the screen */
 }
 * { box-sizing: border-box; }
 html { background: var(--look-dark-soft); }
@@ -47,7 +47,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .pane, .inner { position: absolute; inset: 0; will-change: transform; }
 .pane { overflow: hidden; clip-path: inset(0); }
 .inner { background: var(--look-cream); box-shadow: 0 0 0 100vmax var(--look-cream); } /* the crop can be wider than the screen on a phone */
-.name { position: absolute; left: 0; right: 0; top: 7svh; margin: 0; text-align: center; font: 700 min(10.5vw, 17svh)/.86 var(--f-big);
+.name { position: absolute; left: 0; right: 0; top: 7svh; margin: 0; text-align: center; font: 700 min(9vw, 14svh)/.86 var(--f-big);
   letter-spacing: -.02em; text-transform: uppercase; color: var(--look-dark); white-space: nowrap; }
 .name .ln { display: inline-block; overflow: hidden; padding: .04em .12em 0; }
 .name .ln span { display: block; }
@@ -73,7 +73,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .after small { font-size: 13px; color: var(--look-quiet); }
 
 @media (max-width: 640px) {
-  :root { --hp: 76svh; --pt: 30svh; }
+  :root { --hp: 62svh; --pt: 28svh; }
   .name { top: 11svh; font-size: min(17.5vw, 15svh); }
   .name .ln { display: block; }
   .role, .hint { display: none; }
