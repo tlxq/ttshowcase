@@ -150,12 +150,17 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
   .say h2 { font-size: 10.4vw; max-width: 12ch; }
   .say .loop path { stroke-width: 6; }
   .say h2 { line-height: 1.1; }
+  /* phone: each project its own arrangement too */
+  .proj.b .tall { justify-self: start; width: 40%; margin-top: -30%; }
+  .proj.c .big { width: 88%; justify-self: end; }
+  .proj.c .small { justify-self: start; width: 36%; margin-top: -40%; }
 }
 /* without motion: the first screen as it is, then the signature written under it */
 @media (prefers-reduced-motion: reduce) {
   .hero { height: auto; }
-  .stage { position: relative; }
-  .sig { top: auto; bottom: 4svh; translate: -50% 0; }
+  .stage { position: relative; height: 100svh; }
+  .sig { display: none; } /* it draws on the pane, which only exists with motion */
+  .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 22svh; background: linear-gradient(transparent, var(--look-dark-soft)); pointer-events: none; }
 }
 </style>
 </head>
