@@ -56,6 +56,14 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 .photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0;
   -webkit-mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%);
   -webkit-mask-composite: source-in; mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%); mask-composite: intersect; }
+.gl { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.has-gl .photo { visibility: hidden; } /* the 3D photo draws instead; the pictures stay for size and as the fallback */
+/* film grain over everything, like a printed page: a small noise tile that jumps a little each frame */
+.grain { position: fixed; inset: -50%; z-index: 30; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+  background: url(assets/grain.png); animation: grain 1s steps(6) infinite; }
+@keyframes grain { 0% { transform: translate(0, 0); } 20% { transform: translate(-4%, 3%); } 40% { transform: translate(3%, -5%); }
+  60% { transform: translate(-6%, -2%); } 80% { transform: translate(5%, 4%); } 100% { transform: translate(0, 0); } }
+@media (prefers-reduced-motion: reduce) { .grain { animation: none; } }
 .photo.bw { opacity: 0; filter: brightness(.74); } /* dimmed, but solid: the names run behind him, never through */
 .role { position: absolute; left: max(var(--gutter), env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
   font-size: 14px; font-weight: 500; max-width: 24ch; color: var(--look-dark); }
@@ -167,6 +175,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
 </head>
 <body>
 <div class="night" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
 <header class="bar">
   <div class="who"><b>Tom Larsson</b><span>Product engineer</span></div>
   <nav class="links" aria-label="Elsewhere"><a href="https://github.com/tlxq">GitHub ↗</a><a href="https://linkedin.com/in/tlxq">LinkedIn ↗</a></nav>
@@ -183,6 +192,7 @@ a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 4px; }
         <h1 class="name"><span class="ln"><span>Tom</span></span> <span class="ln"><span>Larsson</span></span></h1>
         <img class="photo col" src="assets/tom_cut.webp" alt="Tom Larsson" width="1200" height="1506" fetchpriority="high">
         <img class="photo bw" src="assets/tom_cut_bw.webp" alt="" width="1200" height="1506">
+        <canvas class="gl" aria-hidden="true"></canvas>
         <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
         <p class="hint">Scroll</p>
       </div></div>
@@ -314,6 +324,138 @@ __LIBS__
   gsap.from(".name .ln span", { yPercent: 105, duration: 1.1, ease: "expo.out", stagger: 0.08, delay: 0.1 });
   gsap.from(".photo.col", { y: 30, opacity: 0, duration: 1.2, ease: "expo.out", delay: 0.15 });
 
+  // moment 1 in depth: the photo bent over its depth map (made on the desk's graphics card, Depth Anything V2), turning
+  // a little with the mouse, and an orange spray ribbon that wraps round the head, behind him and in front of him.
+  // Plain WebGL 2, no library. Without it the two pictures stay as they are.
+  const look = { grey: 0, ribbon: 0, fade: 1, spin: 0 };
+  const startGL = () => {
+    const cv = document.querySelector(".gl"), g = cv.getContext("webgl2", { premultipliedAlpha: true, antialias: true });
+    if (!g) return false;
+    const img = document.querySelector(".photo.col"), dimg = new Image();
+    dimg.src = "assets/tom_depth.webp";
+    const sh = (type, src) => { const s = g.createShader(type); g.shaderSource(s, src); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s)); return s; };
+    const prog = (vs, fs) => { const p = g.createProgram(); g.attachShader(p, sh(g.VERTEX_SHADER, vs)); g.attachShader(p, sh(g.FRAGMENT_SHADER, fs)); g.linkProgram(p); return p; };
+    const head = `#version 300 es
+      precision highp float;
+      uniform vec2 uView; uniform vec3 uC; uniform mat3 uRot;
+      vec4 place(vec3 p) { p = uRot * (p - uC) + uC; return vec4(p.x / uView.x * 2.0 - 1.0, 1.0 - p.y / uView.y * 2.0, -p.z / 4000.0, 1.0); }`;
+    const photoP = prog(head + `
+      in vec2 aUv; uniform vec4 uRect; uniform float uD; uniform sampler2D uDepth; out vec2 vUv;
+      void main() { vUv = aUv; float d = texture(uDepth, aUv).r; gl_Position = place(vec3(uRect.xy + aUv * uRect.zw, d * uD)); }`,
+      `#version 300 es
+      precision highp float;
+      in vec2 vUv; uniform sampler2D uImg; uniform float uGrey, uFade; out vec4 o;
+      void main() {
+        vec4 c = texture(uImg, vUv);
+        float a = c.a * smoothstep(0.84, 0.52, vUv.y) * smoothstep(0.01, 0.15, vUv.x) * smoothstep(0.99, 0.85, vUv.x) * uFade;
+        if (a < 0.04) discard;
+        vec3 rgb = c.rgb / max(c.a, 0.001);
+        float l = dot(rgb, vec3(0.299, 0.587, 0.114));
+        rgb = mix(rgb, vec3(l) * 0.74, uGrey);
+        o = vec4(rgb * a, a);
+      }`);
+    const ribP = prog(head + `
+      in vec3 aP; in vec2 aUv; in float aLit; out vec2 vUv; out float vLit;
+      void main() { vUv = aUv; vLit = aLit; gl_Position = place(aP); }`,
+      `#version 300 es
+      precision highp float;
+      in vec2 vUv; in float vLit; uniform float uDraw, uFade, uTime; uniform vec3 uCol; out vec4 o;
+      float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      float n(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + vec2(1, 1)), f.x), f.y); }
+      void main() {
+        // a stroke two thirds of the ring long, always travelling round him; it tapers at both ends
+        float L = 0.66 * uDraw, x = fract(vUv.x - uTime);
+        if (x > L) discard;
+        float taper = smoothstep(0.0, 0.12, x) * smoothstep(L, L - 0.05, x);
+        float e = abs(vUv.y - 0.5) * 2.0 / max(taper, 0.001);
+        if (e > 1.0) discard;
+        float sp = n(vUv * vec2(900.0, 14.0)) * 0.55 + n(vUv * vec2(240.0, 5.0)) * 0.45;
+        float a = smoothstep(1.0, 0.55, e + (sp - 0.5) * 0.55) * uFade;
+        if (a < 0.02) discard;
+        vec3 c = uCol * (0.62 + 0.38 * vLit) + (1.0 - e) * 0.06;
+        o = vec4(c * a, a);
+      }`);
+    const loc = (p, n) => g.getUniformLocation(p, n);
+    // the photo's mesh: a grid over its box
+    const NX = 110, NY = 138, uv = [], idx = [];
+    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) uv.push(i / NX, j / NY);
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+    const pVao = g.createVertexArray(); g.bindVertexArray(pVao);
+    const ub = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, ub); g.bufferData(g.ARRAY_BUFFER, new Float32Array(uv), g.STATIC_DRAW);
+    const la = g.getAttribLocation(photoP, "aUv"); g.enableVertexAttribArray(la); g.vertexAttribPointer(la, 2, g.FLOAT, false, 0, 0);
+    const ib = g.createBuffer(); g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, ib); g.bufferData(g.ELEMENT_ARRAY_BUFFER, new Uint32Array(idx), g.STATIC_DRAW);
+    // the ribbon: rebuilt for each size, as a flat band along a tilted spiral round the head
+    const rVao = g.createVertexArray(), rb = g.createBuffer(); let rCount = 0;
+    const tex = (im) => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // filtered edges stay clean (no light rim round the hair)
+      g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, im); g.generateMipmap(g.TEXTURE_2D);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR_MIPMAP_LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE); return t; };
+    let tImg, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1;
+    const size = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      const w = img.offsetWidth, h = img.offsetHeight;
+      rect = [img.offsetLeft - w / 2, img.offsetTop, w, h]; // the picture is centred with translate -50%
+      D = w * 0.24;
+      C = [rect[0] + w / 2, rect[1] + h * 0.4, D * 0.55];
+      // one tilted ring round the head: low across the chin in front, high behind the crown, so it never covers the eyes
+      const R = w * 0.5, N = 600, data = [];
+      for (let i = 0; i <= N; i++) {
+        const u = i / N, a = u * Math.PI * 2;
+        const x = C[0] + R * Math.cos(a), z = C[2] + R * 0.85 * Math.sin(a);
+        const y = C[1] + h * 0.03 + Math.sin(a) * R * 0.62;
+        const bw = w * 0.05, lit = Math.max(0, Math.sin(a));
+        data.push(x, y - bw / 2, z, u, 0, lit, x, y + bw / 2, z, u, 1, lit);
+      }
+      rCount = (N + 1) * 2;
+      g.bindVertexArray(rVao); g.bindBuffer(g.ARRAY_BUFFER, rb); g.bufferData(g.ARRAY_BUFFER, new Float32Array(data), g.STATIC_DRAW);
+      const s = 24, ap = g.getAttribLocation(ribP, "aP"), au = g.getAttribLocation(ribP, "aUv"), al = g.getAttribLocation(ribP, "aLit");
+      g.enableVertexAttribArray(ap); g.vertexAttribPointer(ap, 3, g.FLOAT, false, s, 0);
+      g.enableVertexAttribArray(au); g.vertexAttribPointer(au, 2, g.FLOAT, false, s, 12);
+      g.enableVertexAttribArray(al); g.vertexAttribPointer(al, 1, g.FLOAT, false, s, 20);
+    };
+    const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+    addEventListener("pointermove", (e) => { mouse.tx = e.clientX / innerWidth - 0.5; mouse.ty = e.clientY / innerHeight - 0.5; }, { passive: true });
+    const spiral = document.querySelector(".hero");
+    let on = true;
+    new IntersectionObserver(([e]) => (on = e.isIntersecting)).observe(spiral);
+    const draw = (t) => {
+      requestAnimationFrame(draw);
+      if (!on || !tImg) return;
+      mouse.x += (mouse.tx - mouse.x) * 0.06; mouse.y += (mouse.ty - mouse.y) * 0.06;
+      const sway = phone() ? Math.sin(t / 1600) * 0.12 : 0;
+      const yaw = mouse.x * 0.7 + sway + look.spin * 0.4, pitch = -mouse.y * 0.22;
+      const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const rot = new Float32Array([cy, sy * sp, -sy * cp, 0, cp, sp, sy, -cy * sp, cy * cp]);
+      g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT | g.DEPTH_BUFFER_BIT);
+      g.enable(g.DEPTH_TEST); g.enable(g.BLEND); g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
+      for (const p of [photoP, ribP]) { g.useProgram(p); g.uniform2f(loc(p, "uView"), W, H); g.uniform3f(loc(p, "uC"), ...C); g.uniformMatrix3fv(loc(p, "uRot"), false, rot); }
+      g.useProgram(photoP); g.bindVertexArray(pVao);
+      g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, tImg); g.uniform1i(loc(photoP, "uImg"), 0);
+      g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tDep); g.uniform1i(loc(photoP, "uDepth"), 1);
+      g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), D); g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
+      g.drawElements(g.TRIANGLES, idx.length, g.UNSIGNED_INT, 0);
+      if (look.ribbon > 0.001 && look.fade > 0.001) {
+        g.useProgram(ribP); g.bindVertexArray(rVao);
+        g.uniform1f(loc(ribP, "uDraw"), look.ribbon); g.uniform1f(loc(ribP, "uFade"), look.fade); g.uniform1f(loc(ribP, "uTime"), t / 26000 + look.spin * 0.4);
+        g.uniform3f(loc(ribP, "uCol"), ...SPRAY);
+        g.drawArrays(g.TRIANGLE_STRIP, 0, rCount);
+      }
+    };
+    const SPRAY = (() => { const c = getComputedStyle(document.documentElement).getPropertyValue("--look-spray").trim(); const m = c.match(/^#?([0-9a-f]{6})$/i);
+      return m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255) : [1, 0.33, 0.1]; })();
+    Promise.all([img.decode(), dimg.decode()]).then(() => {
+      tImg = tex(img); tDep = tex(dimg); size();
+      document.documentElement.classList.add("has-gl");
+      gsap.to(cv, { opacity: 1, duration: 0.6 });
+      gsap.to(look, { ribbon: 1, duration: 2.2, ease: "power2.inOut", delay: 0.5 });
+      addEventListener("resize", size);
+      requestAnimationFrame(draw);
+    }).catch(() => {});
+    return true;
+  };
+  try { startGL(); } catch (e) { console.warn("3D photo off:", e.message); }
+
   const pane = document.querySelector(".pane"), inner = document.querySelector(".inner"), photo = document.querySelector(".photo.col");
   let tl;
   const build = () => {
@@ -348,6 +490,9 @@ __LIBS__
       .to(".name", { y: () => -(document.querySelector(".name").offsetTop + document.querySelector(".name").offsetHeight + 40), opacity: 0, ease: "power2.in", duration: 0.13 }, 0.01)
       .to(".photo.bw", { opacity: 1, duration: 0.16 }, 0.14)
       .to(".photo.bw", { opacity: 1, duration: 0.2 }, 0.14)
+      .to(look, { grey: 1, duration: 0.2 }, 0.14)
+      .to(look, { spin: 0.9, duration: 0.3 }, 0.02)
+      .to(look, { fade: 0, duration: 0.08 }, 0.3)
       .to(".rows", { opacity: 1, duration: 0.1 }, 0.3)
       .fromTo(".row[data-dir='-1']", { xPercent: 0 }, { xPercent: -46, duration: 0.74 }, 0.26)
       .fromTo(".row[data-dir='1']", { xPercent: -46 }, { xPercent: 0, duration: 0.74 }, 0.26);
