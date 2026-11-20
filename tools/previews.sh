@@ -25,10 +25,10 @@ film() { # name url kind width height outwidth
   playwright-cli -s=previews run-code "async page => { for (let i = 0; i < 80; i++) { await page.mouse.wheel(0, $((h / 20))); await page.waitForTimeout(100); } await page.waitForTimeout(400); }" >/dev/null
   playwright-cli -s=previews video-stop >/dev/null
   ffmpeg -nostdin -v error -y -ss 0.3 -i "$raw" -t 8.5 -an -vf "scale=$out:-2,fps=25" \
-    -c:v libx264 -preset slow -crf 24 -pix_fmt yuv420p -movflags +faststart \
+    -c:v libx264 -preset slow -crf 27 -pix_fmt yuv420p -movflags +faststart \
     "public/projects/$name-$kind.mp4"
   ffmpeg -nostdin -v error -y -ss 0.3 -i "$raw" -t 8.5 -an -vf "scale=$out:-2,fps=25" \
-    -c:v libvpx-vp9 -crf 33 -b:v 0 -row-mt 1 -deadline good \
+    -c:v libvpx-vp9 -crf 37 -b:v 0 -row-mt 1 -deadline good \
     "public/projects/$name-$kind.webm"
   ffmpeg -nostdin -v error -y -ss 0.3 -i "$raw" -frames:v 1 -vf "scale=$out:-2" -quality 86 \
     "public/projects/$name-$kind.webp"
@@ -40,7 +40,7 @@ while read -r name url films <&3; do
   [ -z "$only" ] || [ "$only" = "$name" ] || continue
   for kind in $films; do
     case $kind in
-      laptop) film "$name" "$url" laptop 1440 900 1440 ;;
+      laptop) film "$name" "$url" laptop 1440 900 1280 ;;
       phone) film "$name" "$url" phone 390 844 390 ;;
     esac
   done
