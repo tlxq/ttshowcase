@@ -109,7 +109,6 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .ground.g2 { left: 50%; top: 50%; width: 118vw; translate: -50% -50%; opacity: 0; }
 .say > :not(.ground) { position: relative; }
 .say { overflow-x: clip; } /* the line sheets are wider than the screen: never a sideways scroll */
-.work .ground { left: -8vw; top: 50%; width: 125vw; translate: 0 -46%; }
 .night { position: fixed; inset: 0; z-index: -1; background: var(--look-ground); opacity: 0; pointer-events: none; }
 /* the ink becomes each project's ground: one fixed layer over the black, under everything else; each project its own wash
    (ink, spray, paper: three GPU stills in one file), strongest while its project is in the middle, fading into the next */
@@ -157,7 +156,6 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 }
 @media (max-width: 640px), (prefers-reduced-motion: reduce) {
   .mk { width: 14px; }
-  .work .ground { left: -70vw; top: 6svh; width: 240vw; translate: 0 0; } /* the work is one tall column here: the lines sit at its top */
   .work .stage { position: relative; height: auto; overflow: visible; }
   .track { position: relative; flex-direction: column; gap: 18svh; padding: 14svh 0 18svh; transform: none !important; }
   .intro { width: auto; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); }
@@ -235,7 +233,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
     <h2 id="say-h">I <span class="q">build and</span> <span class="run">run</span> <span class="q">things</span> myself, <span class="q">from</span> data model <span class="q">to</span> server</h2>
   </section>
   <section class="work" aria-labelledby="work-h">
-    <div class="stage"><img class="ground" src="assets/ground-lineA-23.webp" alt="" width="1600" height="788" loading="lazy" aria-hidden="true"><div class="track">
+    <div class="stage"><div class="track">
       <div class="intro">
         <img class="tgt" src="assets/mark-target.webp" alt="" width="62" height="63" aria-hidden="true">
         <p class="cap" style="position:static">Selected work</p>
@@ -418,8 +416,8 @@ __LIBS__
     g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
       in vec2 aP; out vec2 vUv; void main() { vUv = vec2(aP.x * .5 + .5, .5 - aP.y * .5); gl_Position = vec4(aP, 0., 1.); }`));
     g.attachShader(pr, sh(g.FRAGMENT_SHADER, `#version 300 es
-      precision mediump float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform vec3 uW, uS; uniform vec2 uF; uniform vec3 uC; uniform float uMax;
-      float h(vec2 q) { return fract(sin(dot(q, vec2(127.1, 311.7))) * 43758.5453); }
+      precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform vec3 uW, uS; uniform vec2 uF; uniform vec3 uC; uniform float uMax;
+      float h(vec2 q) { vec3 p = fract(vec3(q.xyx) * .1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); } // no sin: the same corner gives the same value from every cell
       float n(vec2 q) { vec2 i = floor(q), f = fract(q); f = f * f * (3. - 2. * f);
         return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.), f.x), f.y); }
       float wash(int i, float w, float s) {
@@ -438,7 +436,7 @@ __LIBS__
     const u = (k) => g.getUniformLocation(pr, k);
     const c = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim().match(/\w\w/g).map((x) => parseInt(x, 16) / 255);
     g.uniform3f(u("uC"), ...c); g.uniform1f(u("uMax"), 0.16); // at its densest the blue lifts the black to about 15 %
-    const size = () => { const k = 0.5; cv.width = Math.round(innerWidth * k); cv.height = Math.round(innerHeight * k); // soft: half size is plenty
+    const size = () => { const k = phone() ? Math.min(devicePixelRatio, 2) : 0.5; cv.width = Math.round(innerWidth * k); cv.height = Math.round(innerHeight * k); // soft: half size is plenty
       const A = innerWidth / innerHeight; g.uniform2f(u("uF"), Math.min(A / 2, 1), Math.min(2 / A, 1)); };
     let ready = false, on = false, last = "";
     const draw = () => {
@@ -757,9 +755,7 @@ __LIBS__
     gsap.set(track, { clearProps: "transform" });
     // the ground turns black as the work comes in (both tones dark: no grey in between)
     extras.push(gsap.fromTo(".night", { opacity: 0 }, { opacity: 1, ease: "none", scrollTrigger: { trigger: work, start: "top 85%", end: "top 25%", scrub: true } }));
-    // the lines behind the work slide a quarter as far as the track (the statement has none: the ink is its one effect)
     if (flat) {
-      extras.push(gsap.fromTo(".work .ground", { y: 0 }, { y: () => -innerHeight * 0.4, ease: "none", scrollTrigger: { trigger: work, start: "top bottom", end: "bottom top", scrub: true } }));
       document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { y: 40 }, { y: -40, ease: "none", scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } })));
       document.querySelectorAll(".mk").forEach((m) => extras.push(gsap.fromTo(m, { x: (+m.dataset.cx ? 1 : -1) * 16, y: (+m.dataset.cy ? 1 : -1) * 16, opacity: 0 }, { x: 0, y: 0, opacity: 0.55, ease: "power2.out",
         scrollTrigger: { trigger: m.big, start: "top 90%", end: "top 55%", scrub: true } })));
@@ -768,7 +764,6 @@ __LIBS__
       return;
     }
     workTl = gsap.to(track, { x: () => -(track.scrollWidth - innerWidth), ease: "none", scrollTrigger: { trigger: work, start: "top top", end: "bottom bottom", scrub: true } });
-    extras.push(gsap.to(".work .ground", { x: () => -(track.scrollWidth - innerWidth) * 0.25, ease: "none", scrollTrigger: { trigger: work, start: "top top", end: "bottom bottom", scrub: true } }));
     // the phones move faster than the big screens: depth while the track slides
     document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { x: innerWidth * 0.05 }, { x: -innerWidth * 0.05, ease: "none",
       scrollTrigger: { trigger: el, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } })));
