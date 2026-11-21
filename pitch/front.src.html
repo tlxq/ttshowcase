@@ -90,9 +90,6 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 /* joint 2: the underline runs on, over the page, into the loop round RUN; the words stay on top of it */
 .lead.j2 { position: fixed; z-index: 1; }
 .say > :not(.ground) { z-index: 2; }
-/* joint 3: one line inside the track, behind the screens, that the projects ride on; it draws at a fixed point as they pass */
-.rail { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
-.rail path { fill: none; stroke: var(--front-spray); stroke-linecap: round; stroke-linejoin: round; }
 
 /* moment 3: the statement. Lines brighten and rise with the scroll, two voices like his; a loop draws round one word */
 .say { position: relative; padding: 12svh max(var(--gutter), env(safe-area-inset-right)) 30svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
@@ -120,7 +117,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 .work { position: relative; overflow-x: clip; }
 .work .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .track { position: absolute; top: 0; left: 0; height: 100%; display: flex; will-change: transform; }
-.intro { position: relative; flex: none; width: 46vw; padding: 0 0 0 max(var(--gutter), env(safe-area-inset-left)); display: grid; align-content: center; gap: 20px; }
+.intro { flex: none; width: 46vw; padding: 0 0 0 max(var(--gutter), env(safe-area-inset-left)); display: grid; align-content: center; gap: 20px; }
 .intro h2 { margin: 0; font: 700 min(7.4vw, 15svh)/.92 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
 .intro p { margin: 0; max-width: 30ch; color: var(--look-soft); }
 .proj { position: relative; flex: none; width: calc(var(--bw) + 52vw); height: 100%; }
@@ -198,7 +195,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 @media (prefers-reduced-motion: reduce) {
   .hero { height: auto; }
   .stage { position: relative; height: 100svh; }
-  .sig, .lead, .lead.j2, .lead.j3 { display: none; } /* they draw on the pane, which only exists with motion */
+  .sig, .lead, .lead.j2 { display: none; } /* they draw on the pane, which only exists with motion */
   .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 22svh; background: linear-gradient(transparent, var(--look-dark-soft)); pointer-events: none; }
 }
 </style>
@@ -233,14 +230,13 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
     </div>
   </section>
   <svg class="lead j2" aria-hidden="true"><path/></svg>
-  <svg class="lead j2 j3" aria-hidden="true"><path/></svg>
   <section class="say" aria-labelledby="say-h">
     <img class="ground" src="assets/ground-lineB-23.webp" alt="" width="1600" height="788" loading="lazy" aria-hidden="true">
     <p class="label">How I work</p>
     <h2 id="say-h">I <span class="q">build and</span> <span class="loop">run<svg aria-hidden="true"><path d=""/></svg></span> <span class="q">things</span> myself, <span class="q">from</span> data model <span class="q">to</span> server</h2>
   </section>
   <section class="work" aria-labelledby="work-h">
-    <div class="stage"><img class="ground" src="assets/ground-lineA-23.webp" alt="" width="1600" height="788" loading="lazy" aria-hidden="true"><div class="track"><svg class="rail" aria-hidden="true"><path/></svg>
+    <div class="stage"><img class="ground" src="assets/ground-lineA-23.webp" alt="" width="1600" height="788" loading="lazy" aria-hidden="true"><div class="track">
       <div class="intro">
         <img class="tgt" src="assets/mark-target.webp" alt="" width="62" height="63" aria-hidden="true">
         <p class="cap" style="position:static">Selected work</p>
@@ -386,53 +382,6 @@ __LIBS__
     loopPath.style.strokeDashoffset = still ? 0 : L + sw;
   };
   makeLoop();
-
-  // joint 3: the line the projects ride on, in the track's own pixels: from the target mark, under the intro, then under
-  // each big screen and on to the next, behind everything; on phone the same route down the column
-  const track = document.querySelector(".track"), rail = track.querySelector(".rail"), railPath = rail.querySelector("path");
-  let railPts = [], railLen = 0, railAxis = 0;
-  const makeRail = () => {
-    const tr = track.getBoundingClientRect(), box = (el) => { const r = el.getBoundingClientRect(); return { l: r.left - tr.left, t: r.top - tr.top, r: r.right - tr.left, b: r.bottom - tr.top }; };
-    rail.setAttribute("width", track.scrollWidth); rail.setAttribute("height", track.scrollHeight);
-    const flat = phone(), tg = box(track.querySelector(".tgt")), ip = box(track.querySelector(".intro > p:last-child"));
-    const pts = [];
-    const bigs = [...document.querySelectorAll(".proj .big")].map(box);
-    if (flat) {
-      // phone: the column has no empty sides, so the line keeps to the screen's edges and crosses only under the screens:
-      // under the first left to right, down the right edge, under the next right to left, down the left edge, and so on
-      const xs = [8, track.clientWidth - 8];
-      pts.push([xs[0], tg.t - 60], [xs[0], tg.b + 24]); // it comes straight down the left edge, past the target mark
-      bigs.forEach((bb, i) => { const from = xs[i % 2], to = xs[(i + 1) % 2], y = bb.b + 18;
-        pts.push([from, y - 10], [(from + to) / 2, y + (i % 2 ? -4 : 4)], [to, y - 10]); });
-    } else {
-      pts.push([(tg.l + tg.r) / 2, (tg.t + tg.b) / 2], [ip.l + 10, ip.b + 34]); // laptop: it starts in the target mark
-      bigs.forEach((bb, i) => { const y = bb.b + 30, dip = i % 2 ? -1 : 1; // a hand's wobble: each underline leans its own way
-        pts.push([bb.l - 40, y + dip * 10], [bb.l + (bb.r - bb.l) * 0.5, y - dip * 6], [bb.r + 60, y + dip * 14]); });
-    }
-    // a smooth line through the points (Catmull-Rom as curves)
-    let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
-      d += ` C${c1.map((v) => v.toFixed(1))} ${c2.map((v) => v.toFixed(1))} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
-    }
-    railPath.setAttribute("d", d);
-    railLen = railPath.getTotalLength(); railAxis = flat ? 1 : 0;
-    // each point of the line gets the place on the track where the pen draws it: on laptop its x; on phone the way down,
-    // with the sideways runs under the screens taking their share, so an underline draws as you scroll instead of at once
-    railPts = []; let walked = 0, prev = null;
-    for (let l = 0; l <= railLen; l += 6) { const q = railPath.getPointAtLength(l);
-      if (prev) walked += Math.abs(q.y - prev.y) + 0.6 * Math.abs(q.x - prev.x);
-      railPts.push([l, flat ? walked : q.x, q.y]); prev = q; }
-    if (flat) { const y0 = railPts[0][2], y1 = railPts.at(-1)[2]; railPts.forEach((q) => (q[1] = y0 + (q[1] / (walked || 1)) * (y1 - y0))); }
-    const ctm = svg.getScreenCTM();
-    railPath.style.strokeWidth = ctm && !still ? LINE * ctm.a : 8;
-    railPath.style.strokeDasharray = `${railLen} ${railLen * 2}`;
-    railPath.style.strokeDashoffset = still ? 0 : railLen;
-  };
-  // how much of the line is drawn when the pen sits at this point of the track (along x on laptop, y on phone)
-  const railTo = (target) => { let best = 0; for (const q of railPts) { if (q[1] > target) break; best = q[0]; } return best; };
-  makeRail();
 
   if (still || !window.gsap) return; // the plain page: first screen, signature already written
 
@@ -706,47 +655,23 @@ __LIBS__
   };
   // joint 2 (Tom 11-20: one blue line that never disappears): the underline's end runs on, in one curve over the page, to
   // where the loop round RUN starts; the loop then draws on from there while the line behind it is taken up into it
-  // a point and its heading on screen, from a path in its own svg: at length l, the heading taken towards l + dl
-  const onScreen = (path, l, dl, m = path.getScreenCTM()) => { // the signature's strokes live in a mask: their svg's numbers are used
-    const a = path.getPointAtLength(l), b = path.getPointAtLength(l + dl);
-    return [m.a * a.x + m.e, m.d * a.y + m.f, m.a * (b.x - a.x) * Math.sign(dl), m.d * (b.y - a.y) * Math.sign(dl)]; };
-  // one curve over the page from where one line ends (from) to where the next begins (to), drawn front first, then taken up
-  const bridgeLine = (el, from, to) => {
-    const st = { front: 0, tail: 0 };
-    st.draw = () => {
-      if (st.front <= 0.001 || st.tail >= 0.999) { el.style.opacity = 0; return; }
-      const [ax, ay, tx, ty] = from(), [bx, by, ux, uy] = to();
-      const tl = Math.hypot(tx, ty) || 1, ul = Math.hypot(ux, uy) || 1, reach = Math.hypot(bx - ax, by - ay) * 0.5;
-      el.setAttribute("d", `M${ax},${ay} C${ax + (tx / tl) * reach},${ay + (ty / tl) * reach} ${bx - (ux / ul) * reach},${by - (uy / ul) * reach} ${bx},${by}`);
-      const L = el.getTotalLength(), front = st.front * L, tail = st.tail * L;
-      el.style.strokeWidth = LINE * svg.getScreenCTM().a;
-      el.style.strokeDasharray = `${Math.max(0, front - tail)} ${L * 3}`;
-      el.style.strokeDashoffset = -tail;
-      el.style.opacity = front - tail > 0.5 ? 1 : 0;
-    };
-    return st;
+  const j2 = document.querySelector(".lead.j2 path"), last = strokes[strokes.length - 1];
+  const bridge = { front: 0, tail: 0 };
+  const drawBridge = () => {
+    if (bridge.front <= 0.001 || bridge.tail >= 0.999) { j2.style.opacity = 0; return; }
+    const m = svg.getScreenCTM(), lm = loopSvg.getScreenCTM(), L0 = last.getTotalLength();
+    const a = last.getPointAtLength(L0), a0 = last.getPointAtLength(L0 - 8), b = loopPath.getPointAtLength(0), b1 = loopPath.getPointAtLength(8);
+    const ax = m.a * a.x + m.e, ay = m.d * a.y + m.f, bx = lm.a * b.x + lm.e, by = lm.d * b.y + lm.f;
+    const tx = m.a * (a.x - a0.x), ty = m.d * (a.y - a0.y), ux = lm.a * (b1.x - b.x), uy = lm.d * (b1.y - b.y);
+    const tl = Math.hypot(tx, ty) || 1, ul = Math.hypot(ux, uy) || 1, reach = Math.hypot(bx - ax, by - ay) * 0.5;
+    j2.setAttribute("d", `M${ax},${ay} C${ax + (tx / tl) * reach},${ay + (ty / tl) * reach} ${bx - (ux / ul) * reach},${by - (uy / ul) * reach} ${bx},${by}`);
+    const L = j2.getTotalLength(), front = bridge.front * L, tail = bridge.tail * L;
+    j2.style.strokeWidth = LINE * m.a;
+    j2.style.strokeDasharray = `${Math.max(0, front - tail)} ${L * 3}`;
+    j2.style.strokeDashoffset = -tail;
+    j2.style.opacity = front - tail > 0.5 ? 1 : 0;
   };
-  const last = strokes[strokes.length - 1];
-  const bridge = bridgeLine(document.querySelector(".lead.j2:not(.j3) path"), () => { const L = last.getTotalLength(), [x, y, tx, ty] = onScreen(last, L - 8, 8, svg.getScreenCTM()); return [x + tx, y + ty, tx, ty]; }, () => onScreen(loopPath, 0, 8));
-  const drawBridge = bridge.draw;
-  // joint 3: from the loop's end round RUN down to the target mark, where the projects' line starts
-  const bridge3 = bridgeLine(document.querySelector(".lead.j3 path"), () => { const L = loopPath.getTotalLength(), [x, y, tx, ty] = onScreen(loopPath, L - 8, 8); return [x + tx, y + ty, tx, ty]; }, () => onScreen(railPath, 0, 8));
-  const pen = { reveal: 0 }; // 0..1: the projects' line grows from its start to the pen while the bridge arrives
-  const drawRail = () => {
-    const tr = track.getBoundingClientRect(), target = railAxis ? innerHeight * 0.72 - tr.top : innerWidth * 0.72 - tr.left;
-    railPath.style.strokeDashoffset = railLen - railTo(target) * pen.reveal;
-  };
-  let j2Tl, j3Tl;
-  const buildJoint3 = () => {
-    j3Tl?.scrollTrigger?.kill(); j3Tl?.kill(); gsap.ticker.remove(drawRail);
-    makeRail(); Object.assign(bridge3, { front: 0, tail: 0 }); pen.reveal = 0;
-    j3Tl = gsap.timeline({ defaults: { ease: "none" }, onUpdate: bridge3.draw,
-      scrollTrigger: { trigger: ".work", start: "top 90%", end: "top top", scrub: true } });
-    j3Tl.to(bridge3, { front: 1, duration: 0.55, ease: "power1.in" }, 0)
-      .to(pen, { reveal: 1, duration: 0.45, ease: "power1.out" }, 0.55)
-      .to(bridge3, { tail: 1, duration: 0.45, ease: "power1.inOut" }, 0.55);
-    gsap.ticker.add(drawRail); // the pen follows the track every frame, whichever way the page got there
-  };
+  let j2Tl;
   const buildJoint2 = () => {
     j2Tl?.scrollTrigger?.kill(); j2Tl?.kill();
     Object.assign(bridge, { front: 0, tail: 0 });
@@ -758,7 +683,7 @@ __LIBS__
       .to(bridge, { tail: 1, duration: 0.4, ease: "power1.inOut" }, 0.5);
   };
   // moment 4: the track. Its section is as tall as the sideways distance, the stage stays while the track moves
-  const work = document.querySelector(".work");
+  const work = document.querySelector(".work"), track = document.querySelector(".track");
   // corner marks round each big screen: four hand-drawn brackets, placed from the screen's own box (each project has its own layout)
   const CORNERS = [["tl", 0, 0], ["tr", 1, 0], ["bl", 0, 1], ["br", 1, 1]];
   document.querySelectorAll(".proj .big").forEach((big) => CORNERS.forEach(([k, cx, cy]) => {
@@ -802,7 +727,7 @@ __LIBS__
     const tall = document.querySelector(".tall img");
     extras.push(gsap.to(tall, { yPercent: -70, ease: "none", scrollTrigger: { trigger: tall.parentElement, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } }));
   };
-  const ready = () => { build(); buildSay(); buildJoint2(); buildWork(); buildJoint3(); ScrollTrigger.refresh(); };
+  const ready = () => { build(); buildSay(); buildJoint2(); buildWork(); ScrollTrigger.refresh(); };
   photo.complete ? ready() : photo.addEventListener("load", ready, { once: true });
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(ready, 200); });
 })();
