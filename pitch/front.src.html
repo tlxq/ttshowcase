@@ -97,6 +97,9 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 .say .loop { position: relative; display: inline-block; }
 .say .loop svg { position: absolute; left: -13%; top: -20%; width: 126%; height: 140%; overflow: visible; pointer-events: none; }
 .say .loop path { fill: none; stroke: var(--front-spray); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
+/* picture round for moment 3 (pitch only, ?m3=<still>): the blue sits behind RUN instead of the loop, the word cream on top */
+.say .loop .bloom { position: absolute; left: 50%; top: 52%; width: 300%; max-width: none; height: auto; translate: -50% -50%; opacity: .35; z-index: -1; pointer-events: none; }
+.say h2 { isolation: isolate; }
 .next { padding: 0 0 20svh; text-align: center; font-size: 13px; color: var(--look-quiet); }
 
 /* moment 4: the work. The ground goes from warm dark to black; one pinned track moves sideways while you scroll down.
@@ -375,6 +378,14 @@ __LIBS__
     loopPath.style.strokeDashoffset = still ? 0 : L + sw;
   };
   makeLoop();
+  // picture round (pitch only): ?m3=ink-7 shows that still behind RUN instead of the loop
+  const m3 = new URLSearchParams(location.search).get("m3");
+  if (m3 && /^[a-z]+-\d+$/.test(m3)) {
+    loopSvg.style.display = "none";
+    const b = document.createElement("img"); b.className = "bloom"; b.src = `assets/m3/${m3}.webp`; b.alt = ""; b.setAttribute("aria-hidden", "true");
+    b.style.width = { ink: "230%", spray: "210%", splat: "200%", swipe: "150%" }[m3.split("-")[0]] || "";
+    loopSvg.parentElement.prepend(b);
+  }
 
   if (still || !window.gsap) return; // the plain page: first screen, signature already written
 
