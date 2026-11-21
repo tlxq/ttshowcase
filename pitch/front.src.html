@@ -140,15 +140,10 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .go a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
 .go a:hover { color: var(--front-spray); }
 
-/* moment 5: the end. The last wash pulls together into one blue dot, the full stop of WRITE TO ME (Direction row 5);
-   under it the email, the form (plain lines, no boxes) and the ways on */
+/* moment 5: the end. WRITE TO ME, then the email, the ways on and the form (plain lines, no boxes). The last wash
+   flies off as specks that paint the form's lines (Tom picked it 11-21) */
 .end { position: relative; padding: 26svh max(var(--gutter), env(safe-area-inset-right)) 18svh max(var(--gutter), env(safe-area-inset-left)); }
 .end h2 { margin: 0 0 7svh; font: 700 min(9.6vw, 17svh)/.9 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
-/* the smoke paints the form (Tom picked B 11-21): with motion and WebGL 2 the lines are blue specks, so the drawn ones step aside */
-.end.specked .form input, .end.specked .form textarea { border-bottom-color: transparent; }
-.end.specked .form button { border-color: transparent; }
-.end.specked .addr { text-decoration-color: transparent; }
-.end.specked .form input:focus, .end.specked .form textarea:focus { border-bottom-color: var(--front-spray); }
 .specks { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
 .end .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6vw; align-items: start; max-width: 1180px; }
 .end .say-mail { display: grid; gap: 26px; }
@@ -156,10 +151,11 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .end .addr:hover, .end .ways a:hover { color: var(--front-spray); }
 .end .ways { display: flex; flex-wrap: wrap; gap: 8px 26px; font-size: 15px; font-weight: 600; }
 .end .ways a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
-.form { display: grid; gap: 10px; }
+.form { display: grid; gap: 26px; }
 .form label { display: grid; gap: 2px; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
-.form input, .form textarea { font: 400 17px/1.4 var(--f-text); color: var(--look-cream); background: transparent; border: 0; border-bottom: 1px solid var(--look-rule); border-radius: 0; padding: 10px 0; min-height: 48px; box-sizing: border-box; width: 100%; resize: vertical; }
-.form input:focus, .form textarea:focus { outline: none; border-bottom-color: var(--front-spray); }
+.form input, .form textarea { font: 400 17px/1.4 var(--f-text); color: var(--look-cream); background: transparent; border: 0; border-bottom: 1px solid var(--look-rule); border-radius: 0; padding: 4px 0 10px; min-height: 44px; box-sizing: border-box; width: 100%; resize: vertical; }
+.form input:focus-visible, .form textarea:focus-visible, .form input:focus, .form textarea:focus { outline: none; border-bottom-color: var(--look-cream); box-shadow: 0 1px 0 var(--look-cream); }
+.form label:focus-within { color: var(--look-cream); }
 .form .trap { position: absolute; left: -9999px; }
 .form button { justify-self: start; margin-top: 10px; font: 600 15px/1 var(--f-text); color: var(--look-cream); background: transparent; border: 1px solid var(--front-spray); border-radius: 2px; min-height: 48px; padding: 0 28px; cursor: pointer; }
 .form button:hover { background: var(--front-spray); color: var(--look-dark); }
@@ -168,6 +164,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
   .end { padding-top: 18svh; }
   .end h2 { font-size: 15vw; }
   .end .cols { grid-template-columns: 1fr; gap: 56px; }
+  .form { gap: 22px; }
   .end .addr { font-size: 26px; }
 }
 
@@ -221,9 +218,9 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 /* without motion: the first screen as it is, then the signature written under it */
 @media (prefers-reduced-motion: reduce) {
   .hero { height: auto; }
-  .stage { position: relative; height: 100svh; }
+  .hero .stage { position: relative; height: 100svh; }
   .sig, .lead { display: none; } /* they draw on the pane, which only exists with motion */
-  .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 22svh; background: linear-gradient(transparent, var(--look-dark-soft)); pointer-events: none; }
+  .hero .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 22svh; background: linear-gradient(transparent, var(--look-dark-soft)); pointer-events: none; }
 }
 </style>
 </head>
@@ -547,9 +544,11 @@ __LIBS__
     const img = new Image(); img.src = "assets/wash.webp";
     img.decode().then(() => {
       const c2 = document.createElement("canvas"); c2.width = 320; c2.height = 160; const x2 = c2.getContext("2d"); x2.drawImage(img, 0, 0, 320, 160);
+      const A0 = innerWidth / innerHeight, fx0 = Math.min(A0 / 2, 1), fy0 = Math.min(2 / A0, 1); // the part of the still the screen shows
       const px = x2.getImageData(0, 0, 320, 160).data, L = lines(), lens = L.map(([a, b, c, d]) => Math.hypot(c - a, d - b)), tot = lens.reduce((x, y) => x + y, 0);
       for (let i = 0; i < N; i++) {
-        let u, v; do { u = Math.random(); v = Math.random(); } while (px[((v * 160) | 0) * 1280 + ((u * 320) | 0) * 4 + 2] / 255 < Math.random() * 1.2); // denser paint, more specks
+        let u, v, b; do { u = 0.5 + (Math.random() - 0.5) * fx0; v = 0.5 + (Math.random() - 0.5) * fy0; b = px[((v * 160) | 0) * 1280 + ((u * 320) | 0) * 4 + 2] / 255; }
+        while (b < 0.18 || b ** 1.6 < Math.random()); // from the paint you can see on screen, the dense parts most
         src[i * 2] = u; src[i * 2 + 1] = v;
         let r = Math.random() * tot, k = 0; while (r > lens[k] && k < L.length - 1) r -= lens[k++];
         seg[i] = k; along[i] = r / lens[k]; wob[i * 2] = Math.random() - 0.5; wob[i * 2 + 1] = Math.random() - 0.5;
@@ -577,8 +576,7 @@ __LIBS__
       if (cv.width !== Math.round(innerWidth * k) || cv.height !== Math.round(innerHeight * k)) { cv.width = Math.round(innerWidth * k); cv.height = Math.round(innerHeight * k); }
       g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
       const L = lines(), p = st.p;
-      if (p <= 0 || L.length < 2) { end.classList.remove("specked"); return; } // before the smoke flies, and after Send: the drawn lines
-      end.classList.add("specked");
+      if (p <= 0 || L.length < 2) return; // before the smoke flies, and after Send: only the drawn lines
       const A = innerWidth / innerHeight, fx = Math.min(A / 2, 1), fy = Math.min(2 / A, 1), sw = Math.min(innerWidth, 900) * 0.14;
       for (let i = 0; i < N; i++) {
         const t = ease(Math.min(1, Math.max(0, (p - del[i]) / 0.55))), l = L[Math.min(seg[i], L.length - 1)], f = Math.sin(t * Math.PI);
@@ -925,7 +923,7 @@ __LIBS__
   let endTl;
   const buildEnd = () => {
     endTl?.scrollTrigger?.kill(); endTl?.kill();
-    endTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".end h2", start: "top bottom", end: "top 5%", scrub: true } });
+    endTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".end h2", start: "top bottom", end: () => Math.min(ScrollTrigger.maxScroll(window), document.querySelector(".end .form").getBoundingClientRect().top + scrollY - innerHeight * 0.35), scrub: true } });
     endTl.fromTo(endPull, { p: 0 }, { p: 1, duration: 1, onUpdate: () => { specks.p = endPull.p; } }, 0);
   };
   const ready = () => { build(); buildSay(); buildWork(); buildEnd(); ScrollTrigger.refresh(); };
