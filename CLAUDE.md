@@ -2,7 +2,7 @@
 
 Tom's portfolio, the `tlxq` site, live at ttdevs.com since 2026-11-15.
 
-Read `brief.md` for what it is and `docs/design.md` for how it looks and moves.
+Read `brief.md` for what it is and `docs/design.md` for how it looks and moves. The new front is built against its Direction page (private; its link is in `~/.claude/plans/design-workflow.md`; Tom approved 2026-11-21): what the blue becomes at each moment, and the recruiter gate every idea passes first.
 
 ## Rules
 - One branch and one PR per change. GitHub runs `mise run check` on every PR (Tom 11-17); the GPU walks stay on the desk. Before merge: the PR's check is green and `tools/walk/run.sh` passes on the desk; the PR says so. Squash merge.
@@ -17,6 +17,7 @@ Read `brief.md` for what it is and `docs/design.md` for how it looks and moves.
 
 ## Working on feel
 - One moment at a time: name the cause, change one thing, Tom judges. No rounds of options.
+- Before anything is made, the idea passes the Direction page's recruiter gate. The design reviewer judges every build against that page before Tom sees it.
 - A visual step ends when Tom says it feels right on laptop and phone.
 - Browser checks run on the desk's graphics card: they prove look and frame speed on a laptop. Touch and phone speed are proven on the S23.
 
