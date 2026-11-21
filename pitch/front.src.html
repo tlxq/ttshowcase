@@ -999,7 +999,8 @@ __LIBS__
   };
   // moment 4: the track. Its section is as tall as the sideways distance, the stage stays while the track moves
   const work = document.querySelector(".work"), track = document.querySelector(".track");
-  const countN = document.querySelector(".count .n"), setCount = (k) => { countN.textContent = Math.round(1024 * k).toLocaleString("en-US"); };
+  const countN = document.querySelector(".count .n"), countTo = +document.querySelector(".count .sr").textContent.replace(/\D/g, ""), // the number is written once more in the page: the Result line
+    setCount = (k) => { countN.textContent = Math.round(countTo * k).toLocaleString("en-US"); };
   const countBig = document.querySelector(".proj.b .big"); // 0 while the site is off to the right, 1,024 once its left edge reaches 35 % of the screen
   const countFromSite = () => setCount(Math.min(1, Math.max(0, (innerWidth - countBig.getBoundingClientRect().left) / (innerWidth * 0.65))));
   // corner marks round each big screen: four hand-drawn brackets, placed from the screen's own box (each project has its own layout)

@@ -160,8 +160,7 @@ let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
   .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
 if (/__[A-Z_]{3,}__/.test(front))
   throw new Error("pitch/front.src.html asks for a part the build doesn't fill");
-front = withScriptRule(front);
-writeFileSync(join(out, "front.html"), front);
+writeFileSync(join(out, "front.html"), withScriptRule(front)); // the site copy below is changed first, then hashed
 // its product screens: /projects/ on the site (public/projects); the same path in the local pitch folder
 rmSync(join(out, "projects"), { force: true, recursive: true });
 symlinkSync(join(root, "public/projects"), join(out, "projects"));
@@ -189,9 +188,16 @@ if (process.argv.includes("--site")) {
   for (const name of readdirSync(assets))
     copyFileSync(realpathSync(join(assets, name)), join(siteAssets, name));
   mkdirSync(join(site, "next"), { recursive: true });
+  // the front is /next/front: its relative paths would point under /next/. Paths are changed BEFORE the script rule
+  // hashes the page: a change after it would no longer match the hash, and the browser would block the page's scripts
   writeFileSync(
     join(site, "next/front.html"),
-    front.replace(/(["'`])assets\//g, "$1/next/assets/"),
+    withScriptRule(
+      front
+        .replace(/(["'`])assets\//g, "$1/next/assets/")
+        .replace(/(["'`])projects\//g, "$1/projects/")
+        .replace(/(["'`])paint\.html/g, "$1/next"),
+    ),
   );
   console.log("Put the pitch into out/next.html (/next)");
 }
