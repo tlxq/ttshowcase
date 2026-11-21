@@ -28,7 +28,7 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth { scroll-behavior: auto !important; }
 body { margin: 0; color: var(--look-cream); font: 400 16px/1.5 var(--f-text); -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
-a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the text's own ink: the spray is too faint on cream for a focus ring */
+a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the text's own ink: the spray is too faint on cream for a focus ring */
 
 /* header: one ink that flips with whatever is under it */
 .bar { position: fixed; inset: 0 0 auto; z-index: 20; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
@@ -113,7 +113,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
    (ink, spray, paper: three GPU stills in one file), strongest while its project is in the middle, fading into the next */
 .wash { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
 .work { position: relative; overflow-x: clip; }
-.work .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.work .stage { position: sticky; top: 0; height: 100svh; overflow: clip; } /* clip, not hidden: a hidden box can still be scrolled sideways by focus, and the track stayed shoved */
 .track { position: absolute; top: 0; left: 0; height: 100%; display: flex; will-change: transform; }
 .intro { flex: none; width: 46vw; padding: 0 0 0 max(var(--gutter), env(safe-area-inset-left)); display: grid; align-content: center; gap: 20px; }
 .intro h2 { margin: 0; font: 700 min(7.4vw, 15svh)/.92 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
@@ -384,7 +384,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <label>Email<input name="email" type="email" autocomplete="email" required maxlength="200" enterkeyhint="next"></label>
         <label>Message<textarea name="message" rows="3" required maxlength="4000"></textarea></label>
         <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
-        <p class="err" role="alert" hidden></p><button>Send</button>
+        <p class="err" id="mailErr" role="alert" hidden></p><button>Send</button>
       </form>
     </div>
   </section>
@@ -526,9 +526,11 @@ __LIBS__
     const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
     mail.addEventListener("submit", async (e) => { e.preventDefault(); btn.disabled = true; btn.textContent = "Sending\u2026"; err.hidden = true; let why;
       try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
-        if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.replaceChildren(sent); return; }
-        why = WHY[((await a.json().catch(() => ({}))).error) || ""] || "The mail service didn't answer."; } catch (_) { why = "The page couldn't reach the server."; }
-      err.textContent = "Couldn't send your message. " + why; err.hidden = false; btn.disabled = false; btn.textContent = "Try again"; }); }
+        if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.tabIndex = -1; sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.replaceChildren(sent); sent.focus(); return; } // focus moves to the answer: the button it was on is gone
+        const code = ((await a.json().catch(() => ({}))).error) || ""; why = WHY[code] || "The mail service didn't answer.";
+        if (WHY[code]) { const field = mail.elements[code]; field.setAttribute("aria-invalid", "true"); field.setAttribute("aria-describedby", err.id); } } catch (_) { why = "The page couldn't reach the server."; }
+      err.textContent = "Couldn't send your message. " + why; err.hidden = false; btn.disabled = false; btn.textContent = "Try again"; });
+    mail.addEventListener("input", (e) => { if (e.target.getAttribute("aria-invalid")) { e.target.removeAttribute("aria-invalid"); e.target.removeAttribute("aria-describedby"); } }); }
   const endPull = { p: 0 }; // moment 5: how far the last wash has become the form's lines (0 -> 1)
   const inkHand = { q: 0 }; // moment 3 -> 4: how far the ink behind RUN has become epaRadar's wash (0 -> 1)
   // moment 4: the washes. One fixed WebGL 2 layer; each project's weight comes from how near the middle of the screen it is
@@ -1053,6 +1055,15 @@ __LIBS__
     const tall = document.querySelector(".tall img");
     extras.push(gsap.to(tall, { yPercent: -70, ease: "none", scrollTrigger: { trigger: tall.parentElement, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } }));
   };
+  // keyboard: a focused link inside the track brings its project to the screen (the page scrolls the track, which is
+  // pinned; the stage itself can't scroll). One scroll pixel moves the track one pixel, so its place is its left edge
+  track.addEventListener("focusin", (e) => {
+    if (phone()) return;
+    const proj = e.target.closest(".proj, .intro"); if (!proj) return;
+    const x = proj.offsetLeft + e.target.getBoundingClientRect().left - proj.getBoundingClientRect().left; // the link's place on the track
+    const y = work.offsetTop + Math.max(0, Math.min(track.scrollWidth - innerWidth, x - innerWidth * 0.4));
+    lenis.scrollTo(y, { immediate: true });
+  });
   // moment 5: as WRITE TO ME comes up, the last wash flies off as specks that become the form's lines
   let endTl;
   const buildEnd = () => {
