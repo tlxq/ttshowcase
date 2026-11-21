@@ -87,6 +87,9 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 /* joint 1: the ring's front leaves the loop and runs to where the signature starts, in the stage's own pixels */
 .lead { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .lead path { fill: none; stroke: var(--front-spray); stroke-linecap: round; opacity: 0; }
+/* joint 2: the underline runs on, over the page, into the loop round RUN; the words stay on top of it */
+.lead.j2 { position: fixed; z-index: 1; }
+.say > :not(.ground) { z-index: 2; }
 
 /* moment 3: the statement. Lines brighten and rise with the scroll, two voices like his; a loop draws round one word */
 .say { position: relative; padding: 12svh max(var(--gutter), env(safe-area-inset-right)) 30svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
@@ -192,7 +195,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 @media (prefers-reduced-motion: reduce) {
   .hero { height: auto; }
   .stage { position: relative; height: 100svh; }
-  .sig, .lead { display: none; } /* they draw on the pane, which only exists with motion */
+  .sig, .lead, .lead.j2 { display: none; } /* they draw on the pane, which only exists with motion */
   .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 22svh; background: linear-gradient(transparent, var(--look-dark-soft)); pointer-events: none; }
 }
 </style>
@@ -226,6 +229,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
       <svg class="sig" aria-hidden="true"></svg>
     </div>
   </section>
+  <svg class="lead j2" aria-hidden="true"><path/></svg>
   <section class="say" aria-labelledby="say-h">
     <img class="ground" src="assets/ground-lineB-23.webp" alt="" width="1600" height="788" loading="lazy" aria-hidden="true">
     <p class="label">How I work</p>
@@ -302,6 +306,7 @@ __LIBS__
   const MASK = LINE * 1.6; // the reveal is wider than the ink, so only the dash's end decides what shows
   // a brush's width along one stroke (0 start .. 1 end): sets down quickly, runs full, lifts off in a longer taper
   const brush = (t) => 0.22 + 0.78 * Math.min(1, t / 0.12) ** 0.7 * Math.min(1, (1 - t) / 0.3) ** 0.8;
+  const runOn = (t) => 0.22 + 0.78 * Math.min(1, t / 0.12) ** 0.7; // the underline doesn't lift off: joint 2 runs on from its end
   // the stroke as one shape: a round dab at every step and a band between each two, all wound the same way so they add up.
   // One outline round the whole stroke folded over itself where the pen turns back (the m's humps): flat cuts (Tom 11-20)
   const inkOf = (path, width, profile) => {
@@ -332,7 +337,7 @@ __LIBS__
     p.setAttribute("stroke-dasharray", `${s.len} ${s.len + 2 * MASK}`);
     p.setAttribute("stroke-dashoffset", still ? 0 : s.len + MASK);
     m.appendChild(p); defs.appendChild(m);
-    ink.setAttribute("class", "ink"); ink.setAttribute("d", inkOf(p, LINE, brush)); ink.setAttribute("mask", `url(#${m.id})`);
+    ink.setAttribute("class", "ink"); ink.setAttribute("d", inkOf(p, LINE, i === SIGN.strokes.length - 1 ? runOn : brush)); ink.setAttribute("mask", `url(#${m.id})`);
     svg.appendChild(ink);
     return p;
   });
@@ -355,11 +360,13 @@ __LIBS__
   const makeLoop = () => {
     const { width: w, height: h } = loopSvg.getBoundingClientRect();
     loopSvg.setAttribute("viewBox", `0 0 ${w.toFixed(1)} ${h.toFixed(1)}`);
-    const sw = parseFloat(getComputedStyle(loopPath).strokeWidth) || 8;
+    const ctm = still ? null : svg.getScreenCTM(); // the same width on screen as the signature's line (one ink, Tom 11-20)
+    const sw = ctm ? LINE * ctm.a : parseFloat(getComputedStyle(loopPath).strokeWidth) || 8;
+    loopPath.style.strokeWidth = sw;
     const pts = [];
     for (let i = 0; i <= 64; i++) {
       // one and a bit turns round the word, the end overshooting past the start, like a quick pen
-      const a = -2.5 + (i / 64) * (Math.PI * 2 + 0.75);
+      const a = -0.35 + (i / 64) * (Math.PI * 2 + 0.75); // starts on the right, heading down: where the line from the signature comes in
       const rx = 0.47 - i * 0.0005, ry = 0.43 + i * 0.0007;
       pts.push([w * (0.5 + rx * Math.cos(a) + i * 0.0006), h * (0.52 + ry * Math.sin(a) - i * 0.0008)]);
     }
@@ -645,7 +652,35 @@ __LIBS__
     makeLoop();
     sayTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: h2, start: "top 92%", end: "bottom 45%", scrub: true } });
     lines.forEach((l, i) => sayTl.fromTo(l.els, { yPercent: 60, opacity: 0.22 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, i * 0.22));
-    sayTl.to(loopPath, { strokeDashoffset: 0, duration: 0.45, ease: "power1.inOut" }, 0.35);
+  };
+  // joint 2 (Tom 11-20: one blue line that never disappears): the underline's end runs on, in one curve over the page, to
+  // where the loop round RUN starts; the loop then draws on from there while the line behind it is taken up into it
+  const j2 = document.querySelector(".lead.j2 path"), last = strokes[strokes.length - 1];
+  const bridge = { front: 0, tail: 0 };
+  const drawBridge = () => {
+    if (bridge.front <= 0.001 || bridge.tail >= 0.999) { j2.style.opacity = 0; return; }
+    const m = svg.getScreenCTM(), lm = loopSvg.getScreenCTM(), L0 = last.getTotalLength();
+    const a = last.getPointAtLength(L0), a0 = last.getPointAtLength(L0 - 8), b = loopPath.getPointAtLength(0), b1 = loopPath.getPointAtLength(8);
+    const ax = m.a * a.x + m.e, ay = m.d * a.y + m.f, bx = lm.a * b.x + lm.e, by = lm.d * b.y + lm.f;
+    const tx = m.a * (a.x - a0.x), ty = m.d * (a.y - a0.y), ux = lm.a * (b1.x - b.x), uy = lm.d * (b1.y - b.y);
+    const tl = Math.hypot(tx, ty) || 1, ul = Math.hypot(ux, uy) || 1, reach = Math.hypot(bx - ax, by - ay) * 0.5;
+    j2.setAttribute("d", `M${ax},${ay} C${ax + (tx / tl) * reach},${ay + (ty / tl) * reach} ${bx - (ux / ul) * reach},${by - (uy / ul) * reach} ${bx},${by}`);
+    const L = j2.getTotalLength(), front = bridge.front * L, tail = bridge.tail * L;
+    j2.style.strokeWidth = LINE * m.a;
+    j2.style.strokeDasharray = `${Math.max(0, front - tail)} ${L * 3}`;
+    j2.style.strokeDashoffset = -tail;
+    j2.style.opacity = front - tail > 0.5 ? 1 : 0;
+  };
+  let j2Tl;
+  const buildJoint2 = () => {
+    j2Tl?.scrollTrigger?.kill(); j2Tl?.kill();
+    Object.assign(bridge, { front: 0, tail: 0 });
+    // from the moment the signature is written (the hero's end) until RUN sits a little above the middle
+    j2Tl = gsap.timeline({ defaults: { ease: "none" }, onUpdate: drawBridge,
+      scrollTrigger: { trigger: ".say", start: "top bottom", endTrigger: ".say .loop", end: "center 45%", scrub: true } });
+    j2Tl.to(bridge, { front: 1, duration: 0.5, ease: "power1.in" }, 0)
+      .to(loopPath, { strokeDashoffset: 0, duration: 0.45, ease: "power1.out" }, 0.5)
+      .to(bridge, { tail: 1, duration: 0.4, ease: "power1.inOut" }, 0.5);
   };
   // moment 4: the track. Its section is as tall as the sideways distance, the stage stays while the track moves
   const work = document.querySelector(".work"), track = document.querySelector(".track");
@@ -692,7 +727,7 @@ __LIBS__
     const tall = document.querySelector(".tall img");
     extras.push(gsap.to(tall, { yPercent: -70, ease: "none", scrollTrigger: { trigger: tall.parentElement, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } }));
   };
-  const ready = () => { build(); buildSay(); buildWork(); ScrollTrigger.refresh(); };
+  const ready = () => { build(); buildSay(); buildJoint2(); buildWork(); ScrollTrigger.refresh(); };
   photo.complete ? ready() : photo.addEventListener("load", ready, { once: true });
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(ready, 200); });
 })();
