@@ -144,7 +144,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
    flies off as specks that paint the form's lines (Tom picked it 11-21) */
 .end { position: relative; padding: 26svh max(var(--gutter), env(safe-area-inset-right)) 18svh max(var(--gutter), env(safe-area-inset-left)); }
 .end h2 { margin: 0 0 7svh; font: 700 min(9.6vw, 17svh)/.9 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
-/* small details (Tom 11-21: spray and drops stay, stamp and trail are gone; ?off=spray,drops turns one off) */
+/* small details (Tom 11-21: the spray stays; stamp and trail are gone, the edge drops became the washes' hand-over drops; ?off=spray turns it off) */
 .fx { position: fixed; inset: 0; z-index: 25; width: 100%; height: 100%; pointer-events: none; } /* 1: the puff of specks off a link */
 a, .form button { transition: text-decoration-color var(--toggle) var(--ease), color var(--toggle) var(--ease); }
 a:hover { text-decoration-color: var(--front-spray); }
@@ -155,10 +155,6 @@ a:hover { text-decoration-color: var(--front-spray); }
 h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 .mark.wait::after { clip-path: inset(0 100% 0 0); }
 .mark.on::after { clip-path: inset(0 0 0 0); transition: clip-path .7s cubic-bezier(.6, 0, .2, 1) .15s; }
-.drop { position: absolute; z-index: 1; width: 12px; height: 12px; pointer-events: none; user-select: none; opacity: 0; } /* 2: ink flicked off the brush between moments */
-.say > .drop { position: absolute; } /* the statement's children are set relative for the line sheets */
-.drop.fall { animation: fall .9s cubic-bezier(.55, 0, 1, .45) both; }
-@keyframes fall { 0% { opacity: 1; transform: translateY(-70svh) scale(.6, 1.6); } 82% { transform: translateY(0) scale(.7, 1.4); } 90% { transform: translateY(0) scale(1.35, .7); } 100% { opacity: 1; transform: none; } }
 .specks { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
 .end .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6vw; align-items: start; max-width: 1180px; }
 .end .say-mail { display: grid; gap: 26px; }
@@ -476,7 +472,7 @@ __LIBS__
   // moment 4: the washes. One fixed WebGL 2 layer; each project's weight comes from how near the middle of the screen it is
   // (sideways on the laptop track, up and down in the phone column), so the same code serves both. No WebGL 2: no washes.
   (() => {
-    const cv = document.querySelector(".wash"), work = document.querySelector(".work"), projs = [...document.querySelectorAll(".proj")];
+    const cv = document.querySelector(".wash"), work = document.querySelector(".work"), projs = [...document.querySelectorAll(".proj")], intro = document.querySelector(".intro");
     const g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
     if (!g) return cv.remove();
     const img = new Image(); img.src = "assets/wash.webp";
@@ -485,44 +481,61 @@ __LIBS__
     g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
       in vec2 aP; out vec2 vUv; void main() { vUv = vec2(aP.x * .5 + .5, .5 - aP.y * .5); gl_Position = vec4(aP, 0., 1.); }`));
     g.attachShader(pr, sh(g.FRAGMENT_SHADER, `#version 300 es
-      precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform vec3 uW, uS; uniform vec2 uF; uniform vec3 uC; uniform float uMax;
+      precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform vec3 uW, uS; uniform vec2 uF; uniform vec3 uC; uniform float uMax; uniform vec2 uL[3]; uniform float uA, uDrop, uEnd; uniform vec3 uO;
       float h(vec2 q) { vec3 p = fract(vec3(q.xyx) * .1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); } // no sin: the same corner gives the same value from every cell
       float n(vec2 q) { vec2 i = floor(q), f = fract(q); f = f * f * (3. - 2. * f);
         return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.), f.x), f.y); }
-      float wash(int i, float w, float s, vec2 at) {
+      // hand-over (award step 3): each wash starts as one drop of the blue that falls from the top edge onto its project,
+      // then spreads out from where it landed, densest paint first; scrolled back, it shrinks into that point again
+      float wash(int i, float w, float s, vec2 at, vec2 L) {
         vec2 uv = .5 + (at - .5) * uF + vec2(s, 0.);           // the still covers the screen and drifts with its project
         float t = texture(uT, uv)[i];
-        float k = n(uv * 5. + float(i) * 7.) * .6 + (1. - t) * .4; // it comes in by its densest paint first, ragged, never a flat fade
-        return t * smoothstep(k - .15, k + .15, w * 1.3 - .15);
+        float sp = clamp((w - .3) / .7, 0., 1.);                 // after the drop has landed
+        float d = length((at - L) * vec2(uA, 1.));
+        float k = d * .75 + n(uv * 5. + float(i) * 7.) * .35 + (1. - t) * .3; // near and dense first, ragged, never a flat fade
+        if ((i == 2 && uEnd > 0.) || uO[i] > .5) { k = n(uv * 5. + 14.) * .6 + (1. - t) * .4; return t * smoothstep(k - .15, k + .15, w * 1.3 - .15); } // on its way out (and as EDGE's flies off as specks) a wash thins out everywhere: only the incoming one drops
+        return t * smoothstep(k - .12, k + .12, sp * 2.2);
+      }
+      float drop(float w, vec2 L, vec2 at, float o) {                     // the falling drop: long while it falls, a short splat as it lands
+        float f = clamp(w / .3, 0., 1.), land = smoothstep(.85, 1., f);
+        if (w <= 0. || uDrop < .5 || o > .5) return 0.;
+        vec2 p = vec2(L.x, mix(-.04, L.y, f * f));
+        vec2 q = (at - p) * vec2(uA, 1.) / vec2(mix(.011, .03, land), mix(.034, .011, land));
+        return (1. - smoothstep(.6, 1., length(q))) * (1. - smoothstep(.3, .38, w));
       }
       void main() {
-        float a = max(max(wash(0, uW.x, uS.x, vUv), wash(1, uW.y, uS.y, vUv)), wash(2, uW.z, uS.z, vUv));
-        o = vec4(uC, 1.) * a * uMax;
+        float a = max(max(wash(0, uW.x, uS.x, vUv, uL[0]), wash(1, uW.y, uS.y, vUv, uL[1])), wash(2, uW.z, uS.z, vUv, uL[2]));
+        float dr = max(max(drop(uW.x, uL[0], vUv, uO.x), drop(uW.y, uL[1], vUv, uO.y)), drop(uW.z, uL[2], vUv, uO.z) * step(uEnd, 0.));
+        o = vec4(uC, 1.) * max(a * uMax, dr * .9);
       }`));
     g.linkProgram(pr); g.useProgram(pr);
     g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer()); g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
     const aP = g.getAttribLocation(pr, "aP"); g.enableVertexAttribArray(aP); g.vertexAttribPointer(aP, 2, g.FLOAT, false, 0, 0);
     const u = (k) => g.getUniformLocation(pr, k);
     const c = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim().match(/\w\w/g).map((x) => parseInt(x, 16) / 255);
-    g.uniform3f(u("uC"), ...c); g.uniform1f(u("uMax"), 0.16); // at its densest the blue lifts the black to about 15 %
+    g.uniform3f(u("uC"), ...c); g.uniform1f(u("uMax"), 0.16); g.uniform1f(u("uDrop"), still ? 0 : 1); // at its densest the blue lifts the black to about 15 %
     const size = () => { const k = phone() ? Math.min(devicePixelRatio, 2) : 0.5; cv.width = Math.round(innerWidth * k); cv.height = Math.round(innerHeight * k); // soft: half size is plenty
-      const A = innerWidth / innerHeight; g.uniform2f(u("uF"), Math.min(A / 2, 1), Math.min(2 / A, 1)); };
+      const A = innerWidth / innerHeight; g.uniform2f(u("uF"), Math.min(A / 2, 1), Math.min(2 / A, 1)); g.uniform1f(u("uA"), A); };
     let ready = false, on = false, last = "";
     const draw = () => {
       if (!ready) return;
-      const flat = phone(), W = [0, 0, 0], S = [0, 0, 0], wr = work.getBoundingClientRect();
+      const flat = phone(), W = [0, 0, 0], S = [0, 0, 0], L = [], O = [0, 0, 0], wr = work.getBoundingClientRect();
       const vis = Math.min(1, Math.max(0, (innerHeight - wr.top) / (innerHeight * 0.75)), Math.max(0, wr.bottom / (innerHeight * 0.75))); // only on the black
       projs.slice(0, 3).forEach((p, i) => { const r = p.getBoundingClientRect();
         const d = flat ? (r.top + r.height / 2 - innerHeight / 2) / Math.max(innerHeight, r.height) : (r.left + r.width / 2 - innerWidth / 2) / innerWidth;
-        W[i] = Math.max(0, 1 - Math.abs(d) * 1.2) * vis; S[i] = d * 0.18; });
+        W[i] = Math.max(0, 1 - Math.abs(d) * 1.2) * vis; S[i] = d * 0.18; O[i] = d < 0 ? 1 : 0; // past the middle: on its way out
+        // where its drop lands: in the dark gap before the project (the edge where the blue hands over), never on words or pictures
+        const pr = (i ? projs[i - 1] : intro).getBoundingClientRect(), cl = (v) => Math.min(0.92, Math.max(0.08, v));
+        L.push(flat ? 0.975 : cl((pr.right < r.left ? (pr.right + r.left) / 2 : r.left - 40) / innerWidth),
+          flat ? cl((pr.bottom < r.top ? (pr.bottom + r.top) / 2 : r.top - 30) / innerHeight) : 0.8); });
       const hold = Math.min(1, Math.max(0, 1 + wr.top / innerHeight)); // over the first screen of the work, epaRadar's own place takes over
       W[0] = Math.max(W[0], inkHand.q * hold); // the ink from RUN carries on as epaRadar's ground
       if (endPull.p > 0) { W[2] = 1 - endPull.p; S[2] = 0; } // EDGE's wash thins out as its paint flies off as specks
       W.push(endPull.p);
-      const key = W.concat(S).map((x) => x.toFixed(3)).join();
+      const key = W.concat(S, L, O).map((x) => x.toFixed(3)).join();
       if (key === last) return; last = key;
       g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
-      g.uniform3f(u("uW"), W[0], W[1], W[2]); g.uniform3f(u("uS"), ...S); g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
+      g.uniform3f(u("uW"), W[0], W[1], W[2]); g.uniform3f(u("uS"), ...S); g.uniform2fv(u("uL"), L); g.uniform1f(u("uEnd"), endPull.p); g.uniform3f(u("uO"), ...O); g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
     };
     const loop = () => { if (!on) return; draw(); requestAnimationFrame(loop); };
     const seen = new Set(); // runs while the work or the end is on screen
@@ -610,7 +623,7 @@ __LIBS__
     return st;
   })();
 
-  // small details (Tom 11-21: spray and drops stay; stamp and trail are gone). Each skips itself with reduced motion; ?off=… turns one off
+  // small details (Tom 11-21: the spray stays). Skips itself with reduced motion; ?off=… turns one off
   const OFF = new Set((new URLSearchParams(location.search).get("off") || "").split(","));
   const SPRAYC = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim();
   if (!still) {
@@ -633,16 +646,6 @@ __LIBS__
     // blue words: each swipe brushes on the first time its word is fully on screen
     { const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("on"); io.unobserve(e.target); } }), { threshold: 1 });
       document.querySelectorAll(".mark").forEach((el) => { el.classList.add("wait"); io.observe(el); }); }
-    // 2. between moments, two or three drops of ink flicked off the brush fall down the page's edge and land as dots
-    if (!OFF.has("drops")) {
-      const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("fall"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -30% 0px" });
-      [[".say", [[0.93, 0.02, "ink"], [0.955, 0.06, "spray"]]], [".work", [[0.035, 0.01, "spray"], [0.06, 0.035, "ink"], [0.045, 0.06, "ink"]]], [".end", [[0.955, 0.52, "ink"], [0.975, 0.57, "spray"]]]].forEach(([sel, ds]) => {
-        const host = document.querySelector(sel);
-        ds.forEach(([fx, fy, kind], i) => { const d = Object.assign(document.createElement("img"), { className: "drop", src: `assets/drop-${kind}.webp`, alt: "" });
-          d.setAttribute("aria-hidden", "true"); d.style.left = `${fx * 100}%`; d.style.top = `${fy * 100}%`; d.style.animationDelay = `${i * 0.18}s`;
-          const z = 0.7 + Math.random() * 0.6; d.style.width = d.style.height = `${12 * z}px`; host.appendChild(d); io.observe(d); });
-      });
-    }
   }
 
   if (still || !window.gsap) return; // the plain page: first screen, signature already written
