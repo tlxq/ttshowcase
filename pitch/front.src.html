@@ -357,9 +357,9 @@ __LIBS__
     const cv = document.querySelector(".say .bloom"), run = document.querySelector(".say .run"), say = document.querySelector(".say");
     const img = new Image(); img.src = "assets/ink-bloom.webp";
     const g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
-    const place = () => { // 1.7 x RUN's width, centred on RUN where it lands (layout boxes: the words' rise doesn't move it)
+    const place = () => { // 2.6 x RUN's width (Tom 11-21: bigger), at least 80 % of the screen, centred on RUN where it lands (layout boxes: the words' rise doesn't move it)
       const h2 = run.offsetParent, x = h2.offsetLeft + run.offsetLeft + run.offsetWidth / 2, y = h2.offsetTop + run.offsetTop + run.offsetHeight / 2;
-      const w = run.offsetWidth * 1.7, h = w * (img.naturalHeight / img.naturalWidth || 0.686);
+      const w = Math.max(run.offsetWidth * 2.6, innerWidth * 0.8), h = w * (img.naturalHeight / img.naturalWidth || 0.686);
       Object.assign(st.el.style, { width: `${w}px`, height: `${h}px`, left: `${x - w / 2}px`, top: `${y - h / 2}px` });
       if (st.el !== cv) return;
       const k = Math.min(devicePixelRatio, 2); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
@@ -404,6 +404,7 @@ __LIBS__
   })();
   addEventListener("resize", () => bloom.place()); document.fonts?.ready.then(() => bloom.place()); // Clash Display moves the words when it arrives
 
+  const inkHand = { q: 0 }; // moment 3 -> 4: how far the ink behind RUN has become epaRadar's wash (0 -> 1)
   // moment 4: the washes. One fixed WebGL 2 layer; each project's weight comes from how near the middle of the screen it is
   // (sideways on the laptop track, up and down in the phone column), so the same code serves both. No WebGL 2: no washes.
   (() => {
@@ -446,6 +447,7 @@ __LIBS__
       projs.slice(0, 3).forEach((p, i) => { const r = p.getBoundingClientRect();
         const d = flat ? (r.top + r.height / 2 - innerHeight / 2) / Math.max(innerHeight, r.height) : (r.left + r.width / 2 - innerWidth / 2) / innerWidth;
         W[i] = Math.max(0, 1 - Math.abs(d) * 1.2) * vis; S[i] = d * 0.18; });
+      W[0] = Math.max(W[0], inkHand.q); // the ink from RUN carries on as epaRadar's ground
       const key = W.concat(S).map((x) => x.toFixed(3)).join();
       if (key === last) return; last = key;
       g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
@@ -721,9 +723,9 @@ __LIBS__
       parts.forEach((s, i) => { const w = document.createElement("span"); w.className = "w"; w.textContent = s; node.appendChild(w); if (i < parts.length - 1) node.appendChild(document.createTextNode(" ")); });
     }
   }
-  let sayTl;
+  let sayTl, handTl;
   const buildSay = () => {
-    sayTl?.scrollTrigger?.kill(); sayTl?.kill();
+    sayTl?.scrollTrigger?.kill(); sayTl?.kill(); handTl?.scrollTrigger?.kill(); handTl?.kill();
     const ws = [...h2.querySelectorAll(".w, .run")];
     gsap.set(ws, { clearProps: "transform,opacity" });
     const lines = [];
@@ -732,6 +734,19 @@ __LIBS__
     sayTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: h2, start: "top 92%", end: "bottom 45%", scrub: true } });
     lines.forEach((l, i) => sayTl.fromTo(l.els, { yPercent: 60, opacity: 0.22 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, i * 0.22));
     sayTl.fromTo(bloom, { p: 0 }, { p: 1, duration: 0.6, ease: "power1.out", onUpdate: bloom.draw }, 0.3); // RUN's line arrives, then the ink opens
+    // then the ink drifts down to the screen's middle while the words leave, keeps spreading, and becomes epaRadar's ground: the wash comes in
+    // under it as it thins out (Tom 11-21: "ink grows into it"). 
+    const el = bloom.el;
+    gsap.set(el, { clearProps: "transform,opacity" });
+    handTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: h2, start: "bottom 45%", endTrigger: work, end: "top top", scrub: true, invalidateOnRefresh: true } });
+    const toMiddle = () => { // keep pace with the scroll, plus the way from where the ink sits at the start to the screen's middle
+      const st = handTl.scrollTrigger, say = el.parentElement, mid = say.getBoundingClientRect().top + scrollY + el.offsetTop + el.offsetHeight / 2;
+      return st.end - st.start + (st.start + innerHeight / 2 - mid);
+    };
+    handTl.fromTo(el, { y: 0 }, { y: toMiddle, duration: 1, ease: "power1.inOut" }, 0)
+      .fromTo(el, { scale: 1 }, { scale: 2.2, duration: 1, ease: "power1.in" }, 0)
+      .fromTo(el, { opacity: 0.35 }, { opacity: 0, duration: 0.5 }, 0.5)
+      .fromTo(inkHand, { q: 0 }, { q: 1, duration: 0.6, ease: "power1.inOut" }, 0.4);
   };
   // moment 4: the track. Its section is as tall as the sideways distance, the stage stays while the track moves
   const work = document.querySelector(".work"), track = document.querySelector(".track");
