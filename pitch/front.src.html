@@ -97,7 +97,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 .say .run { display: inline-block; }
 /* the ink (Tom picked 11-21): one GPU still of ink in water, tinted blue, opened by a small shader as the words arrive;
    it sits behind the whole statement (every rising word is its own layer), placed from where RUN lands */
-section.say > canvas.bloom { position: absolute; opacity: .35; pointer-events: none; }
+section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .next { padding: 0 0 20svh; text-align: center; font-size: 13px; color: var(--look-quiet); }
 
 /* moment 4: the work. The ground goes from warm dark to black; one pinned track moves sideways while you scroll down.
@@ -355,15 +355,19 @@ __LIBS__
     const cv = document.querySelector(".say .bloom"), run = document.querySelector(".say .run"), say = document.querySelector(".say");
     const img = new Image(); img.src = "assets/ink-bloom.webp";
     const g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
-    const st = { p: still ? 1 : 0, draw: () => {} };
     const place = () => { // 1.7 x RUN's width, centred on RUN where it lands (layout boxes: the words' rise doesn't move it)
       const h2 = run.offsetParent, x = h2.offsetLeft + run.offsetLeft + run.offsetWidth / 2, y = h2.offsetTop + run.offsetTop + run.offsetHeight / 2;
       const w = run.offsetWidth * 1.7, h = w * (img.naturalHeight / img.naturalWidth || 0.686);
-      Object.assign(cv.style, { width: `${w}px`, height: `${h}px`, left: `${x - w / 2}px`, top: `${y - h / 2}px` });
+      Object.assign(st.el.style, { width: `${w}px`, height: `${h}px`, left: `${x - w / 2}px`, top: `${y - h / 2}px` });
+      if (st.el !== cv) return;
       const k = Math.min(devicePixelRatio, 2); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
       st.draw();
     };
-    if (!g) { cv.replaceWith(Object.assign(img, { className: "bloom", alt: "" })); return { p: 1, draw() {}, place() {} }; } // no WebGL 2: the finished bloom
+    const st = { p: still ? 1 : 0, draw: () => {}, el: cv, place };
+    if (!g) { // no WebGL 2: the finished bloom as a plain picture, in the same place and strength
+      st.p = 1; st.el = Object.assign(img, { className: "bloom", alt: "" }); img.setAttribute("aria-hidden", "true"); cv.replaceWith(img);
+      img.decode().then(place, () => {}); return st;
+    }
     const sh = (type, src) => { const x = g.createShader(type); g.shaderSource(x, src); g.compileShader(x); return x; };
     const pr = g.createProgram();
     g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
@@ -394,7 +398,6 @@ __LIBS__
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
       ready = true; st.place();
     }).catch(() => {});
-    st.place = place;
     return st;
   })();
   addEventListener("resize", () => bloom.place()); document.fonts?.ready.then(() => bloom.place()); // Clash Display moves the words when it arrives
