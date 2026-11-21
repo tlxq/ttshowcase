@@ -88,18 +88,16 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 .lead { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .lead path { fill: none; stroke: var(--front-spray); stroke-linecap: round; opacity: 0; }
 
-/* moment 3: the statement. Lines brighten and rise with the scroll, two voices like his; a loop draws round one word */
+/* moment 3: the statement. Lines brighten and rise with the scroll, two voices like his; ink blooms behind one word */
 .say { position: relative; padding: 12svh max(var(--gutter), env(safe-area-inset-right)) 30svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
 .say .label { margin: 0 0 32px; font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
 .say h2 { margin: 0 auto; max-width: 14ch; font: 700 min(7.4vw, 120px)/1 var(--f-big); letter-spacing: -.015em; text-transform: uppercase; color: var(--look-cream); text-wrap: balance; }
 .say h2 .q { font: 400 .9em/1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); } /* the second voice: another face, same ink, like his */
 .say .w { display: inline-block; }
-.say .loop { position: relative; display: inline-block; }
-.say .loop svg { position: absolute; left: -13%; top: -20%; width: 126%; height: 140%; overflow: visible; pointer-events: none; }
-.say .loop path { fill: none; stroke: var(--front-spray); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; }
-/* picture round for moment 3 (pitch only, ?m3=<still>): the blue sits behind RUN instead of the loop, the word cream on top */
-.say .loop .bloom { position: absolute; left: 50%; top: 52%; width: 300%; max-width: none; height: auto; translate: -50% -50%; opacity: .35; z-index: -1; pointer-events: none; }
-.say h2 { isolation: isolate; }
+.say .run { display: inline-block; }
+/* the ink (Tom picked 11-21): one GPU still of ink in water, tinted blue, opened by a small shader as the words arrive;
+   it sits behind the whole statement (every rising word is its own layer), placed from where RUN lands */
+section.say > canvas.bloom { position: absolute; opacity: .35; pointer-events: none; }
 .next { padding: 0 0 20svh; text-align: center; font-size: 13px; color: var(--look-quiet); }
 
 /* moment 4: the work. The ground goes from warm dark to black; one pinned track moves sideways while you scroll down.
@@ -109,7 +107,6 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 .ground { position: absolute; pointer-events: none; user-select: none; opacity: .13; max-width: none; height: auto;
   -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent); mask-image: radial-gradient(closest-side, #000 55%, transparent); } /* no edge: the sheet fades out before its border */
 .ground.g2 { left: 50%; top: 50%; width: 118vw; translate: -50% -50%; opacity: 0; }
-.say .ground { left: 50%; top: 2svh; width: min(150vw, 1800px); translate: -46% 0; }
 .say > :not(.ground) { position: relative; }
 .say { overflow-x: clip; } /* the line sheets are wider than the screen: never a sideways scroll */
 .work .ground { left: -8vw; top: 50%; width: 125vw; translate: 0 -46%; }
@@ -184,7 +181,6 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
   .row.b { font-size: 10.5vw; }
   .sig { width: 64vw; top: 40%; translate: -50% -50%; }
   .say h2 { font-size: 10.4vw; max-width: 12ch; }
-  .say .loop path { stroke-width: 6; }
   .say h2 { line-height: 1.1; }
   /* phone: each project its own arrangement too */
   .proj.b .tall { justify-self: start; width: 40%; margin-top: -30%; }
@@ -230,9 +226,9 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
     </div>
   </section>
   <section class="say" aria-labelledby="say-h">
-    <img class="ground" src="assets/ground-lineB-23.webp" alt="" width="1600" height="788" loading="lazy" aria-hidden="true">
+    <canvas class="bloom" aria-hidden="true"></canvas>
     <p class="label">How I work</p>
-    <h2 id="say-h">I <span class="q">build and</span> <span class="loop">run<svg aria-hidden="true"><path d=""/></svg></span> <span class="q">things</span> myself, <span class="q">from</span> data model <span class="q">to</span> server</h2>
+    <h2 id="say-h">I <span class="q">build and</span> <span class="run">run</span> <span class="q">things</span> myself, <span class="q">from</span> data model <span class="q">to</span> server</h2>
   </section>
   <section class="work" aria-labelledby="work-h">
     <div class="stage"><img class="ground" src="assets/ground-lineA-23.webp" alt="" width="1600" height="788" loading="lazy" aria-hidden="true"><div class="track">
@@ -353,41 +349,55 @@ __LIBS__
     const dd = document.getElementById("epaLive"); dd.textContent = parts.join(", "); dd.hidden = false; document.getElementById("epaLiveKey").hidden = false;
   });
 
-  // the loop round RUN, drawn in its svg's own pixels, so the line's length and its dash are measured the same way
-  const loopSvg = document.querySelector(".say .loop svg"), loopPath = loopSvg.querySelector("path");
-  const makeLoop = () => {
-    const { width: w, height: h } = loopSvg.getBoundingClientRect();
-    loopSvg.setAttribute("viewBox", `0 0 ${w.toFixed(1)} ${h.toFixed(1)}`);
-    const sw = parseFloat(getComputedStyle(loopPath).strokeWidth) || 8;
-    const pts = [];
-    for (let i = 0; i <= 64; i++) {
-      // one and a bit turns round the word, the end overshooting past the start, like a quick pen
-      const a = -2.5 + (i / 64) * (Math.PI * 2 + 0.75);
-      const rx = 0.47 - i * 0.0005, ry = 0.43 + i * 0.0007;
-      pts.push([w * (0.5 + rx * Math.cos(a) + i * 0.0006), h * (0.52 + ry * Math.sin(a) - i * 0.0008)]);
-    }
-    let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
-    for (let i = 1; i < pts.length - 1; i++) {
-      const [x, y] = pts[i], [nx, ny] = pts[i + 1];
-      d += ` Q${x.toFixed(1)} ${y.toFixed(1)} ${((x + nx) / 2).toFixed(1)} ${((y + ny) / 2).toFixed(1)}`;
-    }
-    loopPath.setAttribute("d", d);
-    const L = loopPath.getTotalLength();
-    // hidden a whole line width past its start, so no round end shows before it draws
-    loopPath.style.strokeDasharray = `${L} ${L + 2 * sw}`;
-    loopPath.style.strokeDashoffset = still ? 0 : L + sw;
-  };
-  makeLoop();
-  // picture round (pitch only): ?m3=ink-7 shows that still behind RUN instead of the loop
-  const m3 = new URLSearchParams(location.search).get("m3");
-  if (m3 && /^[a-z]+-\d+$/.test(m3)) {
-    loopSvg.style.display = "none";
-    const b = document.createElement("img"); b.className = "bloom"; b.src = `assets/m3/${m3}.webp`; b.alt = ""; b.setAttribute("aria-hidden", "true");
-    b.style.width = { ink: "170%", splat: "200%" }[m3.split("-")[0]] || "";
-    if (m3.startsWith("splat")) b.style.scale = "-1 1"; // its droplet trail ran into the chalk mark (reviewer)
-    document.querySelector(".say .ground").hidden = true; // one effect per screen: the chalk lines step back for the blue
-    loopSvg.parentElement.prepend(b);
-  }
+  // moment 3: the ink behind RUN. One still (ink in water, made on the desk's graphics card), opened by a shader: the dense
+  // core first from where the drop lands, the thin curls last, while the picture spreads to full size
+  const bloom = (() => {
+    const cv = document.querySelector(".say .bloom"), run = document.querySelector(".say .run"), say = document.querySelector(".say");
+    const img = new Image(); img.src = "assets/ink-bloom.webp";
+    const g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
+    const st = { p: still ? 1 : 0, draw: () => {} };
+    const place = () => { // 1.7 x RUN's width, centred on RUN where it lands (layout boxes: the words' rise doesn't move it)
+      const h2 = run.offsetParent, x = h2.offsetLeft + run.offsetLeft + run.offsetWidth / 2, y = h2.offsetTop + run.offsetTop + run.offsetHeight / 2;
+      const w = run.offsetWidth * 1.7, h = w * (img.naturalHeight / img.naturalWidth || 0.686);
+      Object.assign(cv.style, { width: `${w}px`, height: `${h}px`, left: `${x - w / 2}px`, top: `${y - h / 2}px` });
+      const k = Math.min(devicePixelRatio, 2); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+      st.draw();
+    };
+    if (!g) { cv.replaceWith(Object.assign(img, { className: "bloom", alt: "" })); return { p: 1, draw() {}, place() {} }; } // no WebGL 2: the finished bloom
+    const sh = (type, src) => { const x = g.createShader(type); g.shaderSource(x, src); g.compileShader(x); return x; };
+    const pr = g.createProgram();
+    g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
+      in vec2 aP; out vec2 vUv; void main() { vUv = vec2(aP.x * .5 + .5, .5 - aP.y * .5); gl_Position = vec4(aP, 0., 1.); }`));
+    g.attachShader(pr, sh(g.FRAGMENT_SHADER, `#version 300 es
+      precision mediump float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform float uP;
+      float h(vec2 q) { return fract(sin(dot(q, vec2(127.1, 311.7))) * 43758.5453); }
+      float n(vec2 q) { vec2 i = floor(q), f = fract(q); f = f * f * (3. - 2. * f);
+        return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.), f.x), f.y); }
+      void main() {
+        vec2 c = vec2(.5, .22);                                    // where the drop lands: the top of the plume
+        vec2 uv = c + (vUv - c) / mix(.6, 1., uP);                 // the cloud spreads to full size
+        vec4 t = texture(uT, uv);
+        t *= step(0., uv.x) * step(uv.x, 1.) * step(0., uv.y) * step(uv.y, 1.);
+        float k = length((uv - c) * vec2(1., .9)) * 1.4 + (1. - t.a) * .45 + n(uv * 9.) * .2; // dense and near: first
+        float e = uP * 1.9;
+        o = vec4(t.rgb, 1.) * t.a * (1. - smoothstep(e - .25, e, k));
+      }`));
+    g.linkProgram(pr); g.useProgram(pr);
+    g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer()); g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
+    const aP = g.getAttribLocation(pr, "aP"); g.enableVertexAttribArray(aP); g.vertexAttribPointer(aP, 2, g.FLOAT, false, 0, 0);
+    let ready = false;
+    st.draw = () => { if (!ready) return; g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
+      g.uniform1f(g.getUniformLocation(pr, "uP"), st.p); g.drawArrays(g.TRIANGLE_STRIP, 0, 4); };
+    img.decode().then(() => {
+      g.bindTexture(g.TEXTURE_2D, g.createTexture());
+      g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, img);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+      ready = true; st.place();
+    }).catch(() => {});
+    st.place = place;
+    return st;
+  })();
+  addEventListener("resize", () => bloom.place()); document.fonts?.ready.then(() => bloom.place()); // Clash Display moves the words when it arrives
 
   if (still || !window.gsap) return; // the plain page: first screen, signature already written
 
@@ -651,14 +661,14 @@ __LIBS__
   let sayTl;
   const buildSay = () => {
     sayTl?.scrollTrigger?.kill(); sayTl?.kill();
-    const ws = [...h2.querySelectorAll(".w, .loop")];
+    const ws = [...h2.querySelectorAll(".w, .run")];
     gsap.set(ws, { clearProps: "transform,opacity" });
     const lines = [];
     ws.forEach((w) => { const top = Math.round(w.offsetTop); let l = lines.find((x) => Math.abs(x.top - top) < 8); if (!l) lines.push((l = { top, els: [] })); l.els.push(w); });
-    makeLoop();
+    bloom.place();
     sayTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: h2, start: "top 92%", end: "bottom 45%", scrub: true } });
     lines.forEach((l, i) => sayTl.fromTo(l.els, { yPercent: 60, opacity: 0.22 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, i * 0.22));
-    sayTl.to(loopPath, { strokeDashoffset: 0, duration: 0.45, ease: "power1.inOut" }, 0.35);
+    sayTl.fromTo(bloom, { p: 0 }, { p: 1, duration: 0.6, ease: "power1.out", onUpdate: bloom.draw }, 0.3); // RUN's line arrives, then the ink opens
   };
   // moment 4: the track. Its section is as tall as the sideways distance, the stage stays while the track moves
   const work = document.querySelector(".work"), track = document.querySelector(".track");
@@ -682,8 +692,7 @@ __LIBS__
     gsap.set(track, { clearProps: "transform" });
     // the ground turns black as the work comes in (both tones dark: no grey in between)
     extras.push(gsap.fromTo(".night", { opacity: 0 }, { opacity: 1, ease: "none", scrollTrigger: { trigger: work, start: "top 85%", end: "top 25%", scrub: true } }));
-    // the lines behind the statement drift up slower than the words; behind the work they slide a quarter as far as the track
-    extras.push(gsap.fromTo(".say .ground", { y: () => innerHeight * 0.12 }, { y: () => -innerHeight * 0.12, ease: "none", scrollTrigger: { trigger: ".say", start: "top bottom", end: "bottom top", scrub: true } }));
+    // the lines behind the work slide a quarter as far as the track (the statement has none: the ink is its one effect)
     if (flat) {
       extras.push(gsap.fromTo(".work .ground", { y: 0 }, { y: () => -innerHeight * 0.4, ease: "none", scrollTrigger: { trigger: work, start: "top bottom", end: "bottom top", scrub: true } }));
       document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { y: 40 }, { y: -40, ease: "none", scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } })));
