@@ -383,7 +383,9 @@ __LIBS__
   if (m3 && /^[a-z]+-\d+$/.test(m3)) {
     loopSvg.style.display = "none";
     const b = document.createElement("img"); b.className = "bloom"; b.src = `assets/m3/${m3}.webp`; b.alt = ""; b.setAttribute("aria-hidden", "true");
-    b.style.width = { ink: "230%", spray: "210%", splat: "200%", swipe: "150%" }[m3.split("-")[0]] || "";
+    b.style.width = { ink: "170%", splat: "200%" }[m3.split("-")[0]] || "";
+    if (m3.startsWith("splat")) b.style.scale = "-1 1"; // its droplet trail ran into the chalk mark (reviewer)
+    document.querySelector(".say .ground").hidden = true; // one effect per screen: the chalk lines step back for the blue
     loopSvg.parentElement.prepend(b);
   }
 
