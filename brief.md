@@ -4,14 +4,24 @@
 Tom Larsson, product engineer: TypeScript, React and C#/.NET. I build and run things myself, from data model to server.
 
 ## What
-My portfolio, at ttdevs.com. One walk down one street, scrolled from top to bottom. English only.
-
-A bucket of paint waits on a dark wall at night. The visitor tips it, the paint pours down the wall and becomes the line, and the line leads past my builds.
+My portfolio, at ttdevs.com. English only. One page, scrolled from top to bottom: first who I am and what I built, then the graffiti walk, where a visitor can leave a tag.
 
 ## Who it's for
 Someone hiring, who has one minute and many other tabs open. They should remember this site, and they should find the facts fast.
 
+## The front
+1. My name, my role and my photo. A blue ring circles my head, and the photo turns a little with the mouse.
+2. The photo shrinks and turns black and white, my builds' names run behind it, and the ring unwinds into my signature.
+3. One line about how I work: I build and run things myself, from data model to server.
+4. My work: epaRadar, raddavarfruberga and EDGE, as real screens on a track that moves sideways, each with its line, its stack and its links.
+5. The end: write to me, GitHub and LinkedIn.
+
+The blue changes form at every moment: ring, signature, paint, ink behind each project, and a dot at the end. The Direction page says how; it is private, and its link is in my plan.
+
 ## The walk
+The walk comes after the front. How the front leads into it is picked when the real site is built.
+
+A bucket of paint waits on a dark wall at night. The visitor tips it, the paint pours down the wall and becomes the line, and the line leads past my builds.
 1. The opening wall at night. The visitor tips the bucket, the paint pours, and the street light comes on.
 2. epaRadar and raddavarfruberga: the facts and links sprayed through stencils onto their walls.
 3. The workshop: my own tools in a row: the self-hosted platform, ttoolbox, dot and tthermal.
