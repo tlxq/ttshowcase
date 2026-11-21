@@ -111,6 +111,9 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .say { overflow-x: clip; } /* the line sheets are wider than the screen: never a sideways scroll */
 .work .ground { left: -8vw; top: 50%; width: 125vw; translate: 0 -46%; }
 .night { position: fixed; inset: 0; z-index: -1; background: var(--look-ground); opacity: 0; pointer-events: none; }
+/* the ink becomes each project's ground: one fixed layer over the black, under everything else; each project its own wash
+   (ink, spray, paper: three GPU stills in one file), strongest while its project is in the middle, fading into the next */
+.wash { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
 .work { position: relative; overflow-x: clip; }
 .work .stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
 .track { position: absolute; top: 0; left: 0; height: 100%; display: flex; will-change: transform; }
@@ -198,6 +201,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 </head>
 <body>
 <div class="night" aria-hidden="true"></div>
+<canvas class="wash" aria-hidden="true"></canvas>
 <div class="veil" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 <header class="bar">
@@ -401,6 +405,64 @@ __LIBS__
     return st;
   })();
   addEventListener("resize", () => bloom.place()); document.fonts?.ready.then(() => bloom.place()); // Clash Display moves the words when it arrives
+
+  // moment 4: the washes. One fixed WebGL 2 layer; each project's weight comes from how near the middle of the screen it is
+  // (sideways on the laptop track, up and down in the phone column), so the same code serves both. No WebGL 2: no washes.
+  (() => {
+    const cv = document.querySelector(".wash"), work = document.querySelector(".work"), projs = [...document.querySelectorAll(".proj")];
+    const g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
+    if (!g) return cv.remove();
+    const img = new Image(); img.src = "assets/wash.webp";
+    const sh = (type, src) => { const x = g.createShader(type); g.shaderSource(x, src); g.compileShader(x); return x; };
+    const pr = g.createProgram();
+    g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
+      in vec2 aP; out vec2 vUv; void main() { vUv = vec2(aP.x * .5 + .5, .5 - aP.y * .5); gl_Position = vec4(aP, 0., 1.); }`));
+    g.attachShader(pr, sh(g.FRAGMENT_SHADER, `#version 300 es
+      precision mediump float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform vec3 uW, uS; uniform vec2 uF; uniform vec3 uC; uniform float uMax;
+      float h(vec2 q) { return fract(sin(dot(q, vec2(127.1, 311.7))) * 43758.5453); }
+      float n(vec2 q) { vec2 i = floor(q), f = fract(q); f = f * f * (3. - 2. * f);
+        return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.), f.x), f.y); }
+      float wash(int i, float w, float s) {
+        vec2 uv = .5 + (vUv - .5) * uF + vec2(s, 0.);           // the still covers the screen and drifts with its project
+        float t = texture(uT, uv)[i];
+        float k = n(uv * 5. + float(i) * 7.) * .6 + (1. - t) * .4; // it comes in by its densest paint first, ragged, never a flat fade
+        return t * smoothstep(k - .15, k + .15, w * 1.3 - .15);
+      }
+      void main() {
+        float a = max(max(wash(0, uW.x, uS.x), wash(1, uW.y, uS.y)), wash(2, uW.z, uS.z));
+        o = vec4(uC, 1.) * a * uMax;
+      }`));
+    g.linkProgram(pr); g.useProgram(pr);
+    g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer()); g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
+    const aP = g.getAttribLocation(pr, "aP"); g.enableVertexAttribArray(aP); g.vertexAttribPointer(aP, 2, g.FLOAT, false, 0, 0);
+    const u = (k) => g.getUniformLocation(pr, k);
+    const c = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim().match(/\w\w/g).map((x) => parseInt(x, 16) / 255);
+    g.uniform3f(u("uC"), ...c); g.uniform1f(u("uMax"), 0.16); // at its densest the blue lifts the black to about 15 %
+    const size = () => { const k = 0.5; cv.width = Math.round(innerWidth * k); cv.height = Math.round(innerHeight * k); // soft: half size is plenty
+      const A = innerWidth / innerHeight; g.uniform2f(u("uF"), Math.min(A / 2, 1), Math.min(2 / A, 1)); };
+    let ready = false, on = false, last = "";
+    const draw = () => {
+      if (!ready) return;
+      const flat = phone(), W = [0, 0, 0], S = [0, 0, 0], wr = work.getBoundingClientRect();
+      const vis = Math.min(1, Math.max(0, (innerHeight - wr.top) / (innerHeight * 0.75)), Math.max(0, wr.bottom / (innerHeight * 0.75))); // only on the black
+      projs.slice(0, 3).forEach((p, i) => { const r = p.getBoundingClientRect();
+        const d = flat ? (r.top + r.height / 2 - innerHeight / 2) / Math.max(innerHeight, r.height) : (r.left + r.width / 2 - innerWidth / 2) / innerWidth;
+        W[i] = Math.max(0, 1 - Math.abs(d) * 1.2) * vis; S[i] = d * 0.18; });
+      const key = W.concat(S).map((x) => x.toFixed(3)).join();
+      if (key === last) return; last = key;
+      g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
+      g.uniform3f(u("uW"), ...W); g.uniform3f(u("uS"), ...S); g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
+    };
+    const loop = () => { if (!on) return; draw(); requestAnimationFrame(loop); };
+    new IntersectionObserver(([e]) => { on = e.isIntersecting; if (on) loop(); else { last = ""; g.clear(g.COLOR_BUFFER_BIT); } }).observe(work);
+    addEventListener("resize", () => { size(); last = ""; draw(); });
+    img.decode().then(() => {
+      g.bindTexture(g.TEXTURE_2D, g.createTexture());
+      g.texImage2D(g.TEXTURE_2D, 0, g.RGB, g.RGB, g.UNSIGNED_BYTE, img);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.MIRRORED_REPEAT); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+      size(); ready = true; draw();
+    }).catch(() => {});
+  })();
 
   if (still || !window.gsap) return; // the plain page: first screen, signature already written
 
