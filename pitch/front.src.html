@@ -147,6 +147,13 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .proj.a .txt { left: calc(var(--fx) + var(--fw) + 18vw); }
 .proj.a .line { text-wrap: balance; }
 .story { display: grid; gap: 12px; }
+/* Rädda Vårfruberga shown its own way (award step 4): the signatures are the thing. One big number above the site,
+   counting up while the site slides in (back down if you scroll back), the same number the site itself shows */
+.count { position: absolute; margin: 0; display: flex; align-items: baseline; gap: 14px; white-space: nowrap; pointer-events: none; }
+.count .n { font: 700 min(9vw, 16svh)/.8 var(--f-big); letter-spacing: -.02em; color: var(--look-cream); font-variant-numeric: tabular-nums; }
+.count .w { font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.proj.b .txt h3 { font-size: min(3.9vw, 7.5svh); } /* VÅRFRUBERGA is one long word: it fits its column */
 .story p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--look-soft); max-width: 46ch; }
 .story b { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
 .txt { position: absolute; left: calc(2vw + var(--bw) + 12vw); top: 50svh; translate: 0 -50%; width: min(32vw, 470px); display: grid; gap: 14px; }
@@ -204,7 +211,9 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .proj.b { --ph: min(14vw, 27svh); --bx: calc(4vw + var(--ph) + 4vw); --by: calc(50svh - var(--bw) * .28 + 8svh); width: calc(var(--bx) + var(--bw) * .9 + 46vw); }
   .proj.b .tall { left: 4vw; top: 12svh; width: var(--ph); }
   .proj.b .big { left: var(--bx); top: var(--by); width: calc(var(--bw) * .9); }
-  .proj.b .big + .cap { left: var(--bx); top: calc(var(--by) - 24px); }
+  .proj.b .big + .cap { left: var(--bx); top: calc(var(--by) + var(--bw) * .9 * .625 + 10px); } /* under the site: the count sits above it */
+  .proj.b .count { left: calc(var(--bx) - .04em); top: calc(var(--by) - 34px); translate: 0 -100%; }
+  .proj.b .note { left: calc(var(--bx) + var(--bw) * .9 * .78); top: calc(var(--by) - 15svh); }
   .proj.b .txt { left: calc(var(--bx) + var(--bw) * .9 + 6vw); top: 46svh; }
   .proj.c { width: calc(var(--bw) * .8 + 54vw); }
   .proj.c .big { top: 10svh; width: calc(var(--bw) * .8); }
@@ -230,12 +239,16 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .proj.a .film { position: relative; left: auto; top: auto; width: min(100%, var(--fw)); }
   .note { position: relative; left: auto; top: auto; justify-self: end; margin: 0 4vw -14px 0; }
   .note svg { margin: 2px 0 0 -40px; }
+  .count { position: relative; order: -3; }
+  .proj.b .note { order: -2; }
+  .count .n { font-size: 24vw; }
 }
 @media (max-width: 640px) {
   /* phone: the film is the screen, edge to edge */
   .proj.a .film { width: 100vw; margin-left: calc(-1 * max(var(--gutter), env(safe-area-inset-left))); border-radius: 0; }
   .note { order: -1; margin-bottom: -6px; }
   .note span { font-size: 30px; }
+  .proj.b .txt h3 { font-size: 10.6vw; }
 }
 
 
@@ -330,12 +343,18 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
       <article class="proj b" aria-labelledby="p2">
         <img class="shot big" src="projects/raddavarfruberga-laptop.webp" alt="raddavarfruberga.se on a laptop" width="1920" height="1200" loading="lazy">
         <span class="cap">raddavarfruberga.se</span>
+        <p class="count"><span class="n" aria-hidden="true">1,024</span><span class="sr">1,024</span> <span class="w">signatures</span></p>
+        <p class="note" aria-hidden="true"><span>let them stay</span><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg></p>
         <div class="tall" data-speed="1"><img src="projects/raddavarfruberga-phone.webp" alt="The site on a phone" width="780" height="5233" loading="lazy"></div>
         <div class="txt">
           <span class="no">02 / 03 · Built alone, for the parents</span>
-          <h3 id="p2">Rädda vår Fruberga</h3>
+          <h3 id="p2">Rädda Vårfruberga</h3>
           <p class="line">We started this site to collect <span class="mark">signatures</span> for our preschool.</p>
-          <dl><dt>Stack</dt><dd>Next.js, TypeScript, Supabase, Resend, Vercel</dd></dl>
+          <div class="story">
+            <p><b>Why</b>The council wanted to close our children's preschool. The parents needed one place to sign, share and follow the case, so I built it.</p>
+            <p><b>Hard part</b>Mail scanners open every link in an email. If the sign-in link logged you in, it would log the scanner in too. So the link only asks, and a button you press logs you in.</p>
+          </div>
+          <dl><dt>Result</dt><dd>1,024 signatures. The council hasn't decided yet.</dd><dt>Stack</dt><dd>Next.js, TypeScript, Supabase, Resend, Vercel</dd></dl>
           <div class="go"><a href="https://raddavarfruberga.se">Open the site ↗</a></div>
         </div>
       </article>
@@ -445,7 +464,7 @@ __LIBS__
     dd.setAttribute("aria-label", say(1)); dd.textContent = say(0);
     const io = new IntersectionObserver(([e]) => { if (!e.isIntersecting) return; io.disconnect(); const t0 = performance.now();
       const step = (t) => { const k = Math.min(1, (t - t0) / 1400); dd.textContent = say(1 - (1 - k) ** 3); if (k < 1) requestAnimationFrame(step); };
-      requestAnimationFrame(step); }, { threshold: 1 });
+      requestAnimationFrame(step); }, { threshold: 0.5 });
     io.observe(dd);
   });
 
@@ -980,6 +999,9 @@ __LIBS__
   };
   // moment 4: the track. Its section is as tall as the sideways distance, the stage stays while the track moves
   const work = document.querySelector(".work"), track = document.querySelector(".track");
+  const countN = document.querySelector(".count .n"), setCount = (k) => { countN.textContent = Math.round(1024 * k).toLocaleString("en-US"); };
+  const countBig = document.querySelector(".proj.b .big"); // 0 while the site is off to the right, 1,024 once its left edge reaches 35 % of the screen
+  const countFromSite = () => setCount(Math.min(1, Math.max(0, (innerWidth - countBig.getBoundingClientRect().left) / (innerWidth * 0.65))));
   // corner marks round each big screen: four hand-drawn brackets, placed from the screen's own box (each project has its own layout)
   const CORNERS = [["tl", 0, 0], ["tr", 1, 0], ["bl", 0, 1], ["br", 1, 1]];
   document.querySelectorAll(".proj .big").forEach((big) => CORNERS.forEach(([k, cx, cy]) => {
@@ -1001,6 +1023,11 @@ __LIBS__
     // the ground turns black as the work comes in (both tones dark: no grey in between)
     extras.push(gsap.fromTo(".night", { opacity: 0 }, { opacity: 1, ease: "none", scrollTrigger: { trigger: work, start: "top 85%", end: "top 25%", scrub: true } }));
     if (flat) {
+      setCount(0);
+      { const io = new IntersectionObserver(([e]) => { if (!e.isIntersecting) return; io.disconnect(); const t0 = performance.now();
+          const step = (t) => { const k = Math.min(1, (t - t0) / 1600); setCount(1 - (1 - k) ** 3); if (k < 1) requestAnimationFrame(step); };
+          requestAnimationFrame(step); }, { threshold: 1 });
+        io.observe(document.querySelector(".count")); }
       document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { y: 40 }, { y: -40, ease: "none", scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } })));
       document.querySelectorAll(".mk").forEach((m) => extras.push(gsap.fromTo(m, { x: (+m.dataset.cx ? 1 : -1) * 16, y: (+m.dataset.cy ? 1 : -1) * 16, opacity: 0 }, { x: 0, y: 0, opacity: 0.55, ease: "power2.out",
         scrollTrigger: { trigger: m.big, start: "top 90%", end: "top 55%", scrub: true } })));
@@ -1008,13 +1035,16 @@ __LIBS__
       extras.push(gsap.to(tall, { yPercent: -60, ease: "none", scrollTrigger: { trigger: tall.parentElement, start: "top bottom", end: "bottom top", scrub: true } }));
       return;
     }
-    workTl = gsap.to(track, { x: () => -(track.scrollWidth - innerWidth), ease: "none", scrollTrigger: { trigger: work, start: "top top", end: "bottom bottom", scrub: true } });
+    workTl = gsap.to(track, { x: () => -(track.scrollWidth - innerWidth), ease: "none", onUpdate: countFromSite, scrollTrigger: { trigger: work, start: "top top", end: "bottom bottom", scrub: true } });
     // the phones move faster than the big screens: depth while the track slides
     document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { x: innerWidth * 0.05 }, { x: -innerWidth * 0.05, ease: "none",
       scrollTrigger: { trigger: el, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } })));
     // the corner marks close in on their screen as it arrives, like someone measuring it up
     document.querySelectorAll(".mk").forEach((m) => extras.push(gsap.fromTo(m, { x: (+m.dataset.cx ? 1 : -1) * 28, y: (+m.dataset.cy ? 1 : -1) * 28, opacity: 0 }, { x: 0, y: 0, opacity: 0.55, ease: "power2.out",
       scrollTrigger: { trigger: m.big, containerAnimation: workTl, start: "left 95%", end: "left 55%", scrub: true } })));
+    // Rädda Vårfruberga's signatures count up while the site slides in, and back down if you scroll back
+    // (read from where the site really is on screen, so a reload halfway down shows the right number)
+    countFromSite();
     // epaRadar's phone grows to its full height as it arrives
     const film = document.querySelector(".proj.a .film");
     extras.push(gsap.fromTo(film, { scale: 0.66 }, { scale: 1, ease: "power1.out", scrollTrigger: { trigger: film, containerAnimation: workTl, start: "left 85%", end: "left 25%", scrub: true } }));
@@ -1029,7 +1059,7 @@ __LIBS__
     endTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".end h2", start: "top bottom", end: () => Math.min(ScrollTrigger.maxScroll(window), document.querySelector(".end .form").getBoundingClientRect().top + scrollY - innerHeight * 0.35), scrub: true } });
     endTl.fromTo(endPull, { p: 0 }, { p: 1, duration: 1, onUpdate: () => { specks.p = endPull.p; } }, 0);
   };
-  const ready = () => { build(); buildSay(); buildWork(); buildEnd(); ScrollTrigger.refresh(); };
+  const ready = () => { build(); buildSay(); buildWork(); buildEnd(); ScrollTrigger.refresh(); if (!phone()) countFromSite(); };
   photo.complete ? ready() : photo.addEventListener("load", ready, { once: true });
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(ready, 200); });
 })();
