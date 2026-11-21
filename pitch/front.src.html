@@ -72,7 +72,7 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the
 @keyframes grain { 0% { transform: translate(0, 0); } 20% { transform: translate(-4%, 3%); } 40% { transform: translate(3%, -5%); }
   60% { transform: translate(-6%, -2%); } 80% { transform: translate(5%, 4%); } 100% { transform: translate(0, 0); } }
 @media (prefers-reduced-motion: reduce) { .grain { animation: none; } }
-.photo.bw { opacity: 0; filter: brightness(.74); } /* dimmed, but solid: the names run behind him, never through */
+.photo.bw { opacity: 0; filter: grayscale(1) brightness(.74); } /* dimmed, but solid: the names run behind him, never through */
 .role { position: absolute; left: max(var(--gutter), env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
   font-size: 14px; font-weight: 500; max-width: 24ch; color: var(--look-dark); }
 .hint { position: absolute; right: max(var(--gutter), env(safe-area-inset-right)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
@@ -310,8 +310,8 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
       <div class="pane"><div class="inner">
         <div class="cream"></div>
         <h1 class="name"><span class="ln"><span>Tom</span></span> <span class="ln"><span>Larsson</span></span></h1>
-        <img class="photo col" src="assets/tom_cut.webp" alt="Tom Larsson" width="1200" height="1506" fetchpriority="high">
-        <img class="photo bw" src="assets/tom_cut_bw.webp" alt="" width="1200" height="1506">
+        <img class="photo col" src="assets/turn/t24.webp" alt="Tom Larsson" width="600" height="753" fetchpriority="high">
+        <img class="photo bw" src="assets/turn/t24.webp" alt="" width="600" height="753">
         <canvas class="gl" aria-hidden="true"></canvas>
         <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
         <p class="hint">Scroll</p>
@@ -880,7 +880,14 @@ __LIBS__
       if (!on || !tImg) return;
       mouse.x += (mouse.tx - mouse.x) * 0.06; mouse.y += (mouse.ty - mouse.y) * 0.06;
       const sway = phone() ? Math.sin(t / 1600) * 0.07 : 0;
-      const yaw = mouse.x * 0.32 + sway + look.spin * 0.2, pitch = -mouse.y * 0.1; // a gentle turn (Tom 11-20: less scary)
+      // the living portrait (award step 5, prototype): his real head turn, filmed in the studio 11-21 (49 frames, left
+      // profile -> facing you -> right profile). On a laptop he turns toward the mouse; on a phone he looks round slowly
+      // by himself. The 3D turn is only a hint now, the film does the turning
+      const want = still ? 0.5 : phone() ? 0.5 + Math.sin(t / 2600) * 0.38 + Math.sin(t / 1100) * 0.06 : 0.5 + mouse.x * 1.1;
+      turnAt += (Math.min(0.88, Math.max(0, want)) - turnAt) * 0.08; // to the right his nose meets the photo's soft edge sooner
+      const fi = TURN0 + Math.round(turnAt * (TURN - 1)); // three-quarter left to three-quarter right: in full profile the crop cut his nose
+      if (fi !== turnShown && turnFrames[fi]) { g.bindTexture(g.TEXTURE_2D, tImg); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, turnFrames[fi]); g.generateMipmap(g.TEXTURE_2D); turnShown = fi; }
+      const yaw = mouse.x * 0.06 + sway * 0.2 + look.spin * 0.2, pitch = -mouse.y * 0.05;
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       const rot = new Float32Array([cy, sy * sp, -sy * cp, 0, cp, sp, sy, -cy * sp, cy * cp]);
       g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT | g.DEPTH_BUFFER_BIT);
@@ -889,7 +896,7 @@ __LIBS__
       g.useProgram(photoP); g.bindVertexArray(pVao);
       g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, tImg); g.uniform1i(loc(photoP, "uImg"), 0);
       g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tDep); g.uniform1i(loc(photoP, "uDepth"), 1);
-      g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), D); g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
+      g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), 0); /* flat: the depth map belongs to the old photo */ g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
       g.drawElements(g.TRIANGLES, idx.length, g.UNSIGNED_INT, 0);
       const slide = still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08; // one lap in 48 s
       leadAt(t, rot, slide);
@@ -905,8 +912,12 @@ __LIBS__
     };
     const SPRAY = (() => { const c = new URLSearchParams(location.search).get("ink") || getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(); /* ?ink=hex: a pitch-only trial colour */ const m = c.match(/^#?([0-9a-f]{6})$/i);
       return m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255) : [1, 0.33, 0.1]; })();
+    const TURN0 = 12, TURN = 25, turnFrames = []; let turnAt = 0.5, turnShown = 24; // frames t12..t36, t24 faces you
     Promise.all([img.decode(), dimg.decode()]).then(() => {
       tImg = tex(img); tDep = tex(dimg); size();
+      // the other 48 frames load after the first screen is up, nearest the middle first
+      [...Array(TURN).keys()].map((i) => i + TURN0).sort((a, b) => Math.abs(a - 24) - Math.abs(b - 24)).forEach((i, n) => setTimeout(() => {
+        const f = new Image(); f.src = `assets/turn/t${String(i).padStart(2, "0")}.webp`; f.decode().then(() => { turnFrames[i] = f; }).catch(() => {}); }, 400 + n * 20));
       document.documentElement.classList.add("has-gl");
       gsap.to(cv, { opacity: 1, duration: 0.6 });
       gsap.to(look, { ribbon: 1, duration: 1.5, ease: "power1.inOut", delay: 0.6 }); // at a hand's speed, once
