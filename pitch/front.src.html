@@ -148,6 +148,13 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .fx { position: fixed; inset: 0; z-index: 25; width: 100%; height: 100%; pointer-events: none; } /* 1: the puff of specks off a link */
 a, .form button { transition: text-decoration-color var(--toggle) var(--ease), color var(--toggle) var(--ease); }
 a:hover { text-decoration-color: var(--front-spray); }
+/* blue words (award plan step 2): one brush swipe of the blue under one word per screen (the statement's is the ink behind RUN), behind and below the letters,
+   brushed on left to right the first time the word is fully on screen; there from the start with reduced motion */
+.mark { position: relative; isolation: isolate; white-space: nowrap; }
+.mark::after { content: ""; position: absolute; z-index: -1; left: -.18em; right: -.24em; bottom: -.3em; height: .5em; background: url(assets/swipe.webp) 0 0 / 100% 100% no-repeat; opacity: .7; rotate: -1.2deg; pointer-events: none; } /* a band of paint, not a line: a thin one read as a link's underline */
+h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
+.mark.wait::after { clip-path: inset(0 100% 0 0); }
+.mark.on::after { clip-path: inset(0 0 0 0); transition: clip-path .7s cubic-bezier(.6, 0, .2, 1) .15s; }
 .drop { position: absolute; z-index: 1; width: 12px; height: 12px; pointer-events: none; user-select: none; opacity: 0; } /* 2: ink flicked off the brush between moments */
 .say > .drop { position: absolute; } /* the statement's children are set relative for the line sheets */
 .drop.fall { animation: fall .9s cubic-bezier(.55, 0, 1, .45) both; }
@@ -170,7 +177,7 @@ a:hover { text-decoration-color: var(--front-spray); }
 .form .err { margin: 0; color: var(--look-cream); }
 @media (max-width: 640px) {
   .end { padding-top: 18svh; }
-  .end h2 { font-size: 15vw; }
+  .end h2 { font-size: 15vw; line-height: 1.02; } /* room for WRITE's swipe above ME */
   .end .cols { grid-template-columns: 1fr; gap: 56px; }
   .form { gap: 22px; }
   .end .addr { font-size: 26px; }
@@ -284,7 +291,7 @@ a:hover { text-decoration-color: var(--front-spray); }
         <div class="txt">
           <span class="no">01 / 03 · Degree project, built alone</span>
           <h3 id="p1">epaRadar</h3>
-          <p class="line">Friends on a live map. Only friends see where you are.</p>
+          <p class="line">Friends on a live map. <span class="mark">Only friends</span> see where you are.</p>
           <dl><dt>Stack</dt><dd>React Native, Expo, Supabase, Postgres, pgTAP</dd><dt id="epaLiveKey" hidden>GitHub</dt><dd id="epaLive" hidden></dd></dl>
           <div class="go"><a href="https://eparadar.se">Open the site ↗</a><a href="https://github.com/tlxq/eparadar">Code ↗</a></div>
         </div>
@@ -296,7 +303,7 @@ a:hover { text-decoration-color: var(--front-spray); }
         <div class="txt">
           <span class="no">02 / 03 · Built alone, for the parents</span>
           <h3 id="p2">Rädda vår Fruberga</h3>
-          <p class="line">We started this site to collect signatures for our preschool.</p>
+          <p class="line">We started this site to collect <span class="mark">signatures</span> for our preschool.</p>
           <dl><dt>Stack</dt><dd>Next.js, TypeScript, Supabase, Resend, Vercel</dd></dl>
           <div class="go"><a href="https://raddavarfruberga.se">Open the site ↗</a></div>
         </div>
@@ -308,7 +315,7 @@ a:hover { text-decoration-color: var(--front-spray); }
         <div class="txt">
           <span class="no">03 / 03 · Work project, built alone</span>
           <h3 id="p3">EDGE</h3>
-          <p class="line">Two landing pages for EDGE Associates, on one code base.</p>
+          <p class="line">Two landing pages for EDGE Associates, on <span class="mark">one code base</span>.</p>
           <dl><dt>Stack</dt><dd>Astro, TypeScript</dd></dl>
           <div class="go"><a href="https://app-utveckling.se">app-utveckling.se ↗</a><a href="https://mjukvaruutvecklare.com">mjukvaruutvecklare.com ↗</a></div>
         </div>
@@ -316,7 +323,7 @@ a:hover { text-decoration-color: var(--front-spray); }
     </div></div>
   </section>
   <section class="end" aria-labelledby="end-h">
-    <h2 id="end-h">Write to me</h2>
+    <h2 id="end-h"><span class="mark">Write</span> to me</h2>
     <div class="cols">
       <div class="say-mail">
         <a class="addr" href="mailto:hello@ttdevs.com">hello@ttdevs.com</a>
@@ -623,6 +630,9 @@ __LIBS__
         const r = t.getBoundingClientRect(); puff(Math.min(Math.max(e.clientX, r.left), r.right), r.bottom - 2, 26); });
       document.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse" && e.target.closest("a, button")) puff(e.clientX, e.clientY + 10, 30); });
     }
+    // blue words: each swipe brushes on the first time its word is fully on screen
+    { const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("on"); io.unobserve(e.target); } }), { threshold: 1 });
+      document.querySelectorAll(".mark").forEach((el) => { el.classList.add("wait"); io.observe(el); }); }
     // 2. between moments, two or three drops of ink flicked off the brush fall down the page's edge and land as dots
     if (!OFF.has("drops")) {
       const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("fall"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -30% 0px" });
