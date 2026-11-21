@@ -144,8 +144,21 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
    under it the email, the form (plain lines, no boxes) and the ways on */
 .end { position: relative; padding: 26svh max(var(--gutter), env(safe-area-inset-right)) 18svh max(var(--gutter), env(safe-area-inset-left)); }
 .end h2 { margin: 0 0 7svh; font: 700 min(9.6vw, 17svh)/.9 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
-.end .dot { display: inline-block; width: .4em; height: .4em; margin-left: .04em; vertical-align: baseline; }
-.end .dot img { display: block; width: 100%; height: 100%; object-fit: contain; transform: scale(1.3); } /* the paint runs a little past the round */
+.end .head { position: relative; display: flex; flex-wrap: wrap; align-items: end; gap: 0 5vw; margin-bottom: 7svh; }
+.end .head h2 { margin: 0; position: relative; }
+/* picture round (pitch only, ?end=sign | form | stir | fill): how the projects' smoke turns into the end */
+.end .sig2 { display: none; width: min(30vw, 460px); overflow: visible; pointer-events: none; margin-bottom: -2svh; }
+.end .sig2 .ink { fill: var(--front-spray); }
+[data-end="sign"] .end .sig2 { display: block; }
+.end .fillink { display: none; position: absolute; inset: 0; color: transparent; pointer-events: none; user-select: none;
+  background: url(assets/ink-bloom.webp) 30% 40% / 320% auto no-repeat; -webkit-background-clip: text; background-clip: text; }
+[data-end="fill"] .end .fillink { display: block; }
+@media (prefers-reduced-motion: no-preference) { [data-end="fill"] .end .fillink { animation: swirl 14s ease-in-out infinite alternate; } }
+@keyframes swirl { to { background-position: 65% 55%; background-size: 260% auto; } }
+.end.specked .form input, .end.specked .form textarea { border-bottom-color: transparent; }
+.end.specked .form button { border-color: transparent; }
+.end.specked .addr { text-decoration-color: transparent; }
+.specks { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
 .end .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6vw; align-items: start; max-width: 1180px; }
 .end .say-mail { display: grid; gap: 26px; }
 .end .addr { font: 600 min(3.4vw, 40px)/1.1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 8px; min-height: 44px; width: fit-content; }
@@ -163,6 +176,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 @media (max-width: 640px) {
   .end { padding-top: 18svh; }
   .end h2 { font-size: 15vw; }
+  .end .sig2 { width: 66vw; margin: 3svh 0 0; }
   .end .cols { grid-template-columns: 1fr; gap: 56px; }
   .end .addr { font-size: 26px; }
 }
@@ -226,6 +240,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 <body>
 <div class="night" aria-hidden="true"></div>
 <canvas class="wash" aria-hidden="true"></canvas>
+<canvas class="specks" aria-hidden="true"></canvas>
 <div class="veil" aria-hidden="true"></div>
 <div class="grain" aria-hidden="true"></div>
 <header class="bar">
@@ -305,7 +320,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
     </div></div>
   </section>
   <section class="end" aria-labelledby="end-h">
-    <h2 id="end-h">Write to me<span class="dot" aria-hidden="true"><img src="assets/dot-ink.webp" alt="" width="256" height="256" loading="lazy"></span></h2>
+    <div class="head"><h2 id="end-h">Write to me<span class="fillink" aria-hidden="true">Write to me</span></h2><svg class="sig2" aria-hidden="true"></svg></div>
     <div class="cols">
       <div class="say-mail">
         <a class="addr" href="mailto:hello@ttdevs.com">hello@ttdevs.com</a>
@@ -445,8 +460,34 @@ __LIBS__
   })();
   addEventListener("resize", () => bloom.place()); document.fonts?.ready.then(() => bloom.place()); // Clash Display moves the words when it arrives
 
-  // moment 5 picture round (pitch only): ?m5=ink | spray | dab picks the dot's still
-  { const m5 = new URLSearchParams(location.search).get("m5"); if (/^(ink|spray|dab)$/.test(m5 || "")) document.querySelector(".end .dot img").src = `assets/dot-${m5}.webp`; }
+  // moment 5 picture round (pitch only): ?end=sign | form | stir | fill, how the projects' smoke turns into the end
+  const END = ((q) => (/^(sign|form|stir|fill)$/.test(q || "") ? q : "sign"))(new URLSearchParams(location.search).get("end"));
+  document.documentElement.dataset.end = END;
+  // sign: the signature from the first screen once more, beside WRITE TO ME, written by the smoke
+  const sig2 = document.querySelector(".end .sig2"), endStrokes = [];
+  if (END === "sign") {
+    sig2.setAttribute("viewBox", SIGN.viewBox.join(" ")); const d2 = document.createElementNS(NS, "defs"); sig2.appendChild(d2);
+    SIGN.strokes.forEach((x, i) => {
+      const m = document.createElementNS(NS, "mask"), p = document.createElementNS(NS, "path"), ink = document.createElementNS(NS, "path");
+      const [vx, vy, vw, vh] = SIGN.viewBox; m.id = `end-m${i}`; m.setAttribute("maskUnits", "userSpaceOnUse");
+      m.setAttribute("x", vx - vw); m.setAttribute("y", vy - vh); m.setAttribute("width", vw * 3); m.setAttribute("height", vh * 3);
+      p.setAttribute("d", x.d); p.setAttribute("fill", "none"); p.setAttribute("stroke", "#fff"); p.setAttribute("stroke-width", MASK); p.setAttribute("stroke-linecap", "round");
+      p.setAttribute("stroke-dasharray", `${x.len} ${x.len + 2 * MASK}`); p.setAttribute("stroke-dashoffset", still ? 0 : x.len + MASK);
+      m.appendChild(p); d2.appendChild(m);
+      ink.setAttribute("class", "ink"); ink.setAttribute("d", inkOf(p, LINE, brush)); ink.setAttribute("mask", `url(#${m.id})`); sig2.appendChild(ink);
+      endStrokes.push(p);
+    });
+  }
+  // where on screen the smoke gathers: the signature's first point, or the middle of the big words
+  const endAt = () => {
+    if (END === "sign" && endStrokes[0]) { const q = endStrokes[0].getPointAtLength(0), m = sig2.getScreenCTM(); if (m) return [m.a * q.x + m.c * q.y + m.e, m.b * q.x + m.d * q.y + m.f]; }
+    const r = document.querySelector(".end h2").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2];
+  };
+  // stir: the last few moves of the mouse or a finger, each a push on the ink that dies away
+  const stirs = [];
+  if (END === "stir") addEventListener("pointermove", (e) => { const t = performance.now(), l = stirs[stirs.length - 1];
+    if (l) stirs.push({ x: e.clientX, y: e.clientY, vx: e.clientX - l.x, vy: e.clientY - l.y, t }); else stirs.push({ x: e.clientX, y: e.clientY, vx: 0, vy: 0, t });
+    if (stirs.length > 8) stirs.shift(); }, { passive: true });
   // the form: the same fields and words as the live site's, sent by the server (api/contact.ts); signum W3, W5, W6
   { const mail = document.getElementById("mail"), err = mail.querySelector(".err"), btn = mail.querySelector("button");
     const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
@@ -455,12 +496,12 @@ __LIBS__
         if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.replaceChildren(sent); return; }
         why = WHY[((await a.json().catch(() => ({}))).error) || ""] || "The mail service didn't answer."; } catch (_) { why = "The page couldn't reach the server."; }
       err.textContent = "Couldn't send your message. " + why; err.hidden = false; btn.disabled = false; btn.textContent = "Try again"; }); }
-  const endPull = { p: 0 }; // moment 5: how far the last wash has pulled into the dot (0 -> 1)
+  const endPull = { p: 0 }; // moment 5: how far the last wash has turned into the end (0 -> 1)
   const inkHand = { q: 0 }; // moment 3 -> 4: how far the ink behind RUN has become epaRadar's wash (0 -> 1)
   // moment 4: the washes. One fixed WebGL 2 layer; each project's weight comes from how near the middle of the screen it is
   // (sideways on the laptop track, up and down in the phone column), so the same code serves both. No WebGL 2: no washes.
   (() => {
-    const cv = document.querySelector(".wash"), work = document.querySelector(".work"), dot = document.querySelector(".end .dot"), projs = [...document.querySelectorAll(".proj")];
+    const cv = document.querySelector(".wash"), work = document.querySelector(".work"), projs = [...document.querySelectorAll(".proj")];
     const g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
     if (!g) return cv.remove();
     const img = new Image(); img.src = "assets/wash.webp";
@@ -469,7 +510,7 @@ __LIBS__
     g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
       in vec2 aP; out vec2 vUv; void main() { vUv = vec2(aP.x * .5 + .5, .5 - aP.y * .5); gl_Position = vec4(aP, 0., 1.); }`));
     g.attachShader(pr, sh(g.FRAGMENT_SHADER, `#version 300 es
-      precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform vec3 uW, uS; uniform vec2 uF; uniform vec3 uC; uniform float uMax, uPull; uniform vec2 uDot;
+      precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform vec3 uW, uS; uniform vec2 uF; uniform vec3 uC; uniform float uMax, uPull, uStir, uTime, uA; uniform vec2 uDot; uniform vec4 uM[8];
       float h(vec2 q) { vec3 p = fract(vec3(q.xyx) * .1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); } // no sin: the same corner gives the same value from every cell
       float n(vec2 q) { vec2 i = floor(q), f = fract(q); f = f * f * (3. - 2. * f);
         return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.), f.x), f.y); }
@@ -482,6 +523,10 @@ __LIBS__
       void main() {
         // the last wash pulls together into the dot: the picture shrinks onto the dot's place on screen (Direction row 5)
         vec2 at = uDot + (vUv - uDot) / max(1. - uPull, .02);
+        if (uStir > 0.) { // stir: the ink keeps drifting, and each recent push of the mouse or a finger drags it along
+          at += uStir * .05 * (vec2(n(at * 3. + uTime * .05), n(at * 3. + 9. - uTime * .04)) - .5);
+          for (int i = 0; i < 8; i++) { vec2 d = (at - uM[i].xy) * vec2(uA, 1.); at -= uM[i].zw * exp(-dot(d, d) * 40.); }
+        }
         float inside = step(0., at.x) * step(at.x, 1.) * step(0., at.y) * step(at.y, 1.);
         float a = max(max(wash(0, uW.x, uS.x, vUv), wash(1, uW.y, uS.y, vUv)), wash(2, uW.z, uS.z, at) * inside);
         o = vec4(uC, 1.) * a * uMax;
@@ -504,9 +549,12 @@ __LIBS__
         W[i] = Math.max(0, 1 - Math.abs(d) * 1.2) * vis; S[i] = d * 0.18; });
       const hold = Math.min(1, Math.max(0, 1 + wr.top / innerHeight)); // over the first screen of the work, epaRadar's own place takes over
       W[0] = Math.max(W[0], inkHand.q * hold); // the ink from RUN carries on as epaRadar's ground
-      if (endPull.p > 0) { W[2] = 1; S[2] = 0; } // EDGE's wash stays while it pulls in, wherever its project went
-      const dr = dot.getBoundingClientRect(); g.uniform2f(u("uDot"), (dr.left + dr.width / 2) / innerWidth, (dr.top + dr.height / 2) / innerHeight);
-      g.uniform1f(u("uPull"), endPull.p); W.push(endPull.p, dr.top);
+      if (endPull.p > 0) { W[2] = END === "form" ? 1 - endPull.p : 1; S[2] = 0; } // EDGE's wash stays while it turns into the end, wherever its project went
+      const [ax, ay] = endAt(); g.uniform2f(u("uDot"), ax / innerWidth, ay / innerHeight);
+      const pull = END === "sign" || END === "fill" ? endPull.p : 0, stir = END === "stir" ? endPull.p : 0, now = performance.now();
+      g.uniform1f(u("uPull"), pull); g.uniform1f(u("uStir"), stir); g.uniform1f(u("uTime"), now / 1000); g.uniform1f(u("uA"), innerWidth / innerHeight);
+      const M = new Float32Array(32); stirs.forEach((m, i) => { const k = Math.exp(-(now - m.t) / 700) * 0.6; M.set([m.x / innerWidth, m.y / innerHeight, (m.vx / innerWidth) * k, (m.vy / innerHeight) * k], i * 4); });
+      g.uniform4fv(u("uM"), M); W.push(endPull.p, ay, stir ? now : 0);
       const key = W.concat(S).map((x) => x.toFixed(3)).join();
       if (key === last) return; last = key;
       g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
@@ -524,6 +572,67 @@ __LIBS__
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.MIRRORED_REPEAT); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
       size(); ready = true; draw();
     }).catch(() => {});
+  })();
+
+  // form: the last wash breaks into blue specks that fly onto the form's lines, the Send button's edge and the email's
+  // underline (picked from the paper wash's own paint, so they start where the smoke was)
+  const specks = (() => {
+    const st = { draw: () => {} }, end = document.querySelector(".end");
+    if (END !== "form" || still) return st;
+    const cv = document.querySelector(".specks"), g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
+    if (!g) return st;
+    end.classList.add("specked");
+    const N = phone() ? 2600 : 6000, from = new Float32Array(N * 2), seg = new Uint8Array(N), at = new Float32Array(N), wob = new Float32Array(N * 2), del = new Float32Array(N), pos = new Float32Array(N * 2);
+    const lines = () => { const out = [], R = (el) => el.getBoundingClientRect();
+      end.querySelectorAll(".form input:not([tabindex]), .form textarea").forEach((el) => { const r = R(el); out.push([r.left, r.bottom, r.right, r.bottom]); });
+      const b = R(end.querySelector(".form button")); out.push([b.left, b.top, b.right, b.top], [b.right, b.top, b.right, b.bottom], [b.right, b.bottom, b.left, b.bottom], [b.left, b.bottom, b.left, b.top]);
+      const a = R(end.querySelector(".addr")); out.push([a.left, a.bottom, a.right, a.bottom]); return out; };
+    const img = new Image(); img.src = "assets/wash.webp";
+    img.decode().then(() => {
+      const c2 = document.createElement("canvas"); c2.width = 320; c2.height = 160; const x2 = c2.getContext("2d"); x2.drawImage(img, 0, 0, 320, 160);
+      const px = x2.getImageData(0, 0, 320, 160).data, A = innerWidth / innerHeight, F = [Math.min(A / 2, 1), Math.min(2 / A, 1)];
+      const L = lines(), lens = L.map(([a, b, c, d]) => Math.hypot(c - a, d - b)), tot = lens.reduce((x, y) => x + y, 0);
+      for (let i = 0; i < N; i++) {
+        let u, v; do { u = Math.random(); v = Math.random(); } while (px[((v * 160) | 0) * 1280 + ((u * 320) | 0) * 4 + 2] / 255 < Math.random() * 1.2);
+        from[i * 2] = ((u - 0.5) / F[0] + 0.5) * innerWidth; from[i * 2 + 1] = ((v - 0.5) / F[1] + 0.5) * innerHeight;
+        let r = Math.random() * tot, k = 0; while (r > lens[k] && k < L.length - 1) r -= lens[k++];
+        seg[i] = k; at[i] = r / lens[k]; wob[i * 2] = (Math.random() - 0.5) * 2; wob[i * 2 + 1] = (Math.random() - 0.5) * 2; del[i] = Math.random() * 0.45;
+      }
+      st.ready = true; st.draw(st.p || 0);
+    }).catch(() => {});
+    const sh = (type, src) => { const x = g.createShader(type); g.shaderSource(x, src); g.compileShader(x); return x; };
+    const pr = g.createProgram();
+    g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
+      in vec2 aP; uniform vec2 uR; uniform float uS; void main() { gl_Position = vec4(aP / uR * vec2(2., -2.) + vec2(-1., 1.), 0., 1.); gl_PointSize = uS; }`));
+    g.attachShader(pr, sh(g.FRAGMENT_SHADER, `#version 300 es
+      precision mediump float; out vec4 o; uniform vec3 uC; uniform float uO;
+      void main() { float d = length(gl_PointCoord - .5); o = vec4(uC, 1.) * smoothstep(.5, .2, d) * uO; }`));
+    g.linkProgram(pr); g.useProgram(pr);
+    const buf = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, buf);
+    const aP = g.getAttribLocation(pr, "aP"); g.enableVertexAttribArray(aP); g.vertexAttribPointer(aP, 2, g.FLOAT, false, 0, 0);
+    const u = (k) => g.getUniformLocation(pr, k);
+    g.uniform3f(u("uC"), ...getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim().match(/\w\w/g).map((x) => parseInt(x, 16) / 255));
+    g.enable(g.BLEND); g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
+    const ease = (t) => 1 - (1 - t) ** 3;
+    st.draw = (p) => {
+      st.p = p; if (!st.ready) return;
+      const k = Math.min(devicePixelRatio, 2); if (cv.width !== Math.round(innerWidth * k)) { cv.width = Math.round(innerWidth * k); cv.height = Math.round(innerHeight * k); }
+      g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
+      if (p <= 0) return;
+      const L = lines(), sw = Math.min(innerWidth, 900) * 0.12;
+      for (let i = 0; i < N; i++) {
+        const t = ease(Math.min(1, Math.max(0, (p - del[i]) / 0.55))), [a, b, c, d] = L[seg[i]], f = Math.sin(t * Math.PI);
+        pos[i * 2] = from[i * 2] + (a + (c - a) * at[i] - from[i * 2]) * t + wob[i * 2] * sw * f;
+        pos[i * 2 + 1] = from[i * 2 + 1] + (b + (d - b) * at[i] - from[i * 2 + 1]) * t + wob[i * 2 + 1] * sw * f;
+      }
+      g.bufferData(g.ARRAY_BUFFER, pos, g.DYNAMIC_DRAW);
+      g.uniform2f(u("uR"), innerWidth, innerHeight); g.uniform1f(u("uS"), 2.2 * k); g.uniform1f(u("uO"), Math.min(1, p * 3) * 0.9);
+      g.drawArrays(g.POINTS, 0, N);
+    };
+    // the lines move with the page: draw while the end is on screen
+    let on = false; const loop = () => { if (!on) return; st.draw(st.p || 0); requestAnimationFrame(loop); };
+    new IntersectionObserver(([e]) => { on = e.isIntersecting; if (on) loop(); }).observe(end);
+    return st;
   })();
 
   if (still || !window.gsap) return; // the plain page: first screen, signature already written
@@ -851,14 +960,20 @@ __LIBS__
     const tall = document.querySelector(".tall img");
     extras.push(gsap.to(tall, { yPercent: -70, ease: "none", scrollTrigger: { trigger: tall.parentElement, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } }));
   };
-  // moment 5: as WRITE TO ME comes up, the last wash pulls together into its full stop; the dot shows as the wash arrives
+  // moment 5: as WRITE TO ME comes up, the last wash turns into the end (picture round: sign | form | stir | fill)
   let endTl;
   const buildEnd = () => {
     endTl?.scrollTrigger?.kill(); endTl?.kill();
-    const img = document.querySelector(".end .dot img"); gsap.set(img, { clearProps: "opacity,scale" });
-    endTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".end h2", start: "top bottom", end: "top 30%", scrub: true } });
-    endTl.fromTo(endPull, { p: 0 }, { p: 1, duration: 1, ease: "power2.in" }, 0)
-      .fromTo(img, { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1.3, duration: 0.25, ease: "power2.out" }, 0.8);
+    endTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".end h2", start: "top bottom", end: END === "form" ? "top 5%" : "top 30%", scrub: true } });
+    if (END === "sign") { // the smoke gathers onto the signature's first point, then the signature writes
+      endTl.fromTo(endPull, { p: 0 }, { p: 1, duration: 0.5, ease: "power2.in" }, 0);
+      const total = SIGN.strokes.reduce((a, x) => a + x.len, 0); let t = 0.46;
+      SIGN.strokes.forEach((x, i) => { const d = (0.5 * x.len) / total; endTl.fromTo(endStrokes[i], { strokeDashoffset: x.len + MASK }, { strokeDashoffset: 0, duration: d, ease: "power1.inOut" }, t); t += d + 0.01; });
+    } else if (END === "fill") { // the smoke pulls into the big words, then swirls on inside them
+      endTl.fromTo(endPull, { p: 0 }, { p: 1, duration: 0.7, ease: "power2.in" }, 0).fromTo(".end .fillink", { opacity: 0 }, { opacity: 1, duration: 0.35 }, 0.6);
+    } else if (END === "form") { // the wash breaks into specks that become the form's lines
+      endTl.fromTo(endPull, { p: 0 }, { p: 1, duration: 1, onUpdate: () => specks.draw(endPull.p) }, 0);
+    } else endTl.fromTo(endPull, { p: 0 }, { p: 1, duration: 0.4 }, 0); // stir: the wash stays, alive under the hand
   };
   const ready = () => { build(); buildSay(); buildWork(); buildEnd(); ScrollTrigger.refresh(); };
   photo.complete ? ready() : photo.addEventListener("load", ready, { once: true });
