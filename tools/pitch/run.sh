@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Walks the paint pitch (.cache/pitch/paint.html) with playwright-cli at 1440 x 900 and on a phone (Pixel, 412 wide)
+# Walks the paint pitch (.cache/pitch/paint.html, and the front page front.html: checks front*) with playwright-cli at 1440 x 900 and on a phone (Pixel, 412 wide)
 # and prints one JSON result per check. Pictures: .cache/shots/pitch-*.png.
 # Behaviour checks run 4 at a time (JOBS=n), each with its own browser session, page server and tag store. The checks
 # that time the pour or measure frame speed (FRAME_CHECKS) run alone afterwards: side by side they would disturb each other.
@@ -17,7 +17,7 @@ root="$PWD"
 mkdir -p .cache/shots .cache/walk
 . tools/walk/graphics.sh || exit 1
 
-names="tour waits endwaits replay2 reduced contrast plates tagsfull scrollup loop pickspot tagit tagstore admin"
+names="tour waits endwaits replay2 reduced contrast plates tagsfull scrollup loop pickspot tagit tagstore admin front frontstill" # front*: the front page (front.html)
 FRAME_CHECKS=" waits endwaits tagsfull "
 JOBS="${JOBS:-4}"
 out=$(mktemp -d)
@@ -37,7 +37,8 @@ job() { # check, then "desktop" or "phone": its own servers and browser session;
     curl -fs "http://127.0.0.1:$port/paint.html" >/dev/null 2>&1 && curl -fs "http://127.0.0.1:$port/api/tags" >/dev/null 2>&1 && break
     sleep 0.1
   done
-  sed -e "s#__URL__#http://127.0.0.1:$port/paint.html#g" -e "s#__SHOTS__#$root/.cache/shots/#g" "tools/pitch/checks/$1.js" > "$script"
+  local page=paint.html; case "$1" in front*) page=front.html ;; esac
+  sed -e "s#__URL__#http://127.0.0.1:$port/$page#g" -e "s#__SHOTS__#$root/.cache/shots/#g" "tools/pitch/checks/$1.js" > "$script"
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
   # The walls' live numbers come from GitHub's public API, which a visitor's IP may ask only 60 times an hour: a whole run would use that up
