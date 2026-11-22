@@ -763,8 +763,8 @@ __LIBS__
         gl_Position = place(vec3(uRect.xy + aUv * uRect.zw, d * uD)); }`,
       `#version 300 es
       precision highp float;
-      in vec2 vUv; uniform sampler2D uImg, uImg2, uDepth; uniform float uGrey, uFade, uMix, uD, uLight, uKeyAmt;
-      uniform vec4 uRect, uCellA, uCellB; uniform vec3 uRing[3], uKey, uBlue; out vec4 o;
+      in vec2 vUv; uniform sampler2D uImg, uImg2, uDepth; uniform float uGrey, uFade, uMix, uD, uPenAmt;
+      uniform vec4 uRect, uCellA, uCellB; uniform vec3 uPen, uBlue; out vec4 o;
       float dep(vec2 uv) { uv = clamp(uv, 0.0, 1.0); return mix(texture(uDepth, uCellA.xy + uv * uCellA.zw).r, texture(uDepth, uCellB.xy + uv * uCellB.zw).r, uMix); }
       void main() {
         vec4 c = mix(texture(uImg, vUv), texture(uImg2, vUv), uMix); // between two frames of the turn, so it never steps
@@ -772,29 +772,18 @@ __LIBS__
         if (a < 0.04) discard;
         vec3 rgb = c.rgb / max(c.a, 0.001);
         float l = dot(rgb, vec3(0.299, 0.587, 0.114));
-        // lit by the blue: the frame's depth gives his face its shape (normals), the ring is a real blue light at three
-        // points along the stroke; behind him it only reaches the edges that face it, so it rims his cheek and jaw.
-        // On a laptop the mouse is a soft white key light
-        if (uLight > 0.0) {
+        rgb = mix(rgb, vec3(l) * 0.74, uGrey);
+        // lit by the blue (dark screen only): the pen that writes the signature is a blue light. It travels over his dimmed
+        // face as the ring unwinds and the name is written; the frame's depth gives the face its shape, his outline catches most
+        if (uPenAmt > 0.0) {
           vec2 e = vec2(2.0 / 150.0, 2.0 / 188.0);
           float dx = (dep(vUv + vec2(e.x, 0.0)) - dep(vUv - vec2(e.x, 0.0))) * uD / (2.0 * e.x * uRect.z);
           float dy = (dep(vUv + vec2(0.0, e.y)) - dep(vUv - vec2(0.0, e.y))) * uD / (2.0 * e.y * uRect.w);
-          vec3 n = normalize(vec3(-dx, -dy, 1.0)), P = vec3(uRect.xy + vUv * uRect.zw, dep(vUv) * uD);
-          // the rim: a thin band inside his outline (the cut-out's own edge, sampled about 7 px out), on the side that
-          // faces the ring; strongest where the ring is behind him
-          vec2 r = vec2(7.0) / uRect.zw;
-          float ax = mix(texture(uImg, vUv + vec2(r.x, 0.0)).a, texture(uImg2, vUv + vec2(r.x, 0.0)).a, uMix) - mix(texture(uImg, vUv - vec2(r.x, 0.0)).a, texture(uImg2, vUv - vec2(r.x, 0.0)).a, uMix);
-          float ay = mix(texture(uImg, vUv + vec2(0.0, r.y)).a, texture(uImg2, vUv + vec2(0.0, r.y)).a, uMix) - mix(texture(uImg, vUv - vec2(0.0, r.y)).a, texture(uImg2, vUv - vec2(0.0, r.y)).a, uMix);
-          vec2 gr = vec2(ax, ay); float edge = smoothstep(0.05, 0.6, length(gr)); vec2 out2 = -gr / max(length(gr), 1e-4);
-          float blue = 0.0;
-          for (int i = 0; i < 3; i++) { vec3 L = uRing[i] - P; float dist = length(L.xy) / uRect.z;
-            blue += max(dot(out2, normalize(L.xy)), 0.0) * (L.z < 0.0 ? 1.0 : 0.45) / (1.0 + dist * dist * 4.0); }
-          blue *= edge;
-          vec3 K = normalize(uKey - P); float key = max(dot(n, K), 0.0);
-          rgb *= mix(1.0, 0.78 + 0.38 * key, uKeyAmt);
-          rgb = mix(rgb, uBlue * 1.2, clamp(blue * 1.4, 0.0, 0.8) * uLight * (1.0 - uGrey));
+          vec3 n = normalize(vec3(-dx * 3.0, -dy * 3.0, 1.0)), P = vec3(uRect.xy + vUv * uRect.zw, dep(vUv) * uD);
+          vec3 L = uPen - P; float dist = length(L.xy) / uRect.z;
+          float diff = max(dot(n, normalize(L)), 0.0), fall = 1.0 / (1.0 + dist * dist * 10.0);
+          rgb += uBlue * (diff * 0.75 + pow(1.0 - n.z, 0.6) * 0.5) * fall * uPenAmt;
         }
-        rgb = mix(rgb, vec3(l) * 0.74, uGrey);
         o = vec4(rgb * a, a);
       }`);
     const ribP = prog(head + `
@@ -880,6 +869,23 @@ __LIBS__
     const leadSvg = document.querySelector(".lead"), lead = leadSvg.querySelector("path"), stage = document.querySelector(".stage");
     const ease = gsap.parseEase("power1.inOut");
     const inkPx = () => LINE * svg.getScreenCTM().a; // the line's full width on screen, the same for ring, lead and signature
+    // where the blue pen is now, in the canvas's pixels: the front of the line the ring unwinds into, then the tip of the
+    // signature stroke being written; null when no line is moving
+    const penAt = () => {
+      const cr = cv.getBoundingClientRect(), k = cr.width / W, toCv = (x, y) => [(x - cr.left) / k, (y - cr.top) / k];
+      if (look.unwind > 0.001 && look.leadTail < 0.999 && lead.style.opacity !== "0") {
+        const sr = stage.getBoundingClientRect(), p = lead.getPointAtLength(ease(look.unwind) * lead.getTotalLength());
+        return toCv(sr.left + p.x, sr.top + p.y);
+      }
+      for (const el of strokes) {
+        const len = el.getTotalLength(), off = +gsap.getProperty(el, "strokeDashoffset"); // len + MASK (hidden) -> 0 (written)
+        if (off > 0.5 && off < len + MASK - 0.5) {
+          const m = svg.getScreenCTM(), q = el.getPointAtLength(Math.max(0, len - off)); // the masks share the signature's units
+          return toCv(m.a * q.x + m.c * q.y + m.e, m.b * q.x + m.d * q.y + m.f);
+        }
+      }
+      return null;
+    };
     const leadAt = (t, rot, slide) => {
       if (look.unwind <= 0.001 || look.leadTail >= 0.999 || !ringAt) { lead.style.opacity = 0; return; }
       const T = still ? 0 : t / 1000, cr = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect(), k = cr.width / W;
@@ -928,11 +934,10 @@ __LIBS__
       g.activeTexture(g.TEXTURE2); g.bindTexture(g.TEXTURE_2D, tImg2); g.uniform1i(loc(photoP, "uImg2"), 2);
       g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tDep); g.uniform1i(loc(photoP, "uDepth"), 1);
       g.uniform4f(loc(photoP, "uCellA"), ...cell(held[0])); g.uniform4f(loc(photoP, "uCellB"), ...cell(held[1])); g.uniform1f(loc(photoP, "uMix"), held[0] === held[1] ? 0 : turnMix);
-      const slideNow = still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08, rl = 0.43 * look.ribbon;
-      g.uniform3fv(loc(photoP, "uRing"), new Float32Array([0.2, 0.5, 0.8].flatMap((f) => ringAt(slideNow + rl * (look.unwind + (1 - look.unwind) * f)).slice(0, 3))));
-      g.uniform1f(loc(photoP, "uLight"), LIGHT * look.ribbon * look.fade * (1 - look.unwind)); g.uniform3f(loc(photoP, "uBlue"), ...SPRAY);
-      keyAmt += ((phone() || still ? 0 : LIGHT ? 1 : 0) - keyAmt) * 0.05;
-      g.uniform1f(loc(photoP, "uKeyAmt"), keyAmt); g.uniform3f(loc(photoP, "uKey"), (mouse.x + 0.5) * W, (mouse.y + 0.5) * H, D * 6);
+      const pen = penAt(); penAmt += ((pen ? 1 : 0) - penAmt) * (1 - Math.exp(-dt / (pen ? 0.15 : 0.8)));
+      if (pen) penXY = pen;
+      g.uniform1f(loc(photoP, "uPenAmt"), LIGHT * penAmt * look.grey); g.uniform3f(loc(photoP, "uBlue"), ...SPRAY);
+      g.uniform3f(loc(photoP, "uPen"), penXY[0], penXY[1], D * 2.5);
       g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), D); g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
       g.drawElements(g.TRIANGLES, idx.length, g.UNSIGNED_INT, 0);
       const slide = still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08; // one lap in 48 s
@@ -952,7 +957,7 @@ __LIBS__
     // the turn: frames t00..t21, t12 faces you; depth.webp holds their depth maps, 6 to a row
     const TURN = 22, TURN_MID = 12, COLS = 6, ROWS = 4, turnFrames = [], held = [TURN_MID, TURN_MID];
     const LIGHT = +(new URLSearchParams(location.search).get("light") ?? 1); // ?light=0: the pitch's before picture
-    let keyAmt = 0, turnAt = 0, turnV = 0, turnMix = 0, lastT = null, gTo = 0, gUntil = 2500;
+    let penAmt = 0, penXY = [0, 0], turnAt = 0, turnV = 0, turnMix = 0, lastT = null, gTo = 0, gUntil = 2500;
     // on a phone he looks at you most of the time; now and then he glances to one side, holds it and looks back
     const glance = (t) => {
       if (t > gUntil) { const away = gTo === 0 && Math.random() < 0.7;
