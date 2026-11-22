@@ -266,7 +266,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .name { top: 11svh; font-size: min(17.5vw, 15svh); }
   .name .ln { display: block; }
   .hint { display: none; }
-  .role { top: 31svh; bottom: auto; left: 0; right: 0; max-width: 30ch; margin: 0 auto; padding: 0 var(--gutter); text-align: center; } /* under the name: name and role in the first look */
+  .role { top: calc(11svh + min(17.5vw, 15svh) * 1.8 + 12px); bottom: auto; left: 0; right: 0; max-width: 30ch; margin: 0 auto; padding: 0 var(--gutter); text-align: center; } /* under the name: name and role in the first look */
   .links { gap: 14px; font-size: 13px; }
   /* phone: the pane sits higher, the names run under it where they can be read */
   .rows { top: 60%; translate: 0 0; }
@@ -279,6 +279,9 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .proj.b .tall { justify-self: start; width: 40%; margin-top: -30%; }
   .proj.c .big { width: 88%; justify-self: end; }
   .proj.c .small { justify-self: start; width: 36%; margin-top: -40%; }
+}
+@media (max-width: 640px) and (max-height: 500px) {
+  .role { display: none; } /* a phone on its side: no room between the name and him */
 }
 /* without motion: the first screen as it is, then the signature written under it */
 @media (prefers-reduced-motion: reduce) {
@@ -825,7 +828,7 @@ __LIBS__
     const tex = (im) => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // filtered edges stay clean (no light rim round the hair)
       g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, im); g.generateMipmap(g.TEXTURE_2D);
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR_MIPMAP_LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE); return t; };
-    const FACE_H = 0.503, FACE_Y = 0.485; // where his face is in the turn's pictures (tools: turn_build.py)
+    const FACE_H = 0.503, FACE_Y = 0.485; // where his face is in the turn's pictures (made by turn_build.py, in the studio tools outside git)
     let tImg, tImg2, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, wob = 3, band = 1, ringAt = null;
     const size = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);
