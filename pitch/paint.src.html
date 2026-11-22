@@ -165,7 +165,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 <div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div id="admFrames" hidden></div><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="tagMoveB" hidden>Move it</button><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"><i class="hs" id="admSize" hidden aria-hidden="true"></i><i class="ht" id="admTurn" hidden aria-hidden="true"></i></div><div class="menu" id="tagTools" role="group" aria-label="Tool" hidden></div><div class="menu cols" id="tagCols" role="group" aria-label="Colour" hidden></div><div class="bar" id="admSel" hidden><button type="button" class="go" id="admApprove" hidden>Approve</button><button type="button" id="admRemove" hidden>Remove</button><button type="button" id="admUndo" hidden>Undo</button><button type="button" id="admDone">Done</button></div><div class="bar" id="tagBar" hidden><button type="button" id="tagTool" aria-expanded="false" aria-controls="tagTools"><span class="ic"></span><span class="nm"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagCol" aria-expanded="false" aria-controls="tagCols" aria-label="Colour"><span class="dot"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagUndo" aria-label="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="go" id="tagDone" disabled>Done</button></div><div class="bar" id="tagSend" hidden><input id="tagName" maxlength="24" placeholder="Your name (optional)" aria-label="Your name, optional" autocomplete="nickname" enterkeyhint="done" spellcheck="false"><button type="button" id="tagBack">Back</button><button type="button" class="go" id="tagPut">Put it on the wall</button></div></div>
 <div class="adm" id="adm" hidden><span id="admNote">Admin</span><button type="button" id="admOpen">Edit the wall</button></div>
 <div class="white" id="white"></div>
-<div class="head" id="head"><span>Tom Larsson &middot; a collection of builds</span><h1>I build and run things myself.</h1></div>
+<div class="head" id="head"><span>Tom Larsson &middot; Product engineer</span><h1>I build and run things myself.</h1></div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/geometries/RoundedBoxGeometry.js"></script>
@@ -355,9 +355,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   LEDGE.x0 = LEDGE.x + BK.r0 + BK.h;
   const ledgeArrive = x => LEDGE.tip + .05 + Math.max(0, x - LEDGE.x0) / LEDGE.spread;
   const pourNor = tex("assets/wall4_nor_gl.jpg", false, PW / TILE, HT / TILE, (WW / 2 - WX - PW / 2) / TILE, 0);
+  const PAINT_HEX = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(), PAINT = new THREE.Color(PAINT_HEX); // the paint: the front's blue (Tom 11-22, one site), from tokens.css
   const pourU = { uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
     uA: { value: Array.from({ length: NS }, () => new THREE.Vector4(0, -99, -99, 99)) }, uB: { value: Array.from({ length: NS }, () => new THREE.Vector4()) },
-    uC: { value: new THREE.Color("rgb(255,79,26)") }, uRep: { value: pourNor.repeat }, uOff: { value: pourNor.offset }, uDims: { value: new THREE.Vector4(PW, PH, HT, GROUND) }, uYB: { value: YB },
+    uC: { value: PAINT }, uRep: { value: pourNor.repeat }, uOff: { value: pourNor.offset }, uDims: { value: new THREE.Vector4(PW, PH, HT, GROUND) }, uYB: { value: YB },
     uSh: { value: new THREE.Vector4(.3, VSH, WALL_TOP, 0) }, uL: { value: new THREE.Vector4(LEDGE.tip + .05, LEDGE.x0, LEDGE.spread, 0) } };
   const pourMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .22, clearcoat: .9, clearcoatRoughness: .1, envMapIntensity: .9, normalMap: pourNor, normalScale: new THREE.Vector2(.5, .5), polygonOffset: true, polygonOffsetFactor: -2 });
   pourMat.onBeforeCompile = sh => {
@@ -582,7 +583,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     mv[i * 3] = gauss() * .9; mv[i * 3 + 1] = .1 + Math.random() * .7; mv[i * 3 + 2] = .2 + Math.random() * .6; ml[i] = .8 + Math.random() * .2; } }
 
   // ---- the intro: a dark wall, a bucket filling like a progress bar, then the paint goes onto the wall (plays once, by itself)
-  const ORANGE = new THREE.Color("rgb(255,79,26)");
+  const ORANGE = PAINT; // named for the old orange; the paint is the token's blue
   const metal = new THREE.MeshPhysicalMaterial({ color: 0x8b9197, metalness: .85, roughness: .36, clearcoat: .3, envMapIntensity: 1.2, side: THREE.DoubleSide });
   const paintIn = new THREE.MeshPhysicalMaterial({ color: ORANGE, roughness: .1, clearcoat: 1, clearcoatRoughness: .04, envMapIntensity: 1.1 });
   const paintCoat = paintIn.clone(); paintCoat.side = THREE.DoubleSide; const coatCut = new THREE.Plane(); paintCoat.clippingPlanes = [coatCut]; renderer.localClippingEnabled = true;
@@ -765,7 +766,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     // while it fills: the paint level as a number (nothing in the first second); when full: what to do (signum L1, L2)
     const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000);
     const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
-    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>${txt}</b>Tom Larsson &middot; a collection of builds`; }
+    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>Tom Larsson &middot; Product engineer</b>${txt}`; }
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -125 : -60); // phone: no room at the side, so above
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
@@ -780,7 +781,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   }
   const T_END = 0, lifts = HAND.strokes.length - 1;
   const toWorld = (x, y) => V(-PW / 2 + x / PX, PCY + PH / 2 - y / PX, 0);
-  const SPRAY = "255,79,26";
+  const SPRAY = [PAINT.r, PAINT.g, PAINT.b].map(v => Math.round(v * 255)).join(","); // Tom's tag in the paint's colour
   function spray(x, y, p, amount) {
     const rc = 5 + p * 9;
     const gr = g.createRadialGradient(x, y, 0, x, y, rc); gr.addColorStop(0, `rgba(${SPRAY},${.7 * amount})`); gr.addColorStop(.5, `rgba(${SPRAY},${.45 * amount})`); gr.addColorStop(1, `rgba(${SPRAY},0)`);
@@ -795,9 +796,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const can = new THREE.Group();
   const prof = [[0, 0], [.27, 0], [.3, .02], [.3, 1.02], [.285, 1.1], [.2, 1.2], [.115, 1.25], [.115, 1.29], [0, 1.29]].map(([r, y]) => new THREE.Vector2(r, y));
   const body = new THREE.Mesh(new THREE.LatheGeometry(prof, 72), new THREE.MeshPhysicalMaterial({ color: 0x0c0c0e, metalness: .55, roughness: .32, clearcoat: 1, clearcoatRoughness: .08, envMapIntensity: 1.2 }));
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(.302, .302, .32, 72, 1, true), new THREE.MeshPhysicalMaterial({ color: 0xff4f1a, roughness: .4, clearcoat: .6, envMapIntensity: .8 })); band.position.y = .82;
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(.302, .302, .32, 72, 1, true), new THREE.MeshPhysicalMaterial({ color: PAINT, roughness: .4, clearcoat: .6, envMapIntensity: .8 })); band.position.y = .82;
   const rim = new THREE.Mesh(new THREE.TorusGeometry(.115, .012, 12, 48), new THREE.MeshStandardMaterial({ color: 0xd8d8dc, metalness: 1, roughness: .22 })); rim.rotation.x = Math.PI / 2; rim.position.y = 1.29;
-  const capMat = new THREE.MeshPhysicalMaterial({ color: 0xff4f1a, roughness: .35, clearcoat: .5 });
+  const capMat = new THREE.MeshPhysicalMaterial({ color: PAINT, roughness: .35, clearcoat: .5 });
   const cap = new THREE.Mesh(new THREE.CylinderGeometry(.06, .066, .1, 32), capMat); cap.position.y = 1.34;
   const tip = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .03, 16), new THREE.MeshStandardMaterial({ color: 0x111111 })); tip.rotation.x = Math.PI / 2; tip.position.set(0, 1.355, -.065);
   [body, band, rim, cap, tip].forEach(m => can.add(m)); scene.add(can);
@@ -855,7 +856,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // labels pinned to the can and to the writing, with real facts from the hand file
   const tagCan = document.getElementById("tagCan"), tagHand = document.getElementById("tagHand"), svg = document.getElementById("lines");
   tagCan.innerHTML = `<b>${HAND.pen}</b>written ${HAND.written}`;
-  tagHand.innerHTML = "<b>Tom Larsson</b>A collection of builds";
+  tagHand.innerHTML = "<b>Tom Larsson</b>Product engineer";
   svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/><line id="l2"/><circle id="c2" r="4"/>');
   const proj = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight, p.z < 1]; };
   function pin(el, line, dot, world, dx, dy) {
@@ -1835,7 +1836,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     ? { A: [V(.4, .9, 13.5), V(0, .9, 0)], B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX + .3, EY + .6, 21.5), V(EX + .3, EY + .4, 0)], D: [V(EX + 3.2, EY + .5, 16), V(EX + 3.2, EY + .3, 0)], E: [V(RX - 1.2, .5 - 2 * DROP, 24.5), V(RX - 1.2, -.1 - 2 * DROP, 0)], F: [V(RX - 1, .4 - 2 * DROP, 23), V(RX - 1, -.2 - 2 * DROP, -1)] } // phone: the whole painting across the screen, then after the car to the underpass
     : { A: [V(1.3, .5, 11), V(.1, .6, 0)], B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
   // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street; phone: closer, the middle of it
-  const VISIT = NARROW ? [V(-12, 3.2, 15), V(-12, 3.4, 0)] : [V(-12, 3.4, 13.5), V(-12, 3.4, 0)], tagUp = document.getElementById("tagUp"), UP_AT = V(-6, .2, 0);
+  const VISIT = NARROW ? [V(-12, 3.2, 15), V(-12, 3.4, 0)] : [V(-12, 3.4, 13.5), V(-12, 3.4, 0)], tagUp = document.getElementById("tagUp"), UP_AT = NARROW ? V(-6, -1.3, 0) : V(-6, .2, 0); // a phone stacks the line in four rows down to the wall's foot: the label goes under it, never over a word
   let stencilAt = 0;
   let mx = 0, my = 0; addEventListener("pointermove", e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; });
   // render size follows the machine: weak graphics (T14s, Intel UHD: 46-57 ms a frame at full size, 12 ms at half, 11-16) draw fewer pixels
