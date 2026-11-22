@@ -148,7 +148,7 @@ form#mail button:disabled { opacity: .7; cursor: default; }
 form#mail button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; margin: 0; font: 500 20px/1.35 "Inter", system-ui, sans-serif; color: var(--ink); text-align: center; }
 /* wall: no box; the fields are lines sprayed on the dark panel, typed text in clean light letters, a sprayed button */
-:root form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); opacity: .75; filter: url(#rough); transition: background 160ms, box-shadow 160ms; }
+:root form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); opacity: .4; filter: url(#rough); transition: background 160ms, box-shadow 160ms; }
 :root form#mail label.trap::after { display: none; }
 :root form#mail label:focus-within::after { background: var(--ink); opacity: 1; } /* the front's focus: the line goes full cream */
 @media (max-aspect-ratio: 4/5) { html form#mail { gap: 6px 10px; padding: 10px 12px; } }
