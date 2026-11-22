@@ -847,7 +847,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   composer.addPass(lens);
 
   const fit = () => {
-    const w = innerWidth, h = innerHeight; camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h, false); composer.setSize(w, h);
+    const w = innerWidth, h = innerHeight; camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h, false); composer.setSize(w, h); canvas.style.height = h + "px"; // the picture exactly as tall as the page draws for: on a phone 100vh is the screen with the address bar hidden, so with the bar showing the picture stretched and every tap area and the form sat above its mark (S23, 11-22)
     lens.uniforms.uRes.value.set(w * renderer.getPixelRatio(), h * renderer.getPixelRatio()); mist.material.uniforms.uScale.value = h * renderer.getPixelRatio() / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
   };
   fit(); addEventListener("resize", fit);
