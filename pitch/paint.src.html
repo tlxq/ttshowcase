@@ -1373,6 +1373,24 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   eWall.position.set(ECX, GROUND + eWallH / 2, .003);
   const eFloor = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eFD), endMat({ map: eMapF, roughness: .8 })); eFloor.rotation.x = -Math.PI / 2; eFloor.position.set(ECX, GROUND + .004, eFD / 2);
   eWall.visible = eFloor.visible = false; scene.add(eWall, eFloor);
+  // a tear-off tab (Tom 11-22): the link opens at once and the tab tears off at the same moment, peels out from the flyer and lands on the street
+  // in front of the wall, where it stays; the gap stays on the flyer. Reduced motion: it lies there at once.
+  const TORN = [];
+  function tearTab(k) { if (TORN.some(t => t.k === k)) return; const [fx0, fy0, fx1, fy1] = E.flyer, t = E.tabs[k];
+    const x0 = k ? t[0] - 2 : fx0 - 4, x1 = k < E.tabs.length - 1 ? E.tabs[k + 1][0] - 2 : fx1 + 4, y0 = t[1] - 2, y1 = fy1 + 8, w = x1 - x0, h = y1 - y0;
+    const edge = (g, ox, oy) => { let sd = 7 + k; const rn = () => (sd = sd * 16807 % 2147483647) / 2147483647; g.beginPath(); g.moveTo(ox, oy + 6); for (let x = 0; x <= w; x += 9) g.lineTo(ox + x, oy + 2 + rn() * 8); g.lineTo(ox + w, oy + h); g.lineTo(ox, oy + h); g.closePath(); }; // the torn top: a ragged line along the cut
+    const pc = Object.assign(document.createElement("canvas"), { width: w, height: h }), pg = pc.getContext("2d"); edge(pg, 0, 0); pg.clip(); pg.drawImage(eCan, x0, y0, w, h, 0, 0, w, h);
+    const g = eCan.getContext("2d"); g.save(); g.globalCompositeOperation = "destination-out"; edge(g, x0, y0); g.fill(); g.restore(); eMapW.needsUpdate = eMapF.needsUpdate = true;
+    const map = new THREE.CanvasTexture(pc); map.encoding = THREE.sRGBEncoding; map.anisotropy = maxAniso;
+    const pw = w * EK, ph = h * EK, me = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), new THREE.MeshStandardMaterial({ map, transparent: true, roughness: .8, side: THREE.DoubleSide }));
+    const top = eAt((x0 + x1) / 2, y0).add(V(0, 0, .02)), rest = V(top.x + (k - 1) * .25, GROUND + .012 + k * .002, .45 + ph / 2 + k * .12);
+    TORN.push({ k, me, top, ph, rest, at: performance.now() - (REDUCED ? 1e5 : 0), spin: (k - 1) * .35 + .15 }); scene.add(me); }
+  window.endTorn = () => TORN.map(t => ({ k: t.k, landed: t.me.position.distanceTo(t.rest) < .01, shown: t.me.visible })); // for the tour check
+  function tornPlace(now, op) { for (const t of TORN) { const s = (now - t.at) / 1000, PEEL = .22, FALL = .7, a1 = .45, me = t.me; me.visible = op > .01; me.material.opacity = op;
+    const peel = (a, rz) => { me.position.set(t.top.x, t.top.y - t.ph / 2 * Math.cos(a), t.top.z + t.ph / 2 * Math.sin(a)); me.rotation.set(-a, 0, rz); };
+    if (s < PEEL) peel(a1 * (s / PEEL) ** 2, 0); // pulled out from the bottom, still held along the cut
+    else { const u = Math.min(1, (s - PEEL) / FALL), uy = u * u; peel(a1, 0); const p0 = me.position.clone();
+      me.position.set(p0.x + (t.rest.x - p0.x) * u, p0.y + (t.rest.y - p0.y) * uy, p0.z + (t.rest.z - p0.z) * u); me.rotation.set(-(a1 + (Math.PI / 2 - a1) * u), 0, t.spin * u); } } } // free: falls (slow, then faster) and lands face up
   window.endDbg2 = () => { const out = []; scene.traverse(o => { if (o.isMesh && o.visible) { o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld); if (b.max.y - b.min.y > 3 && b.min.x > -9 && b.max.x < 3) out.push([o.geometry.type, b.min.toArray().map(v => +v.toFixed(1)), b.max.toArray().map(v => +v.toFixed(1))]); } }); return out; };
   window.endDbg = () => ({ fl: [eFloor.visible, eFloor.material.opacity, eFloor.position.toArray(), eFD], map: eMapF.repeat.toArray(), off: eMapF.offset.toArray() });
   const endS = { day: false, dusk: false, show: false }; let eOp = 0, eLast = 0, eFog = false;
@@ -1381,7 +1399,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   function endCams() { if (!NARROW) return [V(ECX, 1.4, 17.2), V(ECX, 1.3, 15.8), V(ECX, .1, 0)];
     const x = eU(400) + (eU(1100) - eU(400)) * ePan, z = 18.5 - 5.2 * ePan, y = .2 + .1 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
   function endWallState(now, show, dusk) { const dt = Math.min(.1, (now - eLast) / 1000); eLast = now;
-    eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) { m.visible = eOp > .01; m.material.opacity = eOp; }
+    eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) { m.visible = eOp > .01; m.material.opacity = eOp; } tornPlace(now, eOp);
     paint.visible = !show; pourMesh.visible = pourReady && !show; puddle.visible = !show; if (creep) creep.mesh.visible = !show; POSTMESH.forEach(m => m.visible = !show); // the poured line, its run and the street light are not drawn by day, in front of the painting
     if (show && !pick.mode) { scene.fog.density = .012; eFog = true; } else if (!show && eFog && !pick.mode) { scene.fog.density = .04; eFog = false; } // the painting is 16 m away: the haze of the opening would wash it out
     endS.show = show; endS.dusk = dusk; if (!show) { ePan = ePanT = 0; eAuto = 0; } }
@@ -1422,6 +1440,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     hotOn(leaveHot, "Leave your tag", makeGlow(() => eFile, EB, E.can, { colour: PAINT_HEX }));
     E.signs.forEach((b, i) => hotOn([mailHot, gitHot, liHot][i], labelOf([mailHot, gitHot, liHot][i]), makeGlow(() => eFile, EB, b, { colour: PAINT_HEX })));
     hotOn(backHot, "Back to the start", makeGlow(() => eFile, EB, E.arrow, { colour: "#ffffff", floor: true }));
+    [mailHot, gitHot, liHot].forEach((el, k) => el.addEventListener("click", () => { tearTab(k); HOTL.find(h => h.el === el).glow.gone = true; })); // the gap has no glow: the tab it lit is on the ground // the link itself opens as usual: nothing waits for the tear
     endS.hots = { leaveHot, mailHot, gitHot, liHot, backHot }; }
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
     const { leaveHot, mailHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(NARROW && ePanT); // a phone looking at the form has no marks over it to tap: nothing may lie over the form; the tabs sit under it, so they stay live
@@ -1444,7 +1463,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     for (const h of HOTL) { const el = h.el, shown = el.style.display === "block" && !el.hidden, on = shown && el.matches(":hover, :focus-visible"), g = h.glow; let target = on ? 1 : 0;
       if (shown) { g.build(); if (!g.pulsed && PULSE && !REDUCED) { g.pulsed = true; g.pulse = now; } }
       if (g.pulse >= 0) { const t = (now - g.pulse) / 1400; if (t < 1) target = Math.max(target, .5 * Math.sin(Math.PI * t)); else g.pulse = -1; }
-      g.op += (target - g.op) * (REDUCED ? 1 : Math.min(1, dt * 10)); if (g.mesh) { g.mesh.material.opacity = g.op; g.mesh.visible = g.op > .01; } if (on) act = h; }
+      g.op += (target - g.op) * (REDUCED ? 1 : Math.min(1, dt * 10)); if (g.mesh) { g.mesh.material.opacity = g.op; g.mesh.visible = g.op > .01 && !g.gone; } if (on) act = h; }
     if (act) { const r = act.el.getBoundingClientRect(); hlEl.textContent = act.label; hlEl.classList.add("on"); const lw = hlEl.offsetWidth, lh = hlEl.offsetHeight;
       hlEl.style.left = cl((r.left + r.right) / 2 - lw / 2, 8, innerWidth - lw - 8) + "px"; hlEl.style.top = (r.top - lh - 8 < 8 ? r.bottom + 8 : r.top - lh - 8) + "px"; } else hlEl.classList.remove("on"); }
   // Back to the start (Tom 11-17, the loop): on the same wall the sun goes down, the street light flickers on and the camera steps in to the

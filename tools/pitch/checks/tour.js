@@ -1,5 +1,5 @@
 // The whole walk: tap the bucket, then each stop down to the end; a picture at each stop (__SHOTS__pitch-<width>-<stop>.png).
-// Fails on a console or page error, a three.js warning (THREE.…), or when the morning's form doesn't show at the end, or its five painted marks have no 48 px tap area of their own.
+// Fails on a console or page error, a three.js warning (THREE.…), or when the morning's form doesn't show at the end, or its five painted marks have no 48 px tap area of their own, or the email tab doesn't tear off when tapped.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('THREE.'))) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   await page.goto('__URL__'); await page.waitForTimeout(3500);
@@ -22,5 +22,8 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (!/data:image\/svg/.test(res.cursor)) errs.push('the painted marks have no spray-can cursor');
   if (W >= 600) { const r = res.marks[0]; await page.mouse.move((r.l + r.r) / 2, (r.t + r.b) / 2); await page.waitForTimeout(500);
     res.hover = await page.evaluate(() => { const l = document.querySelector('.hl'); return { text: l.textContent, op: +getComputedStyle(l).opacity }; }); if (res.hover.text !== 'Leave your tag' || res.hover.op < .9) errs.push('hovering the can shows no label: ' + JSON.stringify(res.hover)); await page.mouse.move(2, 2); }
+  // a tap on the email tab tears it off: it lands on the street in front of the wall (the mail app opening is the browser's)
+  { const m = res.tabs[0]; await page.mouse.click((m.l + m.r) / 2, (m.t + m.b) / 2); await page.waitForTimeout(1500); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-torn.png' });
+    res.torn = await page.evaluate(() => endTorn()); if (!res.torn.length || !res.torn[0].landed || !res.torn[0].shown) errs.push('the email tab did not tear off and land: ' + JSON.stringify(res.torn)); }
   if (!res.end.form) errs.push('the end shows no form');
   return JSON.stringify(res); }
