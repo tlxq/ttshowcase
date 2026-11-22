@@ -310,8 +310,8 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
       <div class="pane"><div class="inner">
         <div class="cream"></div>
         <h1 class="name"><span class="ln"><span>Tom</span></span> <span class="ln"><span>Larsson</span></span></h1>
-        <img class="photo col" src="assets/turn/t24.webp" alt="Tom Larsson" width="600" height="753" fetchpriority="high">
-        <img class="photo bw" src="assets/turn/t24.webp" alt="" width="600" height="753">
+        <img class="photo col" src="assets/turn/t12.webp" alt="Tom Larsson" width="600" height="753" fetchpriority="high">
+        <img class="photo bw" src="assets/turn/t12.webp" alt="" width="600" height="753">
         <canvas class="gl" aria-hidden="true"></canvas>
         <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
         <p class="hint">Scroll</p>
@@ -749,7 +749,7 @@ __LIBS__
     const cv = document.querySelector(".gl"), g = cv.getContext("webgl2", { premultipliedAlpha: true, antialias: true });
     if (!g) return false;
     const img = document.querySelector(".photo.col"), dimg = new Image();
-    dimg.src = "assets/tom_depth.webp";
+    dimg.src = "assets/turn/depth.webp"; // one depth map per frame of the turn, in a grid
     const sh = (type, src) => { const s = g.createShader(type); g.shaderSource(s, src); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s)); return s; };
     const prog = (vs, fs) => { const p = g.createProgram(); g.attachShader(p, sh(g.VERTEX_SHADER, vs)); g.attachShader(p, sh(g.FRAGMENT_SHADER, fs)); g.linkProgram(p); return p; };
     const head = `#version 300 es
@@ -757,13 +757,15 @@ __LIBS__
       uniform vec2 uView; uniform vec3 uC; uniform mat3 uRot;
       vec4 place(vec3 p) { p = uRot * (p - uC) + uC; return vec4(p.x / uView.x * 2.0 - 1.0, 1.0 - p.y / uView.y * 2.0, -p.z / 4000.0, 1.0); }`;
     const photoP = prog(head + `
-      in vec2 aUv; uniform vec4 uRect; uniform float uD; uniform sampler2D uDepth; out vec2 vUv;
-      void main() { vUv = aUv; float d = texture(uDepth, aUv).r; gl_Position = place(vec3(uRect.xy + aUv * uRect.zw, d * uD)); }`,
+      in vec2 aUv; uniform vec4 uRect, uCellA, uCellB; uniform float uD, uMix; uniform sampler2D uDepth; out vec2 vUv;
+      void main() { vUv = aUv; // bent over the depth of the two frames on show, blended like the pictures
+        float d = mix(texture(uDepth, uCellA.xy + aUv * uCellA.zw).r, texture(uDepth, uCellB.xy + aUv * uCellB.zw).r, uMix);
+        gl_Position = place(vec3(uRect.xy + aUv * uRect.zw, d * uD)); }`,
       `#version 300 es
       precision highp float;
-      in vec2 vUv; uniform sampler2D uImg; uniform float uGrey, uFade; out vec4 o;
+      in vec2 vUv; uniform sampler2D uImg, uImg2; uniform float uGrey, uFade, uMix; out vec4 o;
       void main() {
-        vec4 c = texture(uImg, vUv);
+        vec4 c = mix(texture(uImg, vUv), texture(uImg2, vUv), uMix); // between two frames of the turn, so it never steps
         float a = c.a * smoothstep(0.84, 0.52, vUv.y) * smoothstep(0.01, 0.15, vUv.x) * smoothstep(0.99, 0.85, vUv.x) * uFade;
         if (a < 0.04) discard;
         vec3 rgb = c.rgb / max(c.a, 0.001);
@@ -809,7 +811,7 @@ __LIBS__
     const tex = (im) => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // filtered edges stay clean (no light rim round the hair)
       g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, im); g.generateMipmap(g.TEXTURE_2D);
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR_MIPMAP_LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE); return t; };
-    let tImg, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, wob = 3, band = 1, ringAt = null;
+    let tImg, tImg2, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, wob = 3, band = 1, ringAt = null;
     const size = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);
       W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
@@ -882,13 +884,13 @@ __LIBS__
       if (!on || !tImg) return;
       mouse.x += (mouse.tx - mouse.x) * 0.06; mouse.y += (mouse.ty - mouse.y) * 0.06;
       const sway = phone() ? Math.sin(t / 1600) * 0.07 : 0;
-      // the living portrait (award step 5, prototype): his real head turn, filmed in the studio 11-21 (49 frames, left
-      // profile -> facing you -> right profile). On a laptop he turns toward the mouse; on a phone he looks round slowly
-      // by himself. The 3D turn is only a hint now, the film does the turning
-      const want = still ? 0.5 : phone() ? 0.5 + Math.sin(t / 2600) * 0.38 + Math.sin(t / 1100) * 0.06 : 0.5 + mouse.x * 1.1;
-      turnAt += (Math.min(0.88, Math.max(0, want)) - turnAt) * 0.08; // to the right his nose meets the photo's soft edge sooner
-      const fi = TURN0 + Math.round(turnAt * (TURN - 1)); // three-quarter left to three-quarter right: in full profile the crop cut his nose
-      if (fi !== turnShown && turnFrames[fi]) { g.bindTexture(g.TEXTURE_2D, tImg); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, turnFrames[fi]); g.generateMipmap(g.TEXTURE_2D); turnShown = fi; }
+      // the living portrait (award step 5): his real head turn, filmed in the studio 11-21, 3 degrees a frame from
+      // three-quarter left (36) to facing you to his right (27, where his nose meets the photo's soft edge). On a laptop
+      // he turns toward the mouse; on a phone he looks round slowly by himself. Two frames show at once, blended
+      const want = still ? 0 : phone() ? Math.sin(t / 2600) * 0.8 + Math.sin(t / 1100) * 0.12 : mouse.x * 2.2;
+      turnAt += (Math.min(1, Math.max(-1, want)) - turnAt) * 0.08;
+      const fi = TURN_MID + turnAt * (turnAt < 0 ? TURN_MID : TURN - 1 - TURN_MID), ia = Math.min(TURN - 2, Math.floor(fi));
+      if (turnFrames[ia] && turnFrames[ia + 1]) { showPair(ia); turnMix = fi - ia; }
       const yaw = mouse.x * 0.06 + sway * 0.2 + look.spin * 0.2, pitch = -mouse.y * 0.05;
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       const rot = new Float32Array([cy, sy * sp, -sy * cp, 0, cp, sp, sy, -cy * sp, cy * cp]);
@@ -897,8 +899,10 @@ __LIBS__
       for (const p of [photoP, ribP]) { g.useProgram(p); g.uniform2f(loc(p, "uView"), W, H); g.uniform3f(loc(p, "uC"), ...C); g.uniformMatrix3fv(loc(p, "uRot"), false, rot); }
       g.useProgram(photoP); g.bindVertexArray(pVao);
       g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, tImg); g.uniform1i(loc(photoP, "uImg"), 0);
+      g.activeTexture(g.TEXTURE2); g.bindTexture(g.TEXTURE_2D, tImg2); g.uniform1i(loc(photoP, "uImg2"), 2);
       g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tDep); g.uniform1i(loc(photoP, "uDepth"), 1);
-      g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), 0); /* flat: the depth map belongs to the old photo */ g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
+      g.uniform4f(loc(photoP, "uCellA"), ...cell(held[0])); g.uniform4f(loc(photoP, "uCellB"), ...cell(held[1])); g.uniform1f(loc(photoP, "uMix"), held[0] === held[1] ? 0 : turnMix);
+      g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), D); g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
       g.drawElements(g.TRIANGLES, idx.length, g.UNSIGNED_INT, 0);
       const slide = still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08; // one lap in 48 s
       leadAt(t, rot, slide);
@@ -914,11 +918,21 @@ __LIBS__
     };
     const SPRAY = (() => { const c = new URLSearchParams(location.search).get("ink") || getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(); /* ?ink=hex: a pitch-only trial colour */ const m = c.match(/^#?([0-9a-f]{6})$/i);
       return m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255) : [1, 0.33, 0.1]; })();
-    const TURN0 = 12, TURN = 25, turnFrames = []; let turnAt = 0.5, turnShown = 24; // frames t12..t36, t24 faces you
+    // the turn: frames t00..t21, t12 faces you; depth.webp holds their depth maps, 6 to a row
+    const TURN = 22, TURN_MID = 12, COLS = 6, ROWS = 4, turnFrames = [], held = [TURN_MID, TURN_MID];
+    let turnAt = 0, turnMix = 0;
+    const cell = (i) => [(i % COLS + 0.004) / COLS, (Math.floor(i / COLS) + 0.004) / ROWS, 0.992 / COLS, 0.992 / ROWS]; // inset: no bleed from the next cell
+    const put = (t, i) => { g.bindTexture(g.TEXTURE_2D, t); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, turnFrames[i]); g.generateMipmap(g.TEXTURE_2D); };
+    const showPair = (a) => { // frames a and a + 1 on the two textures; one step along needs one upload, not two
+      if (held[0] === a && held[1] === a + 1) return;
+      if (held[1] === a || held[0] === a + 1) { [tImg, tImg2] = [tImg2, tImg]; held.reverse(); }
+      if (held[0] !== a) { put(tImg, a); held[0] = a; }
+      if (held[1] !== a + 1) { put(tImg2, a + 1); held[1] = a + 1; }
+    };
     Promise.all([img.decode(), dimg.decode()]).then(() => {
-      tImg = tex(img); tDep = tex(dimg); size();
-      // the other 48 frames load after the first screen is up, nearest the middle first
-      [...Array(TURN).keys()].map((i) => i + TURN0).sort((a, b) => Math.abs(a - 24) - Math.abs(b - 24)).forEach((i, n) => setTimeout(() => {
+      tImg = tex(img); tImg2 = tex(img); tDep = tex(dimg); size(); turnFrames[TURN_MID] = img;
+      // the other frames load after the first screen is up, nearest the middle first
+      [...Array(TURN).keys()].filter((i) => i !== TURN_MID).sort((a, b) => Math.abs(a - TURN_MID) - Math.abs(b - TURN_MID)).forEach((i, n) => setTimeout(() => {
         const f = new Image(); f.src = `assets/turn/t${String(i).padStart(2, "0")}.webp`; f.decode().then(() => { turnFrames[i] = f; }).catch(() => {}); }, 400 + n * 20));
       document.documentElement.classList.add("has-gl");
       gsap.to(cv, { opacity: 1, duration: 0.6 });
