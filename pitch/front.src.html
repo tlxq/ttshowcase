@@ -882,13 +882,15 @@ __LIBS__
     const draw = (t) => {
       requestAnimationFrame(draw);
       if (!on || !tImg) return;
-      mouse.x += (mouse.tx - mouse.x) * 0.06; mouse.y += (mouse.ty - mouse.y) * 0.06;
+      const dt = Math.min(0.05, (t - (lastT ?? t)) / 1000); lastT = t; // in seconds, so 60 Hz and 120 Hz screens move alike
+      const ease = 1 - Math.exp(-dt / 0.12); mouse.x += (mouse.tx - mouse.x) * ease; mouse.y += (mouse.ty - mouse.y) * ease;
       const sway = phone() ? Math.sin(t / 1600) * 0.07 : 0;
       // the living portrait (award step 5): his real head turn, filmed in the studio 11-21, 3 degrees a frame from
       // three-quarter left (36) to facing you to his right (27, where his nose meets the photo's soft edge). On a laptop
       // he turns toward the mouse; on a phone he looks round slowly by himself. Two frames show at once, blended
-      const want = still ? 0 : phone() ? Math.sin(t / 2600) * 0.8 + Math.sin(t / 1100) * 0.12 : mouse.x * 2.2;
-      turnAt += (Math.min(1, Math.max(-1, want)) - turnAt) * 0.08;
+      const want = still ? 0 : phone() ? glance(t) : mouse.x * 2.2;
+      // a head, not a pointer: a spring that starts slow, arrives without a snap and settles (about 0.4 s)
+      turnV += (36 * (Math.min(1, Math.max(-1, want)) - turnAt) - 12 * turnV) * dt; turnAt += turnV * dt;
       const fi = TURN_MID + turnAt * (turnAt < 0 ? TURN_MID : TURN - 1 - TURN_MID), ia = Math.min(TURN - 2, Math.floor(fi));
       if (turnFrames[ia] && turnFrames[ia + 1]) { showPair(ia); turnMix = fi - ia; }
       const yaw = mouse.x * 0.06 + sway * 0.2 + look.spin * 0.2, pitch = -mouse.y * 0.05;
@@ -920,7 +922,13 @@ __LIBS__
       return m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255) : [1, 0.33, 0.1]; })();
     // the turn: frames t00..t21, t12 faces you; depth.webp holds their depth maps, 6 to a row
     const TURN = 22, TURN_MID = 12, COLS = 6, ROWS = 4, turnFrames = [], held = [TURN_MID, TURN_MID];
-    let turnAt = 0, turnMix = 0;
+    let turnAt = 0, turnV = 0, turnMix = 0, lastT = null, gTo = 0, gUntil = 2500;
+    // on a phone he looks at you most of the time; now and then he glances to one side, holds it and looks back
+    const glance = (t) => {
+      if (t > gUntil) { const away = gTo === 0 && Math.random() < 0.7;
+        gTo = away ? (Math.random() < 0.5 ? -1 : 1) * (0.45 + Math.random() * 0.45) : 0;
+        gUntil = t + (away ? 1300 + Math.random() * 1200 : 2600 + Math.random() * 2400); }
+      return gTo; };
     const cell = (i) => [(i % COLS + 0.004) / COLS, (Math.floor(i / COLS) + 0.004) / ROWS, 0.992 / COLS, 0.992 / ROWS]; // inset: no bleed from the next cell
     const put = (t, i) => { g.bindTexture(g.TEXTURE_2D, t); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, turnFrames[i]); g.generateMipmap(g.TEXTURE_2D); };
     const showPair = (a) => { // frames a and a + 1 on the two textures; one step along needs one upload, not two
