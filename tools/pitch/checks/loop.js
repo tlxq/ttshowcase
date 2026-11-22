@@ -1,5 +1,5 @@
 // The loop (PR4): at the end, "Back to the start" turns the morning into night on the same wall, then the page sits at the park
-// (as after the pour) with the form gone, the scroll free again and the "Scroll up" label showing.
+// (as after the pour) with the form gone, the scroll free again and the "Scroll up" label showing; a torn tab is back on the flyer.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   await page.goto('__URL__'); await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
@@ -8,6 +8,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('mail').classList.contains('on')); if (!on) await page.waitForTimeout(200); }
   if (!on) { errs.push('the morning form never showed, so the loop was not tested'); return JSON.stringify(res); }
   const toLeft = async () => { if (await page.isVisible('#endPan') && (await page.textContent('#endPan')).includes('Leave your tag')) { await page.click('#endPan'); await page.waitForTimeout(2200); } }; // a phone lands on the flyer; Leave your tag and Back to the start are on the left side
+  await page.click('#endMail'); await page.waitForTimeout(1200); res.tornBefore = (await page.evaluate(() => endTorn())).length; // tear the email tab: the next walk must find a whole flyer
   await toLeft(); await page.click('#again'); await page.waitForTimeout(800);
   res.during = await page.evaluate(() => ({ held: document.documentElement.style.overflow === 'hidden', form: document.getElementById('mail').classList.contains('on') }));
   if (!res.during.held) errs.push('the scroll was not held during the dusk');
@@ -18,6 +19,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (!res.after.free) errs.push('after the loop the scroll is still held');
   if (res.after.form) errs.push('after the loop the form still shows');
   if (res.after.label < .9) errs.push('after the loop the "Scroll up" label does not show');
+  res.tornAfter = (await page.evaluate(() => endTorn())).length; if (res.tornBefore !== 1 || res.tornAfter !== 0) errs.push('after the loop the flyer is not whole again: torn before ' + res.tornBefore + ', after ' + res.tornAfter);
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-looped.png' });
   // a second pass with the keyboard: down to the end again, the form shows at once, Enter on the button starts the dusk; Space types in the message
   await page.evaluate(() => scrollTo(0, svY(1180))); on = false; for (let i = 0; i < 40 && !on; i++) { on = await page.evaluate(() => document.getElementById('mail').classList.contains('on')); if (!on) await page.waitForTimeout(200); }

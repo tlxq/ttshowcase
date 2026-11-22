@@ -1368,7 +1368,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     g.save(); g.translate(380, 904); g.scale(1, .5); g.fillStyle = CREAM; g.font = '700 54px "Inter", sans-serif'; g.textAlign = "center"; g.fillText("← Back to the start", 0, 0); g.restore(); // a road marking: drawn flat, the ground is laid 2.2 times deeper
     const d = g.getImageData(0, 0, W, H), p = d.data; for (let i = 0; i < p.length; i += 4) if (p[i + 3]) { const n = rn(); p[i + 3] = Math.max(0, p[i + 3] - n * 40); const f = 1 - n * .06; p[i] *= f; p[i + 1] *= f; p[i + 2] *= f; } g.putImageData(d, 0, 0); // paint and paper, not print: grain
     eMapW.needsUpdate = eMapF.needsUpdate = true; eFile = eCan.toDataURL(); }
-  { const sw = new Image(); sw.onload = () => document.fonts.ready.then(() => Promise.all(['700 100px "Clash Display"', '600 40px "Inter"', '700 40px "Inter"'].map(f => document.fonts.load(f).catch(() => {})))).then(() => paintEnd(sw)); sw.onerror = () => paintEnd(null); sw.src = "assets/swipe.webp"; }
+  let eSwipe = null; { const sw = new Image(); sw.onload = () => document.fonts.ready.then(() => Promise.all(['700 100px "Clash Display"', '600 40px "Inter"', '700 40px "Inter"'].map(f => document.fonts.load(f).catch(() => {})))).then(() => paintEnd(eSwipe = sw)); sw.onerror = () => paintEnd(null); sw.src = "assets/swipe.webp"; }
   for (const t of [eMapW, eMapF]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   const eWall = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eWallH), endMat({ map: eMapW, normalMap: tex("assets/wall4_nor_gl.jpg", false, EPW / TILE, eWallH / TILE, (ECX - EPW / 2 - (WX - WW / 2)) / TILE, 0), normalScale: new THREE.Vector2(.9, .9) }));
   eWall.position.set(ECX, GROUND + eWallH / 2, .003);
@@ -1387,6 +1387,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const top = eAt((x0 + x1) / 2, y0).add(V(0, 0, .02)), rest = V(top.x + (k - 1) * .25, GROUND + .012 + k * .002, .45 + ph / 2 + k * .12);
     TORN.push({ k, me, top, ph, rest, at: performance.now() - (REDUCED ? 1e5 : 0), spin: (k - 1) * .35 + .15 }); scene.add(me); }
   window.endTorn = () => TORN.map(t => ({ k: t.k, landed: t.me.position.distanceTo(t.rest) < .01, shown: t.me.visible })); // for the tour check
+  function untear() { if (!TORN.length) return; for (const t of TORN) { scene.remove(t.me); t.me.geometry.dispose(); t.me.material.map.dispose(); t.me.material.dispose(); }
+    TORN.length = 0; HOTL.forEach(h => { h.glow.gone = false; }); paintEnd(eSwipe); } // a fresh flyer for the next walk (Tom 11-22): the tabs back on the paper, the street clear
   function tornPlace(now, op) { for (const t of TORN) { const s = (now - t.at) / 1000, PEEL = .22, FALL = .7, a1 = .45, me = t.me; me.visible = op > .01; me.material.opacity = op;
     const peel = (a, rz) => { me.position.set(t.top.x, t.top.y - t.ph / 2 * Math.cos(a), t.top.z + t.ph / 2 * Math.sin(a)); me.rotation.set(-a, 0, rz); };
     if (s < PEEL) peel(a1 * (s / PEEL) ** 2, 0); // pulled out from the bottom, still held along the cut
@@ -1403,7 +1405,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) { m.visible = eOp > .01; m.material.opacity = eOp; } tornPlace(now, eOp);
     paint.visible = !show; pourMesh.visible = pourReady && !show; puddle.visible = !show; if (creep) creep.mesh.visible = !show; POSTMESH.forEach(m => m.visible = !show); // the poured line, its run and the street light are not drawn by day, in front of the painting
     if (show && !pick.mode) { scene.fog.density = .012; eFog = true; } else if (!show && eFog && !pick.mode) { scene.fog.density = .04; eFog = false; } // the painting is 16 m away: the haze of the opening would wash it out
-    endS.show = show; endS.dusk = dusk; if (!show) ePan = ePanT = 1; }
+    endS.show = show; endS.dusk = dusk; if (!show) { ePan = ePanT = 1; if (eOp <= .01) untear(); } }
   // phone: swipe sideways on the wall, or the button at the bottom; once the form shows the camera slides to it by itself
   const panBtn = document.getElementById("endPan");
   panBtn.addEventListener("click", () => { ePanT = ePanT ? 0 : 1; });
