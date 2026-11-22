@@ -45,13 +45,6 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .mail button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid var(--front-spray); border-radius: 2px; min-height: 48px; cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
 .mail button:hover { background: color-mix(in srgb, var(--front-spray) 16%, transparent); }
 .mail .err { margin: 0; color: var(--look-text); }
-.mail nav { display: grid; grid-template-columns: auto auto; justify-content: space-between; column-gap: 16px; row-gap: 0; } /* the four ways on, in two even rows: GitHub and LinkedIn, then Leave your tag and Back to the start; no name wraps */
-.mail nav > * { white-space: nowrap; }
-.mail nav a { color: var(--look-text); min-height: 48px; display: inline-flex; align-items: center; text-decoration: none; }
-.mail nav a:hover { color: var(--front-spray); }
-.mail nav .again { font: inherit; color: var(--look-text); background: none; border: 0; padding: 0; min-height: 48px; cursor: pointer; } /* the loop: a button (it acts here, it opens nothing), dressed as the links, apart from the two outside ones */
-.mail nav .again:hover { color: var(--front-spray); background: none; }
-.mail nav .leave { color: var(--look-text); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; } /* Leave your tag (PR5): the way to the visitor wall; first look, its place comes with Back to the start's design pitch */
 /* pick the spot (PR5): the wall dims round a work light on the spot; the frame is the tag's size on the wall */
 .pick { position: fixed; inset: 0; user-select: none; -webkit-user-select: none; pointer-events: none; opacity: 0; transition: opacity 300ms cubic-bezier(.2, 0, 0, 1); touch-action: none; }
 .pick.on { opacity: 1; pointer-events: auto; }
@@ -131,7 +124,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 /* hover on a painted link: a spray-can cursor, no box; the glow and the label are drawn by the page (hotOn in paint.src.html) */
 .hot { cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cg%20stroke='%23101010'%20stroke-width='1.6'%20stroke-linejoin='round'%3E%3Crect%20x='13'%20y='13'%20width='12'%20height='17'%20rx='2'%20fill='%23e8e2d4'/%3E%3Crect%20x='14.5'%20y='7'%20width='9'%20height='6'%20rx='1.5'%20fill='%234aa8ff'/%3E%3Crect%20x='17.5'%20y='3'%20width='3'%20height='4'%20fill='%23e8e2d4'/%3E%3C/g%3E%3Cg%20fill='%234aa8ff'%20stroke='%23101010'%20stroke-width='.5'%3E%3Ccircle%20cx='14'%20cy='4'%20r='1.3'/%3E%3Ccircle%20cx='10'%20cy='3'%20r='1'/%3E%3Ccircle%20cx='11'%20cy='6.5'%20r='.9'/%3E%3Ccircle%20cx='7'%20cy='5'%20r='.7'/%3E%3Ccircle%20cx='6'%20cy='1.8'%20r='.6'/%3E%3C/g%3E%3C/svg%3E") 6 2, pointer; -webkit-tap-highlight-color: transparent; }
 .hot:hover { background: none; }
-.hl { position: fixed; z-index: 30; pointer-events: none; opacity: 0; transition: opacity 140ms cubic-bezier(.2, 0, 0, 1); white-space: nowrap; font: 500 13px/1 ui-monospace, "IBM Plex Mono", monospace; letter-spacing: .04em; color: var(--look-form-ink); background: var(--look-hover-box); border: 1px solid color-mix(in srgb, var(--look-form-ink) 28%, transparent); border-radius: 3px; padding: 8px 10px; box-shadow: 0 4px 14px rgba(0, 0, 0, .5); }
+.hl { position: fixed; z-index: 30; pointer-events: none; opacity: 0; transition: opacity 140ms cubic-bezier(.2, 0, 0, 1); white-space: nowrap; font: 500 13px/1 "Inter", system-ui, sans-serif; letter-spacing: 0; color: var(--look-text); background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; padding: 8px 10px; } /* the labels' plate (one look with the front, 11-22) */
 .hl.on { opacity: 1; }
 button.hot { background: none; border: 0; padding: 0; }
 #endPan { display: none; position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); min-width: 120px; min-height: 48px; padding: 0 18px; font: 500 15px/1 "Inter", system-ui, sans-serif; color: var(--look-form-ink); background: color-mix(in srgb, var(--look-hover-box) 88%, transparent); border: 1px solid color-mix(in srgb, var(--look-form-ink) 35%, transparent); border-radius: 24px; cursor: pointer; pointer-events: auto; z-index: 5; }
@@ -157,7 +150,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 /* wall: no box; the fields are lines sprayed on the dark panel, typed text in clean light letters, a sprayed button */
 :root form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); opacity: .75; filter: url(#rough); transition: background 160ms, box-shadow 160ms; }
 :root form#mail label.trap::after { display: none; }
-:root form#mail label:focus-within::after { background: var(--acc); opacity: 1; }
+:root form#mail label:focus-within::after { background: var(--ink); opacity: 1; } /* the front's focus: the line goes full cream */
 @media (max-aspect-ratio: 4/5) { html form#mail { gap: 6px 10px; padding: 10px 12px; } }
 /* the labels: the front's (Tom 11-22, one look for both pages): on the one plate, Inter, the first line in cream, the rest softer; no glow */
 :root .tag { width: auto; max-width: min(var(--look-neon-width), 74vw); background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; padding: 10px 14px 12px; color: var(--look-soft); font-family: "Inter", system-ui, sans-serif; font-weight: 400; text-transform: none; letter-spacing: 0; filter: none; text-shadow: none; box-shadow: none; }
