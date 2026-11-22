@@ -180,7 +180,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // The opening: a real concrete wall at night, one street light grazing it, and Tom's line poured down the wall
   // as the light comes on. (The hand-written tag code stays but is off: no pen samples.)
   const HAND = __HAND__;
-  const NARROW = innerWidth / innerHeight < .8;
+  const NARROW = innerWidth / innerHeight < .8, narrowNow = () => innerWidth / innerHeight < .8; // NARROW shapes the scene once, at load; the end wall asks again every frame, so a phone turned mid-walk gets the end wall for its new shape
   const PROT = []; // what a plate must never cover: [name, one corner, the other corner (in the wall's own space), which plates ("" = all)]; the plates check reads them
   const canvas = document.getElementById("c");
   let renderer;
@@ -1399,7 +1399,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const endS = { day: false, dusk: false, show: false }; let eOp = 0, eLast = 0, eFog = false;
   // the phone sees a third of the painting at a time: the left side (title, can, logos, arrow) or the form; a swipe or the button moves between them
   let ePan = 1, ePanT = 1, eDrag = null; // a phone lands on the whole flyer (Tom 11-22): WRITE TO ME, the form and the tabs first
-  function endCams() { if (!NARROW) return [V(ECX, 1.4, 17.2), V(ECX, 1.3, 15.8), V(ECX, .1, 0)];
+  function endCams() { if (!narrowNow()) return [V(ECX, 1.4, 17.2), V(ECX, 1.3, 15.8), V(ECX, .1, 0)];
     const x = eU(400) + (eU(1100) - eU(400)) * ePan, z = 18.5 - 5.2 * ePan, y = .2 + .1 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
   function endWallState(now, show, dusk) { const dt = Math.min(.1, (now - eLast) / 1000); eLast = now;
     eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) { m.visible = eOp > .01; m.material.opacity = eOp; } tornPlace(now, eOp);
@@ -1409,8 +1409,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // phone: swipe sideways on the wall, or the button at the bottom; once the form shows the camera slides to it by itself
   const panBtn = document.getElementById("endPan");
   panBtn.addEventListener("click", () => { ePanT = ePanT ? 0 : 1; });
-  if (NARROW) { canvas.style.touchAction = "pan-y";
-    canvas.addEventListener("pointerdown", e => { eDrag = endS.show && !pick.mode ? { x: e.clientX, y: e.clientY } : null; });
+  if (NARROW || matchMedia("(pointer: coarse)").matches) {
+    canvas.addEventListener("pointerdown", e => { eDrag = endS.show && !pick.mode && narrowNow() ? { x: e.clientX, y: e.clientY } : null; });
     canvas.addEventListener("pointermove", e => { if (!eDrag) return; const dx = e.clientX - eDrag.x, dy = e.clientY - eDrag.y; if (Math.abs(dx) > 40 && Math.abs(dx) > 1.5 * Math.abs(dy)) { ePanT = dx < 0 ? 1 : 0; eDrag = null; } });
     canvas.addEventListener("pointerup", () => { eDrag = null; }); canvas.addEventListener("pointercancel", () => { eDrag = null; }); }
   // ---- hover on every painted link (Tom 11-19): the mark's shape lights up with a soft outline glow in its own colour, the cursor is a spray can, a small label
@@ -1446,9 +1446,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     [mailHot, gitHot, liHot].forEach((el, k) => el.addEventListener("click", () => { tearTab(k); HOTL.find(h => h.el === el).glow.gone = true; })); // the gap has no glow: the tab it lit is on the ground // the link itself opens as usual: nothing waits for the tear
     endS.hots = { leaveHot, mailHot, gitHot, liHot, backHot }; }
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
-    const { leaveHot, mailHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(NARROW && ePanT); // a phone looking at the form has no marks over it to tap: nothing may lie over the form; the tabs sit under it, so they stay live
+    const { leaveHot, mailHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(narrowNow() && ePanT); // a phone looking at the form has no marks over it to tap: nothing may lie over the form; the tabs sit under it, so they stay live
     if (endS.show) { const [ax, ay] = proj(eAt(E.form[0], E.form[1])), [bx, by] = proj(eAt(E.form[2], E.form[3])), w = bx - ax, h = by - ay;
-      if (NARROW) { mail.style.transform = ""; mail.style.left = ax + "px"; mail.style.width = w + "px"; mail.style.minHeight = h + "px"; mail.style.top = Math.max(ay + 6, (ay + by) / 2 - mail.offsetHeight / 2) + "px"; } // a phone: the form at full size, for 16 px typing and 48 px taps
+      if (narrowNow()) { mail.style.transform = ""; mail.style.left = ax + "px"; mail.style.width = w + "px"; mail.style.minHeight = h + "px"; mail.style.top = Math.max(ay + 6, (ay + by) / 2 - mail.offsetHeight / 2) + "px"; } // a phone: the form at full size, for 16 px typing and 48 px taps
       else { const k = Math.min(w / FORM_W, h / FORM_H); mail.style.width = FORM_W + "px"; mail.style.minHeight = FORM_H + "px"; mail.style.left = ax + (w - FORM_W * k) / 2 + "px"; mail.style.top = ay + (h - FORM_H * k) / 2 + "px";
         mail.style.transformOrigin = "0 0"; mail.style.transform = `scale(${k}) rotate(${FLYER_TILT}rad)`; } } // print on the paper: the form keeps its layout and grows and shrinks with the flyer
     const grow = ([a, b, c, d]) => [a - 4, b - 4, c + 4, d + 4];
@@ -1458,7 +1458,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       if (!marks || !p.every(q => q[2]) || r - l < 40 || b < 0 || t > innerHeight) { backHot.style.display = "none"; backHot.tabIndex = -1; }
       else { const w = Math.max(48, r - l), h = Math.max(48, b - t); Object.assign(backHot.style, { display: "block", left: (l + r) / 2 - w / 2 + "px", top: (t + b) / 2 - h / 2 + "px", width: w + "px", height: h + "px" }); backHot.tabIndex = 0; } }
     // the phone: the button at the bottom, and the slide to the form once it shows
-    if (NARROW) { ePan += (ePanT - ePan) * (REDUCED ? 1 : Math.min(1, .06)); panBtn.style.display = ui ? "block" : "none"; panBtn.textContent = ePanT ? "‹ Leave your tag" : "Write to me ›"; }
+    canvas.style.touchAction = narrowNow() ? "pan-y" : ""; if (!narrowNow()) panBtn.style.display = "none";
+    if (narrowNow()) { ePan += (ePanT - ePan) * (REDUCED ? 1 : Math.min(1, .06)); panBtn.style.display = ui ? "block" : "none"; panBtn.textContent = ePanT ? "‹ Leave your tag" : "Write to me ›"; }
     // hover: the glow, the label
     let act = null, dt = Math.min(.1, (now - (endPlace.last || now)) / 1000); endPlace.last = now;
     for (const h of HOTL) { const el = h.el, shown = el.style.display === "block" && !el.hidden, on = shown && el.matches(":hover, :focus-visible"), g = h.glow; let target = on ? 1 : 0;
