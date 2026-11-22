@@ -14,7 +14,8 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.goto('__URL__'); await page.evaluate(() => { try { localStorage.clear(); } catch (_) {} return fetch('/api/tags-local/reset', { method: 'POST' }); });
   await page.goto('__URL__');
   if (!(await toForm())) { errs.push('the morning form never showed, so Tag it was not tested'); return JSON.stringify(res); }
-  await page.click('#leave'); await page.waitForTimeout(1700);
+  const toLeft = async () => { if (await page.isVisible('#endPan') && (await page.textContent('#endPan')).includes('Leave your tag')) { await page.click('#endPan'); await page.waitForTimeout(2200); } }; // a phone lands on the flyer; Leave your tag and Back to the start are on the left side
+  await toLeft(); await page.click('#leave'); await page.waitForTimeout(1700);
   const spot = await page.evaluate(() => window.pickTest.freeOnScreen()); await page.mouse.click(spot.x, spot.y); await page.waitForTimeout(1500);
   res.locked = await st();
   if (res.locked.stage !== 'draw' || !res.locked.bar || !res.locked.shown) errs.push('a tap on the wall did not open the drawing bar: ' + JSON.stringify(res.locked));

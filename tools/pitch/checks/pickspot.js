@@ -14,7 +14,8 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     return { mode: p.dataset.mode, on: p.classList.contains('on'), x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), vw: innerWidth, vh: innerHeight,
       taken: f.classList.contains('taken'), stage: window.tagTest.state().stage, focus: document.activeElement === f, held: document.documentElement.style.overflow === 'hidden',
       form: document.getElementById('mail').classList.contains('on'), hint: document.getElementById('pickHint').textContent }; });
-  await page.click('#leave'); await page.waitForTimeout(500);
+  const toLeft = async () => { if (await page.isVisible('#endPan') && (await page.textContent('#endPan')).includes('Leave your tag')) { await page.click('#endPan'); await page.waitForTimeout(2200); } }; // a phone lands on the flyer; Leave your tag and Back to the start are on the left side
+  await toLeft(); await page.click('#leave'); await page.waitForTimeout(500);
   res.going = await state();
   if (!res.going.held) errs.push('the scroll was not held on the way to the wide shot');
   if (res.going.form) errs.push('the form still showed on the way to the wide shot');

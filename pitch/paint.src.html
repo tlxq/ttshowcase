@@ -1319,7 +1319,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     <a class="hot" id="endGit" href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener" aria-label="GitHub" tabindex="-1" style="display: none"></a>
     <a class="hot" id="endLi" href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener" aria-label="LinkedIn" tabindex="-1" style="display: none"></a>
     <button type="button" class="hot" id="again" aria-label="Back to the start" tabindex="-1" style="display: none"></button>
-    <button type="button" id="endPan">Form &rsaquo;</button>`);
+    <button type="button" id="endPan">&lsaquo; Leave your tag</button>`);
   const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
   const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
   mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true; let why;
@@ -1361,7 +1361,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const ty = E.tabs[0][1] - fy0; g.strokeStyle = SOFT; g.lineWidth = 2; g.setLineDash([10, 7]); g.beginPath(); g.moveTo(0, ty); g.lineTo(fw, ty);
     E.tabs.slice(1).forEach(t => { const x = t[0] - fx0 - 2; g.moveTo(x, ty); g.lineTo(x, fh); }); g.stroke(); g.setLineDash([]);
     [["Email", "hello@ttdevs.com"], ["GitHub ↗", "github.com/tlxq"], ["LinkedIn ↗", "in/tlxq"]].forEach(([a, b], k) => { const t = E.tabs[k], x = t[0] - fx0 + 14;
-      g.fillStyle = DARK; g.font = '600 26px "Inter", sans-serif'; g.fillText(a, x, ty + 46); g.fillStyle = SOFT; g.font = '500 18px "Inter", sans-serif'; g.fillText(b, x, ty + 80); });
+      const room = t[2] - t[0] - 22; let px = 24; g.font = `600 ${px}px "Inter", sans-serif`; while (px > 16 && g.measureText(b).width > room) g.font = `600 ${--px}px "Inter", sans-serif`; // the address as big as the tab allows: it has to read on a phone
+      g.fillStyle = DARK; g.fillText(b, x, ty + 84); g.font = '700 28px "Inter", sans-serif'; g.fillText(a, x, ty + 46); });
     g.restore();
     if (swipe) { g.save(); g.translate(fx0 - 30, fy0 + 40); g.rotate(-.5); g.globalAlpha = .9; g.drawImage(swipe, -60, -30, 300, 60); g.restore(); } // the last of the bucket's blue: one stroke across the flyer's corner
     g.save(); g.translate(380, 904); g.scale(1, .5); g.fillStyle = CREAM; g.font = '700 54px "Inter", sans-serif'; g.textAlign = "center"; g.fillText("← Back to the start", 0, 0); g.restore(); // a road marking: drawn flat, the ground is laid 2.2 times deeper
@@ -1395,14 +1396,14 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   window.endDbg = () => ({ fl: [eFloor.visible, eFloor.material.opacity, eFloor.position.toArray(), eFD], map: eMapF.repeat.toArray(), off: eMapF.offset.toArray() });
   const endS = { day: false, dusk: false, show: false }; let eOp = 0, eLast = 0, eFog = false;
   // the phone sees a third of the painting at a time: the left side (title, can, logos, arrow) or the form; a swipe or the button moves between them
-  let ePan = 0, ePanT = 0, eAuto = 0, eDrag = null;
+  let ePan = 1, ePanT = 1, eDrag = null; // a phone lands on the whole flyer (Tom 11-22): WRITE TO ME, the form and the tabs first
   function endCams() { if (!NARROW) return [V(ECX, 1.4, 17.2), V(ECX, 1.3, 15.8), V(ECX, .1, 0)];
     const x = eU(400) + (eU(1100) - eU(400)) * ePan, z = 18.5 - 5.2 * ePan, y = .2 + .1 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
   function endWallState(now, show, dusk) { const dt = Math.min(.1, (now - eLast) / 1000); eLast = now;
     eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) { m.visible = eOp > .01; m.material.opacity = eOp; } tornPlace(now, eOp);
     paint.visible = !show; pourMesh.visible = pourReady && !show; puddle.visible = !show; if (creep) creep.mesh.visible = !show; POSTMESH.forEach(m => m.visible = !show); // the poured line, its run and the street light are not drawn by day, in front of the painting
     if (show && !pick.mode) { scene.fog.density = .012; eFog = true; } else if (!show && eFog && !pick.mode) { scene.fog.density = .04; eFog = false; } // the painting is 16 m away: the haze of the opening would wash it out
-    endS.show = show; endS.dusk = dusk; if (!show) { ePan = ePanT = 0; eAuto = 0; } }
+    endS.show = show; endS.dusk = dusk; if (!show) ePan = ePanT = 1; }
   // phone: swipe sideways on the wall, or the button at the bottom; once the form shows the camera slides to it by itself
   const panBtn = document.getElementById("endPan");
   panBtn.addEventListener("click", () => { ePanT = ePanT ? 0 : 1; });
@@ -1455,9 +1456,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       if (!marks || !p.every(q => q[2]) || r - l < 40 || b < 0 || t > innerHeight) { backHot.style.display = "none"; backHot.tabIndex = -1; }
       else { const w = Math.max(48, r - l), h = Math.max(48, b - t); Object.assign(backHot.style, { display: "block", left: (l + r) / 2 - w / 2 + "px", top: (t + b) / 2 - h / 2 + "px", width: w + "px", height: h + "px" }); backHot.tabIndex = 0; } }
     // the phone: the button at the bottom, and the slide to the form once it shows
-    if (NARROW) { if (pick.mode && eAuto > 0) eAuto = -1; if (ui && !eAuto) eAuto = now; // the visitor chose the tag flow: the camera does not slide away when it comes back
-      if (ui && eAuto > 0 && now - eAuto > 2400) { ePanT = 1; eAuto = -1; }
-      ePan += (ePanT - ePan) * (REDUCED ? 1 : Math.min(1, .06)); panBtn.style.display = ui ? "block" : "none"; panBtn.textContent = ePanT ? "‹ Links" : "Form ›"; }
+    if (NARROW) { ePan += (ePanT - ePan) * (REDUCED ? 1 : Math.min(1, .06)); panBtn.style.display = ui ? "block" : "none"; panBtn.textContent = ePanT ? "‹ Leave your tag" : "Write to me ›"; }
     // hover: the glow, the label
     let act = null, dt = Math.min(.1, (now - (endPlace.last || now)) / 1000); endPlace.last = now;
     for (const h of HOTL) { const el = h.el, shown = el.style.display === "block" && !el.hidden, on = shown && el.matches(":hover, :focus-visible"), g = h.glow; let target = on ? 1 : 0;

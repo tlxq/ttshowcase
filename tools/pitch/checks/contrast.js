@@ -15,11 +15,13 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     const seen = new Set();
     for (let t; (t = walker.nextNode());) { const e = t.parentElement; if (!t.textContent.trim() || seen.has(e) || !shows(e) || e.closest('svg,script,style,noscript')) continue; seen.add(e);
       const s = getComputedStyle(e); let fg = rgb(s.color), bg = null; const layers = [];
-      for (let n = e; n; n = n.parentElement) { const c = rgb(getComputedStyle(n).backgroundColor); if (c[3] > 0) { layers.push(c); if (c[3] >= .99) { bg = c; break; } } }
+      const form = e.closest('#mail'); let paper = false;
+      for (let n = e; n; n = n.parentElement) { const c = rgb(getComputedStyle(n).backgroundColor); if (c[3] > 0) { layers.push(c); if (c[3] >= .99) { bg = c; break; } }
+        if (n === form) { const probe = document.createElement('i'); probe.style.color = getComputedStyle(form).getPropertyValue('--panel'); form.append(probe); bg = rgb(getComputedStyle(probe).color); probe.remove(); paper = true; break; } } // the end form is printed on the flyer: the paper (--panel, any CSS colour, read back as rgb) is what is behind it, not the page
       const name = (e.id ? '#' + e.id : e.className ? '.' + String(e.className).split(' ').join('.') : e.tagName.toLowerCase()) + ' "' + t.textContent.trim().slice(0, 30) + '"';
       const size = parseFloat(s.fontSize), bold = +s.fontWeight >= 700;
-      let from = layers.length - 2; const form = e.closest('#mail');
-      if (!bg && form) { bg = rgb(getComputedStyle(form).getPropertyValue('--panel')); from = layers.length - 1; } // the end form sits on a painted panel: its own colour stands for it
+      let from = layers.length - 2;
+      if (paper) from = layers.length - 1;
       if (!bg) { out.push({ name, size, ratio: null, where }); continue; }
       for (let i = from; i >= 0; i--) bg = over(layers[i], bg);
       fg = over(fg, bg); const a = lum(fg), b = lum(bg), ratio = (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
