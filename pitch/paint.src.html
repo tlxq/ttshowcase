@@ -151,7 +151,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 :root form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); opacity: .4; filter: url(#rough); transition: background 160ms, box-shadow 160ms; }
 :root form#mail label.trap::after { display: none; }
 :root form#mail label:focus-within::after { background: var(--ink); opacity: 1; } /* the front's focus: the line goes full cream */
-@media (max-aspect-ratio: 4/5) { html form#mail { gap: 6px 10px; padding: 10px 12px; } }
+@media (max-aspect-ratio: 4/5) { html form#mail { gap: 0 10px; padding: 0 12px; } form#mail textarea { min-height: 36px; } } /* a phone: the full-size form fits under the flyer's heading */
 /* the labels: the front's (Tom 11-22, one look for both pages): on the one plate, Inter, the first line in cream, the rest softer; no glow */
 :root .tag { width: auto; max-width: min(var(--look-label-width), 74vw); background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; padding: 10px 14px 12px; color: var(--look-soft); font-family: "Inter", system-ui, sans-serif; font-weight: 400; text-transform: none; letter-spacing: 0; filter: none; text-shadow: none; box-shadow: none; }
 :root .tag b { display: block; margin-bottom: .3em; font-family: "Inter", system-ui, sans-serif; font-weight: 600; font-size: 1.2em; line-height: 1.25; letter-spacing: -.01em; text-transform: none; color: var(--look-text); text-shadow: none; }
@@ -1330,7 +1330,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // shows through; the can is the Leave your tag button, the form sits in the painted frame, the two sprayed stencils (GitHub's and LinkedIn's own marks, drawn from their vector shapes) are the links to GitHub and
   // LinkedIn, the arrow on the ground is Back to the start. Picture pixels: 1536 x 960; foot: the row
   // where the wall meets the ground (what is below it lies flat on the street); form: the dark panel's inside.
-  const E = { foot: 795, flyer: [816, 130, 1384, 772], can: [110, 470, 640, 600], form: [846, 330, 1354, 610], tabs: [[822, 650, 1004, 766], [1007, 650, 1193, 766], [1196, 650, 1378, 766]], arrow: [470, 832, 1090, 922], bbox: [35, 120, 1517, 925] }; E.signs = E.tabs.slice(1); // a flyer pasted on the concrete (Tom 11-22): WRITE TO ME printed, the form on the paper, tear-off tabs (email, GitHub, LinkedIn); can: Leave your tag sprayed on the wall; arrow: Back to the start
+  const FORM_W = 500, FORM_H = 276, FLYER_TILT = -.012; // the form laid out once at this size, then scaled to the flyer; the flyer's tilt
+  const E = { foot: 795, flyer: [816, 130, 1384, 772], can: [110, 470, 640, 600], form: [846, 330, 1354, 610], tabs: [[822, 650, 1004, 766], [1007, 650, 1193, 766], [1196, 650, 1378, 766]], arrow: [150, 840, 610, 918], bbox: [35, 120, 1517, 925] }; E.signs = E.tabs.slice(1); // a flyer pasted on the concrete (Tom 11-22): WRITE TO ME printed, the form on the paper, tear-off tabs (email, GitHub, LinkedIn); can: Leave your tag sprayed on the wall; arrow: Back to the start
   const EPW = 13, EK = EPW / 1536, EFLOOR = 2.2, ECX = -1.2; // the painting 13 m wide, centred left of the opening; the floor part is drawn 2.2 times deeper than it is high (a flat arrow seen from a low angle)
   const eU = u => ECX - EPW / 2 + u * EK, eV = v => GROUND + (E.foot - v) * EK;
   const eAt = (u, v) => V(eU(u), eV(v), 0), eFlat = (u, v) => V(eU(u), GROUND, (v - E.foot) * EK * EFLOOR), EB = { at: eAt, k: EK };
@@ -1349,7 +1350,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     g.save(); g.translate(120, 560); g.rotate(-.035); g.font = '700 64px "Clash Display", sans-serif'; g.fillStyle = DARK;
     g.shadowColor = DARK; g.shadowBlur = 14; g.globalAlpha = .35; g.fillText("Leave your tag →", 0, 0); g.shadowBlur = 0; g.globalAlpha = .92; g.fillText("Leave your tag →", 0, 0); g.restore();
     // the flyer: cream paper, pasted a little crooked, its shadow, glue sheen and creases
-    const [fx0, fy0, fx1, fy1] = E.flyer, fw = fx1 - fx0, fh = fy1 - fy0, tilt = -.012;
+    const [fx0, fy0, fx1, fy1] = E.flyer, fw = fx1 - fx0, fh = fy1 - fy0, tilt = FLYER_TILT;
     g.save(); g.translate(fx0 + fw / 2, fy0 + fh / 2); g.rotate(tilt); g.translate(-fw / 2, -fh / 2);
     g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = 10; g.shadowOffsetY = 3; g.fillStyle = CREAM;
     g.beginPath(); g.moveTo(0, 0); g.lineTo(fw - 46, 0); g.lineTo(fw - 30, 14); g.lineTo(fw - 18, 6); g.lineTo(fw, 26); g.lineTo(fw, fh - 128); g.lineTo(fw, fh); g.lineTo(0, fh); g.closePath(); g.fill(); g.shadowColor = "transparent"; // the top-right corner torn
@@ -1362,7 +1363,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       g.fillStyle = DARK; g.font = '600 26px "Inter", sans-serif'; g.fillText(a, x, ty + 46); g.fillStyle = SOFT; g.font = '500 18px "Inter", sans-serif'; g.fillText(b, x, ty + 80); });
     g.restore();
     if (swipe) { g.save(); g.translate(fx0 - 30, fy0 + 40); g.rotate(-.5); g.globalAlpha = .9; g.drawImage(swipe, -60, -30, 300, 60); g.restore(); } // the last of the bucket's blue: one stroke across the flyer's corner
-    g.save(); g.translate(780, 902); g.scale(1, .5); g.fillStyle = CREAM; g.font = '700 74px "Inter", sans-serif'; g.textAlign = "center"; g.fillText("← Back to the start", 0, 0); g.restore(); // a road marking: drawn flat, the ground is laid 2.2 times deeper
+    g.save(); g.translate(380, 904); g.scale(1, .5); g.fillStyle = CREAM; g.font = '700 54px "Inter", sans-serif'; g.textAlign = "center"; g.fillText("← Back to the start", 0, 0); g.restore(); // a road marking: drawn flat, the ground is laid 2.2 times deeper
     const d = g.getImageData(0, 0, W, H), p = d.data; for (let i = 0; i < p.length; i += 4) if (p[i + 3]) { const n = rn(); p[i + 3] = Math.max(0, p[i + 3] - n * 40); const f = 1 - n * .06; p[i] *= f; p[i + 1] *= f; p[i + 2] *= f; } g.putImageData(d, 0, 0); // paint and paper, not print: grain
     eMapW.needsUpdate = eMapF.needsUpdate = true; eFile = eCan.toDataURL(); }
   { const sw = new Image(); sw.onload = () => document.fonts.ready.then(() => Promise.all(['700 100px "Clash Display"', '600 40px "Inter"', '700 40px "Inter"'].map(f => document.fonts.load(f).catch(() => {})))).then(() => paintEnd(sw)); sw.onerror = () => paintEnd(null); sw.src = "assets/swipe.webp"; }
@@ -1424,7 +1425,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
     const { leaveHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(NARROW && ePanT); // a phone looking at the form has no marks to tap: nothing may lie over the form
     if (endS.show) { const [ax, ay] = proj(eAt(E.form[0], E.form[1])), [bx, by] = proj(eAt(E.form[2], E.form[3])), w = bx - ax, h = by - ay;
-      mail.style.left = ax + "px"; mail.style.width = w + "px"; mail.style.minHeight = h + "px"; mail.style.top = (ay + by) / 2 - mail.offsetHeight / 2 + "px"; } // the form fills the painted frame's dark panel
+      if (NARROW) { mail.style.transform = ""; mail.style.left = ax + "px"; mail.style.width = w + "px"; mail.style.minHeight = h + "px"; mail.style.top = Math.max(ay + 6, (ay + by) / 2 - mail.offsetHeight / 2) + "px"; } // a phone: the form at full size, for 16 px typing and 48 px taps
+      else { const k = Math.min(w / FORM_W, h / FORM_H); mail.style.width = FORM_W + "px"; mail.style.minHeight = FORM_H + "px"; mail.style.left = ax + (w - FORM_W * k) / 2 + "px"; mail.style.top = ay + (h - FORM_H * k) / 2 + "px";
+        mail.style.transformOrigin = "0 0"; mail.style.transform = `scale(${k}) rotate(${FLYER_TILT}rad)`; } } // print on the paper: the form keeps its layout and grows and shrinks with the flyer
     const grow = ([a, b, c, d]) => [a - 4, b - 4, c + 4, d + 4];
     placeHots([leaveHot], [E.can], EB, marks && !leaveHot.hidden); placeHots([gitHot, liHot], E.signs.map(grow), EB, marks);
     { const [x0, y0, x1, y1] = E.arrow, p = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([u, v]) => proj(eFlat(u, v)));
