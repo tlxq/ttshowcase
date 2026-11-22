@@ -1,14 +1,14 @@
 {
-  "about": "Speed budget for the front page, read by speed.js. recorded is the build on 2026-11-14 after A3's lighter page (hand paint as short relative paths, the photos as grey AVIF; film bytes are fetched as they near the screen); limits are recorded + 10 %, timings at least + 25 ms (paint varies 72-96 ms between runs of the same build). Bytes are as served by the walk's plain server (no compression), after a walk down the whole page. Paint and blocking are the middle of three first-visit loads, before any scroll. Timings come from a headless browser without a graphics card.",
+  "about": "Speed budget for the front page, read by speed.js. recorded is the build on 2026-11-14 after A3's lighter page (hand paint as short relative paths, the photos as grey AVIF; film bytes are fetched as they near the screen); limits are recorded + 10 %, timings at least + 25 ms (paint varies 72-96 ms between runs of the same build). Bytes are as served by the walk's plain server (no compression), after a walk down the whole page. Paint and blocking are the middle of three first-visit loads, before any scroll. Timings come from a headless browser without a graphics card. 2026-11-22 (Tom): image, film and total re-recorded for the sharper project media (films 1280/390 wide, stills 1920); the first screen's paint stayed at 80 ms.",
   "recorded": {
     "js": 481202,
     "css": 34269,
     "font": 76856,
-    "image": 953818,
-    "film": 469417,
+    "image": 1338452,
+    "film": 1058272,
     "html": 740143,
     "other": 0,
-    "total": 2755705,
+    "total": 3665268,
     "requests": 27,
     "lcpMs": 76,
     "tbtMs": 231
@@ -17,11 +17,11 @@
     "js": 529323,
     "css": 37696,
     "font": 84542,
-    "image": 1049200,
-    "film": 516359,
+    "image": 1472297,
+    "film": 1164099,
     "html": 814158,
     "other": 0,
-    "total": 3031276,
+    "total": 4031795,
     "requests": 30,
     "lcpMs": 101,
     "tbtMs": 256
