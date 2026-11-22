@@ -8,16 +8,16 @@ async page=>{ const errs=[], res={errs};
   new PerformanceObserver(l=>{for(const e of l.getEntries()) if(e.name==='first-contentful-paint') window.__fcp=e.startTime}).observe({type:'paint',buffered:true}); });
  // Paint and blocking time are the page's load, as browsers count them (they stop at the first
  // scroll): taken before the walk down, so a longer page isn't counted as a slower one. Headless
- // timings jump between loads (paint 116-160 ms on the same build), so the page loads three times
+ // timings jump between loads (paint 116-160 ms on the same build), so the page loads five times
  // and the middle value counts.
  const loads=[], cdp=await page.context().newCDPSession(page);
- for(let i=0;i<3;i++){
+ for(let i=0;i<5;i++){
   await cdp.send('Network.clearBrowserCache'); // each load is a first visit
   await page.goto('__WALK_URL__/'); await page.waitForTimeout(4000);
   loads.push(await page.evaluate(()=>{ const fcp=window.__fcp;
    return {lcp:Math.round(window.__lcp),tbt:Math.round(window.__long.filter(([s])=>s>=fcp).reduce((a,[,d])=>a+Math.max(0,d-50),0))}}));
  }
- const mid=k=>loads.map(l=>l[k]).sort((a,b)=>a-b)[1];
+ const mid=k=>loads.map(l=>l[k]).sort((a,b)=>a-b)[2];
  const load={lcp:mid('lcp'),tbt:mid('tbt')};
  // Down the whole page once, so pictures that load as they come near are counted too.
  const height=await page.evaluate(()=>document.documentElement.scrollHeight), vh=await page.evaluate(()=>innerHeight);
