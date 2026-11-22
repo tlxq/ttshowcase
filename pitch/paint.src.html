@@ -1330,13 +1330,34 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // shows through; the can is the Leave your tag button, the form sits in the painted frame, the two sprayed stencils (GitHub's and LinkedIn's own marks, drawn from their vector shapes) are the links to GitHub and
   // LinkedIn, the arrow on the ground is Back to the start. Picture pixels: 1536 x 960; foot: the row
   // where the wall meets the ground (what is below it lies flat on the street); form: the dark panel's inside.
-  const E = { foot: 795, can: [540, 305, 745, 715], form: [820, 356, 1403, 650], signs: [[80, 530, 192, 642], [80, 664, 192, 776]], arrow: [468, 835, 1080, 915], bbox: [35, 209, 1517, 915] };
+  const E = { foot: 795, can: [56, 676, 520, 760], form: [830, 300, 1390, 690], signs: [[56, 578, 262, 646], [290, 578, 530, 646]], arrow: [470, 832, 1090, 922], bbox: [35, 150, 1517, 925] }; // can: Leave your tag; signs: GitHub, LinkedIn; arrow: Back to the start (the rects of the painted words, drawn by paintEnd)
   const EPW = 13, EK = EPW / 1536, EFLOOR = 2.2, ECX = -1.2; // the painting 13 m wide, centred left of the opening; the floor part is drawn 2.2 times deeper than it is high (a flat arrow seen from a low angle)
   const eU = u => ECX - EPW / 2 + u * EK, eV = v => GROUND + (E.foot - v) * EK;
   const eAt = (u, v) => V(eU(u), eV(v), 0), eFlat = (u, v) => V(eU(u), GROUND, (v - E.foot) * EK * EFLOOR), EB = { at: eAt, k: EK };
   const endMat = extra => new THREE.MeshStandardMaterial(Object.assign({ transparent: true, depthWrite: false, roughness: .55, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }, extra));
-  const eHW = E.foot / 960, eHF = 1 - eHW, eFile = "assets/end_wall.webp", eWallH = E.foot * EK, eFD = (960 - E.foot) * EK * EFLOOR;
-  const eMapW = tex(eFile, true, 1, eHW, 0, eHF), eMapF = tex(eFile, true, 1, eHF, 0, 0);
+  const eHW = E.foot / 960, eHF = 1 - eHW,  eWallH = E.foot * EK, eFD = (960 - E.foot) * EK * EFLOOR;
+  // the end wall is painted here, on a canvas, in the front's words and colours (Tom 11-22, walk step 3): WRITE TO ME with the front's blue
+  // swipe under WRITE, the address, GitHub and LinkedIn, Leave your tag, the form's dark panel, and Back to the start on the ground.
+  // Dark paint on the day-lit concrete (the front's dark words on cream); words, not logos (Tom 11-22).
+  const eCan = Object.assign(document.createElement("canvas"), { width: 1536, height: 960 }); let eFile = "";
+  const eTex = () => { const t = new THREE.CanvasTexture(eCan); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
+  const eMapW = eTex(), eMapF = eTex(); eMapW.repeat.set(1, eHW); eMapW.offset.set(0, eHF); eMapF.repeat.set(1, eHF);
+  function paintEnd(swipe) { const g = eCan.getContext("2d", { willReadFrequently: true }), W = 1536, H = 960, css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    const DARK = css("--look-dark"), PANEL = css("--look-form-panel"), CREAM = css("--look-cream"); let sd = 3; const rn = () => (sd = sd * 16807 % 2147483647) / 2147483647;
+    g.clearRect(0, 0, W, H); g.textBaseline = "alphabetic"; g.fillStyle = DARK;
+    const big = 168, x = 60; g.font = `700 ${big}px "Clash Display", sans-serif`;
+    const ww = g.measureText("WRITE").width; if (swipe) { g.globalAlpha = .85; g.drawImage(swipe, x - 14, 300 - big * .06, ww + 40, big * .34); g.globalAlpha = 1; } // the front's band of paint under WRITE
+    g.fillText("WRITE", x, 300); g.fillText("TO ME", x, 300 + big * .92);
+    g.font = '600 46px "Inter", sans-serif'; g.fillText("hello@ttdevs.com", x, 548);
+    g.font = '600 40px "Inter", sans-serif'; g.fillText("GitHub \u2197", x, 626); g.fillText("LinkedIn \u2197", 296, 626);
+    g.font = `700 52px "Clash Display", sans-serif`; g.fillText("Leave your tag \u2192", x, 738);
+    { const by = Math.round(300 + big * .92 - 3), row = g.getImageData(0, by, W, 1).data; let n = 0; for (let k = 0; k < 400 && n < 6; k++) { const dx = Math.round(x + rn() * 520); if (row[dx * 4 + 3] < 200) continue; n++; const l = 12 + rn() * 46; g.fillRect(dx - 2.5, by, 5, l); g.beginPath(); g.arc(dx, by + l, 4, 0, 6.283); g.fill(); } } // a few runs, only from the foot of a letter
+    { const [a, b, c, d] = E.form, j = () => (rn() - .5) * 10; g.fillStyle = PANEL; g.beginPath(); g.moveTo(a + j(), b + j()); for (let t = 0; t <= 1; t += .1) g.lineTo(a + (c - a) * t + j(), b + j() * .6);
+      for (let t = 0; t <= 1; t += .1) g.lineTo(c + j() * .6, b + (d - b) * t + j()); for (let t = 1; t >= 0; t -= .1) g.lineTo(a + (c - a) * t + j(), d + j() * .6); for (let t = 1; t >= 0; t -= .1) g.lineTo(a + j() * .6, b + (d - b) * t + j()); g.fill(); } // the form's panel, rolled on
+    g.save(); g.translate(780, 902); g.scale(1, .5); g.fillStyle = CREAM; g.font = '700 74px "Inter", sans-serif'; g.textAlign = "center"; g.fillText("\u2190 Back to the start", 0, 0); g.restore(); // a road marking: drawn flat, the ground is laid 2.2 times deeper
+    const d = g.getImageData(0, 0, W, H), p = d.data; for (let i = 3; i < p.length; i += 4) if (p[i]) p[i] = Math.max(0, p[i] - rn() * 60); g.putImageData(d, 0, 0); // paint, not print: the wall shows through a little
+    eMapW.needsUpdate = eMapF.needsUpdate = true; eFile = eCan.toDataURL(); }
+  { const sw = new Image(); sw.onload = () => document.fonts.ready.then(() => Promise.all(['700 100px "Clash Display"', '600 40px "Inter"', '700 40px "Inter"'].map(f => document.fonts.load(f).catch(() => {})))).then(() => paintEnd(sw)); sw.onerror = () => paintEnd(null); sw.src = "assets/swipe.webp"; }
   for (const t of [eMapW, eMapF]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   const eWall = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eWallH), endMat({ map: eMapW, normalMap: tex("assets/wall4_nor_gl.jpg", false, EPW / TILE, eWallH / TILE, (ECX - EPW / 2 - (WX - WW / 2)) / TILE, 0), normalScale: new THREE.Vector2(.9, .9) }));
   eWall.position.set(ECX, GROUND + eWallH / 2, .003);
@@ -1378,7 +1399,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       const map = new THREE.CanvasTexture(out), cu = (x0 + x1) / 2, cv = (y0 + y1) / 2; map.encoding = THREE.sRGBEncoding;
       g.mesh = new THREE.Mesh(new THREE.PlaneGeometry(GW * B.k, GH * (B.kv || B.k) * (o.floor ? EFLOOR : 1)), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false, toneMapped: false }));
       if (o.floor) { g.mesh.rotation.x = -Math.PI / 2; g.mesh.position.copy(eFlat(cu, cv)).y += .012; } else if (B.flat) { g.mesh.rotation.x = -Math.PI / 2; g.mesh.position.copy(B.at(cu, cv)).y += .012; } else g.mesh.position.copy(B.at(cu, cv)).z += .012;
-      g.mesh.visible = false; scene.add(g.mesh); }; img.src = file; };
+      g.mesh.visible = false; scene.add(g.mesh); }; img.src = typeof file === "function" ? file() : file; };
     return g; }
   const hlEl = document.createElement("div"); hlEl.className = "hl"; hlEl.setAttribute("aria-hidden", "true"); document.querySelector(".hud").append(hlEl);
   const HOTL = [], PULSE = NARROW || matchMedia("(pointer: coarse)").matches, hostOf = h => h.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
@@ -1388,9 +1409,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     hotOn(hot3, labelOf(hot3), RVF_GLOW());
     U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}))));
     const leaveHot = document.getElementById("leave"), gitHot = document.getElementById("endGit"), liHot = document.getElementById("endLi"), backHot = document.getElementById("again");
-    hotOn(leaveHot, "Leave your tag", makeGlow(eFile, EB, E.can, { colour: "#ff8a2a" }));
-    E.signs.forEach((b, i) => hotOn([gitHot, liHot][i], labelOf([gitHot, liHot][i]), makeGlow(eFile, EB, b)));
-    hotOn(backHot, "Back to the start", makeGlow(eFile, EB, E.arrow, { colour: "#ffffff", floor: true }));
+    hotOn(leaveHot, "Leave your tag", makeGlow(() => eFile, EB, E.can, { colour: PAINT_HEX }));
+    E.signs.forEach((b, i) => hotOn([gitHot, liHot][i], labelOf([gitHot, liHot][i]), makeGlow(() => eFile, EB, b, { colour: PAINT_HEX })));
+    hotOn(backHot, "Back to the start", makeGlow(() => eFile, EB, E.arrow, { colour: "#ffffff", floor: true }));
     endS.hots = { leaveHot, gitHot, liHot, backHot }; }
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
     const { leaveHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(NARROW && ePanT); // a phone looking at the form has no marks to tap: nothing may lie over the form
