@@ -1315,6 +1315,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
     <p class="err" role="alert" hidden></p><button>Send</button></div></form>
     <button type="button" class="hot" id="leave" aria-label="Leave your tag" tabindex="-1" style="display: none"></button>
+    <a class="hot" id="endMail" href="mailto:hello@ttdevs.com" aria-label="Email" tabindex="-1" style="display: none"></a>
     <a class="hot" id="endGit" href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener" aria-label="GitHub" tabindex="-1" style="display: none"></a>
     <a class="hot" id="endLi" href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener" aria-label="LinkedIn" tabindex="-1" style="display: none"></a>
     <button type="button" class="hot" id="again" aria-label="Back to the start" tabindex="-1" style="display: none"></button>
@@ -1331,7 +1332,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // LinkedIn, the arrow on the ground is Back to the start. Picture pixels: 1536 x 960; foot: the row
   // where the wall meets the ground (what is below it lies flat on the street); form: the dark panel's inside.
   const FORM_W = 500, FORM_H = 276, FLYER_TILT = -.012; // the form laid out once at this size, then scaled to the flyer; the flyer's tilt
-  const E = { foot: 795, flyer: [816, 130, 1384, 772], can: [110, 470, 640, 600], form: [846, 330, 1354, 610], tabs: [[822, 650, 1004, 766], [1007, 650, 1193, 766], [1196, 650, 1378, 766]], arrow: [150, 840, 610, 918], bbox: [35, 120, 1517, 925] }; E.signs = E.tabs.slice(1); // a flyer pasted on the concrete (Tom 11-22): WRITE TO ME printed, the form on the paper, tear-off tabs (email, GitHub, LinkedIn); can: Leave your tag sprayed on the wall; arrow: Back to the start
+  const E = { foot: 795, flyer: [816, 130, 1384, 772], can: [110, 470, 640, 600], form: [846, 330, 1354, 610], tabs: [[822, 650, 1004, 766], [1007, 650, 1193, 766], [1196, 650, 1378, 766]], arrow: [150, 840, 610, 918], bbox: [35, 120, 1517, 925] }; E.signs = E.tabs; // a flyer pasted on the concrete (Tom 11-22): WRITE TO ME printed, the form on the paper, tear-off tabs (email, GitHub, LinkedIn); can: Leave your tag sprayed on the wall; arrow: Back to the start
   const EPW = 13, EK = EPW / 1536, EFLOOR = 2.2, ECX = -1.2; // the painting 13 m wide, centred left of the opening; the floor part is drawn 2.2 times deeper than it is high (a flat arrow seen from a low angle)
   const eU = u => ECX - EPW / 2 + u * EK, eV = v => GROUND + (E.foot - v) * EK;
   const eAt = (u, v) => V(eU(u), eV(v), 0), eFlat = (u, v) => V(eU(u), GROUND, (v - E.foot) * EK * EFLOOR), EB = { at: eAt, k: EK };
@@ -1412,24 +1413,24 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     return g; }
   const hlEl = document.createElement("div"); hlEl.className = "hl"; hlEl.setAttribute("aria-hidden", "true"); document.querySelector(".hud").append(hlEl);
   const HOTL = [], PULSE = NARROW || matchMedia("(pointer: coarse)").matches, hostOf = h => h.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
-  const labelOf = el => el.hostname === "github.com" ? "Opens GitHub" : el.hostname.includes("linkedin") ? "Opens LinkedIn" : "Opens " + hostOf(el.href);
+  const labelOf = el => el.protocol === "mailto:" ? "Opens your email" : el.hostname === "github.com" ? "Opens GitHub" : el.hostname.includes("linkedin") ? "Opens LinkedIn" : "Opens " + hostOf(el.href);
   const hotOn = (el, label, glow) => { el.dataset.hl = label; HOTL.push({ el, label, glow }); };
   { EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAB, b, i ? { rect: true, colour: "#ffffff", fill: 0, hole: 1 } : {})));
     hotOn(hot3, labelOf(hot3), RVF_GLOW());
     U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}))));
-    const leaveHot = document.getElementById("leave"), gitHot = document.getElementById("endGit"), liHot = document.getElementById("endLi"), backHot = document.getElementById("again");
+    const leaveHot = document.getElementById("leave"), mailHot = document.getElementById("endMail"), gitHot = document.getElementById("endGit"), liHot = document.getElementById("endLi"), backHot = document.getElementById("again");
     hotOn(leaveHot, "Leave your tag", makeGlow(() => eFile, EB, E.can, { colour: PAINT_HEX }));
-    E.signs.forEach((b, i) => hotOn([gitHot, liHot][i], labelOf([gitHot, liHot][i]), makeGlow(() => eFile, EB, b, { colour: PAINT_HEX })));
+    E.signs.forEach((b, i) => hotOn([mailHot, gitHot, liHot][i], labelOf([mailHot, gitHot, liHot][i]), makeGlow(() => eFile, EB, b, { colour: PAINT_HEX })));
     hotOn(backHot, "Back to the start", makeGlow(() => eFile, EB, E.arrow, { colour: "#ffffff", floor: true }));
-    endS.hots = { leaveHot, gitHot, liHot, backHot }; }
+    endS.hots = { leaveHot, mailHot, gitHot, liHot, backHot }; }
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
-    const { leaveHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(NARROW && ePanT); // a phone looking at the form has no marks to tap: nothing may lie over the form
+    const { leaveHot, mailHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(NARROW && ePanT); // a phone looking at the form has no marks over it to tap: nothing may lie over the form; the tabs sit under it, so they stay live
     if (endS.show) { const [ax, ay] = proj(eAt(E.form[0], E.form[1])), [bx, by] = proj(eAt(E.form[2], E.form[3])), w = bx - ax, h = by - ay;
       if (NARROW) { mail.style.transform = ""; mail.style.left = ax + "px"; mail.style.width = w + "px"; mail.style.minHeight = h + "px"; mail.style.top = Math.max(ay + 6, (ay + by) / 2 - mail.offsetHeight / 2) + "px"; } // a phone: the form at full size, for 16 px typing and 48 px taps
       else { const k = Math.min(w / FORM_W, h / FORM_H); mail.style.width = FORM_W + "px"; mail.style.minHeight = FORM_H + "px"; mail.style.left = ax + (w - FORM_W * k) / 2 + "px"; mail.style.top = ay + (h - FORM_H * k) / 2 + "px";
         mail.style.transformOrigin = "0 0"; mail.style.transform = `scale(${k}) rotate(${FLYER_TILT}rad)`; } } // print on the paper: the form keeps its layout and grows and shrinks with the flyer
     const grow = ([a, b, c, d]) => [a - 4, b - 4, c + 4, d + 4];
-    placeHots([leaveHot], [E.can], EB, marks && !leaveHot.hidden); placeHots([gitHot, liHot], E.signs.map(grow), EB, marks);
+    placeHots([leaveHot], [E.can], EB, marks && !leaveHot.hidden); placeHots([mailHot, gitHot, liHot], E.signs.map(grow), EB, ui);
     { const [x0, y0, x1, y1] = E.arrow, p = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([u, v]) => proj(eFlat(u, v)));
       let l = Math.max(8, Math.min(...p.map(q => q[0]))), r = Math.min(innerWidth - 8, Math.max(...p.map(q => q[0]))), t = Math.min(...p.map(q => q[1])), b = Math.max(...p.map(q => q[1]));
       if (!marks || !p.every(q => q[2]) || r - l < 40 || b < 0 || t > innerHeight) { backHot.style.display = "none"; backHot.tabIndex = -1; }
