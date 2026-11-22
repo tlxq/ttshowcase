@@ -763,13 +763,30 @@ __LIBS__
         gl_Position = place(vec3(uRect.xy + aUv * uRect.zw, d * uD)); }`,
       `#version 300 es
       precision highp float;
-      in vec2 vUv; uniform sampler2D uImg, uImg2; uniform float uGrey, uFade, uMix; out vec4 o;
+      in vec2 vUv; uniform sampler2D uImg, uImg2, uDepth; uniform float uGrey, uFade, uMix, uD, uLight, uKeyAmt;
+      uniform vec4 uRect, uCellA, uCellB; uniform vec3 uRing[3], uKey, uBlue; out vec4 o;
+      float dep(vec2 uv) { uv = clamp(uv, 0.0, 1.0); return mix(texture(uDepth, uCellA.xy + uv * uCellA.zw).r, texture(uDepth, uCellB.xy + uv * uCellB.zw).r, uMix); }
       void main() {
         vec4 c = mix(texture(uImg, vUv), texture(uImg2, vUv), uMix); // between two frames of the turn, so it never steps
         float a = c.a * smoothstep(0.84, 0.52, vUv.y) * smoothstep(0.01, 0.15, vUv.x) * smoothstep(0.99, 0.85, vUv.x) * uFade;
         if (a < 0.04) discard;
         vec3 rgb = c.rgb / max(c.a, 0.001);
         float l = dot(rgb, vec3(0.299, 0.587, 0.114));
+        // lit by the blue: the frame's depth gives his face its shape (normals), the ring is a real blue light at three
+        // points along the stroke; behind him it only reaches the edges that face it, so it rims his cheek and jaw.
+        // On a laptop the mouse is a soft white key light
+        if (uLight > 0.0) {
+          vec2 e = vec2(2.0 / 150.0, 2.0 / 188.0);
+          float dx = (dep(vUv + vec2(e.x, 0.0)) - dep(vUv - vec2(e.x, 0.0))) * uD / (2.0 * e.x * uRect.z);
+          float dy = (dep(vUv + vec2(0.0, e.y)) - dep(vUv - vec2(0.0, e.y))) * uD / (2.0 * e.y * uRect.w);
+          vec3 n = normalize(vec3(-dx, -dy, 1.0)), P = vec3(uRect.xy + vUv * uRect.zw, dep(vUv) * uD);
+          float blue = 0.0;
+          for (int i = 0; i < 3; i++) { vec3 L = uRing[i] - P; float dist = length(L) / uRect.z;
+            blue += max(dot(n, L / length(L)), 0.0) / (1.0 + dist * dist * 6.0); }
+          vec3 K = normalize(uKey - P); float key = max(dot(n, K), 0.0);
+          rgb *= mix(1.0, 0.78 + 0.38 * key, uKeyAmt);
+          rgb += uBlue * blue * uLight * (1.0 - uGrey) * (0.35 + 0.65 * (1.0 - l));
+        }
         rgb = mix(rgb, vec3(l) * 0.74, uGrey);
         o = vec4(rgb * a, a);
       }`);
@@ -904,6 +921,11 @@ __LIBS__
       g.activeTexture(g.TEXTURE2); g.bindTexture(g.TEXTURE_2D, tImg2); g.uniform1i(loc(photoP, "uImg2"), 2);
       g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tDep); g.uniform1i(loc(photoP, "uDepth"), 1);
       g.uniform4f(loc(photoP, "uCellA"), ...cell(held[0])); g.uniform4f(loc(photoP, "uCellB"), ...cell(held[1])); g.uniform1f(loc(photoP, "uMix"), held[0] === held[1] ? 0 : turnMix);
+      const slideNow = still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08, rl = 0.43 * look.ribbon;
+      g.uniform3fv(loc(photoP, "uRing"), new Float32Array([0.2, 0.5, 0.8].flatMap((f) => ringAt(slideNow + rl * (look.unwind + (1 - look.unwind) * f)).slice(0, 3))));
+      g.uniform1f(loc(photoP, "uLight"), LIGHT * look.ribbon * look.fade * (1 - look.unwind)); g.uniform3f(loc(photoP, "uBlue"), ...SPRAY);
+      keyAmt += ((phone() || still ? 0 : LIGHT ? 1 : 0) - keyAmt) * 0.05;
+      g.uniform1f(loc(photoP, "uKeyAmt"), keyAmt); g.uniform3f(loc(photoP, "uKey"), (mouse.x + 0.5) * W, (mouse.y + 0.5) * H, D * 6);
       g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), D); g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
       g.drawElements(g.TRIANGLES, idx.length, g.UNSIGNED_INT, 0);
       const slide = still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08; // one lap in 48 s
@@ -922,7 +944,8 @@ __LIBS__
       return m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255) : [1, 0.33, 0.1]; })();
     // the turn: frames t00..t21, t12 faces you; depth.webp holds their depth maps, 6 to a row
     const TURN = 22, TURN_MID = 12, COLS = 6, ROWS = 4, turnFrames = [], held = [TURN_MID, TURN_MID];
-    let turnAt = 0, turnV = 0, turnMix = 0, lastT = null, gTo = 0, gUntil = 2500;
+    const LIGHT = +(new URLSearchParams(location.search).get("light") ?? 1); // ?light=0: the pitch's before picture
+    let keyAmt = 0, turnAt = 0, turnV = 0, turnMix = 0, lastT = null, gTo = 0, gUntil = 2500;
     // on a phone he looks at you most of the time; now and then he glances to one side, holds it and looks back
     const glance = (t) => {
       if (t > gUntil) { const away = gTo === 0 && Math.random() < 0.7;
