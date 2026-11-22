@@ -780,12 +780,19 @@ __LIBS__
           float dx = (dep(vUv + vec2(e.x, 0.0)) - dep(vUv - vec2(e.x, 0.0))) * uD / (2.0 * e.x * uRect.z);
           float dy = (dep(vUv + vec2(0.0, e.y)) - dep(vUv - vec2(0.0, e.y))) * uD / (2.0 * e.y * uRect.w);
           vec3 n = normalize(vec3(-dx, -dy, 1.0)), P = vec3(uRect.xy + vUv * uRect.zw, dep(vUv) * uD);
+          // the rim: a thin band inside his outline (the cut-out's own edge, sampled about 7 px out), on the side that
+          // faces the ring; strongest where the ring is behind him
+          vec2 r = vec2(7.0) / uRect.zw;
+          float ax = mix(texture(uImg, vUv + vec2(r.x, 0.0)).a, texture(uImg2, vUv + vec2(r.x, 0.0)).a, uMix) - mix(texture(uImg, vUv - vec2(r.x, 0.0)).a, texture(uImg2, vUv - vec2(r.x, 0.0)).a, uMix);
+          float ay = mix(texture(uImg, vUv + vec2(0.0, r.y)).a, texture(uImg2, vUv + vec2(0.0, r.y)).a, uMix) - mix(texture(uImg, vUv - vec2(0.0, r.y)).a, texture(uImg2, vUv - vec2(0.0, r.y)).a, uMix);
+          vec2 gr = vec2(ax, ay); float edge = smoothstep(0.05, 0.6, length(gr)); vec2 out2 = -gr / max(length(gr), 1e-4);
           float blue = 0.0;
-          for (int i = 0; i < 3; i++) { vec3 L = uRing[i] - P; float dist = length(L) / uRect.z;
-            blue += max(dot(n, L / length(L)), 0.0) / (1.0 + dist * dist * 6.0); }
+          for (int i = 0; i < 3; i++) { vec3 L = uRing[i] - P; float dist = length(L.xy) / uRect.z;
+            blue += max(dot(out2, normalize(L.xy)), 0.0) * (L.z < 0.0 ? 1.0 : 0.45) / (1.0 + dist * dist * 4.0); }
+          blue *= edge;
           vec3 K = normalize(uKey - P); float key = max(dot(n, K), 0.0);
           rgb *= mix(1.0, 0.78 + 0.38 * key, uKeyAmt);
-          rgb += uBlue * blue * uLight * (1.0 - uGrey) * (0.35 + 0.65 * (1.0 - l));
+          rgb = mix(rgb, uBlue * 1.2, clamp(blue * 1.4, 0.0, 0.8) * uLight * (1.0 - uGrey));
         }
         rgb = mix(rgb, vec3(l) * 0.74, uGrey);
         o = vec4(rgb * a, a);
