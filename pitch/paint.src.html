@@ -586,7 +586,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const ORANGE = PAINT; // named for the old orange; the paint is the token's blue
   const metal = new THREE.MeshPhysicalMaterial({ color: 0x8b9197, metalness: .85, roughness: .36, clearcoat: .3, envMapIntensity: 1.2, side: THREE.DoubleSide });
   const paintIn = new THREE.MeshPhysicalMaterial({ color: ORANGE, roughness: .1, clearcoat: 1, clearcoatRoughness: .04, envMapIntensity: 1.1 });
-  const paintCoat = paintIn.clone(); paintCoat.side = THREE.DoubleSide; const coatCut = new THREE.Plane(); paintCoat.clippingPlanes = [coatCut]; renderer.localClippingEnabled = true;
+  const paintCoat = paintIn.clone(); paintCoat.side = THREE.DoubleSide; paintCoat.color = PAINT.clone().multiplyScalar(.4); paintCoat.envMapIntensity = .3; const coatCut = new THREE.Plane(); paintCoat.clippingPlanes = [coatCut]; renderer.localClippingEnabled = true; // the top you see is this coat lit as level under the lamp: at full strength the light blue washed out to milky, like water (11-22)
   // the paint in the bucket is a body of liquid: its inside cut by a level plane (world up), and the inside faces you see through the cut lit as a
   // flat surface, so the top always lies level whatever the bucket does (Tom 11-16: the old disc tilted with the bucket and left a straight line)
   paintCoat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace("#include <normal_fragment_maps>", "#include <normal_fragment_maps>\n if (!gl_FrontFacing) normal = normalize((viewMatrix * vec4(0., 1., 0., 0.)).xyz);"); };
@@ -768,7 +768,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
     if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>Tom Larsson &middot; Product engineer</b>${txt}`; }
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
-    if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -125 : -60); // phone: no room at the side, so above
+    if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
     const lk = ic < 0 ? 0 : sm(cl((ic - .6) / 1.1)), flick = lk > 0 && lk < .6 && Math.random() < .3 ? .2 : 1;
     lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2))));
@@ -838,7 +838,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
         vec3 col = acc / max(wsum, .001);
         vec2 dc = vUv - .5; float e = dot(dc, dc);
         float fr = .8 * (1. - smoothstep(.8, 3., r)); // no fringe on blurred parts: it sampled the sharp picture there and lit specks as coloured dots
-        col.r = mix(col.r, texture2D(tDiffuse, vUv - dc * e * .018).r, fr); col.b = mix(col.b, texture2D(tDiffuse, vUv + dc * e * .018).b, fr);
+        col.r = mix(col.r, texture2D(tDiffuse, vUv - dc * e * .009).r, fr); col.b = mix(col.b, texture2D(tDiffuse, vUv + dc * e * .009).b, fr); // half the old split: thin blue runs at the edge broke into green and violet
         col *= 1. - e * 1.25;
         gl_FragColor = vec4(col, 1.);
         #include <tonemapping_fragment>
