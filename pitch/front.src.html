@@ -19,8 +19,8 @@ __TOKENS__
   --f-big: "Clash Display", "Arial Narrow", sans-serif;
   --f-text: "Inter", system-ui, sans-serif;
   /* the photo on the first screen: its height and top, as parts of the screen height */
-  --hp: 54svh; /* Tom 11-20: smaller, then smaller again */
-  --pt: calc(50svh - var(--hp) * .4); /* so the point he shrinks to (40% down the photo) sits at the middle of the screen */
+  --hp: 74svh; /* Tom 11-22: head and shoulders, standing on the screen's bottom edge (the face about 1.4 x before) */
+  --pt: calc(100svh - var(--hp));
 }
 * { box-sizing: border-box; }
 html { background: var(--look-dark-soft); }
@@ -62,8 +62,8 @@ a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; o
 .name .ln { display: inline-block; overflow: hidden; padding: .04em .12em 0; }
 .name .ln span { display: block; }
 .photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0;
-  -webkit-mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%);
-  -webkit-mask-composite: source-in; mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%); mask-composite: intersect; }
+  -webkit-mask-image: linear-gradient(#000 86%, transparent 100%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%);
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(#000 86%, transparent 100%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%); mask-composite: intersect; }
 .gl { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
 .has-gl .photo { visibility: hidden; } /* the 3D photo draws instead; the pictures stay for size and as the fallback */
 /* film grain over everything, like a printed page: a small noise tile that jumps a little each frame */
@@ -262,10 +262,11 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 
 
 @media (max-width: 640px) {
-  :root { --hp: 54svh; --pt: 29svh; }
+  :root { --hp: 62svh; }
   .name { top: 11svh; font-size: min(17.5vw, 15svh); }
   .name .ln { display: block; }
-  .role, .hint { display: none; }
+  .hint { display: none; }
+  .role { top: 31svh; bottom: auto; left: 0; right: 0; max-width: 30ch; margin: 0 auto; padding: 0 var(--gutter); text-align: center; } /* under the name: name and role in the first look */
   .links { gap: 14px; font-size: 13px; }
   /* phone: the pane sits higher, the names run under it where they can be read */
   .rows { top: 60%; translate: 0 0; }
@@ -310,8 +311,8 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
       <div class="pane"><div class="inner">
         <div class="cream"></div>
         <h1 class="name"><span class="ln"><span>Tom</span></span> <span class="ln"><span>Larsson</span></span></h1>
-        <img class="photo col" src="assets/turn/t12.webp" alt="Tom Larsson" width="600" height="753" fetchpriority="high">
-        <img class="photo bw" src="assets/turn/t12.webp" alt="" width="600" height="753">
+        <img class="photo col" src="assets/turn/t12.webp" alt="Tom Larsson" width="900" height="954" fetchpriority="high">
+        <img class="photo bw" src="assets/turn/t12.webp" alt="" width="900" height="954">
         <canvas class="gl" aria-hidden="true"></canvas>
         <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
         <p class="hint">Scroll</p>
@@ -768,7 +769,7 @@ __LIBS__
       float dep(vec2 uv) { uv = clamp(uv, 0.0, 1.0); return mix(texture(uDepth, uCellA.xy + uv * uCellA.zw).r, texture(uDepth, uCellB.xy + uv * uCellB.zw).r, uMix); }
       void main() {
         vec4 c = mix(texture(uImg, vUv), texture(uImg2, vUv), uMix); // between two frames of the turn, so it never steps
-        float a = c.a * smoothstep(0.84, 0.52, vUv.y) * smoothstep(0.01, 0.15, vUv.x) * smoothstep(0.99, 0.85, vUv.x) * uFade;
+        float a = c.a * smoothstep(1.0, 0.86, vUv.y) * smoothstep(0.01, 0.15, vUv.x) * smoothstep(0.99, 0.85, vUv.x) * uFade;
         if (a < 0.04) discard;
         vec3 rgb = c.rgb / max(c.a, 0.001);
         float l = dot(rgb, vec3(0.299, 0.587, 0.114));
@@ -776,7 +777,7 @@ __LIBS__
         // lit by the blue (dark screen only): the pen that writes the signature is a blue light. It travels over his dimmed
         // face as the ring unwinds and the name is written; the frame's depth gives the face its shape, his outline catches most
         if (uPenAmt > 0.0) {
-          vec2 e = vec2(2.0 / 150.0, 2.0 / 188.0);
+          vec2 e = vec2(2.0 / 150.0, 2.0 / 159.0);
           float dx = (dep(vUv + vec2(e.x, 0.0)) - dep(vUv - vec2(e.x, 0.0))) * uD / (2.0 * e.x * uRect.z);
           float dy = (dep(vUv + vec2(0.0, e.y)) - dep(vUv - vec2(0.0, e.y))) * uD / (2.0 * e.y * uRect.w);
           vec3 n = normalize(vec3(-dx * 3.0, -dy * 3.0, 1.0)), P = vec3(uRect.xy + vUv * uRect.zw, dep(vUv) * uD);
@@ -824,21 +825,24 @@ __LIBS__
     const tex = (im) => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // filtered edges stay clean (no light rim round the hair)
       g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, im); g.generateMipmap(g.TEXTURE_2D);
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR_MIPMAP_LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE); return t; };
+    const FACE_H = 0.503, FACE_Y = 0.485; // where his face is in the turn's pictures (tools: turn_build.py)
     let tImg, tImg2, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, wob = 3, band = 1, ringAt = null;
     const size = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);
       W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       const w = img.offsetWidth, h = img.offsetHeight;
       rect = [img.offsetLeft - w / 2, img.offsetTop, w, h]; // the picture is centred with translate -50%
-      D = w * 0.11; // Tom 11-20 "less scary": half the depth, so the face turns without bulging
-      C = [rect[0] + w / 2, rect[1] + h * 0.4, D * 0.55];
+      // all sizes from his face (in the picture: 50 % of its height tall, its middle 48.5 % down), not from the picture's box
+      const fH = h * FACE_H, fY = rect[1] + h * FACE_Y;
+      D = fH * 0.18; // Tom 11-20 "less scary": half the depth, so the face turns without bulging
+      C = [rect[0] + w / 2, fY - fH * 0.2, D * 0.55];
       // one loop sprayed round the head by hand: a bit more than one turn, so the ends pass each other; under the chin
       // in front, high behind the crown, never over the face. Wobbly radius and height, pressure thick and thin, a long thin
       // flick at the end. It never reaches past the screen's sides (phone: the photo is wider than the screen).
-      const R = Math.min(w * 0.42, (W / 2 - 14) / 1.12), N = 1400, data = [];
+      const R = Math.min(fH * 0.69, (W / 2 - 14) / 1.12), N = 1400, data = [];
       const narrow = W <= 640; // phone: the loop is barely wider than his face, so it rides lower, round the jaw and neck
-      const mid = rect[1] + h * (narrow ? 0.57 : 0.47), amp = h * (narrow ? 0.17 : 0.25), zR = R * 0.62;
-      band = Math.max(30, w * 0.135);
+      const mid = fY + fH * (narrow ? 0.24 : 0.08), amp = fH * (narrow ? 0.35 : 0.52), zR = R * 0.62;
+      band = Math.max(30, fH * 0.22);
       const a0 = Math.PI / 2 + 0.55;
       ringAt = (u) => { // the loop's centre line at u (0..1), before the wobble: the same numbers the band is built from
         const a = a0 + u * Math.PI * 4; // two turns: the stroke (under one turn long) slides along them
@@ -994,8 +998,8 @@ __LIBS__
     const vw = innerWidth, vh = innerHeight;
     // the middle of the pane at the end: 40% down the photo (the face is at 35%), so the shoulders stay in
     const r = photo.getBoundingClientRect();
-    const fx = vw / 2, fy = photo.offsetTop + photo.offsetHeight * 0.4;
-    const faceH = photo.offsetHeight * 0.33;
+    const fx = vw / 2, fy = photo.offsetTop + photo.offsetHeight * 0.39; // just above his face's middle
+    const faceH = photo.offsetHeight * 0.34;
     // the pane at the end: a near-square in the middle (phone: wider, higher)
     const Wf = phone() ? vw * 0.78 : Math.min(vw * 0.36, vh * 0.56);
     const Hf = Wf * (phone() ? 0.92 : 0.9);
