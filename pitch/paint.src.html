@@ -26,64 +26,57 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .tag.facts { white-space: normal; width: min(330px, 74vw); text-transform: none; letter-spacing: .02em; }
 .tag.facts b { text-transform: uppercase; letter-spacing: .08em; }
 .tag.facts span { color: var(--look-quiet); }
-.tag b { display: block; font-weight: 500; color: var(--look-spray); }
+.tag b { display: block; font-weight: 500; color: var(--look-text); }
 .hot { position: absolute; pointer-events: auto; display: block; border-radius: 2px; }
-.hot:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
+.hot:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
 .hot { cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
-.hot:hover { background: radial-gradient(closest-side, rgba(255, 110, 60, .16), transparent); }
+.hot:hover { background: radial-gradient(closest-side, color-mix(in srgb, var(--front-spray) 16%, transparent), transparent); }
 .head { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* the end (storyboard 8): the morning light, then a form on a dark plate beside the opening wall; same plate as the facts */
-.white { position: fixed; inset: 0; background: #fff6ea; opacity: 0; pointer-events: none; }
+.white { position: fixed; inset: 0; background: var(--look-cream); opacity: 0; pointer-events: none; }
 .mail { position: absolute; right: max(24px, 4vw); top: 50%; transform: translateY(-50%); width: min(360px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 8px; padding: 16px; font-weight: 500; line-height: 1.5; opacity: 0; transition: opacity 300ms cubic-bezier(.2, 0, 0, 1); pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .mail { transition: none; } }
 .mail.on { opacity: 1; pointer-events: auto; }
-.mail b { font-weight: 500; color: var(--look-spray); text-transform: uppercase; letter-spacing: .08em; }
+.mail b { font-weight: 500; color: var(--look-text); text-transform: uppercase; letter-spacing: .08em; }
 .mail label { display: grid; gap: 2px; color: var(--look-soft); letter-spacing: .04em; }
 .mail input, .mail textarea { font: inherit; font-size: 15px; color: var(--look-text); background: transparent; border: 0; border-bottom: 1px solid rgba(239, 233, 220, .35); border-radius: 0; padding: 10px 0; min-height: 48px; box-sizing: border-box; resize: none; }
-.mail input:focus-visible, .mail textarea:focus-visible, .mail button:focus-visible, .mail a:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
+.mail input:focus-visible, .mail textarea:focus-visible, .mail button:focus-visible, .mail a:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
 .mail .trap { position: absolute; left: -9999px; }
-.mail button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid var(--look-spray); border-radius: 2px; min-height: 48px; cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
-.mail button:hover { background: rgba(255, 79, 26, .16); }
+.mail button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid var(--front-spray); border-radius: 2px; min-height: 48px; cursor: pointer; transition: background 200ms cubic-bezier(.2, 0, 0, 1); }
+.mail button:hover { background: color-mix(in srgb, var(--front-spray) 16%, transparent); }
 .mail .err { margin: 0; color: var(--look-text); }
-.mail nav { display: grid; grid-template-columns: auto auto; justify-content: space-between; column-gap: 16px; row-gap: 0; } /* the four ways on, in two even rows: GitHub and LinkedIn, then Leave your tag and Back to the start; no name wraps */
-.mail nav > * { white-space: nowrap; }
-.mail nav a { color: var(--look-text); min-height: 48px; display: inline-flex; align-items: center; text-decoration: none; }
-.mail nav a:hover { color: var(--look-spray); }
-.mail nav .again { font: inherit; color: var(--look-text); background: none; border: 0; padding: 0; min-height: 48px; cursor: pointer; } /* the loop: a button (it acts here, it opens nothing), dressed as the links, apart from the two outside ones */
-.mail nav .again:hover { color: var(--look-spray); background: none; }
-.mail nav .leave { color: var(--look-spray); } /* Leave your tag (PR5): the way to the visitor wall; first look, its place comes with Back to the start's design pitch */
 /* pick the spot (PR5): the wall dims round a work light on the spot; the frame is the tag's size on the wall */
 .pick { position: fixed; inset: 0; user-select: none; -webkit-user-select: none; pointer-events: none; opacity: 0; transition: opacity 300ms cubic-bezier(.2, 0, 0, 1); touch-action: none; }
 .pick.on { opacity: 1; pointer-events: auto; }
 .pick .dim { position: absolute; left: 0; top: 0; width: 400vmax; height: 400vmax; margin: -200vmax 0 0 -200vmax; background: radial-gradient(circle, rgba(0, 0, 0, 0) 0, rgba(0, 0, 0, 0) var(--r0, 200px), rgba(0, 0, 0, .8) var(--r1, 420px)); will-change: transform; }
 .pick .frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 2px dashed rgba(239, 233, 220, .9); border-radius: 3px; display: grid; place-items: center; text-align: center; padding: 4px; font: 500 13px/1.4 ui-monospace, "IBM Plex Mono", monospace; color: var(--look-text); text-shadow: 0 1px 3px #000; cursor: grab; will-change: transform; }
 .pick .frame:active { cursor: grabbing; }
-.pick .frame.small { border-style: solid; border-color: var(--look-spray); cursor: pointer; }
+.pick .frame.small { border-style: solid; border-color: var(--front-spray); cursor: pointer; }
 .pick .ov { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
 .pick .ov path { fill: rgba(0, 0, 0, .62); }
 .pick[data-mode="1"] .ov { display: block; }
 .pick[data-mode="1"] .dim { display: none; }
 .pick .bar button[hidden], .pick .top button[hidden] { display: none; }
-.pick .frame.locked { border-style: solid; border-color: var(--look-spray); cursor: default; }
+.pick .frame.locked { border-style: solid; border-color: var(--front-spray); cursor: default; }
 .pick .frame.taken, .pick .frame.taken.small, .pick .frame.taken.locked { border-color: var(--look-ask); } /* a spot that stays clear is yellow, whatever else the frame is */
-.pick .frame:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
+.pick .frame:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
 .pick .top, .pick .bar { position: absolute; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; font-weight: 500; line-height: 1.5; }
 .pick .top { top: 16px; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; } /* Cancel ends tagging from any step, so it sits with the words, apart from the step's own buttons */
 .pick .hint { margin: 0; flex: 1 1 auto; min-width: 0; }
 .pick .bar[hidden] { display: none; }
 .pick .bar { bottom: 16px; display: flex; justify-content: space-between; gap: 8px; padding: 6px; }
 .pick .bar button, .pick .top button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid transparent; border-radius: 2px; min-height: 48px; padding: 0 14px; cursor: pointer; }
-.pick .bar .go { border-color: var(--look-spray); }
+.pick .bar .go { border-color: var(--front-spray); }
 .pick .bar .go:disabled { opacity: .45; cursor: default; }
 .pick .top button { flex: none; }
-.pick .bar button:focus-visible, .pick .top button:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
+.pick .bar button:focus-visible, .pick .top button:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
 /* Tom's wall (PR7b): only he ever sees these */
 .adm { position: fixed; left: 16px; bottom: 16px; z-index: 40; display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 14px; font-weight: 500; line-height: 1.5; }
 .adm[hidden] { display: none; }
 .adm button, #admSel button, #admFrames button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid transparent; border-radius: 2px; min-height: 48px; padding: 0 14px; cursor: pointer; }
-.adm button:focus-visible, #admSel button:focus-visible, #admFrames button:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
+.adm button:focus-visible, #admSel button:focus-visible, #admFrames button:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
 #admSel button[hidden] { display: none; }
-#admSel .go { border-color: var(--look-spray); }
+#admSel .go { border-color: var(--front-spray); }
 #admFrames { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 #admFrames[hidden] { display: none; }
 #admFrames .wrap { position: absolute; left: 0; top: 0; }
@@ -93,7 +86,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 @media (max-width: 700px) { #admFrames .wb { display: none; } }
 .pick .frame .hs, .pick .frame .ht { position: absolute; width: 26px; height: 26px; box-sizing: border-box; border-radius: 50%; border: 2px solid #08090c; touch-action: none; }
 .pick .frame .hs[hidden], .pick .frame .ht[hidden] { display: none; }
-.pick .frame .hs { right: -13px; bottom: -13px; background: var(--look-spray); cursor: nwse-resize; }
+.pick .frame .hs { right: -13px; bottom: -13px; background: var(--front-spray); cursor: nwse-resize; }
 .pick .frame .ht { left: 50%; top: -46px; margin-left: -13px; background: var(--look-ask); cursor: grab; }
 .pick .frame .ht::before { content: ""; position: absolute; left: 50%; top: 100%; width: 2px; height: 20px; margin-left: -1px; background: var(--look-ask); }
 .pick .frame .hs::after, .pick .frame .ht::after { content: ""; position: absolute; inset: -12px; }
@@ -109,8 +102,8 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .pick .menu { position: absolute; bottom: 82px; left: 50%; transform: translateX(-50%); width: min(420px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 2px; padding: 6px; font-weight: 500; line-height: 1.3; }
 .pick .menu[hidden] { display: none; }
 .pick .menu button { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 10px; font: inherit; text-align: left; color: var(--look-text); background: transparent; border: 0; border-radius: 2px; cursor: pointer; }
-.pick .menu button[aria-pressed="true"] { background: rgba(255, 79, 26, .16); }
-.pick .menu button:focus-visible { outline: 2px solid var(--look-spray); outline-offset: -2px; }
+.pick .menu button[aria-pressed="true"] { background: color-mix(in srgb, var(--front-spray) 16%, transparent); }
+.pick .menu button:focus-visible { outline: 2px solid var(--front-spray); outline-offset: -2px; }
 .pick .menu small { display: block; color: var(--look-soft); }
 .pick .menu.cols { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; padding: 4px; }
 .pick .menu.cols button { flex-direction: column; justify-content: center; gap: 4px; padding: 8px 0; text-align: center; font-weight: 400; white-space: nowrap; letter-spacing: -.02em; } /* a name never wraps */
@@ -119,7 +112,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 #tagSend { flex-wrap: wrap; }
 #tagName { flex: 1 1 100%; min-height: 48px; box-sizing: border-box; padding: 0 12px; font: 500 16px/1.3 ui-monospace, "IBM Plex Mono", monospace; color: var(--look-text); background: rgba(239, 233, 220, .06); border: 1px solid rgba(239, 233, 220, .3); border-radius: 2px; user-select: text; -webkit-user-select: text; }
 #tagName::placeholder { color: var(--look-soft); opacity: 1; }
-#tagName:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 2px; }
+#tagName:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 2px; }
 @media (max-aspect-ratio: 4/5) { .mail { right: 16px; left: 16px; width: auto; top: auto; bottom: 16px; transform: none; padding: 12px 16px; gap: 4px; } .mail textarea { min-height: 72px; } }
 .nogl { position: fixed; inset: 0; display: grid; place-items: center; color: var(--look-soft); font: 16px system-ui; }
 .pitch-svg { position: absolute; width: 0; height: 0; }
@@ -127,18 +120,18 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .tag.facts { width: min(270px, 70vw); font-size: calc(var(--look-label) * .9); line-height: 1.4; padding: 6px 9px; }
 .tag.facts b { margin-bottom: 1px; }
 @media (max-aspect-ratio: 4/5) { .tag.facts { font-size: calc(var(--look-label-phone) * .9); width: min(300px, 76vw); } }
-/* ==== THE LOOK TOM PICKED (11-19): neon label boxes, the form sprayed on the end wall's frame, a glow on every painted link ==== */
+/* ==== THE LOOK (11-19, labels and form moved to the front's look 11-22): the form sprayed on the end wall's frame, a glow on every painted link ==== */
 /* hover on a painted link: a spray-can cursor, no box; the glow and the label are drawn by the page (hotOn in paint.src.html) */
-.hot { cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cg%20stroke='%23101010'%20stroke-width='1.6'%20stroke-linejoin='round'%3E%3Crect%20x='13'%20y='13'%20width='12'%20height='17'%20rx='2'%20fill='%23e8e2d4'/%3E%3Crect%20x='14.5'%20y='7'%20width='9'%20height='6'%20rx='1.5'%20fill='%23ff6a1f'/%3E%3Crect%20x='17.5'%20y='3'%20width='3'%20height='4'%20fill='%23e8e2d4'/%3E%3C/g%3E%3Cg%20fill='%23ff6a1f'%20stroke='%23101010'%20stroke-width='.5'%3E%3Ccircle%20cx='14'%20cy='4'%20r='1.3'/%3E%3Ccircle%20cx='10'%20cy='3'%20r='1'/%3E%3Ccircle%20cx='11'%20cy='6.5'%20r='.9'/%3E%3Ccircle%20cx='7'%20cy='5'%20r='.7'/%3E%3Ccircle%20cx='6'%20cy='1.8'%20r='.6'/%3E%3C/g%3E%3C/svg%3E") 6 2, pointer; -webkit-tap-highlight-color: transparent; }
+.hot { cursor: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cg%20stroke='%23101010'%20stroke-width='1.6'%20stroke-linejoin='round'%3E%3Crect%20x='13'%20y='13'%20width='12'%20height='17'%20rx='2'%20fill='%23e8e2d4'/%3E%3Crect%20x='14.5'%20y='7'%20width='9'%20height='6'%20rx='1.5'%20fill='%234aa8ff'/%3E%3Crect%20x='17.5'%20y='3'%20width='3'%20height='4'%20fill='%23e8e2d4'/%3E%3C/g%3E%3Cg%20fill='%234aa8ff'%20stroke='%23101010'%20stroke-width='.5'%3E%3Ccircle%20cx='14'%20cy='4'%20r='1.3'/%3E%3Ccircle%20cx='10'%20cy='3'%20r='1'/%3E%3Ccircle%20cx='11'%20cy='6.5'%20r='.9'/%3E%3Ccircle%20cx='7'%20cy='5'%20r='.7'/%3E%3Ccircle%20cx='6'%20cy='1.8'%20r='.6'/%3E%3C/g%3E%3C/svg%3E") 6 2, pointer; -webkit-tap-highlight-color: transparent; }
 .hot:hover { background: none; }
-.hl { position: fixed; z-index: 30; pointer-events: none; opacity: 0; transition: opacity 140ms cubic-bezier(.2, 0, 0, 1); white-space: nowrap; font: 500 13px/1 ui-monospace, "IBM Plex Mono", monospace; letter-spacing: .04em; color: var(--look-form-ink); background: var(--look-hover-box); border: 1px solid color-mix(in srgb, var(--look-form-ink) 28%, transparent); border-radius: 3px; padding: 8px 10px; box-shadow: 0 4px 14px rgba(0, 0, 0, .5); }
+.hl { position: fixed; z-index: 30; pointer-events: none; opacity: 0; transition: opacity 140ms cubic-bezier(.2, 0, 0, 1); white-space: nowrap; font: 500 13px/1 "Inter", system-ui, sans-serif; letter-spacing: 0; color: var(--look-text); background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; padding: 8px 10px; } /* the labels' plate (one look with the front, 11-22) */
 .hl.on { opacity: 1; }
 button.hot { background: none; border: 0; padding: 0; }
 #endPan { display: none; position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); min-width: 120px; min-height: 48px; padding: 0 18px; font: 500 15px/1 "Inter", system-ui, sans-serif; color: var(--look-form-ink); background: color-mix(in srgb, var(--look-hover-box) 88%, transparent); border: 1px solid color-mix(in srgb, var(--look-form-ink) 35%, transparent); border-radius: 24px; cursor: pointer; pointer-events: auto; z-index: 5; }
-#endPan:focus-visible { outline: 2px solid var(--look-spray); outline-offset: 3px; }
+#endPan:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
 /* the end form: it sits on the painted frame's dark panel (the page puts it there) */
 html form#mail { position: absolute; left: 0; top: 0; right: auto; bottom: auto; transform: none; rotate: none; width: 400px; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; align-content: center; gap: 8px 14px; padding: 12px 18px; background: none; border: 0; border-radius: 0; filter: none; text-shadow: none; box-shadow: none;
-  font: 500 14px/1.3 "Inter", system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: var(--ink); --panel: var(--look-form-panel); --ink: var(--look-form-ink); --ink2: var(--look-form-ink-soft); --line: var(--look-form-ink); --acc: var(--look-form-accent); }
+  font: 500 14px/1.3 "Inter", system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: var(--ink); --panel: var(--look-form-panel); --ink: var(--look-form-ink); --ink2: var(--look-form-ink-soft); --line: var(--look-form-ink); --acc: var(--front-spray); }
 html form#mail::before, html form#mail::after { display: none; }
 form#mail label { position: relative; display: block; margin: 0; color: var(--ink2); font-size: 15px; letter-spacing: 0; text-transform: none; }
 form#mail label.f-msg { grid-column: 1 / -1; }
@@ -149,27 +142,20 @@ form#mail label span { position: absolute; left: 2px; top: 15px; font-size: 15px
 form#mail input:focus ~ span, form#mail input:not(:placeholder-shown) ~ span, form#mail textarea:focus ~ span, form#mail textarea:not(:placeholder-shown) ~ span { transform: translateY(-11px) scale(.78); }
 @media (prefers-reduced-motion: reduce) { form#mail label span { transition: none; } }
 form#mail .err { grid-column: 1; grid-row: 3; align-self: center; margin: 0; color: var(--look-form-error); font-size: 13px; line-height: 1.3; }
-form#mail button { grid-column: 2; grid-row: 3; justify-self: end; position: relative; min-width: 132px; min-height: 48px; padding: 0 22px; font: 400 16px/1 "Saira Stencil One", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #16110c; background: var(--acc); border: 0; border-radius: 3px; cursor: pointer; transition: filter 160ms cubic-bezier(.2, 0, 0, 1); }
-form#mail button:hover { filter: brightness(1.12); }
+form#mail button { grid-column: 2; grid-row: 3; justify-self: end; position: relative; min-width: 132px; min-height: 48px; padding: 0 22px; font: 600 15px/1 "Inter", system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: var(--ink); background: transparent; border: 1px solid var(--acc); border-radius: 2px; cursor: pointer; transition: background var(--toggle) var(--ease), color var(--toggle) var(--ease); }
+form#mail button:hover { background: var(--acc); color: var(--look-dark); } /* the front's Send: cream words, a blue edge, filled blue on hover */
 form#mail button:disabled { opacity: .7; cursor: default; }
 form#mail button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; margin: 0; font: 500 20px/1.35 "Inter", system-ui, sans-serif; color: var(--ink); text-align: center; }
 /* wall: no box; the fields are lines sprayed on the dark panel, typed text in clean light letters, a sprayed button */
-:root form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); opacity: .75; filter: url(#rough); transition: background 160ms, box-shadow 160ms; }
+:root form#mail label::after { content: ""; position: absolute; left: 0; right: 0; bottom: 3px; height: 3px; border-radius: 2px; background: var(--line); opacity: .4; filter: url(#rough); transition: background 160ms, box-shadow 160ms; }
 :root form#mail label.trap::after { display: none; }
-:root form#mail label:focus-within::after { background: var(--acc); opacity: 1; box-shadow: 0 0 10px var(--acc); }
-:root form#mail button { filter: url(#rough); box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 25%, transparent), 0 0 18px color-mix(in srgb, var(--acc) 40%, transparent); }
-:root form#mail button:hover { filter: url(#rough) brightness(1.12); }
+:root form#mail label:focus-within::after { background: var(--ink); opacity: 1; } /* the front's focus: the line goes full cream */
 @media (max-aspect-ratio: 4/5) { html form#mail { gap: 6px 10px; padding: 10px 12px; } }
-/* the labels: a small neon sign / light box on the wall, glowing (tokens: --look-neon-*) */
-@keyframes neonflick { 0%, 17%, 19%, 23%, 100% { opacity: 1; } 18%, 21% { opacity: .55; } 22% { opacity: .85; } }
-:root .tag { --neon: var(--look-neon-pink); width: auto; max-width: min(var(--look-neon-width), 74vw); background: var(--look-neon-box); border: 2px solid var(--neon); border-radius: 8px; padding: 8px 14px 10px; color: var(--look-neon-text); font-family: "Inter", system-ui, sans-serif; font-weight: 500; text-transform: none; letter-spacing: 0; filter: none; text-shadow: none;
-  box-shadow: 0 0 5px var(--neon), 0 0 16px var(--neon), 0 0 38px color-mix(in srgb, var(--look-neon-pink) 35%, transparent), inset 0 0 12px color-mix(in srgb, var(--look-neon-pink) 40%, transparent); }
-:root .tag b { display: block; margin-bottom: .35em; font-family: "Inter", system-ui, sans-serif; font-weight: 700; font-size: 1.25em; line-height: 1.2; letter-spacing: .01em; text-transform: none; color: #fff; text-shadow: 0 0 3px #fff, 0 0 9px var(--neon), 0 0 20px var(--neon), 0 0 42px var(--neon); }
-:root #tagFacts { --neon: var(--look-neon-orange); } :root #tagRvf { --neon: var(--look-neon-blue); }
-:root .tag[style*="opacity: 1"] { animation: neonflick var(--look-neon-flicker) linear infinite; }
+/* the labels: the front's (Tom 11-22, one look for both pages): on the one plate, Inter, the first line in cream, the rest softer; no glow */
+:root .tag { width: auto; max-width: min(var(--look-label-width), 74vw); background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; padding: 10px 14px 12px; color: var(--look-soft); font-family: "Inter", system-ui, sans-serif; font-weight: 400; text-transform: none; letter-spacing: 0; filter: none; text-shadow: none; box-shadow: none; }
+:root .tag b { display: block; margin-bottom: .3em; font-family: "Inter", system-ui, sans-serif; font-weight: 600; font-size: 1.2em; line-height: 1.25; letter-spacing: -.01em; text-transform: none; color: var(--look-text); text-shadow: none; }
 :root .tag.facts { text-transform: none; }
-@media (prefers-reduced-motion: reduce) { :root .tag[style*="opacity: 1"] { animation: none; } }
 </style>
 <svg class="pitch-svg" aria-hidden="true"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></svg>
 
