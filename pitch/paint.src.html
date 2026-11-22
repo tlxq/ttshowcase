@@ -1445,6 +1445,29 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     hotOn(backHot, "Back to the start", makeGlow(() => eFile, EB, E.arrow, { colour: "#ffffff", floor: true }));
     [mailHot, gitHot, liHot].forEach((el, k) => el.addEventListener("click", () => { tearTab(k); HOTL.find(h => h.el === el).glow.gone = true; })); // the gap has no glow: the tab it lit is on the ground // the link itself opens as usual: nothing waits for the tear
     endS.hots = { leaveHot, mailHot, gitHot, liHot, backHot }; }
+  // The visitors' wall's way in (walk step 4, Tom 11-22): scrolled up from the start, the bare wall says what it is for. "Leave your tag" sprayed
+  // low in the street light, in the front's blue, and a can standing at the wall's foot beside it; both open the tag tool, as the can at the flyer does.
+  // Gone once this browser has a tag of its own (it shows instead) and by day (the flyer has its own Leave your tag beside it).
+  const VW = { x0: -14.3, y1: 1.9, k: 4.9 / 1024 }, VB = { at: (u, v) => V(VW.x0 + u * VW.k, VW.y1 - v * VW.k, 0), k: VW.k }, VCAN = V(-11.2, GROUND, .7);
+  const vCan = Object.assign(document.createElement("canvas"), { width: 1024, height: 200 }); let vFile = "";
+  const vTex = new THREE.CanvasTexture(vCan); vTex.encoding = THREE.sRGBEncoding; vTex.anisotropy = maxAniso;
+  const vWords = new THREE.Mesh(new THREE.PlaneGeometry(1024 * VW.k, 200 * VW.k), new THREE.MeshStandardMaterial({ map: vTex, transparent: true, depthWrite: false, roughness: .6, polygonOffset: true, polygonOffsetFactor: -2 }));
+  vWords.position.copy(VB.at(512, 100)).z += .004; vWords.visible = false; scene.add(vWords);
+  const vCan3 = can.clone(); vCan3.position.copy(VCAN); vCan3.rotation.y = -.6; vCan3.visible = false; scene.add(vCan3);
+  document.fonts.load('700 100px "Clash Display"').catch(() => {}).then(() => { const g = vCan.getContext("2d");
+    g.font = '700 118px "Clash Display", sans-serif'; g.textBaseline = "middle"; g.fillStyle = PAINT_HEX; g.translate(18, 104); g.rotate(-.02);
+    g.shadowColor = PAINT_HEX; g.shadowBlur = 16; g.globalAlpha = .4; g.fillText("Leave your tag", 0, 0); g.shadowBlur = 0; g.globalAlpha = .95; g.fillText("Leave your tag", 0, 0); // a soft overspray under a firm core, like the flyer wall's
+    vTex.needsUpdate = true; vFile = vCan.toDataURL(); });
+  const leaveUp = document.createElement("button"); Object.assign(leaveUp, { type: "button", className: "hot", tabIndex: -1 }); leaveUp.setAttribute("aria-label", "Leave your tag"); leaveUp.style.display = "none";
+  document.querySelector(".hud").append(leaveUp); leaveUp.addEventListener("click", e => { e.preventDefault(); pickNear = [-12, 3.6]; document.getElementById("leave").click(); });
+  hotOn(leaveUp, "Leave your tag", makeGlow(() => vFile, VB, [0, 0, 1024, 200], { colour: "#ffffff", hole: 1, fill: 0 })); // a light glow round the blue words, none over them: they stay sharp
+  const visitOn = () => !document.getElementById("leave").hidden && !endS.show;
+  function visitPlace(lft) { const on = visitOn(); vWords.visible = vCan3.visible = on; // the words and the can, one tap area round both
+    const ui = on && lft > .9 && !pick.mode && !duskAt && !!vFile;
+    if (!ui) { leaveUp.style.display = "none"; leaveUp.tabIndex = -1; return; }
+    const P = [VB.at(0, 0), VB.at(1024, 200), VCAN.clone().add(V(.35, 1.4, 0)), VCAN.clone().add(V(-.35, 0, 0))].map(proj), xs = P.map(p => p[0]), ys = P.map(p => p[1]);
+    const l = Math.max(0, Math.min(...xs)), r = Math.min(innerWidth, Math.max(...xs)), t = Math.max(0, Math.min(...ys)), b = Math.min(innerHeight, Math.max(...ys));
+    Object.assign(leaveUp.style, { display: "block", left: l + "px", top: t + "px", width: r - l + "px", height: b - t + "px" }); leaveUp.tabIndex = 0; }
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
     const { leaveHot, mailHot, gitHot, liHot, backHot } = endS.hots, ui = endS.show && !endS.dusk && !pick.mode && mail.classList.contains("on"), marks = ui && !(narrowNow() && ePanT); // a phone looking at the form has no marks over it to tap: nothing may lie over the form; the tabs sit under it, so they stay live
     if (endS.show) { const [ax, ay] = proj(eAt(E.form[0], E.form[1])), [bx, by] = proj(eAt(E.form[2], E.form[3])), w = bx - ax, h = by - ay;
@@ -1483,7 +1506,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   let CLEAR = []; // kept-clear boxes [x0, y0, x1, y1], made when the pour is done (the line's run is known then)
   function clearBoxes() { const m = .3, b = [[-PW / 2 - m, PCY - PH / 2 - m, PW / 2 + m, PCY + PH / 2 + m], [LEDGE.x - 1.2, WALL_TOP - 2, LEDGE.x + 1.6, WALL_TOP]];
     if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); }
-    if (endS.show) b.push([eU(E.bbox[0]) - m, GROUND - .2, eU(E.bbox[2]) + m, eV(E.bbox[1]) + m]); return b; }
+    if (endS.show) b.push([eU(E.bbox[0]) - m, GROUND - .2, eU(E.bbox[2]) + m, eV(E.bbox[1]) + m]);
+    if (visitOn()) b.push([VW.x0 - m, VW.y1 - 200 * VW.k - m, VW.x0 + 1024 * VW.k + m, VW.y1 + m], [VCAN.x - .6, GROUND, VCAN.x + .6, GROUND + 1.6]); return b; } // the visitors' wall's Leave your tag and its can stay clear
   const inArea = (x, y) => [cl(x, AREA.x0 + FRAME.w / 2, AREA.x1 - FRAME.w / 2), cl(y, AREA.y0 + FRAME.h / 2, AREA.y1 - FRAME.h / 2)];
   const hits = (x, y) => c => x + FRAME.w / 2 > c[0] && x - FRAME.w / 2 < c[2] && y + FRAME.h / 2 > c[1] && y - FRAME.h / 2 < c[3];
   const keptBy = (x, y) => CLEAR.some(hits(x, y)) ? "clear" : HELD.some(hits(x, y)) ? "held" : null, kept = (x, y) => !!keptBy(x, y); // HELD: where a waiting tag of someone else is (the store); it stays lit, only the frame turns yellow
@@ -1505,9 +1529,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   function pickGo(m, dur) { pick.from = [pick.last[0].clone(), pick.last[1].clone()]; pick.t0 = performance.now(); pick.mode = m; pick.dur = dur; pick.pan = null;
     pick.ui = false; pickEl.classList.remove("on"); pickEl.setAttribute("aria-hidden", true); pickEl.inert = true; pickFrame.tabIndex = -1; pickShow(); }
   function pickAt(x, y) { [pick.x, pick.y] = inArea(x, y); pickShow(); }
-  document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); if (pick.mode || duskAt) return; if (adm.on) { admOpen(); return; } CLEAR = clearBoxes(); tagStore(false);
-    let best = null, bd = 1e9; for (let x = AREA.x0 + FRAME.w / 2; x <= AREA.x1 - FRAME.w / 2; x += .25) for (let y = AREA.y0 + FRAME.h / 2; y <= AREA.y1 - FRAME.h / 2; y += .25) { const d = Math.hypot(x + 6.5, y - 3.5); if (d < bd && !kept(x, y)) { bd = d; best = [x, y]; } }
-    [pick.x, pick.y] = best || [-12, 3]; pick.ox = ovX(NARROW ? pick.x : 0); pick.locked = false; pickGo(1, 1.4); // the first spot offered: free, beside the opening, where the first screen looks
+  const PICK_NEAR = [-6.5, 3.5]; let pickNear = PICK_NEAR;
+  document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); const near = pickNear; pickNear = PICK_NEAR; if (pick.mode || duskAt) return; if (adm.on) { admOpen(); return; } CLEAR = clearBoxes(); tagStore(false);
+    let best = null, bd = 1e9; for (let x = AREA.x0 + FRAME.w / 2; x <= AREA.x1 - FRAME.w / 2; x += .25) for (let y = AREA.y0 + FRAME.h / 2; y <= AREA.y1 - FRAME.h / 2; y += .25) { const d = Math.hypot(x - near[0], y - near[1]); if (d < bd && !kept(x, y)) { bd = d; best = [x, y]; } }
+    [pick.x, pick.y] = best || [-12, 3]; pick.ox = ovX(NARROW ? pick.x : 0); pick.locked = false; pickGo(1, 1.4); // the first spot offered: free, beside the opening, where the first screen looks (from the visitors' wall: on it)
     root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
   const pickIn = () => { [pick.cx, pick.cy] = [pick.x, pick.y]; pickGo(2, .9); };
   const pickWideGo = () => { pick.locked = false; pick.nope = false; pick.ox = ovX(pick.x); pickGo(1, .9); }, pickQuit = () => { if (pick.mode > 0) { tagStop(); if (adm.make) { adm.make = false; adm.view = true; adm.fail = false; pickWideGo(); return; } if (adm.view) { adm.view = false; admSelect(null); } pickGo(-1, 1.2); } }; // Cancel: back to the form from any step
@@ -1888,8 +1913,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const CAM = NARROW
     ? { A: [V(.4, .9, 13.5), V(0, .9, 0)], B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX + .3, EY + .6, 21.5), V(EX + .3, EY + .4, 0)], D: [V(EX + 3.2, EY + .5, 16), V(EX + 3.2, EY + .3, 0)], E: [V(RX - 1.2, .5 - 2 * DROP, 24.5), V(RX - 1.2, -.1 - 2 * DROP, 0)], F: [V(RX - 1, .4 - 2 * DROP, 23), V(RX - 1, -.2 - 2 * DROP, -1)] } // phone: the whole painting across the screen, then after the car to the underpass
     : { A: [V(1.3, .5, 11), V(.1, .6, 0)], B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
-  // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street; phone: closer, the middle of it
-  const VISIT = NARROW ? [V(-12, 3.2, 15), V(-12, 3.4, 0)] : [V(-12, 3.4, 13.5), V(-12, 3.4, 0)], tagUp = document.getElementById("tagUp"), UP_AT = V(-6, .2, 0);
+  // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street, low enough for the can at its foot; phone: closer, the middle of it
+  const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)], tagUp = document.getElementById("tagUp"), UP_AT = V(-6, .2, 0);
   let stencilAt = 0;
   let mx = 0, my = 0; addEventListener("pointermove", e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; });
   // render size follows the machine: weak graphics (T14s, Intel UHD: 46-57 ms a frame at full size, 12 ms at half, 11-16) draw fewer pixels
@@ -1963,7 +1988,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     lamp.position.set(-8.5 + 2.5 * lookL, 4.2 + .6 * lookL, 1.6 + .8 * lookL); lamp.target.position.set(.5 - 12.5 * lookL, .2 + 2.4 * lookL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = (1 - inShaft(cp)) * (1 - pick.k); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); endPlace(now);
+    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(lft); endPlace(now);
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);
