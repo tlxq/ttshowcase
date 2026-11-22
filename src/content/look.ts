@@ -71,7 +71,7 @@ export const lookLab: {
   },
 ];
 
-/** A project's screens: a laptop shot (960 × 600), a phone shot (300 wide, `height` tall; a tall
+/** A project's screens: a laptop shot (16:10, made sharp by tools/stills.sh), a phone shot (`height` tall when shown 300 wide; a tall
  * one scrolls as the page passes), and
  * `frame`, the site shown live in the laptop, with `from`, the addresses it lets show it (its
  * frame-ancestors). Anywhere else the shot stays. */
@@ -250,7 +250,7 @@ export const lookLive: {
     links: [{ label: "Open the site", href: "https://raddavarfruberga.se" }],
     screens: {
       laptop: "/projects/raddavarfruberga-laptop.webp",
-      phone: { src: "/projects/raddavarfruberga-phone.webp", height: 2462 },
+      phone: { src: "/projects/raddavarfruberga-phone.webp", height: 2013 },
       // raddavarfruberga.se's frame-ancestors (its PR #34, 11-14)
       frame: {
         src: "https://raddavarfruberga.se",

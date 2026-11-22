@@ -1,0 +1,1080 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tom Larsson, product engineer</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+__EMBED__
+__TOKENS__
+/* The front page, rebuilt on landonorris.com's techniques (Tom picked it 11-20; Direction page in
+   ~/.claude/plans/design-workflow.md). Moments 1 and 2 only, for Tom to judge first.
+   1: name, role and the cut-out photo on cream; the whole first screen is the pane.
+   2: no box (Tom 11-20): the cream fades to the warm dark while the name leaves, then he shrinks to the middle as a
+   cut-out; names run behind him, the photo dims to black and white, and the signature writes itself along its
+   centre lines while you scroll.
+   Pitch: sizes inline until Tom says it feels right, then they go to tokens.css with his OK. */
+:root {
+  --f-big: "Clash Display", "Arial Narrow", sans-serif;
+  --f-text: "Inter", system-ui, sans-serif;
+  /* the photo on the first screen: its height and top, as parts of the screen height */
+  --hp: 54svh; /* Tom 11-20: smaller, then smaller again */
+  --pt: calc(50svh - var(--hp) * .4); /* so the point he shrinks to (40% down the photo) sits at the middle of the screen */
+}
+* { box-sizing: border-box; }
+html { background: var(--look-dark-soft); }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+body { margin: 0; color: var(--look-cream); font: 400 16px/1.5 var(--f-text); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; } /* the text's own ink: the spray is too faint on cream for a focus ring */
+
+/* header: one ink that flips with whatever is under it */
+.bar { position: fixed; inset: 0 0 auto; z-index: 20; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+  padding: max(20px, env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
+  color: var(--look-cream); mix-blend-mode: difference; pointer-events: none; }
+.bar > * { pointer-events: auto; }
+.who { transition: opacity .3s; }
+/* under the header once the dark starts: words scrolling up soften and darken into a blur instead of running through it */
+.veil { position: fixed; inset: 0 0 auto; z-index: 19; height: calc(max(20px, env(safe-area-inset-top)) + 96px); pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: linear-gradient(color-mix(in srgb, var(--look-ground) 72%, transparent), transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); }
+.veil.on { opacity: 1; }
+.who.away { opacity: 0; visibility: hidden; } /* while the big name is on screen the header doesn't say it again */
+.who b { display: block; font-weight: 600; font-size: 15px; letter-spacing: -.005em; }
+.who span { display: block; font-size: 13px; opacity: .8; }
+.links { display: flex; gap: 20px; font-size: 14px; font-weight: 500; }
+.links a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: flex-start; }
+.links a:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* moments 1 + 2: one pinned stage; the ground is the stage's own dark, the first screen sits on it as the pane */
+.hero { position: relative; height: 290svh; }
+.stage { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+.pane, .inner { position: absolute; inset: 0; will-change: transform; }
+.pane { pointer-events: none; } /* no clip: nothing frames him, so no edge can show */
+.cream { --r: 62vmax; position: absolute; inset: -100vmax; background: var(--look-cream);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 var(--r), transparent calc(var(--r) + 30vmax));
+  mask-image: radial-gradient(circle at 50% 50%, #000 var(--r), transparent calc(var(--r) + 30vmax)); } /* the first screen's ground: it fades to the dark as he shrinks, no box */
+.name { position: absolute; left: 0; right: 0; top: 7svh; margin: 0; text-align: center; font: 700 min(9vw, 14svh)/.86 var(--f-big);
+  letter-spacing: -.02em; text-transform: uppercase; color: var(--look-dark); white-space: nowrap; }
+.name .ln { display: inline-block; overflow: hidden; padding: .04em .12em 0; }
+.name .ln span { display: block; }
+.photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0;
+  -webkit-mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%);
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%); mask-composite: intersect; }
+.gl { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
+.has-gl .photo { visibility: hidden; } /* the 3D photo draws instead; the pictures stay for size and as the fallback */
+/* film grain over everything, like a printed page: a small noise tile that jumps a little each frame */
+.grain { position: fixed; inset: -50%; z-index: 30; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+  background: url(assets/grain.png); animation: grain 1s steps(6) infinite; }
+@keyframes grain { 0% { transform: translate(0, 0); } 20% { transform: translate(-4%, 3%); } 40% { transform: translate(3%, -5%); }
+  60% { transform: translate(-6%, -2%); } 80% { transform: translate(5%, 4%); } 100% { transform: translate(0, 0); } }
+@media (prefers-reduced-motion: reduce) { .grain { animation: none; } }
+.photo.bw { opacity: 0; filter: brightness(.74); } /* dimmed, but solid: the names run behind him, never through */
+.role { position: absolute; left: max(var(--gutter), env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
+  font-size: 14px; font-weight: 500; max-width: 24ch; color: var(--look-dark); }
+.hint { position: absolute; right: max(var(--gutter), env(safe-area-inset-right)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
+  font-size: 13px; color: var(--look-dark-quiet); }
+/* the names behind the pane: two voices, like his mixed rows */
+.rows { position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; opacity: 0; pointer-events: none; display: grid; gap: .1em; }
+.row { white-space: nowrap; text-transform: uppercase; will-change: transform; }
+.row.a { font: 400 min(6.4vw, 11svh)/1 var(--f-text); letter-spacing: -.03em; color: var(--look-quiet); }
+.row.b { font: 700 min(7.6vw, 13svh)/.92 var(--f-big); letter-spacing: -.015em; color: var(--look-cream); opacity: .9; }
+.sig { position: absolute; left: 50%; top: 50%; width: min(46vw, 78svh); translate: -50% -46%; /* Tom 11-20: smaller */ overflow: visible; pointer-events: none; }
+.sig .ink { fill: var(--front-spray); } /* one clean ink (Tom 11-20): each stroke a shape, thick in the middle, thin at the ends */
+/* joint 1: the ring's front leaves the loop and runs to where the signature starts, in the stage's own pixels */
+.lead { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.lead path { fill: none; stroke: var(--front-spray); stroke-linecap: round; opacity: 0; }
+
+/* moment 3: the statement. Lines brighten and rise with the scroll, two voices like his; ink blooms behind one word */
+.say { position: relative; padding: 12svh max(var(--gutter), env(safe-area-inset-right)) 30svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
+.say .label { margin: 0 0 32px; font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
+.say h2 { margin: 0 auto; max-width: 14ch; font: 700 min(7.4vw, 120px)/1 var(--f-big); letter-spacing: -.015em; text-transform: uppercase; color: var(--look-cream); text-wrap: balance; }
+.say h2 .q { font: 400 .9em/1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); } /* the second voice: another face, same ink, like his */
+.say .w { display: inline-block; }
+.say .run { display: inline-block; }
+/* the ink (Tom picked 11-21): one GPU still of ink in water, tinted blue, opened by a small shader as the words arrive;
+   it sits behind the whole statement (every rising word is its own layer), placed from where RUN lands */
+section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
+
+/* moment 4: the work. The ground goes from warm dark to black; one pinned track moves sideways while you scroll down.
+   Screens sit unframed at two sizes and two speeds, each with a tiny caption; phone: the same as a vertical scatter */
+/* faint construction lines on the dark ground, made on the desk's graphics card (Z-Image: pencil and chalk layout lines on
+   black, cleaned to white lines on clear): one sheet per moment, each moving at its own depth behind the words */
+.ground { position: absolute; pointer-events: none; user-select: none; opacity: .13; max-width: none; height: auto;
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent); mask-image: radial-gradient(closest-side, #000 55%, transparent); } /* no edge: the sheet fades out before its border */
+.ground.g2 { left: 50%; top: 50%; width: 118vw; translate: -50% -50%; opacity: 0; }
+.say > :not(.ground) { position: relative; }
+.say { overflow-x: clip; } /* the line sheets are wider than the screen: never a sideways scroll */
+.night { position: fixed; inset: 0; z-index: -1; background: var(--look-ground); opacity: 0; pointer-events: none; }
+/* the ink becomes each project's ground: one fixed layer over the black, under everything else; each project its own wash
+   (ink, spray, paper: three GPU stills in one file), strongest while its project is in the middle, fading into the next */
+.wash { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
+.work { position: relative; overflow-x: clip; }
+.work .stage { position: sticky; top: 0; height: 100svh; overflow: clip; } /* clip, not hidden: a hidden box can still be scrolled sideways by focus, and the track stayed shoved */
+.track { position: absolute; top: 0; left: 0; height: 100%; display: flex; will-change: transform; }
+.intro { flex: none; width: 46vw; padding: 0 0 0 max(var(--gutter), env(safe-area-inset-left)); display: grid; align-content: center; gap: 20px; }
+.intro h2 { margin: 0; font: 700 min(7.4vw, 15svh)/.92 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
+.intro p { margin: 0; max-width: 30ch; color: var(--look-soft); }
+.proj { position: relative; flex: none; width: calc(var(--bw) + 52vw); height: 100%; }
+.proj .shot { position: absolute; display: block; height: auto; }
+.proj { --bw: min(58vw, 108svh); }
+.proj .big { left: 2vw; top: calc(50svh - var(--bw) * .3125 - 2svh); width: var(--bw); border-radius: 4px; }
+.proj .small { left: calc(2vw + var(--bw) - 7vw); top: calc(50svh - 4svh); width: min(13vw, 25svh); border-radius: 12px; }
+.proj .tall { position: absolute; left: calc(2vw + var(--bw) - 7vw); top: calc(50svh - 4svh); width: min(13vw, 25svh); aspect-ratio: 300 / 650; overflow: hidden; border-radius: 12px; }
+.proj .tall img { display: block; width: 100%; height: auto; will-change: transform; }
+.mk { position: absolute; z-index: 2; width: 18px; height: auto; opacity: .55; pointer-events: none; user-select: none; } /* hand-drawn corner marks (Z-Image, cut from one sheet), outside each big screen's corners */
+.intro .tgt { width: 26px; height: auto; opacity: .5; margin-bottom: -6px; }
+.cap { position: absolute; font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); white-space: nowrap; }
+.proj .big + .cap { left: 2vw; top: calc(50svh - var(--bw) * .3125 - 2svh - 24px); }
+/* epaRadar shown its own way (award step 4): the phone is the whole thing. The real app's map (made-up test friends on the
+   local seed, recorded on the emulator) almost as tall as the screen, growing in as it arrives; a handwritten note points at it */
+.proj.a { --fh: 86svh; --fw: calc(var(--fh) * 540 / 1170); --fx: 6vw; width: calc(var(--fx) + var(--fw) + 18vw + min(32vw, 470px) + 10vw); }
+.proj.a .film { position: absolute; left: var(--fx); top: calc(50svh - var(--fh) / 2 + 2svh); width: var(--fw); aspect-ratio: 540 / 1170; overflow: hidden; border-radius: var(--look-device-round); transform-origin: 0 50%; will-change: transform; }
+.proj.a .film video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.proj.a .cap { left: var(--fx); top: calc(50svh + var(--fh) / 2 + 2svh + 10px); } /* under the film: above it, it met the header */
+.note { position: absolute; left: calc(var(--fx) + var(--fw) + 1.5vw); top: 44svh; margin: 0; display: grid; justify-items: start; pointer-events: none; }
+.note span { font: 400 clamp(26px, 2.4vw, 38px)/1 "Sedgwick Ave Display", var(--f-text); color: var(--front-spray); rotate: -6deg; white-space: nowrap; }
+.note svg { width: clamp(90px, 8.5vw, 140px); height: auto; margin: 4px 0 0 -6vw; overflow: visible; }
+.note path { fill: none; stroke: var(--front-spray); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.note.wait span { clip-path: inset(0 100% 0 0); }
+.note.wait path { stroke-dashoffset: 1; }
+.note.on span { clip-path: inset(0 0 0 0); transition: clip-path .8s cubic-bezier(.6, 0, .2, 1); }
+.note.on path { stroke-dashoffset: 0; transition: stroke-dashoffset .5s cubic-bezier(.6, 0, .2, 1) .7s; }
+.note.on path + path { transition-delay: 1.15s; transition-duration: .25s; }
+.proj.a .txt { left: calc(var(--fx) + var(--fw) + 18vw); }
+.proj.a .line { text-wrap: balance; }
+.story { display: grid; gap: 12px; }
+/* Rädda Vårfruberga shown its own way (award step 4): the signatures are the thing. One big number above the site,
+   counting up while the site slides in (back down if you scroll back), the same number the site itself shows */
+.count { position: absolute; margin: 0; display: flex; align-items: baseline; gap: 14px; white-space: nowrap; pointer-events: none; }
+.count .n { font: 700 min(9vw, 16svh)/.8 var(--f-big); letter-spacing: -.02em; color: var(--look-cream); font-variant-numeric: tabular-nums; }
+.count .w { font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.proj.b .txt h3 { font-size: min(3.9vw, 7.5svh); } /* VÅRFRUBERGA is one long word: it fits its column */
+.story p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--look-soft); max-width: 46ch; }
+.story b { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
+.txt { position: absolute; left: calc(2vw + var(--bw) + 12vw); top: 50svh; translate: 0 -50%; width: min(32vw, 470px); display: grid; gap: 14px; }
+.txt .no { font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
+.txt h3 { margin: 0; font: 700 min(5.2vw, 10svh)/.92 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
+.txt .line { margin: 0; font-size: 19px; line-height: 1.35; color: var(--look-cream); }
+.txt dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 14px; }
+.txt dt { color: var(--look-quiet); }
+.txt dd { margin: 0; color: var(--look-soft); }
+.go { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 8px; font-size: 15px; font-weight: 600; }
+.go a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
+.go a:hover { color: var(--front-spray); }
+
+/* moment 5: the end. WRITE TO ME, then the email, the ways on and the form (plain lines, no boxes). The last wash
+   flies off as specks that paint the form's lines (Tom picked it 11-21) */
+.end { position: relative; padding: 26svh max(var(--gutter), env(safe-area-inset-right)) 18svh max(var(--gutter), env(safe-area-inset-left)); }
+.end h2 { margin: 0 0 7svh; font: 700 min(9.6vw, 17svh)/.9 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
+/* small details (Tom 11-21: the spray stays; stamp and trail are gone, the edge drops became the washes' hand-over drops; ?off=spray turns it off) */
+.fx { position: fixed; inset: 0; z-index: 25; width: 100%; height: 100%; pointer-events: none; } /* 1: the puff of specks off a link */
+a, .form button { transition: text-decoration-color var(--toggle) var(--ease), color var(--toggle) var(--ease); }
+a:hover { text-decoration-color: var(--front-spray); }
+/* blue words (award plan step 2): one brush swipe of the blue under one word per screen (the statement's is the ink behind RUN), behind and below the letters,
+   brushed on left to right the first time the word is fully on screen; there from the start with reduced motion */
+.mark { position: relative; isolation: isolate; white-space: nowrap; }
+.mark::after { content: ""; position: absolute; z-index: -1; left: -.18em; right: -.24em; bottom: -.3em; height: .5em; background: url(assets/swipe.webp) 0 0 / 100% 100% no-repeat; opacity: .7; rotate: -1.2deg; pointer-events: none; } /* a band of paint, not a line: a thin one read as a link's underline */
+h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
+.mark.wait::after { clip-path: inset(0 100% 0 0); }
+.mark.on::after { clip-path: inset(0 0 0 0); transition: clip-path .7s cubic-bezier(.6, 0, .2, 1) .15s; }
+.specks { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
+.end .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6vw; align-items: start; max-width: 1180px; }
+.end .say-mail { display: grid; gap: 26px; }
+.end .addr { font: 600 min(3.4vw, 40px)/1.1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 8px; min-height: 44px; width: fit-content; }
+.end .addr:hover, .end .ways a:hover { color: var(--front-spray); }
+.end .ways { display: flex; flex-wrap: wrap; gap: 8px 26px; font-size: 15px; font-weight: 600; }
+.end .ways a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
+.form { display: grid; gap: 26px; }
+.form label { display: grid; gap: 2px; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
+.form input, .form textarea { font: 400 17px/1.4 var(--f-text); color: var(--look-cream); background: transparent; border: 0; border-bottom: 1px solid var(--look-rule); border-radius: 0; padding: 4px 0 10px; min-height: 44px; box-sizing: border-box; width: 100%; resize: vertical; }
+.form input:focus-visible, .form textarea:focus-visible, .form input:focus, .form textarea:focus { outline: none; border-bottom-color: var(--look-cream); box-shadow: 0 1px 0 var(--look-cream); }
+.form label:focus-within { color: var(--look-cream); }
+.form .trap { position: absolute; left: -9999px; }
+.form button { justify-self: start; margin-top: 10px; font: 600 15px/1 var(--f-text); color: var(--look-cream); background: transparent; border: 1px solid var(--front-spray); border-radius: 2px; min-height: 48px; padding: 0 28px; cursor: pointer; }
+.form button:hover { background: var(--front-spray); color: var(--look-dark); }
+.form .err { margin: 0; color: var(--look-cream); }
+@media (max-width: 640px) {
+  .end { padding-top: 18svh; }
+  .end h2 { font-size: 15vw; line-height: 1.02; } /* room for WRITE's swipe above ME */
+  .end .cols { grid-template-columns: 1fr; gap: 56px; }
+  .form { gap: 22px; }
+  .end .addr { font-size: 26px; }
+}
+
+/* each project its own arrangement, like his scatter (laptop only; the phone has its own column) */
+@media (min-width: 641px) and (prefers-reduced-motion: no-preference) {
+  .proj.b { --ph: min(14vw, 27svh); --bx: calc(4vw + var(--ph) + 4vw); --by: calc(50svh - var(--bw) * .28 + 8svh); width: calc(var(--bx) + var(--bw) * .9 + 46vw); }
+  .proj.b .tall { left: 4vw; top: 12svh; width: var(--ph); }
+  .proj.b .big { left: var(--bx); top: var(--by); width: calc(var(--bw) * .9); }
+  .proj.b .big + .cap { left: var(--bx); top: calc(var(--by) + var(--bw) * .9 * .625 + 10px); } /* under the site: the count sits above it */
+  .proj.b .count { left: calc(var(--bx) - .04em); top: calc(var(--by) - 34px); translate: 0 -100%; }
+  .proj.b .note { left: calc(var(--bx) + var(--bw) * .9 * .78); top: calc(var(--by) - 15svh); }
+  .proj.b .txt { left: calc(var(--bx) + var(--bw) * .9 + 6vw); top: 46svh; }
+  .proj.c { width: calc(var(--bw) * .8 + 54vw); }
+  .proj.c .big { top: 10svh; width: calc(var(--bw) * .8); }
+  .proj.c .big + .cap { top: calc(10svh - 24px); }
+  .proj.c .small { left: calc(2vw + var(--bw) * .16); top: 47svh; width: min(11vw, 21svh); }
+  .proj.c .txt { left: calc(2vw + var(--bw) * .8 + 8vw); top: 56svh; }
+}
+@media (max-width: 640px), (prefers-reduced-motion: reduce) {
+  .mk { width: 14px; }
+  .work .stage { position: relative; height: auto; overflow: visible; }
+  .track { position: relative; flex-direction: column; gap: 18svh; padding: 14svh 0 18svh; transform: none !important; }
+  .intro { width: auto; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); }
+  .intro h2 { font-size: 15vw; }
+  .proj { width: auto; height: auto; display: grid; gap: 22px; padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); }
+  .proj .shot, .proj .tall, .cap, .txt { position: relative; left: auto; top: auto; }
+  .proj .big { width: 100%; }
+  .proj .big + .cap { order: -1; left: auto; top: auto; margin-bottom: -12px; }
+  .proj .small, .proj .tall { width: 44%; justify-self: end; margin-top: -26%; }
+  .txt { width: auto; translate: none; }
+  .txt h3 { font-size: 13vw; }
+  .proj.a { width: auto; }
+  .proj.a .txt, .proj.a .cap { left: auto; top: auto; }
+  .proj.a .film { position: relative; left: auto; top: auto; width: min(100%, var(--fw)); }
+  .note { position: relative; left: auto; top: auto; justify-self: end; margin: 0 4vw -14px 0; }
+  .note svg { margin: 2px 0 0 -40px; }
+  .count { position: relative; order: -3; }
+  .proj.b .note { order: -2; }
+  .count .n { font-size: 24vw; }
+}
+@media (max-width: 640px) {
+  /* phone: the film is the screen, edge to edge */
+  .proj.a .film { width: 100vw; margin-left: calc(-1 * max(var(--gutter), env(safe-area-inset-left))); border-radius: 0; }
+  .note { order: -1; margin-bottom: -6px; }
+  .note span { font-size: 30px; }
+  .proj.b .txt h3 { font-size: 10.6vw; }
+}
+
+
+@media (max-width: 640px) {
+  :root { --hp: 54svh; --pt: 29svh; }
+  .name { top: 11svh; font-size: min(17.5vw, 15svh); }
+  .name .ln { display: block; }
+  .role, .hint { display: none; }
+  .links { gap: 14px; font-size: 13px; }
+  /* phone: the pane sits higher, the names run under it where they can be read */
+  .rows { top: 60%; translate: 0 0; }
+  .row.a { font-size: 8.4vw; }
+  .row.b { font-size: 10.5vw; }
+  .sig { width: 64vw; top: 40%; translate: -50% -50%; }
+  .say h2 { font-size: 10.4vw; max-width: 12ch; }
+  .say h2 { line-height: 1.1; }
+  /* phone: each project its own arrangement too */
+  .proj.b .tall { justify-self: start; width: 40%; margin-top: -30%; }
+  .proj.c .big { width: 88%; justify-self: end; }
+  .proj.c .small { justify-self: start; width: 36%; margin-top: -40%; }
+}
+/* without motion: the first screen as it is, then the signature written under it */
+@media (prefers-reduced-motion: reduce) {
+  .hero { height: auto; }
+  .hero .stage { position: relative; height: 100svh; }
+  .sig, .lead { display: none; } /* they draw on the pane, which only exists with motion */
+  .hero .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 22svh; background: linear-gradient(transparent, var(--look-dark-soft)); pointer-events: none; }
+}
+</style>
+</head>
+<body>
+<div class="night" aria-hidden="true"></div>
+<canvas class="wash" aria-hidden="true"></canvas>
+<canvas class="specks" aria-hidden="true"></canvas>
+<canvas class="fx" aria-hidden="true"></canvas>
+<div class="veil" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<header class="bar">
+  <div class="who"><b>Tom Larsson</b><span>Product engineer</span></div>
+  <nav class="links" aria-label="Elsewhere"><a href="https://github.com/tlxq">GitHub ↗</a><a href="https://linkedin.com/in/tlxq">LinkedIn ↗</a></nav>
+</header>
+<main>
+  <section class="hero" aria-label="Tom Larsson">
+    <div class="stage">
+      <img class="ground g2" src="assets/ground-lineA-61.webp" alt="" width="1600" height="788" aria-hidden="true">
+      <div class="rows" aria-hidden="true">
+        <div class="row a" data-dir="-1">epaRadar · raddavarfruberga · EDGE · ttoolbox · epaRadar · raddavarfruberga · EDGE · ttoolbox ·</div>
+        <div class="row b" data-dir="1">TypeScript · React · C#/.NET · Postgres · TypeScript · React · C#/.NET · Postgres ·</div>
+      </div>
+      <div class="pane"><div class="inner">
+        <div class="cream"></div>
+        <h1 class="name"><span class="ln"><span>Tom</span></span> <span class="ln"><span>Larsson</span></span></h1>
+        <img class="photo col" src="assets/tom_cut.webp" alt="Tom Larsson" width="1200" height="1506" fetchpriority="high">
+        <img class="photo bw" src="assets/tom_cut_bw.webp" alt="" width="1200" height="1506">
+        <canvas class="gl" aria-hidden="true"></canvas>
+        <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
+        <p class="hint">Scroll</p>
+      </div></div>
+      <svg class="lead" aria-hidden="true"><path/></svg>
+      <svg class="sig" aria-hidden="true"></svg>
+    </div>
+  </section>
+  <section class="say" aria-labelledby="say-h">
+    <canvas class="bloom" aria-hidden="true"></canvas>
+    <p class="label">How I work</p>
+    <h2 id="say-h">I <span class="q">build and</span> <span class="run">run</span> <span class="q">things</span> myself, <span class="q">from</span> data model <span class="q">to</span> server</h2>
+  </section>
+  <section class="work" aria-labelledby="work-h">
+    <div class="stage"><div class="track">
+      <div class="intro">
+        <img class="tgt" src="assets/mark-target.webp" alt="" width="62" height="63" aria-hidden="true">
+        <p class="cap" style="position:static">Selected work</p>
+        <h2 id="work-h">Three builds<br>I run</h2>
+        <p>Each one is live. Open it, or read the code.</p>
+      </div>
+      <article class="proj a" aria-labelledby="p1">
+        <div class="film"><video src="projects/eparadar-map.mp4" poster="projects/eparadar-map.webp" muted loop playsinline preload="none" width="540" height="1170" aria-label="The epaRadar app: friends driving on a live map of Södermalm, made-up test friends"></video></div>
+        <span class="cap">The app · test data</span>
+        <p class="note" aria-hidden="true"><span>see who's out</span><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg></p>
+        <div class="txt">
+          <span class="no">01 / 03 · Degree project, built alone</span>
+          <h3 id="p1">epaRadar</h3>
+          <p class="line">Friends on a live map. <span class="mark">Only friends</span> see where you are.</p>
+          <div class="story">
+            <p><b>Why</b>EPA drivers plan meetups in group chats and maps made for everyone. I wanted one place that shows which friends are out and where.</p>
+            <p><b>Hard part</b>A push notification carries your message through Expo, Google and Apple. Mine don't. They only say 'Sent a message', so the words stay between friends.</p>
+          </div>
+          <dl><dt>Result</dt><dd>Live on eparadar.se</dd><dt>Stack</dt><dd>React Native, Expo, Supabase, Postgres, pgTAP</dd><dt id="epaLiveKey" hidden>GitHub</dt><dd id="epaLive" hidden></dd></dl>
+          <div class="go"><a href="https://eparadar.se">Open the site ↗</a><a href="https://github.com/tlxq/eparadar">Code ↗</a></div>
+        </div>
+      </article>
+      <article class="proj b" aria-labelledby="p2">
+        <img class="shot big" src="projects/raddavarfruberga-laptop.webp" alt="raddavarfruberga.se on a laptop" width="1920" height="1200" loading="lazy">
+        <span class="cap">raddavarfruberga.se</span>
+        <p class="count"><span class="n" aria-hidden="true">1,024</span><span class="sr">1,024</span> <span class="w">signatures</span></p>
+        <p class="note" aria-hidden="true"><span>let them stay</span><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg></p>
+        <div class="tall" data-speed="1"><img src="projects/raddavarfruberga-phone.webp" alt="The site on a phone" width="780" height="5233" loading="lazy"></div>
+        <div class="txt">
+          <span class="no">02 / 03 · Built alone, for the parents</span>
+          <h3 id="p2">Rädda Vårfruberga</h3>
+          <p class="line">We started this site to collect <span class="mark">signatures</span> for our preschool.</p>
+          <div class="story">
+            <p><b>Why</b>The council wanted to close our children's preschool. The parents needed one place to sign, share and follow the case, so I built it.</p>
+            <p><b>Hard part</b>Mail scanners open every link in an email. If the sign-in link logged you in, it would log the scanner in too. So the link only asks, and a button you press logs you in.</p>
+          </div>
+          <dl><dt>Result</dt><dd>1,024 signatures. The council hasn't decided yet.</dd><dt>Stack</dt><dd>Next.js, TypeScript, Supabase, Resend, Vercel</dd></dl>
+          <div class="go"><a href="https://raddavarfruberga.se">Open the site ↗</a></div>
+        </div>
+      </article>
+      <article class="proj c" aria-labelledby="p3">
+        <video class="shot big" src="projects/app-utveckling-laptop.mp4" poster="projects/app-utveckling-laptop.webp" muted loop playsinline preload="none" width="1440" height="900" aria-label="app-utveckling.se scrolling on a laptop"></video>
+        <span class="cap">app-utveckling.se</span>
+        <video class="shot small" data-speed="1" src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video>
+        <div class="txt">
+          <span class="no">03 / 03 · Work project, built alone</span>
+          <h3 id="p3">EDGE</h3>
+          <p class="line">Two landing pages for EDGE Associates, on <span class="mark">one code base</span>.</p>
+          <dl><dt>Stack</dt><dd>Astro, TypeScript</dd></dl>
+          <div class="go"><a href="https://app-utveckling.se">app-utveckling.se ↗</a><a href="https://mjukvaruutvecklare.com">mjukvaruutvecklare.com ↗</a></div>
+        </div>
+      </article>
+    </div></div>
+  </section>
+  <section class="end" aria-labelledby="end-h">
+    <h2 id="end-h"><span class="mark">Write</span> to me</h2>
+    <div class="cols">
+      <div class="say-mail">
+        <a class="addr" href="mailto:hello@ttdevs.com">hello@ttdevs.com</a>
+        <nav class="ways" aria-label="More of me"><a href="https://github.com/tlxq" target="_blank" rel="noopener">GitHub ↗</a><a href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener">LinkedIn ↗</a><a href="paint.html">Leave your tag ↓</a></nav>
+      </div>
+      <form class="form" id="mail">
+        <label>Name<input name="name" autocomplete="name" required maxlength="100" enterkeyhint="next"></label>
+        <label>Email<input name="email" type="email" autocomplete="email" required maxlength="200" enterkeyhint="next"></label>
+        <label>Message<textarea name="message" rows="3" required maxlength="4000"></textarea></label>
+        <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+        <p class="err" id="mailErr" role="alert" hidden></p><button>Send</button>
+      </form>
+    </div>
+  </section>
+</main>
+__LIBS__
+<script>
+(() => {
+  const SIGN = __SIGN__;
+  // the header's name and role only once the big name has left: never the same words twice on one screen
+  const who = document.querySelector(".who");
+  const bigName = document.querySelector(".name");
+  const whoCheck = () => { const r = bigName.getBoundingClientRect(); // the name leaves by rising and fading, inside a pane that shrinks
+    const big = r.bottom > 0 && r.top < innerHeight && +getComputedStyle(bigName).opacity > 0.1;
+    who.classList.toggle("away", big); veil.classList.toggle("on", scrollY > document.querySelector(".hero").offsetHeight - innerHeight * 0.5); };
+  const veil = document.querySelector(".veil");
+  addEventListener("scroll", whoCheck, { passive: true }); addEventListener("resize", whoCheck); whoCheck();
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const phone = () => innerWidth <= 640;
+
+  // the signature: one even line along each traced centre line, drawn in writing order
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.querySelector(".sig");
+  svg.setAttribute("viewBox", SIGN.viewBox.join(" "));
+  const LINE = 40; // the widest the line gets, in the signature's own units: about 14 px at laptop size
+  const MASK = LINE * 1.6; // the reveal is wider than the ink, so only the dash's end decides what shows
+  // a brush's width along one stroke (0 start .. 1 end): sets down quickly, runs full, lifts off in a longer taper
+  const brush = (t) => 0.22 + 0.78 * Math.min(1, t / 0.12) ** 0.7 * Math.min(1, (1 - t) / 0.3) ** 0.8;
+  // the stroke as one shape: a round dab at every step and a band between each two, all wound the same way so they add up.
+  // One outline round the whole stroke folded over itself where the pen turns back (the m's humps): flat cuts (Tom 11-20)
+  const inkOf = (path, width, profile) => {
+    const L = path.getTotalLength(), n = Math.max(24, Math.ceil(L / 4)), pts = [];
+    for (let i = 0; i <= n; i++) { const q = path.getPointAtLength((i / n) * L); pts.push([q.x, q.y, (width * profile(i / n)) / 2]); }
+    const f = (v) => v.toFixed(1), parts = [];
+    const dab = ([x, y, r]) => `M${f(x - r)},${f(y)}a${f(r)},${f(r)} 0 1,1 ${f(2 * r)},0a${f(r)},${f(r)} 0 1,1 ${f(-2 * r)},0Z`;
+    pts.forEach((q, i) => {
+      parts.push(dab(q));
+      if (i === n) return;
+      const p2 = pts[i + 1], dx = p2[0] - q[0], dy = p2[1] - q[1], l = Math.hypot(dx, dy);
+      if (l < 0.01) return;
+      const nx = -dy / l, ny = dx / l; // the band's corners, in the dab's turning direction
+      const c = [[q[0] - nx * q[2], q[1] - ny * q[2]], [p2[0] - nx * p2[2], p2[1] - ny * p2[2]], [p2[0] + nx * p2[2], p2[1] + ny * p2[2]], [q[0] + nx * q[2], q[1] + ny * q[2]]];
+      parts.push(`M${c.map((k) => `${f(k[0])},${f(k[1])}`).join("L")}Z`);
+    });
+    return parts.join("");
+  };
+  const defs = document.createElementNS(NS, "defs"); svg.appendChild(defs);
+  const strokes = SIGN.strokes.map((s, i) => {
+    const m = document.createElementNS(NS, "mask"), p = document.createElementNS(NS, "path"), ink = document.createElementNS(NS, "path");
+    m.id = `sig-m${i}`; m.setAttribute("maskUnits", "userSpaceOnUse");
+    // the mask's own area, in the signature's units: the browser's default (a % of the box) cut the lower half off (Tom 11-20)
+    const [vx, vy, vw, vh] = SIGN.viewBox;
+    m.setAttribute("x", vx - vw); m.setAttribute("y", vy - vh); m.setAttribute("width", vw * 3); m.setAttribute("height", vh * 3);
+    p.setAttribute("d", s.d); p.setAttribute("fill", "none"); p.setAttribute("stroke", "#fff"); p.setAttribute("stroke-width", MASK); p.setAttribute("stroke-linecap", "round");
+    // the hidden part sits a whole reveal width past the start, so nothing shows before it draws
+    p.setAttribute("stroke-dasharray", `${s.len} ${s.len + 2 * MASK}`);
+    p.setAttribute("stroke-dashoffset", still ? 0 : s.len + MASK);
+    m.appendChild(p); defs.appendChild(m);
+    ink.setAttribute("class", "ink"); ink.setAttribute("d", inkOf(p, LINE, brush)); ink.setAttribute("mask", `url(#${m.id})`);
+    svg.appendChild(ink);
+    return p;
+  });
+
+  // the EDGE films play only while on screen
+  const vids = new IntersectionObserver((es) => es.forEach((e) => { const v = e.target; if (e.isIntersecting && !still) { v.preload = "auto"; v.play().catch(() => {}); } else v.pause(); }), { threshold: 0.3 });
+  document.querySelectorAll("video").forEach((v) => vids.observe(v));
+  // epaRadar's numbers, live from GitHub at load (no token); no answer shows nothing, never an old number
+  const gh = async (u) => { const r = await fetch("https://api.github.com/" + u); if (!r.ok) throw 0; return r; };
+  const commits = gh("repos/tlxq/eparadar/commits?per_page=1").then((r) => { const m = /[?&]page=(\d+)>; rel="last"/.exec(r.headers.get("Link") || ""); if (!m) throw 0; return +m[1]; });
+  const merged = gh("search/issues?q=" + encodeURIComponent("repo:tlxq/eparadar is:pr is:merged") + "&per_page=1").then((r) => r.json()).then((d) => { if (d.incomplete_results || !(d.total_count > 0)) throw 0; return d.total_count; });
+  Promise.allSettled([commits, merged]).then(([c, m]) => {
+    const parts = [c.status === "fulfilled" && [c.value, "commits"], m.status === "fulfilled" && [m.value, "merged pull requests"]].filter(Boolean);
+    if (!parts.length) return;
+    const dd = document.getElementById("epaLive"), say = (k) => parts.map(([n, w]) => `${Math.round(n * k).toLocaleString("en-US")} ${w}`).join(", ");
+    dd.textContent = say(1); dd.hidden = false; document.getElementById("epaLiveKey").hidden = false;
+    if (still) return;
+    // the numbers count up from 0 the first time they are on screen (the real number is in the page from the start)
+    dd.setAttribute("aria-label", say(1)); dd.textContent = say(0);
+    const io = new IntersectionObserver(([e]) => { if (!e.isIntersecting) return; io.disconnect(); const t0 = performance.now();
+      const step = (t) => { const k = Math.min(1, (t - t0) / 1400); dd.textContent = say(1 - (1 - k) ** 3); if (k < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step); }, { threshold: 0.5 });
+    io.observe(dd);
+  });
+
+  // moment 3: the ink behind RUN. One still (ink in water, made on the desk's graphics card), opened by a shader: the dense
+  // core first from where the drop lands, the thin curls last, while the picture spreads to full size
+  const bloom = (() => {
+    const cv = document.querySelector(".say .bloom"), run = document.querySelector(".say .run"), say = document.querySelector(".say");
+    const img = new Image(); img.src = "assets/ink-bloom.webp";
+    const g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
+    const place = () => { // 2.6 x RUN's width (Tom 11-21: bigger), at least 80 % of the screen, centred on RUN where it lands (layout boxes: the words' rise doesn't move it)
+      const h2 = run.offsetParent, x = h2.offsetLeft + run.offsetLeft + run.offsetWidth / 2, y = h2.offsetTop + run.offsetTop + run.offsetHeight / 2;
+      const w = Math.max(run.offsetWidth * 2.6, innerWidth * 0.8), h = w * (img.naturalHeight / img.naturalWidth || 0.686);
+      Object.assign(st.el.style, { width: `${w}px`, height: `${h}px`, left: `${x - w / 2}px`, top: `${y - h / 2}px` });
+      if (st.el !== cv) return;
+      const k = Math.min(devicePixelRatio, 2); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+      st.draw();
+    };
+    const st = { p: still ? 1 : 0, draw: () => {}, el: cv, place };
+    if (!g) { // no WebGL 2: the finished bloom as a plain picture, in the same place and strength
+      st.p = 1; st.el = Object.assign(img, { className: "bloom", alt: "" }); img.setAttribute("aria-hidden", "true"); cv.replaceWith(img);
+      img.decode().then(place, () => {}); return st;
+    }
+    const sh = (type, src) => { const x = g.createShader(type); g.shaderSource(x, src); g.compileShader(x); return x; };
+    const pr = g.createProgram();
+    g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
+      in vec2 aP; out vec2 vUv; void main() { vUv = vec2(aP.x * .5 + .5, .5 - aP.y * .5); gl_Position = vec4(aP, 0., 1.); }`));
+    g.attachShader(pr, sh(g.FRAGMENT_SHADER, `#version 300 es
+      precision mediump float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform float uP;
+      float h(vec2 q) { return fract(sin(dot(q, vec2(127.1, 311.7))) * 43758.5453); }
+      float n(vec2 q) { vec2 i = floor(q), f = fract(q); f = f * f * (3. - 2. * f);
+        return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.), f.x), f.y); }
+      void main() {
+        vec2 c = vec2(.5, .22);                                    // where the drop lands: the top of the plume
+        vec2 uv = c + (vUv - c) / mix(.6, 1., uP);                 // the cloud spreads to full size
+        vec4 t = texture(uT, uv);
+        t *= step(0., uv.x) * step(uv.x, 1.) * step(0., uv.y) * step(uv.y, 1.);
+        float k = length((uv - c) * vec2(1., .9)) * 1.4 + (1. - t.a) * .45 + n(uv * 9.) * .2; // dense and near: first
+        float e = uP * 1.9;
+        o = vec4(t.rgb, 1.) * t.a * (1. - smoothstep(e - .25, e, k));
+      }`));
+    g.linkProgram(pr); g.useProgram(pr);
+    g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer()); g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
+    const aP = g.getAttribLocation(pr, "aP"); g.enableVertexAttribArray(aP); g.vertexAttribPointer(aP, 2, g.FLOAT, false, 0, 0);
+    let ready = false;
+    st.draw = () => { if (!ready) return; g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
+      g.uniform1f(g.getUniformLocation(pr, "uP"), st.p); g.drawArrays(g.TRIANGLE_STRIP, 0, 4); };
+    img.decode().then(() => {
+      g.bindTexture(g.TEXTURE_2D, g.createTexture());
+      g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, img);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+      ready = true; st.place();
+    }).catch(() => {});
+    return st;
+  })();
+  addEventListener("resize", () => bloom.place()); document.fonts?.ready.then(() => bloom.place()); // Clash Display moves the words when it arrives
+
+  // the form: the same fields and words as the live site's, sent by the server (api/contact.ts); signum W3, W5, W6
+  { const mail = document.getElementById("mail"), err = mail.querySelector(".err"), btn = mail.querySelector("button");
+    const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
+    mail.addEventListener("submit", async (e) => { e.preventDefault(); btn.disabled = true; btn.textContent = "Sending\u2026"; err.hidden = true; let why;
+      try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
+        if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.tabIndex = -1; sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.replaceChildren(sent); sent.focus(); return; } // focus moves to the answer: the button it was on is gone
+        const code = ((await a.json().catch(() => ({}))).error) || ""; why = WHY[code] || "The mail service didn't answer.";
+        if (WHY[code]) { const field = mail.elements[code]; field.setAttribute("aria-invalid", "true"); field.setAttribute("aria-describedby", err.id); } } catch (_) { why = "The page couldn't reach the server."; }
+      err.textContent = "Couldn't send your message. " + why; err.hidden = false; btn.disabled = false; btn.textContent = "Try again"; });
+    mail.addEventListener("input", (e) => { if (e.target.getAttribute("aria-invalid")) { e.target.removeAttribute("aria-invalid"); e.target.removeAttribute("aria-describedby"); } }); }
+  const endPull = { p: 0 }; // moment 5: how far the last wash has become the form's lines (0 -> 1)
+  const inkHand = { q: 0 }; // moment 3 -> 4: how far the ink behind RUN has become epaRadar's wash (0 -> 1)
+  // moment 4: the washes. One fixed WebGL 2 layer; each project's weight comes from how near the middle of the screen it is
+  // (sideways on the laptop track, up and down in the phone column), so the same code serves both. No WebGL 2: no washes.
+  (() => {
+    const cv = document.querySelector(".wash"), work = document.querySelector(".work"), projs = [...document.querySelectorAll(".proj")], intro = document.querySelector(".intro");
+    const g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
+    if (!g) return cv.remove();
+    const img = new Image(); img.src = "assets/wash.webp";
+    const sh = (type, src) => { const x = g.createShader(type); g.shaderSource(x, src); g.compileShader(x); return x; };
+    const pr = g.createProgram();
+    g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
+      in vec2 aP; out vec2 vUv; void main() { vUv = vec2(aP.x * .5 + .5, .5 - aP.y * .5); gl_Position = vec4(aP, 0., 1.); }`));
+    g.attachShader(pr, sh(g.FRAGMENT_SHADER, `#version 300 es
+      precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uT; uniform vec3 uW, uS; uniform vec2 uF; uniform vec3 uC; uniform float uMax; uniform vec2 uL[3]; uniform float uA, uDrop, uEnd; uniform vec3 uO;
+      float h(vec2 q) { vec3 p = fract(vec3(q.xyx) * .1031); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); } // no sin: the same corner gives the same value from every cell
+      float n(vec2 q) { vec2 i = floor(q), f = fract(q); f = f * f * (3. - 2. * f);
+        return mix(mix(h(i), h(i + vec2(1, 0)), f.x), mix(h(i + vec2(0, 1)), h(i + 1.), f.x), f.y); }
+      // hand-over (award step 3): each wash starts as one drop of the blue that falls from the top edge onto its project,
+      // then spreads out from where it landed, densest paint first; scrolled back, it shrinks into that point again
+      float wash(int i, float w, float s, vec2 at, vec2 L) {
+        vec2 uv = .5 + (at - .5) * uF + vec2(s, 0.);           // the still covers the screen and drifts with its project
+        float t = texture(uT, uv)[i];
+        float sp = clamp((w - .3) / .7, 0., 1.);                 // after the drop has landed
+        float d = length((at - L) * vec2(uA, 1.));
+        float k = d * .75 + n(uv * 5. + float(i) * 7.) * .35 + (1. - t) * .3; // near and dense first, ragged, never a flat fade
+        if ((i == 2 && uEnd > 0.) || uO[i] > .5) { k = n(uv * 5. + 14.) * .6 + (1. - t) * .4; return t * smoothstep(k - .15, k + .15, w * 1.3 - .15); } // on its way out (and as EDGE's flies off as specks) a wash thins out everywhere: only the incoming one drops
+        return t * smoothstep(k - .12, k + .12, sp * 2.2);
+      }
+      float drop(float w, vec2 L, vec2 at, float o) {                     // the falling drop: long while it falls, a short splat as it lands
+        float f = clamp(w / .3, 0., 1.), land = smoothstep(.85, 1., f);
+        if (w <= 0. || uDrop < .5 || o > .5) return 0.;
+        vec2 p = vec2(L.x, mix(-.04, L.y, f * f));
+        vec2 q = (at - p) * vec2(uA, 1.) / vec2(mix(.011, .03, land), mix(.034, .011, land));
+        return (1. - smoothstep(.6, 1., length(q))) * (1. - smoothstep(.3, .38, w));
+      }
+      void main() {
+        float a = max(max(wash(0, uW.x, uS.x, vUv, uL[0]), wash(1, uW.y, uS.y, vUv, uL[1])), wash(2, uW.z, uS.z, vUv, uL[2]));
+        float dr = max(max(drop(uW.x, uL[0], vUv, uO.x), drop(uW.y, uL[1], vUv, uO.y)), drop(uW.z, uL[2], vUv, uO.z) * step(uEnd, 0.));
+        o = vec4(uC, 1.) * max(a * uMax, dr * .9);
+      }`));
+    g.linkProgram(pr); g.useProgram(pr);
+    g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer()); g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
+    const aP = g.getAttribLocation(pr, "aP"); g.enableVertexAttribArray(aP); g.vertexAttribPointer(aP, 2, g.FLOAT, false, 0, 0);
+    const u = (k) => g.getUniformLocation(pr, k);
+    const c = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim().match(/\w\w/g).map((x) => parseInt(x, 16) / 255);
+    g.uniform3f(u("uC"), ...c); g.uniform1f(u("uMax"), 0.16); g.uniform1f(u("uDrop"), still ? 0 : 1); // at its densest the blue lifts the black to about 15 %
+    const size = () => { const k = phone() ? Math.min(devicePixelRatio, 2) : 0.5; cv.width = Math.round(innerWidth * k); cv.height = Math.round(innerHeight * k); // soft: half size is plenty
+      const A = innerWidth / innerHeight; g.uniform2f(u("uF"), Math.min(A / 2, 1), Math.min(2 / A, 1)); g.uniform1f(u("uA"), A); };
+    let ready = false, on = false, last = "";
+    const draw = () => {
+      if (!ready) return;
+      const flat = phone(), W = [0, 0, 0], S = [0, 0, 0], L = [], O = [0, 0, 0], wr = work.getBoundingClientRect();
+      const vis = Math.min(1, Math.max(0, (innerHeight - wr.top) / (innerHeight * 0.75)), Math.max(0, wr.bottom / (innerHeight * 0.75))); // only on the black
+      projs.slice(0, 3).forEach((p, i) => { const r = p.getBoundingClientRect();
+        const d = flat ? (r.top + r.height / 2 - innerHeight / 2) / Math.max(innerHeight, r.height) : (r.left + r.width / 2 - innerWidth / 2) / innerWidth;
+        W[i] = Math.max(0, 1 - Math.abs(d) * 1.2) * vis; S[i] = d * 0.18; O[i] = d < 0 ? 1 : 0; // past the middle: on its way out
+        // where its drop lands: in the dark gap before the project (the edge where the blue hands over), never on words or pictures
+        const pr = (i ? projs[i - 1] : intro).getBoundingClientRect(), cl = (v) => Math.min(0.92, Math.max(0.08, v));
+        L.push(flat ? 0.975 : cl((pr.right < r.left ? (pr.right + r.left) / 2 : r.left - 40) / innerWidth),
+          flat ? cl((pr.bottom < r.top ? (pr.bottom + r.top) / 2 : r.top - 30) / innerHeight) : 0.8); });
+      const hold = Math.min(1, Math.max(0, 1 + wr.top / innerHeight)); // over the first screen of the work, epaRadar's own place takes over
+      W[0] = Math.max(W[0], inkHand.q * hold); // the ink from RUN carries on as epaRadar's ground
+      if (endPull.p > 0) { W[2] = 1 - endPull.p; S[2] = 0; } // EDGE's wash thins out as its paint flies off as specks
+      W.push(endPull.p);
+      const key = W.concat(S, L, O).map((x) => x.toFixed(3)).join();
+      if (key === last) return; last = key;
+      g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
+      g.uniform3f(u("uW"), W[0], W[1], W[2]); g.uniform3f(u("uS"), ...S); g.uniform2fv(u("uL"), L); g.uniform1f(u("uEnd"), endPull.p); g.uniform3f(u("uO"), ...O); g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
+    };
+    const loop = () => { if (!on) return; draw(); requestAnimationFrame(loop); };
+    const seen = new Set(); // runs while the work or the end is on screen
+    const io = new IntersectionObserver((es) => { es.forEach((e) => (e.isIntersecting ? seen.add(e.target) : seen.delete(e.target))); const was = on; on = seen.size > 0;
+      if (on && !was) loop(); if (!on) { last = ""; g.clear(g.COLOR_BUFFER_BIT); } });
+    io.observe(work); io.observe(document.querySelector(".end"));
+    addEventListener("resize", () => { size(); last = ""; draw(); });
+    img.decode().then(() => {
+      g.bindTexture(g.TEXTURE_2D, g.createTexture());
+      g.texImage2D(g.TEXTURE_2D, 0, g.RGB, g.RGB, g.UNSIGNED_BYTE, img);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.MIRRORED_REPEAT); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+      size(); ready = true; draw();
+    }).catch(() => {});
+  })();
+
+  // moment 5: the smoke paints the form (Tom picked it 11-21 from four). The last wash breaks into blue specks, picked from
+  // the paper wash's own paint so each starts where the smoke was, and they fly onto the form's lines, the Send button's
+  // edge and the email's underline. Plain WebGL 2 points. Reduced motion or no WebGL 2: the lines are simply drawn.
+  const specks = (() => {
+    const st = { p: 0, draw: () => {} }, end = document.querySelector(".end");
+    if (still) return st;
+    const cv = document.querySelector(".specks"), g = cv.getContext("webgl2", { premultipliedAlpha: true, alpha: true });
+    if (!g) { cv.remove(); return st; }
+    const N = phone() ? 2600 : 6000;
+    const src = new Float32Array(N * 2), seg = new Uint16Array(N), along = new Float32Array(N), wob = new Float32Array(N * 2), rest = new Float32Array(N), del = new Float32Array(N), pos = new Float32Array(N * 2);
+    // the lines the specks become, on screen now (they move with the page): each input's and the message's bottom edge,
+    // the button's four sides and the line under the email. After Send the form is gone: no lines, no specks
+    const lines = () => {
+      const out = [], btn = end.querySelector(".form button"), addr = end.querySelector(".addr");
+      end.querySelectorAll('.form input:not([tabindex="-1"]), .form textarea').forEach((el) => { const r = el.getBoundingClientRect(); out.push([r.left, r.bottom - 0.5, r.right, r.bottom - 0.5]); });
+      if (btn) { const b = btn.getBoundingClientRect(); out.push([b.left, b.top, b.right, b.top], [b.right, b.top, b.right, b.bottom], [b.right, b.bottom, b.left, b.bottom], [b.left, b.bottom, b.left, b.top]); }
+      const a = addr.getBoundingClientRect(); out.push([a.left, a.bottom - 1, a.right, a.bottom - 1]);
+      return out;
+    };
+    const img = new Image(); img.src = "assets/wash.webp";
+    img.decode().then(() => {
+      const c2 = document.createElement("canvas"); c2.width = 320; c2.height = 160; const x2 = c2.getContext("2d"); x2.drawImage(img, 0, 0, 320, 160);
+      const A0 = innerWidth / innerHeight, fx0 = Math.min(A0 / 2, 1), fy0 = Math.min(2 / A0, 1); // the part of the still the screen shows
+      const px = x2.getImageData(0, 0, 320, 160).data, L = lines(), lens = L.map(([a, b, c, d]) => Math.hypot(c - a, d - b)), tot = lens.reduce((x, y) => x + y, 0);
+      for (let i = 0; i < N; i++) {
+        let u, v, b; do { u = 0.5 + (Math.random() - 0.5) * fx0; v = 0.5 + (Math.random() - 0.5) * fy0; b = px[((v * 160) | 0) * 1280 + ((u * 320) | 0) * 4 + 2] / 255; }
+        while (b < 0.18 || b ** 1.6 < Math.random()); // from the paint you can see on screen, the dense parts most
+        src[i * 2] = u; src[i * 2 + 1] = v;
+        let r = Math.random() * tot, k = 0; while (r > lens[k] && k < L.length - 1) r -= lens[k++];
+        seg[i] = k; along[i] = r / lens[k]; wob[i * 2] = Math.random() - 0.5; wob[i * 2 + 1] = Math.random() - 0.5;
+        rest[i] = (Math.random() - 0.5) * 2.4; del[i] = Math.random() * 0.45; // a little spray either side of the line; not all at once
+      }
+      st.ready = true; st.draw();
+    }).catch(() => {});
+    const sh = (type, text) => { const x = g.createShader(type); g.shaderSource(x, text); g.compileShader(x); return x; };
+    const pr = g.createProgram();
+    g.attachShader(pr, sh(g.VERTEX_SHADER, `#version 300 es
+      in vec2 aP; uniform vec2 uR; uniform float uS; void main() { gl_Position = vec4(aP / uR * vec2(2., -2.) + vec2(-1., 1.), 0., 1.); gl_PointSize = uS; }`));
+    g.attachShader(pr, sh(g.FRAGMENT_SHADER, `#version 300 es
+      precision mediump float; out vec4 o; uniform vec3 uC; uniform float uO;
+      void main() { float d = length(gl_PointCoord - .5); o = vec4(uC, 1.) * smoothstep(.5, .2, d) * uO; }`));
+    g.linkProgram(pr); g.useProgram(pr);
+    g.bindBuffer(g.ARRAY_BUFFER, g.createBuffer());
+    const aP = g.getAttribLocation(pr, "aP"); g.enableVertexAttribArray(aP); g.vertexAttribPointer(aP, 2, g.FLOAT, false, 0, 0);
+    const u = (k) => g.getUniformLocation(pr, k);
+    g.uniform3f(u("uC"), ...getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim().match(/\w\w/g).map((x) => parseInt(x, 16) / 255));
+    g.enable(g.BLEND); g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
+    const ease = (t) => 1 - (1 - t) ** 3;
+    st.draw = () => {
+      if (!st.ready) return;
+      const k = Math.min(devicePixelRatio, 2);
+      if (cv.width !== Math.round(innerWidth * k) || cv.height !== Math.round(innerHeight * k)) { cv.width = Math.round(innerWidth * k); cv.height = Math.round(innerHeight * k); }
+      g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
+      const L = lines(), p = st.p;
+      if (p <= 0 || L.length < 2) return; // before the smoke flies, and after Send: only the drawn lines
+      const A = innerWidth / innerHeight, fx = Math.min(A / 2, 1), fy = Math.min(2 / A, 1), sw = Math.min(innerWidth, 900) * 0.14;
+      for (let i = 0; i < N; i++) {
+        const t = ease(Math.min(1, Math.max(0, (p - del[i]) / 0.55))), l = L[Math.min(seg[i], L.length - 1)], f = Math.sin(t * Math.PI);
+        const sx = ((src[i * 2] - 0.5) / fx + 0.5) * innerWidth, sy = ((src[i * 2 + 1] - 0.5) / fy + 0.5) * innerHeight; // where the wash showed this paint
+        const vert = l[0] === l[2], tx = l[0] + (l[2] - l[0]) * along[i] + (vert ? rest[i] : 0), ty = l[1] + (l[3] - l[1]) * along[i] + (vert ? 0 : rest[i]);
+        pos[i * 2] = sx + (tx - sx) * t + wob[i * 2] * sw * f; pos[i * 2 + 1] = sy + (ty - sy) * t + wob[i * 2 + 1] * sw * f; // a curve, not a straight flight
+      }
+      g.bufferData(g.ARRAY_BUFFER, pos, g.DYNAMIC_DRAW);
+      g.uniform2f(u("uR"), innerWidth, innerHeight); g.uniform1f(u("uS"), 2.2 * k); g.uniform1f(u("uO"), Math.min(1, p * 3) * 0.9);
+      g.drawArrays(g.POINTS, 0, N);
+    };
+    // the lines move with the page: draw every frame while the end is on screen
+    let on = false; const loop = () => { if (!on) return; st.draw(); requestAnimationFrame(loop); };
+    new IntersectionObserver(([e]) => { on = e.isIntersecting; if (on) loop(); }).observe(end);
+    return st;
+  })();
+
+  // small details (Tom 11-21: the spray stays). Skips itself with reduced motion; ?off=… turns one off
+  const OFF = new Set((new URLSearchParams(location.search).get("off") || "").split(","));
+  const SPRAYC = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim();
+  if (!still) {
+    // 1. a link sprays: a small puff of blue specks off the pointer where it meets a link or button (a tap on the phone)
+    if (!OFF.has("spray")) {
+      const cv = document.querySelector(".fx"), x = cv.getContext("2d"), parts = []; let run = false;
+      const fit = () => { const k = Math.min(devicePixelRatio, 2); cv.width = innerWidth * k; cv.height = innerHeight * k; x.setTransform(k, 0, 0, k, 0, 0); };
+      fit(); addEventListener("resize", fit);
+      const puff = (px, py, n) => { for (let i = 0; i < n; i++) { const a = Math.PI * (0.15 + Math.random() * 0.7), v = 0.6 + Math.random() * 2.2; // mostly downward, off the words
+        parts.push({ x: px + (Math.random() - 0.5) * 6, y: py, vx: Math.cos(a) * v * (Math.random() < 0.5 ? -1 : 1), vy: Math.sin(a) * v, r: 0.6 + Math.random() * 1.3, life: 1 }); }
+        if (!run) { run = true; requestAnimationFrame(tick); } };
+      const tick = () => { x.clearRect(0, 0, innerWidth, innerHeight); x.fillStyle = SPRAYC;
+        for (let i = parts.length - 1; i >= 0; i--) { const q = parts[i]; q.x += q.vx; q.y += q.vy; q.vx *= 0.92; q.vy = q.vy * 0.92 + 0.05; q.life -= 0.025;
+          if (q.life <= 0) { parts.splice(i, 1); continue; } x.globalAlpha = q.life * 0.9; x.beginPath(); x.arc(q.x, q.y, q.r, 0, 7); x.fill(); }
+        x.globalAlpha = 1; if (parts.length) requestAnimationFrame(tick); else { run = false; x.clearRect(0, 0, innerWidth, innerHeight); } };
+      document.addEventListener("pointerover", (e) => { const t = e.target.closest("a, button"); if (!t || t.contains(e.relatedTarget)) return;
+        const r = t.getBoundingClientRect(); puff(Math.min(Math.max(e.clientX, r.left), r.right), r.bottom - 2, 26); });
+      document.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse" && e.target.closest("a, button")) puff(e.clientX, e.clientY + 10, 30); });
+    }
+    // blue words: each swipe brushes on the first time its word is fully on screen
+    { const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("on"); io.unobserve(e.target); } }), { threshold: 1 });
+      document.querySelectorAll(".mark").forEach((el) => { el.classList.add("wait"); io.observe(el); }); }
+    // epaRadar's note writes itself, then its arrow, the first time it is on screen
+    { const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("on"); io.unobserve(e.target); } }), { threshold: 0.9 });
+      document.querySelectorAll(".note").forEach((el) => { el.classList.add("wait"); io.observe(el); }); }
+  }
+
+  if (still || !window.gsap) return; // the plain page: first screen, signature already written
+
+  gsap.registerPlugin(ScrollTrigger);
+  const lenis = new Lenis({ lerp: 0.1 });
+  lenis.on("scroll", ScrollTrigger.update);
+  gsap.ticker.add((t) => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
+
+  // moment 1 on load: the name rises out of its lines, the photo settles
+  gsap.from(".name .ln span", { yPercent: 105, duration: 1.1, ease: "expo.out", stagger: 0.08, delay: 0.1 });
+  gsap.from(".photo.col", { y: 30, opacity: 0, duration: 1.2, ease: "expo.out", delay: 0.15 });
+
+  // moment 1 in depth: the photo bent over its depth map (made on the desk's graphics card, Depth Anything V2), turning
+  // a little with the mouse, and an orange spray ribbon that wraps round the head, behind him and in front of him.
+  // Plain WebGL 2, no library. Without it the two pictures stay as they are.
+  const look = { grey: 0, ribbon: 0, fade: 1, spin: 0, unwind: 0, leadTail: 0 };
+  const startGL = () => {
+    const cv = document.querySelector(".gl"), g = cv.getContext("webgl2", { premultipliedAlpha: true, antialias: true });
+    if (!g) return false;
+    const img = document.querySelector(".photo.col"), dimg = new Image();
+    dimg.src = "assets/tom_depth.webp";
+    const sh = (type, src) => { const s = g.createShader(type); g.shaderSource(s, src); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s)); return s; };
+    const prog = (vs, fs) => { const p = g.createProgram(); g.attachShader(p, sh(g.VERTEX_SHADER, vs)); g.attachShader(p, sh(g.FRAGMENT_SHADER, fs)); g.linkProgram(p); return p; };
+    const head = `#version 300 es
+      precision highp float;
+      uniform vec2 uView; uniform vec3 uC; uniform mat3 uRot;
+      vec4 place(vec3 p) { p = uRot * (p - uC) + uC; return vec4(p.x / uView.x * 2.0 - 1.0, 1.0 - p.y / uView.y * 2.0, -p.z / 4000.0, 1.0); }`;
+    const photoP = prog(head + `
+      in vec2 aUv; uniform vec4 uRect; uniform float uD; uniform sampler2D uDepth; out vec2 vUv;
+      void main() { vUv = aUv; float d = texture(uDepth, aUv).r; gl_Position = place(vec3(uRect.xy + aUv * uRect.zw, d * uD)); }`,
+      `#version 300 es
+      precision highp float;
+      in vec2 vUv; uniform sampler2D uImg; uniform float uGrey, uFade; out vec4 o;
+      void main() {
+        vec4 c = texture(uImg, vUv);
+        float a = c.a * smoothstep(0.84, 0.52, vUv.y) * smoothstep(0.01, 0.15, vUv.x) * smoothstep(0.99, 0.85, vUv.x) * uFade;
+        if (a < 0.04) discard;
+        vec3 rgb = c.rgb / max(c.a, 0.001);
+        float l = dot(rgb, vec3(0.299, 0.587, 0.114));
+        rgb = mix(rgb, vec3(l) * 0.74, uGrey);
+        o = vec4(rgb * a, a);
+      }`);
+    const ribP = prog(head + `
+      in vec3 aP; in vec2 aUv; in vec2 aLP; uniform float uTime, uWob; out vec2 vUv; out float vLit;
+      void main() { vUv = aUv; vLit = aLP.x;
+        float a = aUv.x * 12.566; // the loop breathes a little: the hand's wobble drifts slowly
+        vec3 p = aP + vec3(0.0, sin(a * 1.5 + uTime * 0.7) * uWob + sin(a * 2.5 - uTime * 0.45) * uWob * 0.6, 0.0);
+        gl_Position = place(p); }`,
+      `#version 300 es
+      precision highp float;
+      in vec2 vUv; in float vLit; uniform float uDraw, uFade, uSlide, uLen, uTail, uCore; uniform vec3 uCol; out vec4 o;
+      void main() {
+        // one clean brush line along the loop (Tom 11-20: the same ink as the signature); it slides slowly round him
+        float local = vUv.x - uSlide;
+        if (local < uLen * uTail || local > uLen * uDraw) discard; // joint 1: the tail eats forward, the front stays
+        float x = local / uLen, xt = (x - uTail) / max(1.0 - uTail, 0.001);
+        // thin where it sets down (the tail, also while the tail eats forward), full in the middle, a long lift at the front;
+        // once it unwinds the front stays full, because the line runs on from there
+        float lift = mix(0.22 + 0.78 * smoothstep(1.0, 0.7, x), 1.0, clamp(uTail * 25.0, 0.0, 1.0));
+        float prof = (0.22 + 0.78 * smoothstep(0.0, 0.14, xt)) * lift;
+        float d = abs(vUv.y - 0.5), half_ = uCore * 0.5 * prof, aa = fwidth(vUv.y) * 0.75;
+        float a = smoothstep(half_ + aa, half_ - aa, d) * smoothstep(uLen * uDraw, uLen * uDraw - 0.004, local) * uFade;
+        if (a < 0.003) discard;
+        vec3 c = uCol * (0.74 + 0.26 * vLit);
+        o = vec4(c * a, a);
+      }`);
+    const loc = (p, n) => g.getUniformLocation(p, n);
+    // the photo's mesh: a grid over its box
+    const NX = 110, NY = 138, uv = [], idx = [];
+    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) uv.push(i / NX, j / NY);
+    for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) { const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+    const pVao = g.createVertexArray(); g.bindVertexArray(pVao);
+    const ub = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, ub); g.bufferData(g.ARRAY_BUFFER, new Float32Array(uv), g.STATIC_DRAW);
+    const la = g.getAttribLocation(photoP, "aUv"); g.enableVertexAttribArray(la); g.vertexAttribPointer(la, 2, g.FLOAT, false, 0, 0);
+    const ib = g.createBuffer(); g.bindBuffer(g.ELEMENT_ARRAY_BUFFER, ib); g.bufferData(g.ELEMENT_ARRAY_BUFFER, new Uint32Array(idx), g.STATIC_DRAW);
+    // the ribbon: rebuilt for each size, as a flat band along a tilted spiral round the head
+    const rVao = g.createVertexArray(), rb = g.createBuffer(); let rCount = 0;
+    const tex = (im) => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // filtered edges stay clean (no light rim round the hair)
+      g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, im); g.generateMipmap(g.TEXTURE_2D);
+      g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR_MIPMAP_LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE); return t; };
+    let tImg, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, wob = 3, band = 1, ringAt = null;
+    const size = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      const w = img.offsetWidth, h = img.offsetHeight;
+      rect = [img.offsetLeft - w / 2, img.offsetTop, w, h]; // the picture is centred with translate -50%
+      D = w * 0.11; // Tom 11-20 "less scary": half the depth, so the face turns without bulging
+      C = [rect[0] + w / 2, rect[1] + h * 0.4, D * 0.55];
+      // one loop sprayed round the head by hand: a bit more than one turn, so the ends pass each other; under the chin
+      // in front, high behind the crown, never over the face. Wobbly radius and height, pressure thick and thin, a long thin
+      // flick at the end. It never reaches past the screen's sides (phone: the photo is wider than the screen).
+      const R = Math.min(w * 0.42, (W / 2 - 14) / 1.12), N = 1400, data = [];
+      const narrow = W <= 640; // phone: the loop is barely wider than his face, so it rides lower, round the jaw and neck
+      const mid = rect[1] + h * (narrow ? 0.57 : 0.47), amp = h * (narrow ? 0.17 : 0.25), zR = R * 0.62;
+      band = Math.max(30, w * 0.135);
+      const a0 = Math.PI / 2 + 0.55;
+      ringAt = (u) => { // the loop's centre line at u (0..1), before the wobble: the same numbers the band is built from
+        const a = a0 + u * Math.PI * 4; // two turns: the stroke (under one turn long) slides along them
+        const r = R * (1 + 0.05 * Math.sin(2 * a + 1.3) + 0.025 * Math.sin(3 * a + 0.4));
+        const x = C[0] + r * Math.cos(a), z = C[2] + zR * Math.sin(a);
+        return [x, mid + Math.sin(a) * amp - (x - C[0]) * 0.1 + h * 0.01 * Math.sin(a + 2), z, a];
+      };
+      for (let i = 0; i <= N; i++) {
+        const u = i / N, [x, y, z, a] = ringAt(u);
+        const lit = Math.max(0, Math.sin(a));
+        data.push(x, y - band / 2, z, u, 0, lit, 0, x, y + band / 2, z, u, 1, lit, 0);
+      }
+      wob = h * 0.006;
+      rCount = (N + 1) * 2;
+      g.bindVertexArray(rVao); g.bindBuffer(g.ARRAY_BUFFER, rb); g.bufferData(g.ARRAY_BUFFER, new Float32Array(data), g.STATIC_DRAW);
+      const s = 28, ap = g.getAttribLocation(ribP, "aP"), au = g.getAttribLocation(ribP, "aUv"), al = g.getAttribLocation(ribP, "aLP");
+      g.enableVertexAttribArray(ap); g.vertexAttribPointer(ap, 3, g.FLOAT, false, s, 0);
+      g.enableVertexAttribArray(au); g.vertexAttribPointer(au, 2, g.FLOAT, false, s, 12);
+      g.enableVertexAttribArray(al); g.vertexAttribPointer(al, 2, g.FLOAT, false, s, 20);
+    };
+    const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+    addEventListener("pointermove", (e) => { mouse.tx = e.clientX / innerWidth - 0.5; mouse.ty = e.clientY / innerHeight - 0.5; }, { passive: true });
+    const spiral = document.querySelector(".hero");
+    let on = true;
+    new IntersectionObserver(([e]) => (on = e.isIntersecting)).observe(spiral);
+    // joint 1 (Tom 11-20: one blue thing that never disappears): the ring's tail eats forward round his head while its
+    // front leaves the loop and runs, in one curve, to where the signature starts; the signature then writes on from there
+    const leadSvg = document.querySelector(".lead"), lead = leadSvg.querySelector("path"), stage = document.querySelector(".stage");
+    const ease = gsap.parseEase("power1.inOut");
+    const inkPx = () => LINE * svg.getScreenCTM().a; // the line's full width on screen, the same for ring, lead and signature
+    const leadAt = (t, rot, slide) => {
+      if (look.unwind <= 0.001 || look.leadTail >= 0.999 || !ringAt) { lead.style.opacity = 0; return; }
+      const T = still ? 0 : t / 1000, cr = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect(), k = cr.width / W;
+      const onScreen = (u) => { // the same wobble, turn and placing as the shader, then the pane's scale
+        const p = ringAt(u), a = u * 12.566;
+        p[1] += Math.sin(a * 1.5 + T * 0.7) * wob + Math.sin(a * 2.5 - T * 0.45) * wob * 0.6;
+        const v = [p[0] - C[0], p[1] - C[1], p[2] - C[2]];
+        const x = rot[0] * v[0] + rot[3] * v[1] + rot[6] * v[2] + C[0], y = rot[1] * v[0] + rot[4] * v[1] + rot[7] * v[2] + C[1];
+        return [cr.left - sr.left + x * k, cr.top - sr.top + y * k];
+      };
+      const uh = slide + 0.43 * look.ribbon - 0.012; // a little inside the front, where the spray is still full
+      const h = onScreen(uh), h2 = onScreen(uh + 0.004);
+      const m = svg.getScreenCTM(), s0 = strokes[0].getPointAtLength(0), s1 = strokes[0].getPointAtLength(8);
+      const sx = m.a * s0.x + m.e - sr.left, sy = m.d * s0.y + m.f - sr.top, tx = m.a * (s1.x - s0.x), ty = m.d * (s1.y - s0.y);
+      const hx = h2[0] - h[0], hy = h2[1] - h[1], hl = Math.hypot(hx, hy) || 1, tl2 = Math.hypot(tx, ty) || 1;
+      const reach = Math.hypot(sx - h[0], sy - h[1]) * 0.55;
+      lead.setAttribute("d", `M${h[0]},${h[1]} C${h[0] + (hx / hl) * reach},${h[1] + (hy / hl) * reach} ${sx - (tx / tl2) * reach},${sy - (ty / tl2) * reach} ${sx},${sy}`);
+      const L = lead.getTotalLength(), front = ease(look.unwind) * L, tail = look.leadTail * L;
+      lead.style.strokeWidth = inkPx();
+      lead.style.strokeDasharray = `${Math.max(0, front - tail)} ${L * 3}`;
+      lead.style.strokeDashoffset = -tail;
+      lead.style.opacity = front - tail > 0.5 ? 1 : 0;
+    };
+    const draw = (t) => {
+      requestAnimationFrame(draw);
+      if (!on || !tImg) return;
+      mouse.x += (mouse.tx - mouse.x) * 0.06; mouse.y += (mouse.ty - mouse.y) * 0.06;
+      const sway = phone() ? Math.sin(t / 1600) * 0.07 : 0;
+      const yaw = mouse.x * 0.32 + sway + look.spin * 0.2, pitch = -mouse.y * 0.1; // a gentle turn (Tom 11-20: less scary)
+      const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+      const rot = new Float32Array([cy, sy * sp, -sy * cp, 0, cp, sp, sy, -cy * sp, cy * cp]);
+      g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT | g.DEPTH_BUFFER_BIT);
+      g.enable(g.DEPTH_TEST); g.enable(g.BLEND); g.blendFunc(g.ONE, g.ONE_MINUS_SRC_ALPHA);
+      for (const p of [photoP, ribP]) { g.useProgram(p); g.uniform2f(loc(p, "uView"), W, H); g.uniform3f(loc(p, "uC"), ...C); g.uniformMatrix3fv(loc(p, "uRot"), false, rot); }
+      g.useProgram(photoP); g.bindVertexArray(pVao);
+      g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, tImg); g.uniform1i(loc(photoP, "uImg"), 0);
+      g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tDep); g.uniform1i(loc(photoP, "uDepth"), 1);
+      g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), D); g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
+      g.drawElements(g.TRIANGLES, idx.length, g.UNSIGNED_INT, 0);
+      const slide = still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08; // one lap in 48 s
+      leadAt(t, rot, slide);
+      if (look.ribbon > 0.001 && look.fade > 0.001 && look.unwind < 0.999) {
+        g.useProgram(ribP); g.bindVertexArray(rVao);
+        g.uniform1f(loc(ribP, "uTail"), look.unwind);
+        g.uniform1f(loc(ribP, "uDraw"), look.ribbon); g.uniform1f(loc(ribP, "uFade"), look.fade); g.uniform1f(loc(ribP, "uLen"), 0.43); g.uniform1f(loc(ribP, "uWob"), wob);
+        g.uniform1f(loc(ribP, "uTime"), still ? 0 : t / 1000); g.uniform1f(loc(ribP, "uSlide"), slide);
+        g.uniform1f(loc(ribP, "uCore"), inkPx() / (cv.getBoundingClientRect().width / W) / band); // as wide on screen as the signature's line
+        g.uniform3f(loc(ribP, "uCol"), ...SPRAY);
+        g.drawArrays(g.TRIANGLE_STRIP, 0, rCount);
+      }
+    };
+    const SPRAY = (() => { const c = new URLSearchParams(location.search).get("ink") || getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(); /* ?ink=hex: a pitch-only trial colour */ const m = c.match(/^#?([0-9a-f]{6})$/i);
+      return m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255) : [1, 0.33, 0.1]; })();
+    Promise.all([img.decode(), dimg.decode()]).then(() => {
+      tImg = tex(img); tDep = tex(dimg); size();
+      document.documentElement.classList.add("has-gl");
+      gsap.to(cv, { opacity: 1, duration: 0.6 });
+      gsap.to(look, { ribbon: 1, duration: 1.5, ease: "power1.inOut", delay: 0.6 }); // at a hand's speed, once
+      addEventListener("resize", size);
+      requestAnimationFrame(draw);
+    }).catch(() => {});
+    return true;
+  };
+  try { startGL(); } catch (e) { console.warn("3D photo off:", e.message); }
+
+  const pane = document.querySelector(".pane"), inner = document.querySelector(".inner"), photo = document.querySelector(".photo.col");
+  let tl;
+  const build = () => {
+    tl?.scrollTrigger?.kill(); tl?.kill();
+    const vw = innerWidth, vh = innerHeight;
+    // the middle of the pane at the end: 40% down the photo (the face is at 35%), so the shoulders stay in
+    const r = photo.getBoundingClientRect();
+    const fx = vw / 2, fy = photo.offsetTop + photo.offsetHeight * 0.4;
+    const faceH = photo.offsetHeight * 0.33;
+    // the pane at the end: a near-square in the middle (phone: wider, higher)
+    const Wf = phone() ? vw * 0.78 : Math.min(vw * 0.36, vh * 0.56);
+    const Hf = Wf * (phone() ? 0.92 : 0.9);
+    const cy = phone() ? vh * 0.4 : vh * 0.5;
+    const kEnd = (0.4 * Hf) / faceH; // the face fills about 40% of the pane's height at the end: head and shoulders, like his
+    gsap.set([pane, inner], { transformOrigin: `${fx}px ${fy}px` });
+    const s = { shrink: 0 };
+    const ease = gsap.parseEase("power2.inOut");
+    const apply = () => {
+      const k = 1 + (kEnd - 1) * ease(s.shrink), m = ease(s.shrink);
+      gsap.set(pane, { x: (vw / 2 - fx) * m, y: (cy - fy) * m, scale: k });
+    };
+    apply();
+    // the signature writes along the scroll while the pane still shrinks, each stroke as long as its line
+    const total = SIGN.strokes.reduce((a, x) => a + x.len, 0);
+    tl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom bottom", scrub: true } });
+    // no box (Tom 11-20): the cream fades to the dark while the name leaves, then he shrinks to the middle as a cut-out
+    // the dark closes in from the edges, like a light going down: never one flat grey in between
+    // the whole range is on screen (62vmax is the screen's corner), over about 400 px of scroll, like his
+    tl.fromTo(".cream", { "--r": "62vmax" }, { "--r": "-32vmax", duration: 0.24, ease: "none" }, 0.02)
+      .to(s, { shrink: 1, duration: 0.34, onUpdate: apply }, 0.14)
+      .to([".role", ".hint"], { opacity: 0, duration: 0.06 }, 0.02)
+      .to(".name", { y: () => -(document.querySelector(".name").offsetTop + document.querySelector(".name").offsetHeight + 40), opacity: 0, ease: "power2.in", duration: 0.13 }, 0.01)
+      .to(".photo.bw", { opacity: 1, duration: 0.16 }, 0.14)
+      .to(".photo.bw", { opacity: 1, duration: 0.2 }, 0.14)
+      .to(look, { grey: 1, duration: 0.2 }, 0.14)
+      .to(look, { spin: 0.9, duration: 0.3 }, 0.02)
+      .to(look, { unwind: 1, duration: 0.16 }, 0.2) // joint 1: the ring unwinds and its front arrives where the signature starts (0.36)
+      .to(look, { leadTail: 1, duration: 0.08 }, 0.34) // then the line it ran along is taken up into the first stroke
+      .to(".rows", { opacity: 1, duration: 0.1 }, 0.3)
+      .to(".ground.g2", { opacity: 0.12, duration: 0.14 }, 0.3)
+      .fromTo(".ground.g2", { x: () => innerWidth * 0.05 }, { x: () => -innerWidth * 0.05, duration: 0.74 }, 0.26)
+      .fromTo(".row[data-dir='-1']", { xPercent: 0 }, { xPercent: -46, duration: 0.74 }, 0.26)
+      .fromTo(".row[data-dir='1']", { xPercent: -46 }, { xPercent: 0, duration: 0.74 }, 0.26);
+    let at = 0.36;
+    SIGN.strokes.forEach((x, i) => {
+      const d = (0.42 * x.len) / total;
+      tl.to(strokes[i], { strokeDashoffset: 0, duration: d, ease: "power1.inOut" }, at);
+      at += d + 0.012;
+    });
+    tl.to({}, { duration: 0 }, 1);
+  };
+  // moment 3: split the statement into lines (by where the words land), then each line rises and brightens with the scroll
+  const h2 = document.querySelector(".say h2");
+  // wrap bare text words in spans so every word can be measured
+  for (const node of [...h2.childNodes]) {
+    if (node.nodeType === 3) {
+      const frag = document.createDocumentFragment();
+      node.textContent.split(/(\s+)/).forEach((s) => {
+        if (!s) return;
+        if (/^\s+$/.test(s)) frag.appendChild(document.createTextNode(s));
+        else { const w = document.createElement("span"); w.className = "w"; w.textContent = s; frag.appendChild(w); }
+      });
+      node.replaceWith(frag);
+    } else if (node.classList?.contains("q")) {
+      const parts = node.textContent.split(" ");
+      node.textContent = "";
+      parts.forEach((s, i) => { const w = document.createElement("span"); w.className = "w"; w.textContent = s; node.appendChild(w); if (i < parts.length - 1) node.appendChild(document.createTextNode(" ")); });
+    }
+  }
+  let sayTl, handTl;
+  const buildSay = () => {
+    sayTl?.scrollTrigger?.kill(); sayTl?.kill(); handTl?.scrollTrigger?.kill(); handTl?.kill();
+    const ws = [...h2.querySelectorAll(".w, .run")];
+    gsap.set(ws, { clearProps: "transform,opacity" });
+    const lines = [];
+    ws.forEach((w) => { const top = Math.round(w.offsetTop); let l = lines.find((x) => Math.abs(x.top - top) < 8); if (!l) lines.push((l = { top, els: [] })); l.els.push(w); });
+    bloom.place();
+    sayTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: h2, start: "top 92%", end: "bottom 45%", scrub: true } });
+    lines.forEach((l, i) => sayTl.fromTo(l.els, { yPercent: 60, opacity: 0.22 }, { yPercent: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, i * 0.22));
+    sayTl.fromTo(bloom, { p: 0 }, { p: 1, duration: 0.6, ease: "power1.out", onUpdate: bloom.draw }, 0.3); // RUN's line arrives, then the ink opens
+    // then the ink drifts down to the screen's middle while the words leave, keeps spreading, and becomes epaRadar's ground: the wash comes in
+    // under it as it thins out (Tom 11-21: "ink grows into it"). 
+    const el = bloom.el;
+    gsap.set(el, { clearProps: "transform,opacity" });
+    handTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: h2, start: "bottom 45%", endTrigger: work, end: "top top", scrub: true, invalidateOnRefresh: true } });
+    const toMiddle = () => { // keep pace with the scroll, plus the way from where the ink sits at the start to the screen's middle
+      const st = handTl.scrollTrigger, say = el.parentElement, mid = say.getBoundingClientRect().top + scrollY + el.offsetTop + el.offsetHeight / 2;
+      return st.end - st.start + (st.start + innerHeight / 2 - mid);
+    };
+    handTl.fromTo(el, { y: 0 }, { y: toMiddle, duration: 1, ease: "power1.inOut" }, 0)
+      .fromTo(el, { scale: 1 }, { scale: 2.2, duration: 1, ease: "power1.in" }, 0)
+      .fromTo(el, { opacity: 0.35 }, { opacity: 0, duration: 0.5 }, 0.5)
+      .fromTo(inkHand, { q: 0 }, { q: 1, duration: 0.6, ease: "power1.inOut" }, 0.4);
+  };
+  // moment 4: the track. Its section is as tall as the sideways distance, the stage stays while the track moves
+  const work = document.querySelector(".work"), track = document.querySelector(".track");
+  const countN = document.querySelector(".count .n"), countTo = +document.querySelector(".count .sr").textContent.replace(/\D/g, ""), // the number is written once more in the page: the Result line
+    setCount = (k) => { countN.textContent = Math.round(countTo * k).toLocaleString("en-US"); };
+  const countBig = document.querySelector(".proj.b .big"); // 0 while the site is off to the right, 1,024 once its left edge reaches 35 % of the screen
+  const countFromSite = () => setCount(Math.min(1, Math.max(0, (innerWidth - countBig.getBoundingClientRect().left) / (innerWidth * 0.65))));
+  // corner marks round each big screen: four hand-drawn brackets, placed from the screen's own box (each project has its own layout)
+  const CORNERS = [["tl", 0, 0], ["tr", 1, 0], ["bl", 0, 1], ["br", 1, 1]];
+  document.querySelectorAll(".proj .big").forEach((big) => CORNERS.forEach(([k, cx, cy]) => {
+    const m = document.createElement("img"); m.className = "mk"; m.src = `assets/mark-${k}.webp`; m.alt = ""; m.setAttribute("aria-hidden", "true");
+    m.dataset.cx = cx; m.dataset.cy = cy; m.big = big; big.parentElement.appendChild(m);
+  }));
+  const placeMarks = () => document.querySelectorAll(".mk").forEach((m) => {
+    const b = m.big, sz = m.offsetWidth, gap = phone() ? -sz / 2 : 10; // phone: the screen runs to the gutter, so the marks sit on its corners
+    m.style.left = `${b.offsetLeft + (+m.dataset.cx ? b.offsetWidth + gap : -gap - sz)}px`;
+    m.style.top = `${b.offsetTop + (+m.dataset.cy ? b.offsetHeight + gap : -gap - sz)}px`;
+  });
+  let workTl, extras = [];
+  const buildWork = () => {
+    workTl?.scrollTrigger?.kill(); workTl?.kill(); extras.forEach((x) => { x.scrollTrigger?.kill(); x.kill(); }); extras = [];
+    const flat = phone();
+    placeMarks();
+    work.style.height = flat ? "" : `${track.scrollWidth - innerWidth + innerHeight}px`;
+    gsap.set(track, { clearProps: "transform" });
+    // the ground turns black as the work comes in (both tones dark: no grey in between)
+    extras.push(gsap.fromTo(".night", { opacity: 0 }, { opacity: 1, ease: "none", scrollTrigger: { trigger: work, start: "top 85%", end: "top 25%", scrub: true } }));
+    if (flat) {
+      setCount(0);
+      { const io = new IntersectionObserver(([e]) => { if (!e.isIntersecting) return; io.disconnect(); const t0 = performance.now();
+          const step = (t) => { const k = Math.min(1, (t - t0) / 1600); setCount(1 - (1 - k) ** 3); if (k < 1) requestAnimationFrame(step); };
+          requestAnimationFrame(step); }, { threshold: 1 });
+        io.observe(document.querySelector(".count")); }
+      document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { y: 40 }, { y: -40, ease: "none", scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } })));
+      document.querySelectorAll(".mk").forEach((m) => extras.push(gsap.fromTo(m, { x: (+m.dataset.cx ? 1 : -1) * 16, y: (+m.dataset.cy ? 1 : -1) * 16, opacity: 0 }, { x: 0, y: 0, opacity: 0.55, ease: "power2.out",
+        scrollTrigger: { trigger: m.big, start: "top 90%", end: "top 55%", scrub: true } })));
+      const tall = document.querySelector(".tall img");
+      extras.push(gsap.to(tall, { yPercent: -60, ease: "none", scrollTrigger: { trigger: tall.parentElement, start: "top bottom", end: "bottom top", scrub: true } }));
+      return;
+    }
+    workTl = gsap.to(track, { x: () => -(track.scrollWidth - innerWidth), ease: "none", onUpdate: countFromSite, scrollTrigger: { trigger: work, start: "top top", end: "bottom bottom", scrub: true } });
+    // the phones move faster than the big screens: depth while the track slides
+    document.querySelectorAll(".proj [data-speed]").forEach((el) => extras.push(gsap.fromTo(el, { x: innerWidth * 0.05 }, { x: -innerWidth * 0.05, ease: "none",
+      scrollTrigger: { trigger: el, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } })));
+    // the corner marks close in on their screen as it arrives, like someone measuring it up
+    document.querySelectorAll(".mk").forEach((m) => extras.push(gsap.fromTo(m, { x: (+m.dataset.cx ? 1 : -1) * 28, y: (+m.dataset.cy ? 1 : -1) * 28, opacity: 0 }, { x: 0, y: 0, opacity: 0.55, ease: "power2.out",
+      scrollTrigger: { trigger: m.big, containerAnimation: workTl, start: "left 95%", end: "left 55%", scrub: true } })));
+    // Rädda Vårfruberga's signatures count up while the site slides in, and back down if you scroll back
+    // (read from where the site really is on screen, so a reload halfway down shows the right number)
+    countFromSite();
+    // epaRadar's phone grows to its full height as it arrives
+    const film = document.querySelector(".proj.a .film");
+    extras.push(gsap.fromTo(film, { scale: 0.66 }, { scale: 1, ease: "power1.out", scrollTrigger: { trigger: film, containerAnimation: workTl, start: "left 85%", end: "left 25%", scrub: true } }));
+    // the long raddavarfruberga shot scrolls inside its phone as it passes
+    const tall = document.querySelector(".tall img");
+    extras.push(gsap.to(tall, { yPercent: -70, ease: "none", scrollTrigger: { trigger: tall.parentElement, containerAnimation: workTl, start: "left right", end: "right left", scrub: true } }));
+  };
+  // keyboard: a focused link inside the track brings its project to the screen (the page scrolls the track, which is
+  // pinned; the stage itself can't scroll). One scroll pixel moves the track one pixel, so its place is its left edge
+  track.addEventListener("focusin", (e) => {
+    if (phone()) return;
+    const proj = e.target.closest(".proj, .intro"); if (!proj) return;
+    const x = proj.offsetLeft + e.target.getBoundingClientRect().left - proj.getBoundingClientRect().left; // the link's place on the track
+    const y = work.offsetTop + Math.max(0, Math.min(track.scrollWidth - innerWidth, x - innerWidth * 0.4));
+    lenis.scrollTo(y, { immediate: true });
+  });
+  // moment 5: as WRITE TO ME comes up, the last wash flies off as specks that become the form's lines
+  let endTl;
+  const buildEnd = () => {
+    endTl?.scrollTrigger?.kill(); endTl?.kill();
+    endTl = gsap.timeline({ defaults: { ease: "none" }, scrollTrigger: { trigger: ".end h2", start: "top bottom", end: () => Math.min(ScrollTrigger.maxScroll(window), document.querySelector(".end .form").getBoundingClientRect().top + scrollY - innerHeight * 0.35), scrub: true } });
+    endTl.fromTo(endPull, { p: 0 }, { p: 1, duration: 1, onUpdate: () => { specks.p = endPull.p; } }, 0);
+  };
+  const ready = () => { build(); buildSay(); buildWork(); buildEnd(); ScrollTrigger.refresh(); if (!phone()) countFromSite(); };
+  photo.complete ? ready() : photo.addEventListener("load", ready, { once: true });
+  let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(ready, 200); });
+})();
+</script>
+</body>
+</html>

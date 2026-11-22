@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Films the sites in src/content/recordings.json scrolling, on a laptop (1280 x 800) and/or a phone
-# (390 x 844), for the Live part's screens where a site can't be shown live. Each film becomes a
+# Films the sites in src/content/recordings.json scrolling, on a laptop (1440 x 900) and/or a phone
+# (390 x 844), kept at full size so they stay sharp, for the Live part's screens where a site can't be shown live. Each film becomes a
 # small WebM (VP9) and MP4 (H.264, for browsers without VP9), the browser fetching one of them, and a
 # still of its first frame in public/projects, and its date
 # goes into recordings.json; the walk fails once a recording is more than 30 days old.
@@ -25,12 +25,12 @@ film() { # name url kind width height outwidth
   playwright-cli -s=previews run-code "async page => { for (let i = 0; i < 80; i++) { await page.mouse.wheel(0, $((h / 20))); await page.waitForTimeout(100); } await page.waitForTimeout(400); }" >/dev/null
   playwright-cli -s=previews video-stop >/dev/null
   ffmpeg -nostdin -v error -y -ss 0.3 -i "$raw" -t 8.5 -an -vf "scale=$out:-2,fps=25" \
-    -c:v libx264 -preset slow -crf 30 -pix_fmt yuv420p -movflags +faststart \
+    -c:v libx264 -preset slow -crf 27 -pix_fmt yuv420p -movflags +faststart \
     "public/projects/$name-$kind.mp4"
   ffmpeg -nostdin -v error -y -ss 0.3 -i "$raw" -t 8.5 -an -vf "scale=$out:-2,fps=25" \
-    -c:v libvpx-vp9 -crf 42 -b:v 0 -row-mt 1 -deadline good \
+    -c:v libvpx-vp9 -crf 37 -b:v 0 -row-mt 1 -deadline good \
     "public/projects/$name-$kind.webm"
-  ffmpeg -nostdin -v error -y -ss 0.3 -i "$raw" -frames:v 1 -vf "scale=$out:-2" -quality 72 \
+  ffmpeg -nostdin -v error -y -ss 0.3 -i "$raw" -frames:v 1 -vf "scale=$out:-2" -quality 86 \
     "public/projects/$name-$kind.webp"
   echo "$name-$kind: mp4 $(du -h "public/projects/$name-$kind.mp4" | cut -f1), webm $(du -h "public/projects/$name-$kind.webm" | cut -f1)"
 }
@@ -40,8 +40,8 @@ while read -r name url films <&3; do
   [ -z "$only" ] || [ "$only" = "$name" ] || continue
   for kind in $films; do
     case $kind in
-      laptop) film "$name" "$url" laptop 1280 800 960 ;;
-      phone) film "$name" "$url" phone 390 844 300 ;;
+      laptop) film "$name" "$url" laptop 1440 900 1280 ;;
+      phone) film "$name" "$url" phone 390 844 390 ;;
     esac
   done
   python3 -I - "$list" "$name" <<'PY'

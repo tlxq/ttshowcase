@@ -30,6 +30,9 @@
   --look-dark-soft: #2b2925;
   --look-dark-quiet: #4a4740;
   --look-spray: #ff4f1a;
+  /* The new front's one spray colour (Tom picked it over the orange 11-20): ring, signature, the loop round RUN.
+     The old pages keep the orange until the new front replaces them. */
+  --front-spray: #4aa8ff;
   /* The first screen's words: as big as fits four lines on the screen and "MYSELF." across it */
   --look-hero: min(19.5vw, 17.5svh, 158px);
   /* The four parts' names, as big as fits EXPERIMENTS across the screen, up to this */

@@ -144,6 +144,27 @@ function withScriptRule(html) {
 }
 writeFileSync(join(out, "paint.html"), withScriptRule(page));
 
+// The front page (pitch, 11-20, landonorris.com's techniques): the same fonts and tokens, no 3D. /next/front on the
+// site. GSAP (ScrollTrigger) and Lenis go into the page from node_modules as inline scripts, so the script rule
+// hashes them like the page's own; the signature is pitch/sign-d.json (a traced "Tom": its shape and the centre
+// lines it draws along).
+const lib = (f) =>
+  readFileSync(join(root, "node_modules", f), "utf8").replaceAll("</script", "<\\/script");
+const libs = ["gsap/dist/gsap.min.js", "gsap/dist/ScrollTrigger.min.js", "lenis/dist/lenis.min.js"]
+  .map((f) => `<script>${lib(f)}</script>`)
+  .join("\n");
+let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
+  .replaceAll("__EMBED__", () => embed)
+  .replaceAll("__TOKENS__", () => parts.__TOKENS__)
+  .replaceAll("__LIBS__", () => libs)
+  .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
+if (/__[A-Z_]{3,}__/.test(front))
+  throw new Error("pitch/front.src.html asks for a part the build doesn't fill");
+writeFileSync(join(out, "front.html"), withScriptRule(front)); // the site copy below is changed first, then hashed
+// its product screens: /projects/ on the site (public/projects); the same path in the local pitch folder
+rmSync(join(out, "projects"), { force: true, recursive: true });
+symlinkSync(join(root, "public/projects"), join(out, "projects"));
+
 // Pictures: pitch/assets holds only what is free to publish (CC0, or from a public repo).
 const assets = join(out, "assets");
 rmSync(assets, { force: true, recursive: true });
@@ -166,5 +187,17 @@ if (process.argv.includes("--site")) {
   mkdirSync(siteAssets, { recursive: true });
   for (const name of readdirSync(assets))
     copyFileSync(realpathSync(join(assets, name)), join(siteAssets, name));
+  mkdirSync(join(site, "next"), { recursive: true });
+  // the front is /next/front: its relative paths would point under /next/. Paths are changed BEFORE the script rule
+  // hashes the page: a change after it would no longer match the hash, and the browser would block the page's scripts
+  writeFileSync(
+    join(site, "next/front.html"),
+    withScriptRule(
+      front
+        .replace(/(["'`])assets\//g, "$1/next/assets/")
+        .replace(/(["'`])projects\//g, "$1/projects/")
+        .replace(/(["'`])paint\.html/g, "$1/next"),
+    ),
+  );
   console.log("Put the pitch into out/next.html (/next)");
 }
