@@ -7,12 +7,11 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
-  copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
-  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -185,8 +184,8 @@ if (process.argv.includes("--site")) {
   const siteAssets = join(site, "next/assets");
   rmSync(siteAssets, { force: true, recursive: true });
   mkdirSync(siteAssets, { recursive: true });
-  for (const name of readdirSync(assets))
-    copyFileSync(realpathSync(join(assets, name)), join(siteAssets, name));
+  // the whole folder, sub-folders too (the portrait's turn/ frames); links are copied as the files they point at
+  cpSync(assets, siteAssets, { recursive: true, dereference: true });
   mkdirSync(join(site, "next"), { recursive: true });
   // the front is /next/front: its relative paths would point under /next/. Paths are changed BEFORE the script rule
   // hashes the page: a change after it would no longer match the hash, and the browser would block the page's scripts

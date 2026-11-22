@@ -19,8 +19,8 @@ __TOKENS__
   --f-big: "Clash Display", "Arial Narrow", sans-serif;
   --f-text: "Inter", system-ui, sans-serif;
   /* the photo on the first screen: its height and top, as parts of the screen height */
-  --hp: 54svh; /* Tom 11-20: smaller, then smaller again */
-  --pt: calc(50svh - var(--hp) * .4); /* so the point he shrinks to (40% down the photo) sits at the middle of the screen */
+  --hp: 74svh; /* Tom 11-22: head and shoulders, standing on the screen's bottom edge (the face about 1.4 x before) */
+  --pt: calc(100svh - var(--hp));
 }
 * { box-sizing: border-box; }
 html { background: var(--look-dark-soft); }
@@ -62,8 +62,8 @@ a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; o
 .name .ln { display: inline-block; overflow: hidden; padding: .04em .12em 0; }
 .name .ln span { display: block; }
 .photo { position: absolute; top: var(--pt); left: 50%; height: var(--hp); width: auto; translate: -50% 0;
-  -webkit-mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%);
-  -webkit-mask-composite: source-in; mask-image: linear-gradient(#000 52%, transparent 84%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%); mask-composite: intersect; }
+  -webkit-mask-image: linear-gradient(#000 86%, transparent 100%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%);
+  -webkit-mask-composite: source-in; mask-image: linear-gradient(#000 86%, transparent 100%), linear-gradient(90deg, transparent 1%, #000 15%, #000 85%, transparent 99%); mask-composite: intersect; }
 .gl { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; }
 .has-gl .photo { visibility: hidden; } /* the 3D photo draws instead; the pictures stay for size and as the fallback */
 /* film grain over everything, like a printed page: a small noise tile that jumps a little each frame */
@@ -72,7 +72,7 @@ a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; o
 @keyframes grain { 0% { transform: translate(0, 0); } 20% { transform: translate(-4%, 3%); } 40% { transform: translate(3%, -5%); }
   60% { transform: translate(-6%, -2%); } 80% { transform: translate(5%, 4%); } 100% { transform: translate(0, 0); } }
 @media (prefers-reduced-motion: reduce) { .grain { animation: none; } }
-.photo.bw { opacity: 0; filter: brightness(.74); } /* dimmed, but solid: the names run behind him, never through */
+.photo.bw { opacity: 0; filter: grayscale(1) brightness(.74); } /* dimmed, but solid: the names run behind him, never through */
 .role { position: absolute; left: max(var(--gutter), env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
   font-size: 14px; font-weight: 500; max-width: 24ch; color: var(--look-dark); }
 .hint { position: absolute; right: max(var(--gutter), env(safe-area-inset-right)); bottom: max(28px, env(safe-area-inset-bottom)); margin: 0;
@@ -262,10 +262,11 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 
 
 @media (max-width: 640px) {
-  :root { --hp: 54svh; --pt: 29svh; }
+  :root { --hp: 62svh; }
   .name { top: 11svh; font-size: min(17.5vw, 15svh); }
   .name .ln { display: block; }
-  .role, .hint { display: none; }
+  .hint { display: none; }
+  .role { top: calc(11svh + min(17.5vw, 15svh) * 1.8 + 12px); bottom: auto; left: 0; right: 0; max-width: 30ch; margin: 0 auto; padding: 0 var(--gutter); text-align: center; } /* under the name: name and role in the first look */
   .links { gap: 14px; font-size: 13px; }
   /* phone: the pane sits higher, the names run under it where they can be read */
   .rows { top: 60%; translate: 0 0; }
@@ -278,6 +279,9 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .proj.b .tall { justify-self: start; width: 40%; margin-top: -30%; }
   .proj.c .big { width: 88%; justify-self: end; }
   .proj.c .small { justify-self: start; width: 36%; margin-top: -40%; }
+}
+@media (max-width: 640px) and (max-height: 500px) {
+  .role { display: none; } /* a phone on its side: no room between the name and him */
 }
 /* without motion: the first screen as it is, then the signature written under it */
 @media (prefers-reduced-motion: reduce) {
@@ -310,8 +314,8 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
       <div class="pane"><div class="inner">
         <div class="cream"></div>
         <h1 class="name"><span class="ln"><span>Tom</span></span> <span class="ln"><span>Larsson</span></span></h1>
-        <img class="photo col" src="assets/tom_cut.webp" alt="Tom Larsson" width="1200" height="1506" fetchpriority="high">
-        <img class="photo bw" src="assets/tom_cut_bw.webp" alt="" width="1200" height="1506">
+        <img class="photo col" src="assets/turn/t12.webp" alt="Tom Larsson" width="900" height="954" fetchpriority="high">
+        <img class="photo bw" src="assets/turn/t12.webp" alt="" width="900" height="954">
         <canvas class="gl" aria-hidden="true"></canvas>
         <p class="role">Product engineer. TypeScript, React and C#/.NET, from data model to server.</p>
         <p class="hint">Scroll</p>
@@ -749,7 +753,7 @@ __LIBS__
     const cv = document.querySelector(".gl"), g = cv.getContext("webgl2", { premultipliedAlpha: true, antialias: true });
     if (!g) return false;
     const img = document.querySelector(".photo.col"), dimg = new Image();
-    dimg.src = "assets/tom_depth.webp";
+    dimg.src = "assets/turn/depth.webp"; // one depth map per frame of the turn, in a grid
     const sh = (type, src) => { const s = g.createShader(type); g.shaderSource(s, src); g.compileShader(s); if (!g.getShaderParameter(s, g.COMPILE_STATUS)) throw new Error(g.getShaderInfoLog(s)); return s; };
     const prog = (vs, fs) => { const p = g.createProgram(); g.attachShader(p, sh(g.VERTEX_SHADER, vs)); g.attachShader(p, sh(g.FRAGMENT_SHADER, fs)); g.linkProgram(p); return p; };
     const head = `#version 300 es
@@ -757,18 +761,33 @@ __LIBS__
       uniform vec2 uView; uniform vec3 uC; uniform mat3 uRot;
       vec4 place(vec3 p) { p = uRot * (p - uC) + uC; return vec4(p.x / uView.x * 2.0 - 1.0, 1.0 - p.y / uView.y * 2.0, -p.z / 4000.0, 1.0); }`;
     const photoP = prog(head + `
-      in vec2 aUv; uniform vec4 uRect; uniform float uD; uniform sampler2D uDepth; out vec2 vUv;
-      void main() { vUv = aUv; float d = texture(uDepth, aUv).r; gl_Position = place(vec3(uRect.xy + aUv * uRect.zw, d * uD)); }`,
+      in vec2 aUv; uniform vec4 uRect, uCellA, uCellB; uniform float uD, uMix; uniform sampler2D uDepth; out vec2 vUv;
+      void main() { vUv = aUv; // bent over the depth of the two frames on show, blended like the pictures
+        float d = mix(texture(uDepth, uCellA.xy + aUv * uCellA.zw).r, texture(uDepth, uCellB.xy + aUv * uCellB.zw).r, uMix);
+        gl_Position = place(vec3(uRect.xy + aUv * uRect.zw, d * uD)); }`,
       `#version 300 es
       precision highp float;
-      in vec2 vUv; uniform sampler2D uImg; uniform float uGrey, uFade; out vec4 o;
+      in vec2 vUv; uniform sampler2D uImg, uImg2, uDepth; uniform float uGrey, uFade, uMix, uD, uPenAmt;
+      uniform vec4 uRect, uCellA, uCellB; uniform vec3 uPen, uBlue; out vec4 o;
+      float dep(vec2 uv) { uv = clamp(uv, 0.0, 1.0); return mix(texture(uDepth, uCellA.xy + uv * uCellA.zw).r, texture(uDepth, uCellB.xy + uv * uCellB.zw).r, uMix); }
       void main() {
-        vec4 c = texture(uImg, vUv);
-        float a = c.a * smoothstep(0.84, 0.52, vUv.y) * smoothstep(0.01, 0.15, vUv.x) * smoothstep(0.99, 0.85, vUv.x) * uFade;
+        vec4 c = mix(texture(uImg, vUv), texture(uImg2, vUv), uMix); // between two frames of the turn, so it never steps
+        float a = c.a * smoothstep(1.0, 0.86, vUv.y) * smoothstep(0.01, 0.15, vUv.x) * smoothstep(0.99, 0.85, vUv.x) * uFade;
         if (a < 0.04) discard;
         vec3 rgb = c.rgb / max(c.a, 0.001);
         float l = dot(rgb, vec3(0.299, 0.587, 0.114));
         rgb = mix(rgb, vec3(l) * 0.74, uGrey);
+        // lit by the blue (dark screen only): the pen that writes the signature is a blue light. It travels over his dimmed
+        // face as the ring unwinds and the name is written; the frame's depth gives the face its shape, his outline catches most
+        if (uPenAmt > 0.0) {
+          vec2 e = vec2(2.0 / 150.0, 2.0 / 159.0);
+          float dx = (dep(vUv + vec2(e.x, 0.0)) - dep(vUv - vec2(e.x, 0.0))) * uD / (2.0 * e.x * uRect.z);
+          float dy = (dep(vUv + vec2(0.0, e.y)) - dep(vUv - vec2(0.0, e.y))) * uD / (2.0 * e.y * uRect.w);
+          vec3 n = normalize(vec3(-dx * 3.0, -dy * 3.0, 1.0)), P = vec3(uRect.xy + vUv * uRect.zw, dep(vUv) * uD);
+          vec3 L = uPen - P; float dist = length(L.xy) / uRect.z;
+          float diff = max(dot(n, normalize(L)), 0.0), fall = 1.0 / (1.0 + dist * dist * 10.0);
+          rgb += uBlue * (diff * 0.75 + pow(1.0 - n.z, 0.6) * 0.5) * fall * uPenAmt;
+        }
         o = vec4(rgb * a, a);
       }`);
     const ribP = prog(head + `
@@ -809,21 +828,24 @@ __LIBS__
     const tex = (im) => { const t = g.createTexture(); g.bindTexture(g.TEXTURE_2D, t); g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // filtered edges stay clean (no light rim round the hair)
       g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, im); g.generateMipmap(g.TEXTURE_2D);
       g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR_MIPMAP_LINEAR); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE); g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE); return t; };
-    let tImg, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, wob = 3, band = 1, ringAt = null;
+    const FACE_H = 0.503, FACE_Y = 0.485; // where his face is in the turn's pictures (made by turn_build.py, in the studio tools outside git)
+    let tImg, tImg2, tDep, rect = [0, 0, 1, 1], C = [0, 0, 0], W = 1, H = 1, D = 1, wob = 3, band = 1, ringAt = null;
     const size = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);
       W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
       const w = img.offsetWidth, h = img.offsetHeight;
       rect = [img.offsetLeft - w / 2, img.offsetTop, w, h]; // the picture is centred with translate -50%
-      D = w * 0.11; // Tom 11-20 "less scary": half the depth, so the face turns without bulging
-      C = [rect[0] + w / 2, rect[1] + h * 0.4, D * 0.55];
+      // all sizes from his face (in the picture: 50 % of its height tall, its middle 48.5 % down), not from the picture's box
+      const fH = h * FACE_H, fY = rect[1] + h * FACE_Y;
+      D = fH * 0.18; // Tom 11-20 "less scary": half the depth, so the face turns without bulging
+      C = [rect[0] + w / 2, fY - fH * 0.2, D * 0.55];
       // one loop sprayed round the head by hand: a bit more than one turn, so the ends pass each other; under the chin
       // in front, high behind the crown, never over the face. Wobbly radius and height, pressure thick and thin, a long thin
       // flick at the end. It never reaches past the screen's sides (phone: the photo is wider than the screen).
-      const R = Math.min(w * 0.42, (W / 2 - 14) / 1.12), N = 1400, data = [];
+      const R = Math.min(fH * 0.69, (W / 2 - 14) / 1.12), N = 1400, data = [];
       const narrow = W <= 640; // phone: the loop is barely wider than his face, so it rides lower, round the jaw and neck
-      const mid = rect[1] + h * (narrow ? 0.57 : 0.47), amp = h * (narrow ? 0.17 : 0.25), zR = R * 0.62;
-      band = Math.max(30, w * 0.135);
+      const mid = fY + fH * (narrow ? 0.24 : 0.08), amp = fH * (narrow ? 0.35 : 0.52), zR = R * 0.62;
+      band = Math.max(30, fH * 0.22);
       const a0 = Math.PI / 2 + 0.55;
       ringAt = (u) => { // the loop's centre line at u (0..1), before the wobble: the same numbers the band is built from
         const a = a0 + u * Math.PI * 4; // two turns: the stroke (under one turn long) slides along them
@@ -854,6 +876,23 @@ __LIBS__
     const leadSvg = document.querySelector(".lead"), lead = leadSvg.querySelector("path"), stage = document.querySelector(".stage");
     const ease = gsap.parseEase("power1.inOut");
     const inkPx = () => LINE * svg.getScreenCTM().a; // the line's full width on screen, the same for ring, lead and signature
+    // where the blue pen is now, in the canvas's pixels: the front of the line the ring unwinds into, then the tip of the
+    // signature stroke being written; null when no line is moving
+    const penAt = () => {
+      const cr = cv.getBoundingClientRect(), k = cr.width / W, toCv = (x, y) => [(x - cr.left) / k, (y - cr.top) / k];
+      if (look.unwind > 0.001 && look.leadTail < 0.999 && lead.style.opacity !== "0") {
+        const sr = stage.getBoundingClientRect(), p = lead.getPointAtLength(ease(look.unwind) * lead.getTotalLength());
+        return toCv(sr.left + p.x, sr.top + p.y);
+      }
+      for (const el of strokes) {
+        const len = el.getTotalLength(), off = +gsap.getProperty(el, "strokeDashoffset"); // len + MASK (hidden) -> 0 (written)
+        if (off > 0.5 && off < len + MASK - 0.5) {
+          const m = svg.getScreenCTM(), q = el.getPointAtLength(Math.max(0, len - off)); // the masks share the signature's units
+          return toCv(m.a * q.x + m.c * q.y + m.e, m.b * q.x + m.d * q.y + m.f);
+        }
+      }
+      return null;
+    };
     const leadAt = (t, rot, slide) => {
       if (look.unwind <= 0.001 || look.leadTail >= 0.999 || !ringAt) { lead.style.opacity = 0; return; }
       const T = still ? 0 : t / 1000, cr = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect(), k = cr.width / W;
@@ -880,9 +919,18 @@ __LIBS__
     const draw = (t) => {
       requestAnimationFrame(draw);
       if (!on || !tImg) return;
-      mouse.x += (mouse.tx - mouse.x) * 0.06; mouse.y += (mouse.ty - mouse.y) * 0.06;
+      const dt = Math.min(0.05, (t - (lastT ?? t)) / 1000); lastT = t; // in seconds, so 60 Hz and 120 Hz screens move alike
+      const ease = 1 - Math.exp(-dt / 0.12); mouse.x += (mouse.tx - mouse.x) * ease; mouse.y += (mouse.ty - mouse.y) * ease;
       const sway = phone() ? Math.sin(t / 1600) * 0.07 : 0;
-      const yaw = mouse.x * 0.32 + sway + look.spin * 0.2, pitch = -mouse.y * 0.1; // a gentle turn (Tom 11-20: less scary)
+      // the living portrait (award step 5): his real head turn, filmed in the studio 11-21, 3 degrees a frame from
+      // three-quarter left (36) to facing you to his right (27, where his nose meets the photo's soft edge). On a laptop
+      // he turns toward the mouse; on a phone he looks round slowly by himself. Two frames show at once, blended
+      const want = still ? 0 : phone() ? glance(t) : mouse.x * 2.2;
+      // a head, not a pointer: a spring that starts slow, arrives without a snap and settles (about 0.4 s)
+      turnV += (36 * (Math.min(1, Math.max(-1, want)) - turnAt) - 12 * turnV) * dt; turnAt += turnV * dt;
+      const fi = TURN_MID + turnAt * (turnAt < 0 ? TURN_MID : TURN - 1 - TURN_MID), ia = Math.min(TURN - 2, Math.floor(fi));
+      if (turnFrames[ia] && turnFrames[ia + 1]) { showPair(ia); turnMix = fi - ia; }
+      const yaw = mouse.x * 0.06 + sway * 0.2 + look.spin * 0.2, pitch = -mouse.y * 0.05;
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       const rot = new Float32Array([cy, sy * sp, -sy * cp, 0, cp, sp, sy, -cy * sp, cy * cp]);
       g.viewport(0, 0, cv.width, cv.height); g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT | g.DEPTH_BUFFER_BIT);
@@ -890,7 +938,13 @@ __LIBS__
       for (const p of [photoP, ribP]) { g.useProgram(p); g.uniform2f(loc(p, "uView"), W, H); g.uniform3f(loc(p, "uC"), ...C); g.uniformMatrix3fv(loc(p, "uRot"), false, rot); }
       g.useProgram(photoP); g.bindVertexArray(pVao);
       g.activeTexture(g.TEXTURE0); g.bindTexture(g.TEXTURE_2D, tImg); g.uniform1i(loc(photoP, "uImg"), 0);
+      g.activeTexture(g.TEXTURE2); g.bindTexture(g.TEXTURE_2D, tImg2); g.uniform1i(loc(photoP, "uImg2"), 2);
       g.activeTexture(g.TEXTURE1); g.bindTexture(g.TEXTURE_2D, tDep); g.uniform1i(loc(photoP, "uDepth"), 1);
+      g.uniform4f(loc(photoP, "uCellA"), ...cell(held[0])); g.uniform4f(loc(photoP, "uCellB"), ...cell(held[1])); g.uniform1f(loc(photoP, "uMix"), held[0] === held[1] ? 0 : turnMix);
+      const pen = penAt(); penAmt += ((pen ? 1 : 0) - penAmt) * (1 - Math.exp(-dt / (pen ? 0.15 : 0.8)));
+      if (pen) penXY = pen;
+      g.uniform1f(loc(photoP, "uPenAmt"), LIGHT * penAmt * look.grey); g.uniform3f(loc(photoP, "uBlue"), ...SPRAY);
+      g.uniform3f(loc(photoP, "uPen"), penXY[0], penXY[1], D * 2.5);
       g.uniform4f(loc(photoP, "uRect"), ...rect); g.uniform1f(loc(photoP, "uD"), D); g.uniform1f(loc(photoP, "uGrey"), look.grey); g.uniform1f(loc(photoP, "uFade"), 1);
       g.drawElements(g.TRIANGLES, idx.length, g.UNSIGNED_INT, 0);
       const slide = still ? 0.04 : ((t / 1000 / 48) % 1) * 0.5 + look.spin * 0.08; // one lap in 48 s
@@ -907,8 +961,29 @@ __LIBS__
     };
     const SPRAY = (() => { const c = new URLSearchParams(location.search).get("ink") || getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(); /* ?ink=hex: a pitch-only trial colour */ const m = c.match(/^#?([0-9a-f]{6})$/i);
       return m ? [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255) : [1, 0.33, 0.1]; })();
+    // the turn: frames t00..t21, t12 faces you; depth.webp holds their depth maps, 6 to a row
+    const TURN = 22, TURN_MID = 12, COLS = 6, ROWS = 4, turnFrames = [], held = [TURN_MID, TURN_MID];
+    const LIGHT = +(new URLSearchParams(location.search).get("light") ?? 1); // ?light=0: the pitch's before picture
+    let penAmt = 0, penXY = [0, 0], turnAt = 0, turnV = 0, turnMix = 0, lastT = null, gTo = 0, gUntil = 2500;
+    // on a phone he looks at you most of the time; now and then he glances to one side, holds it and looks back
+    const glance = (t) => {
+      if (t > gUntil) { const away = gTo === 0 && Math.random() < 0.7;
+        gTo = away ? (Math.random() < 0.5 ? -1 : 1) * (0.45 + Math.random() * 0.45) : 0;
+        gUntil = t + (away ? 1300 + Math.random() * 1200 : 2600 + Math.random() * 2400); }
+      return gTo; };
+    const cell = (i) => [(i % COLS + 0.004) / COLS, (Math.floor(i / COLS) + 0.004) / ROWS, 0.992 / COLS, 0.992 / ROWS]; // inset: no bleed from the next cell
+    const put = (t, i) => { g.bindTexture(g.TEXTURE_2D, t); g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, turnFrames[i]); g.generateMipmap(g.TEXTURE_2D); };
+    const showPair = (a) => { // frames a and a + 1 on the two textures; one step along needs one upload, not two
+      if (held[0] === a && held[1] === a + 1) return;
+      if (held[1] === a || held[0] === a + 1) { [tImg, tImg2] = [tImg2, tImg]; held.reverse(); }
+      if (held[0] !== a) { put(tImg, a); held[0] = a; }
+      if (held[1] !== a + 1) { put(tImg2, a + 1); held[1] = a + 1; }
+    };
     Promise.all([img.decode(), dimg.decode()]).then(() => {
-      tImg = tex(img); tDep = tex(dimg); size();
+      tImg = tex(img); tImg2 = tex(img); tDep = tex(dimg); size(); turnFrames[TURN_MID] = img;
+      // the other frames load after the first screen is up, nearest the middle first
+      [...Array(TURN).keys()].filter((i) => i !== TURN_MID).sort((a, b) => Math.abs(a - TURN_MID) - Math.abs(b - TURN_MID)).forEach((i, n) => setTimeout(() => {
+        const f = new Image(); f.src = `assets/turn/t${String(i).padStart(2, "0")}.webp`; f.decode().then(() => { turnFrames[i] = f; }).catch(() => {}); }, 400 + n * 20));
       document.documentElement.classList.add("has-gl");
       gsap.to(cv, { opacity: 1, duration: 0.6 });
       gsap.to(look, { ribbon: 1, duration: 1.5, ease: "power1.inOut", delay: 0.6 }); // at a hand's speed, once
@@ -926,8 +1001,8 @@ __LIBS__
     const vw = innerWidth, vh = innerHeight;
     // the middle of the pane at the end: 40% down the photo (the face is at 35%), so the shoulders stay in
     const r = photo.getBoundingClientRect();
-    const fx = vw / 2, fy = photo.offsetTop + photo.offsetHeight * 0.4;
-    const faceH = photo.offsetHeight * 0.33;
+    const fx = vw / 2, fy = photo.offsetTop + photo.offsetHeight * 0.39; // just above his face's middle
+    const faceH = photo.offsetHeight * 0.34;
     // the pane at the end: a near-square in the middle (phone: wider, higher)
     const Wf = phone() ? vw * 0.78 : Math.min(vw * 0.36, vh * 0.56);
     const Hf = Wf * (phone() ? 0.92 : 0.9);
