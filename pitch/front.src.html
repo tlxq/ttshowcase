@@ -154,6 +154,13 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .count .w { font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .proj.b .txt h3 { font-size: min(3.9vw, 7.5svh); } /* VÅRFRUBERGA is one long word: it fits its column */
+/* EDGE shown its own way (award step 4): one screen that is app-utveckling.se and becomes mjukvaruutvecklare.com as you
+   scroll; same layout, same code, other words ("appar som används" -> "system som håller") */
+.morph { aspect-ratio: 16 / 10; overflow: hidden; }
+.morph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.morph .to { clip-path: inset(0 0 0 100%); } /* a wipe, not a fade: a fade showed both headlines at once */
+.morph .seam { position: absolute; top: 0; bottom: 0; left: 100%; width: 2px; margin-left: -1px; background: var(--front-spray); box-shadow: 0 0 14px var(--front-spray); opacity: 0; pointer-events: none; }
+.note.up svg { order: -1; scale: 1 -1; margin: 0 0 4px -3vw; } /* EDGE's note sits under its screen: the arrow points up */
 .story p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--look-soft); max-width: 46ch; }
 .story b { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
 .txt { position: absolute; left: calc(2vw + var(--bw) + 12vw); top: 50svh; translate: 0 -50%; width: min(32vw, 470px); display: grid; gap: 14px; }
@@ -220,6 +227,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .proj.c .big + .cap { top: calc(10svh - 24px); }
   .proj.c .small { left: calc(2vw + var(--bw) * .16); top: 47svh; width: min(11vw, 21svh); }
   .proj.c .txt { left: calc(2vw + var(--bw) * .8 + 8vw); top: 56svh; }
+  .proj.c .note { left: calc(2vw + var(--bw) * .5); top: calc(10svh + var(--bw) * .8 * .625 + 2svh); }
 }
 @media (max-width: 640px), (prefers-reduced-motion: reduce) {
   .mk { width: 14px; }
@@ -241,6 +249,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .note svg { margin: 2px 0 0 -40px; }
   .count { position: relative; order: -3; }
   .proj.b .note { order: -2; }
+  .note.up svg { order: 1; scale: 1 1; margin: 2px 0 0 -40px; } /* phone: the screen is below the note */
   .count .n { font-size: 24vw; }
 }
 @media (max-width: 640px) {
@@ -359,14 +368,19 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         </div>
       </article>
       <article class="proj c" aria-labelledby="p3">
-        <video class="shot big" src="projects/app-utveckling-laptop.mp4" poster="projects/app-utveckling-laptop.webp" muted loop playsinline preload="none" width="1440" height="900" aria-label="app-utveckling.se scrolling on a laptop"></video>
-        <span class="cap">app-utveckling.se</span>
+        <div class="shot big morph"><img src="projects/app-utveckling-top.webp" alt="app-utveckling.se: Vi bygger appar som används." width="1440" height="900" loading="lazy"><img class="to" src="projects/mjukvaruutvecklare-top.webp" alt="mjukvaruutvecklare.com, the same page from the same code: Vi bygger system som håller." width="1440" height="900" loading="lazy"><i class="seam"></i></div>
+        <span class="cap">app-utveckling.se → mjukvaruutvecklare.com</span>
+        <p class="note up" aria-hidden="true"><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg><span>same code, two sites</span></p>
         <video class="shot small" data-speed="1" src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video>
         <div class="txt">
           <span class="no">03 / 03 · Work project, built alone</span>
           <h3 id="p3">EDGE</h3>
           <p class="line">Two landing pages for EDGE Associates, on <span class="mark">one code base</span>.</p>
-          <dl><dt>Stack</dt><dd>Astro, TypeScript</dd></dl>
+          <div class="story">
+            <p><b>Why</b>EDGE sells apps to one kind of customer and systems to another. They needed a site for each, without two code bases to keep up.</p>
+            <p><b>Hard part</b>The sites live on a plain web host with no build server. So I made one command that tests both sites on five devices, uploads them and checks them live, for whoever comes after me.</p>
+          </div>
+          <dl><dt>Result</dt><dd>Both sites live. Lighthouse 100 for SEO, accessibility and best practices.</dd><dt>Stack</dt><dd>Astro, TypeScript</dd></dl>
           <div class="go"><a href="https://app-utveckling.se">app-utveckling.se ↗</a><a href="https://mjukvaruutvecklare.com">mjukvaruutvecklare.com ↗</a></div>
         </div>
       </article>
@@ -1004,7 +1018,15 @@ __LIBS__
   const countN = document.querySelector(".count .n"), countTo = +document.querySelector(".count .sr").textContent.replace(/\D/g, ""), // the number is written once more in the page: the Result line
     setCount = (k) => { countN.textContent = Math.round(countTo * k).toLocaleString("en-US"); };
   const countBig = document.querySelector(".proj.b .big"); // 0 while the site is off to the right, 1,024 once its left edge reaches 35 % of the screen
-  const countFromSite = () => setCount(Math.min(1, Math.max(0, (innerWidth - countBig.getBoundingClientRect().left) / (innerWidth * 0.65))));
+  const clamp01 = (v) => Math.min(1, Math.max(0, v)), morphTo = document.querySelector(".morph .to"), seam = document.querySelector(".morph .seam");
+  // EDGE: the other site wipes in from the right behind a blue seam; k = 0 the first site, 1 the second
+  const setMorph = (k) => { const x = (1 - k) * 100; morphTo.style.clipPath = `inset(0 0 0 ${x}%)`; seam.style.left = x + "%"; seam.style.opacity = k > 0 && k < 1 ? 1 : 0; };
+  // both read from where their screen really is, so a reload halfway down shows the right state: the count reaches its
+  // number as Vårfruberga's site reaches 35 % of the screen; EDGE's screen turns into the other site between 70 % and 15 %
+  const countFromSite = () => {
+    setCount(clamp01((innerWidth - countBig.getBoundingClientRect().left) / (innerWidth * 0.65)));
+    setMorph(clamp01((innerWidth * 0.7 - morphTo.parentElement.getBoundingClientRect().left) / (innerWidth * 0.55)));
+  };
   // corner marks round each big screen: four hand-drawn brackets, placed from the screen's own box (each project has its own layout)
   const CORNERS = [["tl", 0, 0], ["tr", 1, 0], ["bl", 0, 1], ["br", 1, 1]];
   document.querySelectorAll(".proj .big").forEach((big) => CORNERS.forEach(([k, cx, cy]) => {
@@ -1027,6 +1049,8 @@ __LIBS__
     extras.push(gsap.fromTo(".night", { opacity: 0 }, { opacity: 1, ease: "none", scrollTrigger: { trigger: work, start: "top 85%", end: "top 25%", scrub: true } }));
     if (flat) {
       setCount(0);
+      // EDGE's screen turns into the other site while it crosses the middle of the screen
+      extras.push(ScrollTrigger.create({ trigger: morphTo.parentElement, start: "top 65%", end: "bottom 45%", onUpdate: (st) => setMorph(st.progress), onRefresh: (st) => setMorph(st.progress) }));
       { const io = new IntersectionObserver(([e]) => { if (!e.isIntersecting) return; io.disconnect(); const t0 = performance.now();
           const step = (t) => { const k = Math.min(1, (t - t0) / 1600); setCount(1 - (1 - k) ** 3); if (k < 1) requestAnimationFrame(step); };
           requestAnimationFrame(step); }, { threshold: 1 });
