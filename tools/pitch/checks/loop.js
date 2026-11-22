@@ -7,7 +7,8 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
   let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('mail').classList.contains('on')); if (!on) await page.waitForTimeout(200); }
   if (!on) { errs.push('the morning form never showed, so the loop was not tested'); return JSON.stringify(res); }
-  await page.click('#again'); await page.waitForTimeout(800);
+  const toLeft = async () => { if (await page.isVisible('#endPan') && (await page.textContent('#endPan')).includes('Leave your tag')) { await page.click('#endPan'); await page.waitForTimeout(2200); } }; // a phone lands on the flyer; Leave your tag and Back to the start are on the left side
+  await toLeft(); await page.click('#again'); await page.waitForTimeout(800);
   res.during = await page.evaluate(() => ({ held: document.documentElement.style.overflow === 'hidden', form: document.getElementById('mail').classList.contains('on') }));
   if (!res.during.held) errs.push('the scroll was not held during the dusk');
   if (res.during.form) errs.push('the form still showed during the dusk');
@@ -23,7 +24,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (!on) errs.push('on a second pass the form did not show');
   await page.focus('#mail textarea'); await page.keyboard.type('a b'); res.typed = await page.evaluate(() => document.querySelector('#mail textarea').value);
   if (res.typed !== 'a b') errs.push('Space could not be typed in the message: ' + JSON.stringify(res.typed));
-  await page.focus('#again'); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
+  await toLeft(); await page.focus('#again'); await page.keyboard.press('Enter'); await page.waitForTimeout(500);
   if (await page.evaluate(() => document.documentElement.style.overflow !== 'hidden')) errs.push('Enter on "Back to the start" did not start the dusk');
   await page.waitForTimeout(3300);
   res.again = await page.evaluate(() => ({ y: Math.round(scrollY), park: Math.round(svY(0)), inert: document.getElementById('mail').inert }));
