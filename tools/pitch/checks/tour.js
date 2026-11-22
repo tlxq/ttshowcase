@@ -1,5 +1,5 @@
 // The whole walk: tap the bucket, then each stop down to the end; a picture at each stop (__SHOTS__pitch-<width>-<stop>.png).
-// Fails on a console or page error, a three.js warning (THREE.…), or when the morning's form doesn't show at the end, or its five painted marks have no 48 px tap area of their own, or the email tab doesn't tear off when tapped.
+// Fails on a console or page error, a three.js warning (THREE.…), or when the morning's form doesn't show at the end, or its five painted marks have no 48 px tap area of their own, or the email tab doesn't tear off when tapped, or a phone turned at the end breaks the form.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('THREE.'))) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   await page.goto('__URL__'); await page.waitForTimeout(3500);
@@ -25,5 +25,11 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   // a tap on the email tab tears it off: it lands on the street in front of the wall (the mail app opening is the browser's)
   { const m = res.tabs[0]; await page.mouse.click((m.l + m.r) / 2, (m.t + m.b) / 2); await page.waitForTimeout(1500); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-torn.png' });
     res.torn = await page.evaluate(() => endTorn()); if (!res.torn.length || !res.torn[0].landed || !res.torn[0].shown) errs.push('the email tab did not tear off and land: ' + JSON.stringify(res.torn)); }
+  // a phone turned on its side at the end: the end wall follows its new shape (the laptop's: the form printed on the flyer, no button)
+  if (W < 600) { await page.setViewportSize({ width: H, height: W }); await page.waitForTimeout(2500); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-turned.png' });
+    res.turned = await page.evaluate(() => { const r = s => { const b = document.querySelector(s).getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
+      return { name: r('#mail .f-name span'), email: r('#mail .f-email span'), send: r('#mail button'), pan: getComputedStyle(document.getElementById('endPan')).display, scaled: /scale/.test(document.getElementById('mail').style.transform), vw: innerWidth, vh: innerHeight }; });
+    const t = res.turned, overlap = (a, b) => Math.min(a[2], b[2]) > Math.max(a[0], b[0]) && Math.min(a[3], b[3]) > Math.max(a[1], b[1]);
+    if (overlap(t.name, t.email) || !t.scaled || t.pan !== 'none' || t.send[2] > t.vw || t.send[3] > t.vh || t.send[0] < 0) errs.push('a phone turned at the end breaks the form: ' + JSON.stringify(t)); }
   if (!res.end.form) errs.push('the end shows no form');
   return JSON.stringify(res); }
