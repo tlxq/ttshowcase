@@ -10,7 +10,7 @@ __TOKENS__
 html, body { background: var(--look-ground); color: var(--look-text); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 1420vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall, then the dusk back to the start (LOOP); UP + SV_END + LOOP + 100 */
+.track { height: 1320vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP + SV_END + 100 */
 html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall: pulling further must not reload it on a phone */
 .tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a spot on the wall (UP_AT) */
 .hud { position: fixed; inset: 0; pointer-events: none; }
@@ -214,8 +214,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the workshop (storyboard 5; Tom 11-17: you go in like a "brunn", a manhole). A room under the street from HX0 to CX1; a round cover on the
   // pavement by the wall at MX_IN slides aside, a ladder goes down a shaft into it; at MX_OUT a second shaft climbs out. MR: the shaft's radius,
   // MZ: its centre from the wall. DY: the room's ceiling (the ground above is 1.5 m deep), WF: its floor. The street stays at G3 from here on.
-  const SV_END = 1180, LOOP = 100, SV_MAX = SV_END + LOOP; document.documentElement.dataset.svEnd = SV_END; // LOOP (Tom 11-23, the site loops): one more screen past the end turns the morning into night on the same wall, then the page is at the start
-  // the scroll at the page's end, in vh; the checks read it
+  const SV_END = 1180, SV_MAX = SV_END; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it. No loop (Tom 11-23): the walk ends back at the start wall
   // the walk is a loop (Tom 11-17): after the pour the page parks UP vh down; scrolling up from there turns the camera left to the visitor wall.
   // upPx: the park in pixels, from the track's own height (a phone's vh and innerHeight differ while its address bar moves)
   const UP = 40, track = document.querySelector(".track"), upPx = () => track.offsetHeight * UP / (UP + SV_MAX + 100);
@@ -1883,15 +1882,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     renderer.toneMappingExposure = EXPO * (1 + 5 * w * w);
     if (day) { const k = sm(cl((sv - CUT) / (SV_END - CUT))); const mc = endCams(); cp.lerpVectors(mc[0], mc[1], k); look.copy(mc[2]);
       lamp.intensity = pool.intensity = bulbM.emissiveIntensity = lamp2.intensity = work.intensity = stairLight.intensity = manL.intensity = dawnL.intensity = 0;
-      sky.color.copy(SKYM); sky.groundColor.copy(GNDM); sky.intensity = .75; sun.intensity = 2.1; scene.background.copy(BGM); scene.fog.color.copy(FOGM); lens.uniforms.uAper.value = .5;
-      // the loop (Tom 11-23): scrolled on past the end, the sun goes down on the same wall, the street light flickers on and the camera steps
-      // back to the start's view; at the end of it the page jumps to the start (svY(0)), which shows the same picture. Scrolled back up, it is morning again.
-      if (sv > SV_END + 5) { const dk = cl((sv - SV_END - 5) / (LOOP - 15)), sunK = sm(cl(dk / .7)), lampK = sm(cl((dk - .35) / .4)), flick = lampK > 0 && lampK < .6 && Math.random() < .3 ? .2 : 1, camK = sm(cl((dk - .15) / .85));
-        sun.intensity = 2.1 * (1 - sunK); sky.color.lerp(SKY0, sunK); sky.groundColor.lerp(GND0, sunK); sky.intensity = .75 + (.35 - .75) * sunK; scene.background.lerp(BG0, sunK); scene.fog.color.lerp(FOG0, sunK);
-        skyU.uDawn.value = 0; dawnL.intensity = 0; cityFar.material.color.setScalar(1 - .75 * sunK); lens.uniforms.uAper.value = .5 + (1 - .5) * sunK;
-        lamp.intensity = 5.5 * lampK * flick; pool.intensity = 9 * lampK * flick; bulbM.emissiveIntensity = 2.2 * lampK * flick; work.intensity = 4.2 * .3 * lampK;
-        cp.lerp(CAM.A[0], camK); look.lerp(CAM.A[1], camK);
-        if (dk >= 1 && introOver) scrollTo(0, svY(0)); } }
+      sky.color.copy(SKYM); sky.groundColor.copy(GNDM); sky.intensity = .75; sun.intensity = 2.1; scene.background.copy(BGM); scene.fog.color.copy(FOGM); lens.uniforms.uAper.value = .5; }
     else { sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); }
     if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
     const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
