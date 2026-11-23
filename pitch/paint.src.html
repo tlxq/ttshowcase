@@ -10,7 +10,7 @@ __TOKENS__
 html, body { background: var(--look-ground); color: var(--look-text); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 1430vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP (90: the visitors' wall, the pole on the way) + SV_END + LOOP (60) + 100 */
+.track { height: 1480vh; } /* the way round (TOP, 50: past the visitors' wall back to the end, then the page is at its end) and the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; TOP (50) + UP (90: the visitors' wall, the pole on the way) + SV_END + LOOP (60) + 100 */
 html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall: pulling further must not reload it on a phone */
 .tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a spot on the wall (UP_AT) */
 .hud { position: fixed; inset: 0; pointer-events: none; }
@@ -242,7 +242,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const SV_END = 1180, LOOP = 60, SV_MAX = SV_END + LOOP; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it. LOOP (Tom 11-23): past the end the camera steps back to the start's view in the same light, and the page is at the start again
   // the walk is a loop (Tom 11-17): after the pour the page parks UP vh down; scrolling up from there turns the camera left to the visitor wall.
   // upPx: the park in pixels, from the track's own height (a phone's vh and innerHeight differ while its address bar moves)
-  const UP = 90, track = document.querySelector(".track"), upPx = () => track.offsetHeight * UP / (UP + SV_MAX + 100);
+  // TOP (Tom 11-23, the loop both ways): above the visitors' wall the camera turns back to the end's view, and at the top the page is at its end
+  const UP = 90, TOP = 50, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / (TOP + UP + SV_MAX + 100), topPx = () => track.offsetHeight * TOP / (TOP + UP + SV_MAX + 100);
+  window.visitY = () => topPx(); // the visitors' wall in pixels; the checks scroll with this
   let up0 = 0; // the park at the last frame
   window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * sv / SV_MAX; // the checks scroll with this
   const HX0 = 35, CX1 = 66, MX_IN = 36.8, MX_OUT = 64, MZ = 1.1, MR = .42, RZ = 9, DY = G3 - 1.5, WF = G3 - 4.5, END_X = 104;
@@ -2038,7 +2040,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     if (introOver && svKeep >= 0 && svKeepH !== document.documentElement.scrollHeight) { scrollTo(0, svY(svKeep)); svKeepH = document.documentElement.scrollHeight; } // a resize or a turned phone: the walk stays where it was (the page goes on past the end now, so a pixel scroll would land in the dusk)
     if (introOver && up0 && upPx() !== up0 && Math.abs(scrollY - up0) < 2) scrollTo(0, upPx()); // a resize or a turned phone while parked: stay parked, not half turned
     const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? cl((scrollY - up) / H2) * SV_MAX : 0,
-      lft = introOver && up > 0 ? cl(1 - scrollY / up) : 0, lookL = sm(cl(lft / .6)), goL = sm(cl((lft - .25) / .75)), // up the page: the head turns first, then the camera walks left
+      tp = topPx(), lft = introOver && up > tp ? cl(1 - (scrollY - tp) / (up - tp)) : 0, rnd = introOver && tp > 0 ? cl(1 - scrollY / tp) : 0, lookL = sm(cl(lft / .6)), goL = sm(cl((lft - .25) / .75)), // up the page: the head turns first, then the camera walks left
       pAll = cl(sv / 540), p = cl(sv / 320); // sv: the scroll in vh below the park (the page is UP + SV_END + 100 vh); the first three scenes keep the scroll they had
     if (introOver && svKeepH === document.documentElement.scrollHeight) svKeep = sv; else if (svKeep < 0) { svKeep = sv; svKeepH = document.documentElement.scrollHeight; }
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
@@ -2091,6 +2093,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
     endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp); morning(now, sv, cp, cl_);
     if (lft > 0) { cp.lerp(VISIT[0], goL); cl_.lerp(VISIT[1], lookL); }
+    // the way round (rnd): on up past the visitors' wall the camera turns back right to the end's view, the end's light and haze with it;
+    // at the top the page jumps to its end, where the camera already is, and scrolling on up walks the street backwards
+    if (rnd > 0) { const k = sm(rnd), ec = endCams(); cp.lerp(ec[1], k); cl_.lerp(ec[2], k); if (!pick.mode) scene.fog.density = .04 - .028 * k;
+      if (scrollY <= 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, svY(SV_END)); }
     // past the pole (Tom 11-23: look closer at the stickers as we pass by): on the way up to the visitors' wall the camera steps in to the pole and
     // walks round it at arm's length, right to left, so each sticker comes past; the page's longer park (UP) gives the pass its own stretch of scroll
     const poleK = lft > 0 ? sm(cl((lft - .06) / .16)) * (1 - sm(cl((lft - .58) / .16))) : 0;
@@ -2098,11 +2104,11 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     pickCam(now, dt, cp, cl_);
     // the opening's street light swings round to graze the visitor wall from the right (no extra light: every light costs a frame on the T14s),
     // aimed at the middle of the view (step 5): the words, the can and the tags all stand in it, on a laptop and a phone
-    const lampL = sm(cl((lft - .5) / .45)); // after the pole: the light stays on it while the camera goes round
+    const lampL = sm(cl((lft - .5) / .45)) * (1 - sm(rnd)); // after the pole: the light stays on it while the camera goes round; on the way round it swings back
     lamp.position.set(-8.5 + 2.5 * lampL, 4.2 + .6 * lampL, 1.6 + .8 * lampL); lamp.target.position.set(.5 - 12.5 * lampL, .2 + 1.4 * lampL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = (1 - inShaft(cp)) * (1 - pick.k) * (1 - poleK); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(lft); endPlace(now); bombPlace();
+    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(rnd > .1 ? 0 : lft); endPlace(now); bombPlace();
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);

@@ -32,10 +32,10 @@ async (page) => {
   await page.waitForTimeout(5000); // the pour runs out before the first picture
   const shot = (name) => page.screenshot({ path: "__OUT__" + name + ".png" });
   await shot("01-start");
-  await page.evaluate(() => scrollTo(0, svY(0) * 0.55));
+  await page.evaluate(() => scrollTo(0, visitY() + (svY(0) - visitY()) * 0.55));
   await page.waitForTimeout(2200);
   await shot("02-pole");
-  await page.evaluate(() => scrollTo(0, 0));
+  await page.evaluate(() => scrollTo(0, visitY()));
   await page.waitForTimeout(2500);
   await shot("03-visitors");
   const stops = [

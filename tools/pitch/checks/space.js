@@ -18,7 +18,7 @@ async page => { const errs = [], res = { errs };
     if (!G) { const { area: A, frame: F } = reads[0]; G = [];
       for (let y = A.y0 + F.h / 2; y <= A.y1 - F.h / 2 + 1e-6; y += STEP) for (let x = A.x0 + F.w / 2; x <= A.x1 - F.w / 2 + 1e-6; x += STEP) G.push([x, y]); }
     await look(layout + ' start');
-    await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(1000); await look(layout + ' visitors'); // the top of the page: round the pole, at the visitors' wall
+    await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(1000); await look(layout + ' visitors'); // up round the pole, at the visitors' wall
     await page.evaluate(() => scrollTo(0, svY(0))); await page.waitForTimeout(1500);
     for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
     let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(200); }
