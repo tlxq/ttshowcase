@@ -26,8 +26,8 @@ A bucket of paint waits on a dark wall at night. The visitor tips it, the paint 
 2. epaRadar and raddavarfruberga: the facts and links sprayed through stencils onto their walls.
 3. The workshop: my own tools in a row: the self-hosted platform, ttoolbox, dot and tthermal.
 4. EDGE: client work on its own clean wall, a printed sheet pasted up.
-5. Dawn grows to white, and out of the white it is morning at the opening wall: the mural, the visitors' tags round it and a flyer to write to me, with GitHub and LinkedIn.
-6. The loop: scrolling on, the sun goes down on the same wall and the walk starts again. The can at the mural's foot lets a visitor paint their tag on the wall. Scrolling up from the start shows the visitors' tags.
+5. Dawn grows to white, and out of the white you are back at the opening wall, in your own light (day or night by your clock): the mural and the visitors' tags round it. The can at the mural's foot lets a visitor paint their tag on the wall. Scrolling on, the walk goes round again.
+6. Write to me is a sticker on the street light's pole, among stickers about me. Tap it and it unfolds into a flyer: a form to write to me, and my email, GitHub and LinkedIn. The same sticker sits in the screen's corner the whole way. Scrolling up from the start walks round the pole, close enough to read the stickers, on to the visitors' tags.
 
 Every screen has something moving and some depth. The scroll never waits for an animation.
 
