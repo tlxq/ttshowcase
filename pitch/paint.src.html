@@ -1486,8 +1486,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       if (shown) { g.build(); if (!g.pulsed && PULSE && !REDUCED) { g.pulsed = true; g.pulse = now; } }
       if (g.pulse >= 0) { const t = (now - g.pulse) / 1400; if (t < 1) target = Math.max(target, .5 * Math.sin(Math.PI * t)); else g.pulse = -1; }
       g.op += (target - g.op) * (REDUCED ? 1 : Math.min(1, dt * 10)); if (g.mesh) { g.mesh.material.opacity = g.op; g.mesh.visible = g.op > .01 && !g.gone; } if (on) act = h; }
+    if (!act && endS.show) { const h = HOTL.find(h => h.el === endS.hots.leaveHot); if (h && h.el.style.display === "block") { act = h; act.below = true; } } // the can says what it is without a hover: a phone has none (design review 11-23)
     if (act) { const r = act.el.getBoundingClientRect(); hlEl.textContent = act.label; hlEl.classList.add("on"); const lw = hlEl.offsetWidth, lh = hlEl.offsetHeight;
-      hlEl.style.left = cl((r.left + r.right) / 2 - lw / 2, 8, innerWidth - lw - 8) + "px"; hlEl.style.top = (r.top - lh - 8 < 8 ? r.bottom + 8 : r.top - lh - 8) + "px"; } else hlEl.classList.remove("on"); }
+      hlEl.style.left = cl((r.left + r.right) / 2 - lw / 2, 8, innerWidth - lw - 8) + "px"; hlEl.style.top = (act.below || r.top - lh - 8 < 8 ? r.bottom + 8 : r.top - lh - 8) + "px"; act.below = false; } else hlEl.classList.remove("on"); }
   // Leave your tag (Tom 11-17, PR5 pick the spot): from the form the camera steps back to a wide shot of the whole wall a visitor may tag:
   // the visitor stretch left of the opening and the opening wall itself, where the bucket pours, so the tags greet everyone who arrives.
   // Lit = may be tagged; dark = kept clear (the title, the line's run to the drain, the bucket's ledge). Tap a lit part: that is the spot (Tom 11-18:
