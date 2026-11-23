@@ -112,6 +112,7 @@
   --wall-pavement: #1a1a1b;
   --wall-iron: #1b1c1e;
   --wall-bone: #d6cfbf;
+  --sticker-green: #0a9f50; /* the emblem sticker's green (Tom OK 11-23) */
   /* The camera pulling back off the page until it is a poster on the wall */
   --wall-pullback: 2600ms;
   /* A lamp coming on as you near it */
