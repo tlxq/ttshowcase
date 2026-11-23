@@ -2096,9 +2096,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const poleK = lft > 0 ? sm(cl((lft - .06) / .16)) * (1 - sm(cl((lft - .58) / .16))) : 0;
     if (poleK > 0) { const th = .9 - 1.8 * cl((lft - .12) / .5), r = NARROW ? 1.9 : 1.7, y = GROUND + 1.55; cp.lerp(V(POST.x + r * Math.sin(th), y + .05, POST.z + r * Math.cos(th)), poleK); cl_.lerp(V(POST.x, y, POST.z), poleK); }
     pickCam(now, dt, cp, cl_);
-    // the opening's street light swings round to graze the visitor wall from the right (no extra light: every light costs a frame on the T14s)
+    // the opening's street light swings round to graze the visitor wall from the right (no extra light: every light costs a frame on the T14s),
+    // aimed at the middle of the view (step 5): the words, the can and the tags all stand in it, on a laptop and a phone
     const lampL = sm(cl((lft - .5) / .45)); // after the pole: the light stays on it while the camera goes round
-    lamp.position.set(-8.5 + 2.5 * lampL, 4.2 + .6 * lampL, 1.6 + .8 * lampL); lamp.target.position.set(.5 - 12.5 * lampL, .2 + 2.4 * lampL, 0);
+    lamp.position.set(-8.5 + 2.5 * lampL, 4.2 + .6 * lampL, 1.6 + .8 * lampL); lamp.target.position.set(.5 - 12.5 * lampL, .2 + 1.4 * lampL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = (1 - inShaft(cp)) * (1 - pick.k) * (1 - poleK); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
     camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(lft); endPlace(now); bombPlace();
