@@ -9,6 +9,7 @@ async page => { const errs = [], res = { errs };
   for (const [w, h, layout] of [[1440, 900, 'laptop'], [412, 915, 'phone']]) {
     await page.setViewportSize({ width: w, height: h }); await page.goto('__URL__'); await page.waitForTimeout(3500); await page.mouse.click(w / 2, h / 2);
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
+    await page.waitForFunction(() => !!window.pickTest, null, { timeout: 30000 }); // under a full parallel run the page can be slower than the waits above
     reads.push({ layout, when: 'night', ...(await page.evaluate(() => window.pickTest.space())) });
     for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
     let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('mail').classList.contains('on')); if (!on) await page.waitForTimeout(200); }
