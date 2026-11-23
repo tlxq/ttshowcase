@@ -11,7 +11,7 @@ html, body { background: var(--look-ground); color: var(--look-text); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
 .track { height: 1480vh; } /* the way round (TOP, 50: past the visitors' wall back to the end, then the page is at its end) and the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; TOP (50) + UP (90: the visitors' wall, the pole on the way) + SV_END + LOOP (60) + 100 */
-html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall: pulling further must not reload it on a phone */
+html { overscroll-behavior-y: none; } /* the top of the page is the way round to the end: pulling further must not reload it on a phone */
 .tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a spot on the wall (UP_AT) */
 .hud { position: fixed; inset: 0; pointer-events: none; }
 .hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -245,7 +245,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // TOP (Tom 11-23, the loop both ways): above the visitors' wall the camera turns back to the end's view, and at the top the page is at its end
   const UP = 90, TOP = 50, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / (TOP + UP + SV_MAX + 100), topPx = () => track.offsetHeight * TOP / (TOP + UP + SV_MAX + 100);
   window.visitY = () => topPx(); // the visitors' wall in pixels; the checks scroll with this
-  let up0 = 0; // the park at the last frame
+  let up0 = 0, rndWas = false; // the park at the last frame; the way round was on at the last frame
   window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * sv / SV_MAX; // the checks scroll with this
   const HX0 = 35, CX1 = 66, MX_IN = 36.8, MX_OUT = 64, MZ = 1.1, MR = .42, RZ = 9, DY = G3 - 1.5, WF = G3 - 4.5, END_X = 104;
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
@@ -2095,7 +2095,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     if (lft > 0) { cp.lerp(VISIT[0], goL); cl_.lerp(VISIT[1], lookL); }
     // the way round (rnd): on up past the visitors' wall the camera turns back right to the end's view, the end's light and haze with it;
     // at the top the page jumps to its end, where the camera already is, and scrolling on up walks the street backwards
-    if (rnd > 0) { const k = sm(rnd), ec = endCams(); cp.lerp(ec[1], k); cl_.lerp(ec[2], k); if (!pick.mode) scene.fog.density = .04 - .028 * k;
+    if (rnd > 0 || rndWas) { const k = sm(rnd), ec = endCams(); cp.lerp(ec[1], k); cl_.lerp(ec[2], k); if (!pick.mode) scene.fog.density = .04 - .028 * k; rndWas = rnd > 0; // back down past it in one flick: the haze is the street's again
       if (scrollY <= 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, svY(SV_END)); }
     // past the pole (Tom 11-23: look closer at the stickers as we pass by): on the way up to the visitors' wall the camera steps in to the pole and
     // walks round it at arm's length, right to left, so each sticker comes past; the page's longer park (UP) gives the pass its own stretch of scroll
