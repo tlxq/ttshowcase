@@ -18,12 +18,11 @@ async page => { const errs = [], res = { errs };
       for (let y = A.y0 + F.h / 2; y <= A.y1 - F.h / 2 + 1e-6; y += STEP) for (let x = A.x0 + F.w / 2; x <= A.x1 - F.w / 2 + 1e-6; x += STEP) G.push([x, y]); }
     await look(layout + ' start');
     for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
-    let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('mail').classList.contains('on')); if (!on) await page.waitForTimeout(200); }
+    let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(200); }
     if (!on) errs.push(layout + ': the morning form never showed');
     reads.push({ layout, when: 'morning', ...(await page.evaluate(() => window.pickTest.space())) });
     await look(layout + ' end');
     if (layout === 'laptop') await look('laptop end, landing', true);
-    if (await page.isVisible('#endPan')) { await page.click('#endPan'); await look(layout + ' end, mural side'); }
   }
   // every part, from both layouts and both times, with its calm zone
   const parts = [];

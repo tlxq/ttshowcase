@@ -56,10 +56,10 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
-  let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('mail').classList.contains('on')); if (!on) await page.waitForTimeout(200); }
+  let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(200); }
   if (!on) { errs.push('the morning form never showed, so the held spot was not tested'); return JSON.stringify(res); }
   const frame = () => page.evaluate(() => { const f = document.getElementById('pickFrame'); return { taken: f.classList.contains('taken'), mode: document.getElementById('pick').dataset.mode, hint: document.getElementById('pickHint').textContent, held: window.tagTest.held() }; });
-  const toLeft = async () => { if (await page.isVisible('#endPan') && (await page.textContent('#endPan')).includes('Leave your tag')) { await page.click('#endPan'); await page.waitForTimeout(2200); } }; // a phone lands on the flyer; Leave your tag and Back to the start are on the left side
+  const toLeft = async () => {}; // one end view on every screen (Tom 11-23: no flyer, no button)
   await toLeft(); await page.click('#leave'); await page.waitForTimeout(2200);
   const free = await page.evaluate(() => window.pickTest.freeOnScreen()); if (!free) { errs.push('no free part of the wall on screen'); return JSON.stringify(res); }
   const at = await page.evaluate(([x, y]) => window.pickTest.worldAt(x, y), [free.x, free.y]);
