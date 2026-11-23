@@ -115,6 +115,6 @@ description = "One real tag round on a deployment: send, held spot, approve, on 
 run = "tools/tags/live.sh"
 
 [tasks."pitch:sheet"]
-description = "The whole-walk sheet: the same moments on master (or a named base) and on this branch, laptop + phone, night + day, side by side, changed pictures marked; shown before every visual step. Desk GPU, about 2 min; opens at /sheet/ while mise run pitch runs"
+description = "The whole-walk sheet: every moment on master and on this branch, side by side. Laptop and phone, night and day. Changed pictures are marked. About 2 minutes on the desk's graphics card; run it after pitch:check, not beside it"
 depends = ["install"]
 run = "tools/pitch/sheet.sh"
