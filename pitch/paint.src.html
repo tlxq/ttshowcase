@@ -1400,7 +1400,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // a laptop lands wide (the mural, the can, the flyer: the morning after), then slides in to the flyer once the form shows, so the form reads at
   // about its own size; the can stays in view, so a laptop needs no button back (Tom 11-23, design review: ~9 px from the wide view); its right edge stops short of the epaRadar wall
   const DAY_CLOSE = [V(eU(E.flyer[2]) - 4.75, .7, 11.8), V(eU(E.flyer[2]) - 4.75, .45, 0)];
-  function endCams() { if (!narrowNow()) { const w = [V(DAY_CX + .15, 1.3, 16.4), V(DAY_CX + .15, 1.2, 15.4), V(DAY_CX + .15, .6, 0)];
+  const endWide = () => [V(DAY_CX + .15, 2, 21.8), V(DAY_CX + .15, 1.9, 20.5), V(DAY_CX + .15, 1.3, 0)]; // the landing, a third wider (Tom 11-23): the tags round the mural and the flyer are in view
+  function endCams() { if (!narrowNow()) { const w = endWide();
       return [w[0].lerp(DAY_CLOSE[0], ePan), w[1].lerp(DAY_CLOSE[0], ePan), w[2].lerp(DAY_CLOSE[1], ePan)]; }
     const x = (eU(E.flyer[0]) + eU(E.flyer[2])) / 2 * ePan, z = 18.5 - 5.2 * ePan, y = .2 + .1 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
   function endWallState(now, show) { const dt = Math.min(.1, (now - eLast) / 1000); eLast = now;
@@ -1583,6 +1584,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     worldAt: (px, py) => wallAt(px, py),
     spotOnScreen: () => { const [px, py] = proj(V(pick.x, pick.y, 0)); return { x: px, y: py }; },
     // for the space check: the kept-clear boxes the tag tool would use now, and where the wall's own parts are (metres, [x0, y0, x1, y1])
+    // for the space check: which of these frame spots (centres, metres) the camera shows whole right now
+    onScreen: (spots, wide) => { const keep = [camera.position.clone(), camera.quaternion.clone()]; if (wide && !narrowNow()) { const w = endWide(); camera.position.copy(w[1]); camera.lookAt(w[2]); } camera.updateMatrixWorld();
+      const out = spots.map(([x, y]) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].every(([a, b]) => { const [px, py, front] = proj(V(x + a * FRAME.w / 2, y + b * FRAME.h / 2, 0)); return front && px >= 0 && px <= innerWidth && py >= 0 && py <= innerHeight; }));
+      camera.position.copy(keep[0]); camera.quaternion.copy(keep[1]); camera.updateMatrixWorld(); return out; },
     space: () => { const bx = o => { const b = new THREE.Box3().setFromObject(o); return [b.min.x, b.min.y, b.max.x, b.max.y]; };
       return { narrow: NARROW, area: AREA, frame: FRAME, clear: clearBoxes(), things: { mural: bx(paint), flyer: [eU(E.flyer[0]), eV(E.flyer[3]), eU(E.flyer[2]), eV(E.flyer[1])], words: bx(vWords), can: bx(vCan3) } }; } };
   // ---- Tag it (Tom 11-17, PR6): after Lock spot the visitor draws in the frame with real graffiti tools; every stroke keeps its own tool
@@ -1915,7 +1920,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const lerpV = (a, b, t) => a.clone().lerp(b, t);
   const CAM = NARROW
     ? { A: [V(.4, .9, 13.5), V(0, .9, 0)], B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX + .3, EY + .6, 21.5), V(EX + .3, EY + .4, 0)], D: [V(EX + 3.2, EY + .5, 16), V(EX + 3.2, EY + .3, 0)], E: [V(RX - 2.2, -.4 - 2 * DROP, 17), V(RX - 2.2, -.6 - 2 * DROP, 0)], F: [V(RX - 2.2, -.5 - 2 * DROP, 17.5), V(RX - 2.2, -.7 - 2 * DROP, -1)] } // phone: the raddavarfruberga painting (centre x RX - 2.2, 6.4 m wide) centred across the whole width, uncut
-    : { A: [V(1.3, .5, 11), V(.1, .6, 0)], B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
+    : { A: [V(1.3, 1.4, 14.6), V(.1, 1.3, 0)], /* a third wider (Tom 11-23): the wall round the mural, where the visitors' tags go, is in the first picture */ B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
   // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street, low enough for the can at its foot; phone: closer, the middle of it
   const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)], tagUp = document.getElementById("tagUp"), UP_AT = V(-6, .2, 0);
   let stencilAt = 0;
