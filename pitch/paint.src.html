@@ -323,7 +323,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const lamp = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp.position.set(-8.5, 4.2, 1.6); lamp.target.position.set(.5, .2, 0);
   scene.add(lamp, lamp.target);
   const sky = new THREE.HemisphereLight(0x4f6699, 0x0a0a0c, .35); scene.add(sky);
-  const bounce = new THREE.PointLight(0xff5a24, 0, 4, 2); scene.add(bounce);
+  const bounce = new THREE.PointLight(0xffffff, 0, 4, 2); scene.add(bounce); // coloured with the paint below, once it is read
 
   // the paint layer: a canvas painted at the pen's own pace, wet and glossy, following the concrete's bumps
   const PW = NARROW ? 4.6 : 9.4, PH = NARROW ? 4.6 : 3.4, PX = 256, PCY = NARROW ? 1 : .75;
@@ -356,6 +356,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const ledgeArrive = x => LEDGE.tip + .05 + Math.max(0, x - LEDGE.x0) / LEDGE.spread;
   const pourNor = tex("assets/wall4_nor_gl.jpg", false, PW / TILE, HT / TILE, (WW / 2 - WX - PW / 2) / TILE, 0);
   const PAINT_HEX = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(), PAINT = new THREE.Color(PAINT_HEX); if (!/^#[0-9a-f]{6}$/i.test(PAINT_HEX)) throw new Error("--front-spray is missing from tokens.css"); bounce.color.copy(PAINT); // the paint (and the glow where it lands): the front's blue (Tom 11-22, one site), from tokens.css
+  const mistCol = [1, 3, 5].map(i => parseInt(PAINT_HEX.slice(i, i + 2), 16) / 255); // the mist and the splashes are the paint's own blue (its sRGB: their shader writes it straight out)
   const pourU = { uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
     uA: { value: Array.from({ length: NS }, () => new THREE.Vector4(0, -99, -99, 99)) }, uB: { value: Array.from({ length: NS }, () => new THREE.Vector4()) },
     uC: { value: PAINT }, uRep: { value: pourNor.repeat }, uOff: { value: pourNor.offset }, uDims: { value: new THREE.Vector4(PW, PH, HT, GROUND) }, uYB: { value: YB },
@@ -577,9 +578,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const wetTex = new THREE.DataTexture(data, w, h); wetTex.minFilter = wetTex.magFilter = THREE.LinearFilter; wetTex.generateMipmaps = false; wetTex.needsUpdate = true;
     pourU.uMask.value = maskTex; pourU.uWet.value = wetTex; pourMesh.visible = true; pourReady = true;
   }
-  function splashGround(at, n) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = 1; mc[i * 3 + 1] = .36; mc[i * 3 + 2] = .12; mp[i * 3] = at.x + gauss() * .03; mp[i * 3 + 1] = at.y; mp[i * 3 + 2] = .05;
+  function splashGround(at, n) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = at.x + gauss() * .03; mp[i * 3 + 1] = at.y; mp[i * 3 + 2] = .05;
     mv[i * 3] = gauss() * .45; mv[i * 3 + 1] = .25 + Math.random() * .45; mv[i * 3 + 2] = .1 + Math.random() * .35; ml[i] = .45 + Math.random() * .15; } }
-  function splash(at, n) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = 1; mc[i * 3 + 1] = .36; mc[i * 3 + 2] = .12; mp[i * 3] = at.x; mp[i * 3 + 1] = at.y; mp[i * 3 + 2] = .03;
+  function splash(at, n) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = at.x; mp[i * 3 + 1] = at.y; mp[i * 3 + 2] = .03;
     mv[i * 3] = gauss() * .9; mv[i * 3 + 1] = .1 + Math.random() * .7; mv[i * 3 + 2] = .2 + Math.random() * .6; ml[i] = .8 + Math.random() * .2; } }
 
   // ---- the intro: a dark wall, a bucket filling like a progress bar, then the paint goes onto the wall (plays once, by itself)
@@ -815,7 +816,6 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     vertexShader: "attribute float life; attribute vec3 col; uniform float uScale; varying float vL; varying vec3 vC; void main(){ vL = life; vC = col; vec4 m = modelViewMatrix * vec4(position, 1.); gl_Position = projectionMatrix * m; gl_PointSize = (.012 + (1. - life) * .03) * uScale / -m.z; }",
     fragmentShader: "varying float vL; varying vec3 vC; void main(){ vec2 c = gl_PointCoord - .5; float a = smoothstep(.25, 0., dot(c, c)) * vL * .55; gl_FragColor = vec4(vC * a, 1.); }" }));
   mist.frustumCulled = false; scene.add(mist);
-  let mistCol = [1, .36, .12];
   function emit(from, to, n) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = from.x; mp[i * 3 + 1] = from.y; mp[i * 3 + 2] = from.z; const d = to.clone().sub(from); d.x += gauss() * .12; d.y += gauss() * .12; d.multiplyScalar((2.2 + Math.random() * 1.2)); mv[i * 3] = d.x; mv[i * 3 + 1] = d.y; mv[i * 3 + 2] = d.z; ml[i] = 1; } }
 
   // lens: bloom on the light, then depth of field, colour fringe at the edges, grain and the film curve
