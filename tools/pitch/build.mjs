@@ -177,10 +177,14 @@ if (process.argv.includes("--site")) {
   if (!existsSync(join(site, "index.html")))
     throw new Error("Couldn't find the built site in out/. Run: npm run build");
   // the page is /next (no trailing slash), so its relative "assets/…" would point at /assets/: make them /next/assets/
-  writeFileSync(
-    join(site, "next.html"),
-    withScriptRule(page.replace(/(["'`])assets\//g, "$1/next/assets/")),
-  );
+  const nextPage = page.replace(/(["'`])assets\//g, "$1/next/assets/");
+  // an unquoted CSS url(assets/…) is not rewritten and 404s on /next (the flyer's cover, 11-23): quote the path
+  const unquoted = nextPage.match(/url\(\s*assets\/[^)]*\)/g);
+  if (unquoted)
+    throw new Error(
+      `Unquoted picture path on /next: ${unquoted.join(", ")}. Write url("assets/…") so the build can point it at /next/assets/.`,
+    );
+  writeFileSync(join(site, "next.html"), withScriptRule(nextPage));
   const siteAssets = join(site, "next/assets");
   rmSync(siteAssets, { force: true, recursive: true });
   mkdirSync(siteAssets, { recursive: true });

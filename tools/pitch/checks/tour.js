@@ -47,4 +47,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.evaluate(() => scrollTo(0, Math.round(svY(0) * .7))); await page.waitForTimeout(2500); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-pole.png' });
   res.pole = await box('#bombHot'); big(res.pole, 'Write to me (the sticker on the pole)');
   if (res.pole && res.pole.shown) { await page.click('#bombHot'); await flyer('the pole sticker', 'pole-flyer'); await shut('the pole sticker'); }
+  // the loop (Tom 11-23): scrolled on past the end, the camera steps back to the start's view and the page is at the start again
+  await page.evaluate(() => scrollTo(0, svY(1180))); await page.waitForTimeout(1500); await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); await page.waitForTimeout(1500);
+  res.loop = await page.evaluate(() => ({ y: Math.round(scrollY), start: Math.round(svY(0)) })); if (Math.abs(res.loop.y - res.loop.start) > 4) errs.push('past the end the page did not come back to the start: ' + JSON.stringify(res.loop));
   return JSON.stringify(res); }

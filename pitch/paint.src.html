@@ -10,7 +10,7 @@ __TOKENS__
 html, body { background: var(--look-ground); color: var(--look-text); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 1370vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP (90: the visitors' wall, the pole on the way) + SV_END + 100 */
+.track { height: 1430vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP (90: the visitors' wall, the pole on the way) + SV_END + LOOP (60) + 100 */
 html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall: pulling further must not reload it on a phone */
 .tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a spot on the wall (UP_AT) */
 .hud { position: fixed; inset: 0; pointer-events: none; }
@@ -239,7 +239,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the workshop (storyboard 5; Tom 11-17: you go in like a "brunn", a manhole). A room under the street from HX0 to CX1; a round cover on the
   // pavement by the wall at MX_IN slides aside, a ladder goes down a shaft into it; at MX_OUT a second shaft climbs out. MR: the shaft's radius,
   // MZ: its centre from the wall. DY: the room's ceiling (the ground above is 1.5 m deep), WF: its floor. The street stays at G3 from here on.
-  const SV_END = 1180, SV_MAX = SV_END; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it. No loop (Tom 11-23): the walk ends back at the start wall
+  const SV_END = 1180, LOOP = 60, SV_MAX = SV_END + LOOP; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it. LOOP (Tom 11-23): past the end the camera steps back to the start's view in the same light, and the page is at the start again
   // the walk is a loop (Tom 11-17): after the pour the page parks UP vh down; scrolling up from there turns the camera left to the visitor wall.
   // upPx: the park in pixels, from the track's own height (a phone's vh and innerHeight differ while its address bar moves)
   const UP = 90, track = document.querySelector(".track"), upPx = () => track.offsetHeight * UP / (UP + SV_MAX + 100);
@@ -1453,7 +1453,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const P = msOf("--panel"), T = msOf("--toggle"); let r = src === "pole" ? wtmRect() : null;
     if (r) { await bendTo(.05, 1.7, REDUCED ? 0 : 110); r = wtmRect() || r; BOMB_WTM.visible = false; } // the corner comes away first, then the whole sticker
     else { r = cornerRect(); corner.classList.add("off"); }
-    const b = sheetBox(); sheet.querySelectorAll(".paper").forEach(e => e.style.backgroundImage = sheetPaper()); sheet.querySelector(".cover").style.backgroundImage = "url(assets/stickers/writetome.webp)";
+    const b = sheetBox(); sheet.querySelectorAll(".paper").forEach(e => e.style.backgroundImage = sheetPaper()); sheet.querySelector(".cover").style.backgroundImage = 'url("assets/stickers/writetome.webp")'; // quoted, so the /next build rewrites it like every other picture
     fly.appendChild(mail); sheetLay(b); mail.classList.add("on"); mail.style.opacity = 0; mail.inert = false; sheet.classList.add("on"); dim.classList.add("on");
     flyBot.style.transform = FOLD; sTabs.forEach(t => t.tabIndex = -1);
     dim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: P + T, fill: "forwards" });
@@ -1953,6 +1953,14 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       sent: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).sent || null; } catch (_) { return null; } })(), id: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).id || null; } catch (_) { return null; } })() }),
     held: () => HELD.length, layer: () => storeW && { stretches: storeW.want, up: storeW.done, shown: storeW.meshes.filter(m => m && m.material.map !== wallEmpty).length }, store: () => document.documentElement.dataset.storeTags || null, paintAt: (u, v) => tgc.getImageData(u, v, 1, 1).data[3], size: [TW, TFH, TH], drips: () => tag.strokes.reduce((n, s) => n + s.dr.length, 0), running: () => tag.runs.length };
   let mornAt = 0;
+  // the clock light (Tom 11-23): the start wall and the end are lit by the visitor's own time: day 07-18, night 19-06, a blend in 06-07 and 18-19. ?hour=13.5 forces one
+  const HOUR_Q = new URLSearchParams(location.search).get("hour");
+  function dayNow() { const d = new Date(), h = HOUR_Q !== null && HOUR_Q !== "" && isFinite(+HOUR_Q) ? ((+HOUR_Q % 24) + 24) % 24 : d.getHours() + d.getMinutes() / 60; return sm(cl(h - 6)) * (1 - sm(cl(h - 18))); }
+  function clockLight(k) { if (k <= 0) return; const n = 1 - k, cf = cityFar.material.color.r; // day: the street light, the work light and the stair lights off, the sun and the morning sky on
+    lamp.intensity *= n; pool.intensity *= n; bulbM.emissiveIntensity *= n; work.intensity *= n; lamp2.intensity *= n; stairLight.intensity *= n; manL.intensity *= n;
+    sky.color.lerp(SKYM, k); sky.groundColor.lerp(GNDM, k); sky.intensity += (.75 - sky.intensity) * k; sun.intensity = 2.1 * k; scene.background.lerp(BGM, k); scene.fog.color.lerp(FOGM, k);
+    lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * k); }
+  document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
   function morning(now, sv, cp, look) { // after endCam: the white, the cut, the day light; returns nothing
     const wIn = sm(cl((sv - WHITE_IN) / (CUT - WHITE_IN))), wOut = 1 - sm(cl((sv - CUT) / (WHITE_OUT - CUT))), w = sv < CUT ? wIn : wOut, day = sv >= CUT;
     // the white is the sun's glare (Tom 11-22: no long blank screen): it grows from the sun on the horizon and covers the whole screen only round the cut;
@@ -1961,9 +1969,14 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       white.style.opacity = cl((w - .35) * 2.5); /* not before the camera looks over the wall: the sun is behind it */ white.style.setProperty("--sx", at[0].toFixed(0) + "px"); white.style.setProperty("--sy", at[1].toFixed(0) + "px"); white.style.setProperty("--r", (D * (.1 + 2.6 * w ** 5)).toFixed(0) + "px"); }
     renderer.toneMappingExposure = EXPO * (1 + 5 * w * w);
     if (day) { const k = sm(cl((sv - CUT) / (SV_END - CUT))); const mc = endCams(); cp.lerpVectors(mc[0], mc[1], k); look.copy(mc[2]);
-      lamp.intensity = pool.intensity = bulbM.emissiveIntensity = lamp2.intensity = work.intensity = stairLight.intensity = manL.intensity = dawnL.intensity = 0;
-      sky.color.copy(SKYM); sky.groundColor.copy(GNDM); sky.intensity = .75; sun.intensity = 2.1; scene.background.copy(BGM); scene.fog.color.copy(FOGM); lens.uniforms.uAper.value = .5; }
-    else { sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); }
+      // back at the start wall in the visitor's own light (Tom 11-23): the night is the start's own set-up, the clock blends it to day
+      lamp.intensity = 5.5; pool.intensity = 9; bulbM.emissiveIntensity = 2.2; work.intensity = 4.2 * .3; lamp2.intensity = stairLight.intensity = manL.intensity = dawnL.intensity = 0; skyU.uDawn.value = 0;
+      sky.color.copy(SKY0); sky.groundColor.copy(GND0); sky.intensity = .35; sun.intensity = 0; scene.background.copy(BG0); scene.fog.color.copy(FOG0); lens.uniforms.uAper.value = 1; cityFar.material.color.setScalar(.25);
+      // the loop: scrolled on past the end, the camera steps back to the start's view (the same wall, the same light), then the page is at the start
+      if (sv > SV_END) { const lk = sm(cl((sv - SV_END) / (LOOP - 10))); cp.lerp(CAM.A[0], lk); look.lerp(CAM.A[1], lk); if (sv > SV_END + 5 && !pick.mode) scene.fog.density = .012 + .028 * lk;
+        if (sv >= SV_MAX - 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, svY(0)); }
+      clockLight(dayNow()); }
+    else { sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); clockLight(dayNow() * (1 - sm(cl((sv - 470) / 70)))); } // the street up to the manhole is in the clock's light; under it, the walk's own
     if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
     const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
     endReady = day && sv <= SV_END + 5 && !pick.mode && (endReady || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : .6)); // the end's Leave your tag can, a beat after the morning shows
