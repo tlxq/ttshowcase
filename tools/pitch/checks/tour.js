@@ -1,5 +1,5 @@
 // The whole walk: tap the bucket, then each stop down to the end; a picture at each stop (__SHOTS__pitch-<width>-<stop>.png).
-// Fails on a console or page error, a three.js warning (THREE.…), when the end's Leave your tag can has no 48 px tap area, or Write to me (the sticker on the pole, passed
+// Fails on a console or page error, a three.js warning (THREE.…), when the visitors' wall's Leave your tag has no 48 px tap area, or Write to me (the sticker on the pole, passed
 // on the way up, and the sticker in the screen's corner) doesn't open the flyer with a working form and three 48 px tabs, or a phone turned with the flyer open breaks it.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('THREE.'))) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
@@ -9,15 +9,15 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const go = sv => page.evaluate(sv => scrollTo(0, svY(sv)), sv);
   for (const sv of [128, 432, 540, 590, 615, 700, 770, 840, 910, 960, 995, 1045, 1110, 1180]) { await go(sv); await page.waitForTimeout(sv >= 700 ? 3200 : 1500);
     await page.screenshot({ path: '__SHOTS__pitch-' + W + '-' + sv + '.png' }); }
-  // the end (Tom 11-23): back at the start wall in the morning; the can is Leave your tag. The form lives on the flyer the Write to me sticker opens.
-  for (let i = 0; i < 60 && (await page.evaluate(() => document.documentElement.dataset.endReady)) !== '1'; i++) await page.waitForTimeout(200);
-  res.end = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!res.end) errs.push('the end never became ready (the Leave your tag can)');
+  // Leave your tag (Tom 11-23: no end landing): the words and the can on the visitors' wall. The form lives on the flyer the Write to me sticker opens.
+  await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(2500);
+  for (let i = 0; i < 60 && (await page.evaluate(() => document.getElementById('leaveUp').style.display)) !== 'block'; i++) await page.waitForTimeout(200);
   const box = sel => page.evaluate(sel => { const e = document.querySelector(sel); if (!e) return null; const b = e.getBoundingClientRect(), cs = getComputedStyle(e); return { shown: cs.display !== 'none' && +cs.opacity > .5 && b.width > 0, l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height, label: e.getAttribute('aria-label') }; }, sel);
   const big = (m, what) => { if (!m || !m.shown) errs.push(what + ' has no tap area'); else if (m.w < 47.5 || m.h < 47.5) errs.push('the tap area of ' + what + ' is under 48 px: ' + Math.round(m.w) + ' x ' + Math.round(m.h)); };
-  res.leave = await box('#leave'); big(res.leave, 'Leave your tag (the can)');
-  res.cursor = await page.evaluate(() => getComputedStyle(document.getElementById('leave')).cursor.slice(0, 30)); if (!/data:image\/svg/.test(res.cursor)) errs.push('the can has no spray-can cursor');
+  res.leave = await box('#leaveUp'); big(res.leave, 'Leave your tag (the visitors\' wall)');
+  res.cursor = await page.evaluate(() => getComputedStyle(document.getElementById('leaveUp')).cursor.slice(0, 30)); if (!/data:image\/svg/.test(res.cursor)) errs.push('Leave your tag has no spray-can cursor');
   if (W >= 600) { const r = res.leave; await page.mouse.move((r.l + r.r) / 2, (r.t + r.b) / 2); await page.waitForTimeout(500);
-    res.hover = await page.evaluate(() => { const l = document.querySelector('.hl'); return { text: l.textContent, op: +getComputedStyle(l).opacity }; }); if (res.hover.text !== 'Leave your tag' || res.hover.op < .9) errs.push('hovering the can shows no label: ' + JSON.stringify(res.hover)); await page.mouse.move(2, 2); }
+    res.hover = await page.evaluate(() => { const l = document.querySelector('.hl'); return { text: l.textContent, op: +getComputedStyle(l).opacity }; }); if (res.hover.text !== 'Leave your tag' || res.hover.op < .9) errs.push('hovering Leave your tag shows no label: ' + JSON.stringify(res.hover)); await page.mouse.move(2, 2); }
   // the flyer, open: the form shows and takes typing, the three tabs are links with 48 px areas, nothing overlaps, it fits the screen; Esc folds it back
   const flyer = async (from, shot) => { await page.waitForTimeout(1200); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-' + shot + '.png' });
     const f = await page.evaluate(() => { const m = document.getElementById('mail'), r = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
@@ -45,10 +45,10 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await shut('the corner sticker');
   if (!(await ticked())) errs.push('after Send the corner sticker has no tick');
   // on the way up to the visitors' wall the camera goes round the pole: its Write to me sticker is big enough to tap, and opens the same flyer
-  await page.evaluate(() => scrollTo(0, Math.round(svY(0) * .7))); await page.waitForTimeout(2500); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-pole.png' });
+  await page.evaluate(() => scrollTo(0, Math.round(visitY() + (svY(0) - visitY()) * .7))); await page.waitForTimeout(2500); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-pole.png' });
   res.pole = await box('#bombHot'); big(res.pole, 'Write to me (the sticker on the pole)');
   if (res.pole && res.pole.shown) { await page.click('#bombHot'); await flyer('the pole sticker', 'pole-flyer'); await shut('the pole sticker'); }
-  // the loop (Tom 11-23): scrolled on past the end, the camera steps back to the start's view and the page is at the start again
+  // the loop (Tom 11-23): scrolled on past the end the page is at its top, which shows the start's view; on down: the visitors' wall, the pole, the start
   await page.evaluate(() => scrollTo(0, svY(1180))); await page.waitForTimeout(1500); await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); await page.waitForTimeout(1500);
-  res.loop = await page.evaluate(() => ({ y: Math.round(scrollY), start: Math.round(svY(0)) })); if (Math.abs(res.loop.y - res.loop.start) > 4) errs.push('past the end the page did not come back to the start: ' + JSON.stringify(res.loop));
+  res.loop = await page.evaluate(() => Math.round(scrollY)); if (res.loop > 12) errs.push('past the end the page did not come round to its top: ' + res.loop);
   return JSON.stringify(res); }

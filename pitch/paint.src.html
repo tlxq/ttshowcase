@@ -12,7 +12,6 @@ body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
 .track { height: 1480vh; } /* the way round (TOP, 50: past the visitors' wall back to the end, then the page is at its end) and the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; TOP (50) + UP (90: the visitors' wall, the pole on the way) + SV_END + LOOP (60) + 100 */
 html { overscroll-behavior-y: none; } /* the top of the page is the way round to the end: pulling further must not reload it on a phone */
-.tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a spot on the wall (UP_AT) */
 .hud { position: fixed; inset: 0; pointer-events: none; }
 .hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .hud line { stroke: rgba(239, 233, 220, .55); stroke-width: 1; }
@@ -155,6 +154,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 :root .tag b { display: block; margin-bottom: .3em; font-family: "Inter", system-ui, sans-serif; font-weight: 600; font-size: 1.2em; line-height: 1.25; letter-spacing: -.01em; text-transform: none; color: var(--look-text); text-shadow: none; }
 :root .tag.facts { text-transform: none; }
 /* the sticker bomb's Write to me (pitch 11-23, the motion): tap the sticker and it peels off and unfolds into the flyer. The sticker is the flyer folded once: the folded half has the sticker's shape */
+.prog { position: fixed; left: 0; right: 0; height: var(--look-progress); z-index: 5; pointer-events: none; background: color-mix(in srgb, var(--look-rule) 35%, transparent); overflow: hidden; }
+.prog.top { top: 0; } .prog.bot { bottom: 0; }
+.prog i { position: absolute; top: 0; width: 1px; height: 100%; background: color-mix(in srgb, var(--look-soft) 70%, transparent); }
+.prog b { position: absolute; top: 0; height: 100%; background: var(--front-spray); will-change: transform; }
 .stk { position: fixed; z-index: 6; background: none; border: 0; padding: 0; cursor: pointer; pointer-events: auto; }
 .stk:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
 #bombHot { display: none; }
@@ -186,7 +189,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 
 <canvas id="c"></canvas>
 <div class="track"></div>
-<div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag edge" id="tagUp"><b>Scroll up</b>Visitors' tags</div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map that only friends can see. Degree project, built alone.</div></div>
+<div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map that only friends can see. Degree project, built alone.</div></div>
 <div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div id="admFrames" hidden></div><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="tagMoveB" hidden>Move it</button><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"><i class="hs" id="admSize" hidden aria-hidden="true"></i><i class="ht" id="admTurn" hidden aria-hidden="true"></i></div><div class="menu" id="tagTools" role="group" aria-label="Tool" hidden></div><div class="menu cols" id="tagCols" role="group" aria-label="Colour" hidden></div><div class="bar" id="admSel" hidden><button type="button" class="go" id="admApprove" hidden>Approve</button><button type="button" id="admRemove" hidden>Remove</button><button type="button" id="admUndo" hidden>Undo</button><button type="button" id="admDone">Done</button></div><div class="bar" id="tagBar" hidden><button type="button" id="tagTool" aria-expanded="false" aria-controls="tagTools"><span class="ic"></span><span class="nm"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagCol" aria-expanded="false" aria-controls="tagCols" aria-label="Colour"><span class="dot"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagUndo" aria-label="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="go" id="tagDone" disabled>Done</button></div><div class="bar" id="tagSend" hidden><input id="tagName" maxlength="24" placeholder="Your name (optional)" aria-label="Your name, optional" autocomplete="nickname" enterkeyhint="done" spellcheck="false"><button type="button" id="tagBack">Back</button><button type="button" class="go" id="tagPut">Put it on the wall</button></div></div>
 <div class="adm" id="adm" hidden><span id="admNote">Admin</span><button type="button" id="admOpen">Edit the wall</button></div>
 <div class="white" id="white"></div>
@@ -245,7 +248,19 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // TOP (Tom 11-23, the loop both ways): above the visitors' wall the camera turns back to the end's view, and at the top the page is at its end
   const UP = 90, TOP = 50, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / (TOP + UP + SV_MAX + 100), topPx = () => track.offsetHeight * TOP / (TOP + UP + SV_MAX + 100);
   window.visitY = () => topPx(); // the visitors' wall in pixels; the checks scroll with this
-  let up0 = 0, rndWas = false; // the park at the last frame; the way round was on at the last frame
+  let up0 = 0; // the park at the last frame
+  // The progress line (Tom 11-23): the only thing that says where on the site you are. The bottom line is the walk (start → EDGE, left to right),
+  // the top line the way round (right to left: the visitors' wall, the pole), so the marker runs round the screen and never jumps back.
+  const prog = ["top", "bot"].map(k => { const e = document.createElement("div"); e.className = "prog " + k; e.setAttribute("aria-hidden", "true"); e.append(document.createElement("b")); document.body.append(e); return e; });
+  const PROG_MARKS = [128, 432, 700, 770, 840, 910, 1045], DASH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--look-progress-dash")) || 48; let progW = 0;
+  function progPlace() { const max = document.documentElement.scrollHeight - innerHeight, park = upPx(), W = innerWidth; if (max <= park) return;
+    if (progW !== W) { progW = W; prog.forEach(e => e.querySelectorAll("i").forEach(i => i.remove())); // the walls: short marks where each one stands
+      for (const sv of PROG_MARKS) { const i = document.createElement("i"); i.style.left = (((svY(sv) - park) / (max - park)) * W).toFixed(1) + "px"; prog[1].append(i); }
+      const i = document.createElement("i"); i.style.left = ((1 - visitY() / park) * W).toFixed(1) + "px"; prog[0].append(i); }
+    const y = cl(scrollY, 0, max), s = y >= park ? ((y - park) / (max - park)) * W : W + (y / park) * W; // s: along the loop, 0..2W: the bottom (the walk), then the top (the page's top on the right, down to the start on the left)
+    for (const [e, a, b] of [[prog[1], 0, W], [prog[0], W, 2 * W]]) { let lo = 0, hi = 0, m = e.firstChild; // each line shows its part of the dash; round a corner it is on both
+      for (const o of [-2 * W, 0, 2 * W]) { const l = Math.max(a, s + o - DASH / 2), h = Math.min(b, s + o + DASH / 2); if (h > l) { lo = l; hi = h; } }
+      const x = e === prog[1] ? lo : 2 * W - hi; m.style.width = (hi - lo).toFixed(1) + "px"; m.style.transform = `translateX(${x.toFixed(1)}px)`; } }
   window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * sv / SV_MAX; // the checks scroll with this
   const HX0 = 35, CX1 = 66, MX_IN = 36.8, MX_OUT = 64, MZ = 1.1, MR = .42, RZ = 9, DY = G3 - 1.5, WF = G3 - 4.5, END_X = 104;
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
@@ -1551,7 +1566,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     g.font = '700 118px "Clash Display", sans-serif'; g.textBaseline = "middle"; g.fillStyle = PAINT_HEX; g.translate(18, 104); g.rotate(-.02);
     g.shadowColor = PAINT_HEX; g.shadowBlur = 16; g.globalAlpha = .4; g.fillText("Leave your tag", 0, 0); g.shadowBlur = 0; g.globalAlpha = .95; g.fillText("Leave your tag", 0, 0); // a soft overspray under a firm core, like the flyer wall's
     vTex.needsUpdate = true; vFile = vCan.toDataURL(); });
-  const leaveUp = document.createElement("button"); Object.assign(leaveUp, { type: "button", className: "hot", tabIndex: -1 }); leaveUp.setAttribute("aria-label", "Leave your tag"); leaveUp.style.display = "none";
+  const leaveUp = document.createElement("button"); Object.assign(leaveUp, { type: "button", className: "hot", id: "leaveUp", tabIndex: -1 }); leaveUp.setAttribute("aria-label", "Leave your tag"); leaveUp.style.display = "none";
   document.querySelector(".hud").append(leaveUp); leaveUp.addEventListener("click", e => { e.preventDefault(); pickNear = [-12, 3.6]; document.getElementById("leave").click(); });
   hotOn(leaveUp, "Leave your tag", makeGlow(() => vFile, VB, [0, 0, 1024, 200], { colour: "#ffffff", hole: 1, fill: 0 })); // a light glow round the blue words, none over them: they stay sharp
   const ECAN = V(PW / 2 - .3, GROUND, .8), eCan3 = can.clone(); eCan3.position.copy(ECAN); eCan3.rotation.y = .5; eCan3.visible = false; scene.add(eCan3); // the end's Leave your tag: a can at the foot of the mural's right end, between it and the flyer, where a hand would reach (a phone sees it beside its narrower mural)
@@ -1642,7 +1657,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   addEventListener("keydown", e => { if (e.key === "Escape" && pick.mode > 0) pickBack(); });
   function pickCam(now, dt, cp, look) { // after the morning set the form's view: from there to the wide shot, or in close to the spot, or back
     skyMesh.visible = !pick.mode; // the dawn sky ends above the opening: the wide shot would show its edge, and by day the plain sky is right
-    if (!pick.mode) { pick.last[0].copy(cp); pick.last[1].copy(look); if (pick.refocus && endReady) { const t = leaveB; if (!t.hidden && t.style.display === "block") { pick.refocus = false; t.focus({ preventScroll: true }); } } return; } // the painted marks show a frame after the form (endPlace) // after Cancel the keyboard is back where it left
+    if (!pick.mode) { pick.last[0].copy(cp); pick.last[1].copy(look); if (pick.refocus) { const t = leaveB.style.display === "block" ? leaveB : leaveUp; if (!t.hidden && t.style.display === "block") { pick.refocus = false; t.focus({ preventScroll: true }); } } return; } // the painted marks show a frame after the form (endPlace) // after Cancel the keyboard is back where it left
     const tk = REDUCED ? 1 : sm(cl((now - pick.t0) / 1000 / pick.dur));
     { const f = Math.min(1, (REDUCED ? 60 : 3) * dt); pick.cx += (pick.x - pick.cx) * f; pick.cy += (pick.y - pick.cy) * f; } // the camera follows the spot
     let P, L; if (pick.mode === 1) { const oy = (AREA.y0 + AREA.y1) / 2; P = V(pick.ox, oy, ovD()); L = V(pick.ox, oy, 0); } else if (pick.mode === 2) { P = V(pick.cx, pick.cy, closeD()); L = V(pick.cx, pick.cy, 0); } else { P = cp.clone(); L = look.clone(); }
@@ -1661,7 +1676,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   window.plateTest = { // for the plates check: the pictures and the mural on the screen now, and every plate that shows
     pictures: () => PROT.filter(([name]) => paint.visible || !/^the mural/.test(name)).map(([name, a, b, only]) => { const [x0, y0, o0] = proj(a), [x1, y1, o1] = proj(b); return o0 && o1 ? { name, only, l: Math.min(x0, x1), t: Math.min(y0, y1), r: Math.max(x0, x1), b: Math.max(y0, y1) } : null; }).filter(Boolean) };
   window.pickTest = { // for the pickspot check: where things are on the screen now
-    clearOnScreen: () => { const c = CLEAR[0], [px, py] = proj(V(c[0] + .4, c[3] - .2, 0)); return { x: px, y: py }; }, // the title's top left corner
+    clearOnScreen: () => { for (const c of CLEAR) for (let y = c[3] - .2; y > c[1]; y -= .3) for (let x = c[0] + .4; x < c[2]; x += .3) { if (HELD.some(h => x > h[0] && x < h[2] && y > h[1] && y < h[3])) continue; // a kept-clear point on screen that no waiting tag covers
+      const [px, py] = proj(V(x, y, 0)); if (px > 40 && px < innerWidth - 40 && py > 100 && py < innerHeight - 100) return { x: px, y: py }; } return null; },
     freeOnScreen: () => { for (let y = AREA.y1 - 1; y > AREA.y0 + 1; y -= .4) for (let x = AREA.x0 + 1; x < AREA.x1 - 1; x += .4) { if (kept(...inArea(x, y)) || Math.hypot(x - pick.x, y - pick.y) < 1) continue; /* a tap puts the frame at inArea's place */ const [px, py] = proj(V(x, y, 0)); if (px > 80 && px < innerWidth - 80 && py > 140 && py < innerHeight - 140) return { x: px, y: py }; } return null; },
     restored: () => scene.fog.density === (endS.show ? .012 : .04) && skyMesh.visible && root.style.touchAction === "",
     heldOnScreen: () => { const h = HELD[0]; if (!h) return null; const [px, py] = proj(V((h[0] + h[2]) / 2, (h[1] + h[3]) / 2, 0)); return { x: px, y: py }; },
@@ -1972,20 +1988,20 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     { const D = Math.hypot(innerWidth, innerHeight), [sx, sy, front] = sv < CUT ? proj(SUN_AT) : [innerWidth * 1.05, innerHeight * .2, true], at = front ? [sx, sy] : [innerWidth / 2, innerHeight / 2];
       white.style.opacity = cl((w - .35) * 2.5); /* not before the camera looks over the wall: the sun is behind it */ white.style.setProperty("--sx", at[0].toFixed(0) + "px"); white.style.setProperty("--sy", at[1].toFixed(0) + "px"); white.style.setProperty("--r", (D * (.1 + 2.6 * w ** 5)).toFixed(0) + "px"); }
     renderer.toneMappingExposure = EXPO * (1 + 5 * w * w);
-    if (day) { const k = sm(cl((sv - CUT) / (SV_END - CUT))); const mc = endCams(); cp.lerpVectors(mc[0], mc[1], k); look.copy(mc[2]);
+    // no landing (Tom 11-23: the overview stopped the flow): out of the glare the camera walks in to the start's own view and reaches it where the page
+    // jumps back to the start, the same picture both sides, so the jump never shows
+    if (day) { const k = sm(cl((sv - CUT) / (SV_MAX - 6 - CUT))); cp.lerpVectors(CAM.A[0].clone().add(V(0, .4, 4)), CAM.A[0], k); look.copy(CAM.A[1]); if (!pick.mode) scene.fog.density = .04;
       // back at the start wall in the visitor's own light (Tom 11-23): the night is the start's own set-up, the clock blends it to day
       lamp.intensity = 5.5; pool.intensity = 9; bulbM.emissiveIntensity = 2.2; work.intensity = 4.2 * .3; lamp2.intensity = stairLight.intensity = manL.intensity = dawnL.intensity = 0; skyU.uDawn.value = 0;
       sky.color.copy(SKY0); sky.groundColor.copy(GND0); sky.intensity = .35; sun.intensity = 0; scene.background.copy(BG0); scene.fog.color.copy(FOG0); lens.uniforms.uAper.value = 1; cityFar.material.color.setScalar(.25);
-      // the loop: scrolled on past the end, the camera steps back to the start's view (the same wall, the same light), then the page is at the start
-      if (sv > SV_END) { const lk = sm(cl((sv - SV_END) / (LOOP - 10))); cp.lerp(CAM.A[0], lk); look.lerp(CAM.A[1], lk); if (sv > SV_END + 5 && !pick.mode) scene.fog.density = .012 + .028 * lk;
-        if (sv >= SV_MAX - 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, svY(0)); }
+      if (sv >= SV_MAX - 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, 8); // the loop: the page's top shows the same view, then the visitors' wall, the pole, the start
       clockLight(dayNow()); }
     else { sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); clockLight(dayNow() * (1 - sm(cl((sv - 470) / 70)))); } // the street up to the manhole is in the clock's light; under it, the walk's own
     if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
     const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
-    endReady = day && sv <= SV_END + 5 && !pick.mode && (endReady || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : .6)); // the end's Leave your tag can, a beat after the morning shows
+    endReady = false; // no end landing any more (Tom 11-23): Leave your tag lives on the visitors' wall
     if (document.documentElement.dataset.endReady !== (endReady ? "1" : "0")) document.documentElement.dataset.endReady = endReady ? "1" : "0"; // the checks wait for it
-    endWallState(now, day && sv <= SV_END + 5); }
+    endWallState(now, false); }
   // the camera's way: over the cover, straight down the shaft, back into the room and a stop in front of each tool, under the far shaft,
   // straight up it, out to EDGE, on towards the sunrise (then morning() cuts to the opening wall). In a shaft it stays on its centre line, so it never touches the concrete.
   const stop = (x, y, z, ly) => [V(x + .1, y, z), V(x, ly, 0)];
@@ -2019,7 +2035,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     ? { A: [V(.4, 1.6, 18), V(0, 1.5, 0)], /* a third wider (Tom 11-23): tags above and round the mural are in the first picture */ B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX + .3, EY + .6, 21.5), V(EX + .3, EY + .4, 0)], D: [V(EX + 3.2, EY + .5, 16), V(EX + 3.2, EY + .3, 0)], E: [V(RX - 2.2, -.4 - 2 * DROP, 17), V(RX - 2.2, -.6 - 2 * DROP, 0)], F: [V(RX - 2.2, -.5 - 2 * DROP, 17.5), V(RX - 2.2, -.7 - 2 * DROP, -1)] } // phone: the raddavarfruberga painting (centre x RX - 2.2, 6.4 m wide) centred across the whole width, uncut
     : { A: [V(1.3, 1.4, 14.6), V(.1, 1.3, 0)], /* a third wider (Tom 11-23): the wall round the mural, where the visitors' tags go, is in the first picture */ B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
   // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street, low enough for the can at its foot; phone: closer, the middle of it
-  const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)], tagUp = document.getElementById("tagUp"), UP_AT = V(-6, .2, 0);
+  const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)];
   let stencilAt = 0;
   let mx = 0, my = 0; addEventListener("pointermove", e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; });
   // render size follows the machine: weak graphics (T14s, Intel UHD: 46-57 ms a frame at full size, 12 ms at half, 11-16) draw fewer pixels
@@ -2093,10 +2109,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
     endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp); morning(now, sv, cp, cl_);
     if (lft > 0) { cp.lerp(VISIT[0], goL); cl_.lerp(VISIT[1], lookL); }
-    // the way round (rnd): on up past the visitors' wall the camera turns back right to the end's view, the end's light and haze with it;
-    // at the top the page jumps to its end, where the camera already is, and scrolling on up walks the street backwards
-    if (rnd > 0 || rndWas) { const k = sm(rnd), ec = endCams(); cp.lerp(ec[1], k); cl_.lerp(ec[2], k); if (!pick.mode) scene.fog.density = .04 - .028 * k; rndWas = rnd > 0; // back down past it in one flick: the haze is the street's again
-      if (scrollY <= 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, svY(SV_END)); }
+    // the way round (rnd): on up past the visitors' wall the camera turns back right to the start's view; at the top the page jumps to its end,
+    // which shows that same view, and scrolling on up walks the street backwards
+    if (rnd > 0) { const k = sm(rnd); cp.lerp(CAM.A[0], k); cl_.lerp(CAM.A[1], k);
+      if (scrollY <= 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, svY(SV_MAX - 8)); } // the page's end shows the start's view too
     // past the pole (Tom 11-23: look closer at the stickers as we pass by): on the way up to the visitors' wall the camera steps in to the pole and
     // walks round it at arm's length, right to left, so each sticker comes past; the page's longer park (UP) gives the pass its own stretch of scroll
     const poleK = lft > 0 ? sm(cl((lft - .06) / .16)) * (1 - sm(cl((lft - .58) / .16))) : 0;
@@ -2108,7 +2124,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     lamp.position.set(-8.5 + 2.5 * lampL, 4.2 + .6 * lampL, 1.6 + .8 * lampL); lamp.target.position.set(.5 - 12.5 * lampL, .2 + 1.4 * lampL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = (1 - inShaft(cp)) * (1 - pick.k) * (1 - poleK); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(rnd > .1 ? 0 : lft); endPlace(now); bombPlace();
+    progPlace(); camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(rnd > .1 ? 0 : lft); endPlace(now); bombPlace();
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);
@@ -2116,8 +2132,6 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     shadow.material.opacity = .62 * cl(LL.intensity / 5) * cl(1.6 - can.position.z * .4);
     // labels
     const showCan = t > -600 && !done && !stencilOn, showHand = !!muralPin && uTnow > pourDone && pan < .3 && lft < .1;
-    tagUp.style.opacity = introOver && lft < .1 && sv < 15 ? 1 : 0; // parked at the opening: something is up there
-    if (introOver && sv < 15) tagUp.style.top = (NARROW ? tagUp.offsetHeight / 2 + 24 : cl(proj(UP_AT)[1], 60, innerHeight - 60)) + "px"; // beside the line, low on the wall; a phone stacks the line down the whole wall, so the label sits at the top, the way it points (S23 11-22: low, it covered "myself.")
     tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
     // the label and the links on the painted marks, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;

@@ -16,7 +16,6 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const bad = new Set();
   for (const sv of [100, 128, 200, 300, 432, 500, 540, 600, 700, 770, 840, 910, 1045, 1180]) {
     await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(sv === 128 || sv === 432 ? 9000 : 4000);
-    if (sv === 1180) { let on = false; for (let i = 0; i < 80 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(100); } if (!on) errs.push('the morning never became ready, so it was not checked'); }
     for (let k = 0; k < 3; k++) { const r = await look('stop ' + sv); res.plates += r.plates; res.pictures += r.pictures; r.bad.forEach(b => bad.add(b)); await page.waitForTimeout(700); }
     res.stops++; }
   errs.push(...bad);

@@ -1,9 +1,9 @@
 // Room to tag (Tom 11-23): every spot the tag tool offers keeps clear of the wall's own parts (the mural, the flyer,
 // the visitors' words and their can) in BOTH layouts and at BOTH times of day. A tag is saved in metres and shown to
 // everyone, so a spot that is free on a phone but under the laptop's wider mural, or free at night but where the
-// morning's flyer hangs, is a broken spot. Also: at least 20 frame spots stay free everywhere.
-// In view (Tom 11-23, the loop): how many free spots the start view, the visitors' wall (scrolled up past the pole) and the end view
-// show whole, per layout (measured, reported).
+// end's parts stand, is a broken spot. Also: at least 20 frame spots stay free everywhere.
+// In view (Tom 11-23, the loop): how many free spots the start view and the visitors' wall (scrolled up past the pole) show whole,
+// per layout (measured, reported). The end walks in to the start's own view, so it has none of its own.
 // Exact maths on the page's own numbers (pickTest.space, pickTest.onScreen), the same each run; draws a wall map: pitch-space.png.
 async page => { const errs = [], res = { errs };
   page.on('pageerror', e => errs.push(String(e)));
@@ -21,11 +21,7 @@ async page => { const errs = [], res = { errs };
     await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(1000); await look(layout + ' visitors'); // up round the pole, at the visitors' wall
     await page.evaluate(() => scrollTo(0, svY(0))); await page.waitForTimeout(1500);
     for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
-    let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(200); }
-    if (!on) errs.push(layout + ': the morning form never showed');
-    reads.push({ layout, when: 'morning', ...(await page.evaluate(() => window.pickTest.space())) });
-    await look(layout + ' end');
-    if (layout === 'laptop') await look('laptop end, landing', true);
+    reads.push({ layout, when: 'end', ...(await page.evaluate(() => window.pickTest.space())) }); // the end walks in to the start's own view (Tom 11-23: no landing): no view of its own to count
   }
   // every part, from both layouts and both times, with its calm zone
   const parts = [];
@@ -50,9 +46,9 @@ async page => { const errs = [], res = { errs };
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${(A.x1 - A.x0 + 2) * k}" height="${(A.y1 - A.y0 + 2) * k}" style="background:#111;font:16px sans-serif">
     <rect x="${X(A.x0)}" y="${Y(A.y1)}" width="${(A.x1 - A.x0) * k}" height="${(A.y1 - A.y0) * k}" fill="#333"/>
     ${dots.map(i => `<circle cx="${X(G[i][0])}" cy="${Y(G[i][1])}" r="${seen(i) ? 6 : 3}" fill="${seen(i) ? '#7f7' : '#575'}"/>`).join('')}
-    ${reads.filter(r => r.when === 'morning').map(r => Object.values(r.things).map(b => rect(b, r.layout === 'laptop' ? '#4af' : '#f93')).join('')).join('')}
+    ${reads.filter(r => r.when === 'end').map(r => Object.values(r.things).map(b => rect(b, r.layout === 'laptop' ? '#4af' : '#f93')).join('')).join('')}
     ${reads.flatMap(r => r.clear.map(b => rect(b, '#fff', true))).join('')}
-    <text x="10" y="22" fill="#fff">room ${res.room} tags, ${res.inView['any view']} in a start, visitors' or end view · blue laptop parts · orange phone · dashed white kept clear · big green = free and in view</text></svg>`;
+    <text x="10" y="22" fill="#fff">room ${res.room} tags, ${res.inView['any view']} in the start or the visitors' view · blue laptop parts · orange phone · dashed white kept clear · big green = free and in view</text></svg>`;
   await page.setViewportSize({ width: Math.ceil((A.x1 - A.x0 + 2) * k), height: Math.ceil((A.y1 - A.y0 + 2) * k) });
   await page.goto('about:blank'); await page.setContent(`<body style="margin:0;background:#111">${svg}</body>`); await page.screenshot({ path: '__SHOTS__pitch-space.png' });
   return JSON.stringify(res); }
