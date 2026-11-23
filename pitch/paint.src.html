@@ -10,7 +10,7 @@ __TOKENS__
 html, body { background: var(--look-ground); color: var(--look-text); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 1320vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP + SV_END + 100 */
+.track { height: 1420vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall, then the dusk back to the start (LOOP); UP + SV_END + LOOP + 100 */
 html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall: pulling further must not reload it on a phone */
 .tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a spot on the wall (UP_AT) */
 .hud { position: fixed; inset: 0; pointer-events: none; }
@@ -214,12 +214,13 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the workshop (storyboard 5; Tom 11-17: you go in like a "brunn", a manhole). A room under the street from HX0 to CX1; a round cover on the
   // pavement by the wall at MX_IN slides aside, a ladder goes down a shaft into it; at MX_OUT a second shaft climbs out. MR: the shaft's radius,
   // MZ: its centre from the wall. DY: the room's ceiling (the ground above is 1.5 m deep), WF: its floor. The street stays at G3 from here on.
-  const SV_END = 1180; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it
+  const SV_END = 1180, LOOP = 100, SV_MAX = SV_END + LOOP; document.documentElement.dataset.svEnd = SV_END; // LOOP (Tom 11-23, the site loops): one more screen past the end turns the morning into night on the same wall, then the page is at the start
+  // the scroll at the page's end, in vh; the checks read it
   // the walk is a loop (Tom 11-17): after the pour the page parks UP vh down; scrolling up from there turns the camera left to the visitor wall.
   // upPx: the park in pixels, from the track's own height (a phone's vh and innerHeight differ while its address bar moves)
-  const UP = 40, track = document.querySelector(".track"), upPx = () => track.offsetHeight * UP / (UP + SV_END + 100);
+  const UP = 40, track = document.querySelector(".track"), upPx = () => track.offsetHeight * UP / (UP + SV_MAX + 100);
   let up0 = 0; // the park at the last frame
-  window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * sv / SV_END; // the checks scroll with this
+  window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * sv / SV_MAX; // the checks scroll with this
   const HX0 = 35, CX1 = 66, MX_IN = 36.8, MX_OUT = 64, MZ = 1.1, MR = .42, RZ = 9, DY = G3 - 1.5, WF = G3 - 4.5, END_X = 104;
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
   const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + 2 * TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
@@ -320,7 +321,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   ground.receiveShadow = true; scene.add(ground);
 
   // one warm street light grazing the wall from the left, so every pit in the concrete shows; a cold sky fill
-  const lamp = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp.position.set(-8.5, 4.2, 1.6); lamp.target.position.set(.5, .2, 0);
+  const lamp = new THREE.SpotLight(0xfff3e6, 0, 30, .8, .85, 1.3); /* .8 rad, soft (Tom 11-23): the wall round the mural is dimly lit too, where the visitors' tags are; the mural stays the brightest */ lamp.position.set(-8.5, 4.2, 1.6); lamp.target.position.set(.5, .2, 0);
   scene.add(lamp, lamp.target);
   const sky = new THREE.HemisphereLight(0x4f6699, 0x0a0a0c, .35); scene.add(sky);
   const bounce = new THREE.PointLight(0xffffff, 0, 4, 2); scene.add(bounce); // coloured with the paint below, once it is read
@@ -1330,7 +1331,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     mailErr.textContent = "Couldn't send your message. " + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
   // the end wall (Tom 11-19, try 67): one painting on the graphics card (CREDITS.txt), the bare concrete keyed out so the wall
   // shows through; the can is the Leave your tag button, the form sits in the painted frame, the two sprayed stencils (GitHub's and LinkedIn's own marks, drawn from their vector shapes) are the links to GitHub and
-  // LinkedIn, the arrow on the ground is Back to the start. Picture pixels: 1536 x 960; foot: the row
+  // LinkedIn. Picture pixels: 1536 x 960; foot: the row
   // where the wall meets the ground (what is below it lies flat on the street); form: the dark panel's inside.
   const FORM_W = 500, FORM_H = 276, FLYER_TILT = -.012; // the form laid out once at this size, then scaled to the flyer; the flyer's tilt
   const E = { foot: 795, flyer: [816, 130, 1384, 772], form: [846, 330, 1354, 610], tabs: [[822, 650, 1004, 766], [1007, 650, 1193, 766], [1196, 650, 1378, 766]], bbox: [800, 120, 1400, 790] }; E.signs = E.tabs; // a flyer pasted on the concrete (Tom 11-22): WRITE TO ME printed, the form on the paper, tear-off tabs (email, GitHub, LinkedIn)
@@ -1340,7 +1341,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const endMat = extra => new THREE.MeshStandardMaterial(Object.assign({ transparent: true, depthWrite: false, roughness: .55, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }, extra));
   const eHW = E.foot / 960, eHF = 1 - eHW,  eWallH = E.foot * EK, eFD = (960 - E.foot) * EK * EFLOOR;
   // the end wall is painted here, on a canvas, in the front's words and colours (Tom 11-22, walk step 3): WRITE TO ME with the front's blue
-  // swipe under WRITE, the address, GitHub and LinkedIn, Leave your tag, the form's dark panel, and Back to the start on the ground.
+  // swipe under WRITE, the address, GitHub and LinkedIn, Leave your tag, and the form's panel (Tom 11-23: only the flyer is left).
   // Dark paint on the day-lit concrete (the front's dark words on cream); words, not logos (Tom 11-22).
   const eCan = Object.assign(document.createElement("canvas"), { width: 1536, height: 960 }); let eFile = "";
   const eTex = () => { const t = new THREE.CanvasTexture(eCan); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
@@ -1394,7 +1395,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   window.endDbg2 = () => { const out = []; scene.traverse(o => { if (o.isMesh && o.visible) { o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld); if (b.max.y - b.min.y > 3 && b.min.x > -9 && b.max.x < 3) out.push([o.geometry.type, b.min.toArray().map(v => +v.toFixed(1)), b.max.toArray().map(v => +v.toFixed(1))]); } }); return out; };
   window.endDbg = () => ({ fl: [eFloor.visible, eFloor.material.opacity, eFloor.position.toArray(), eFD], map: eMapF.repeat.toArray(), off: eMapF.offset.toArray() });
   const endS = { day: false, show: false }; let eOp = 0, eLast = 0, eFog = false;
-  // the phone sees a third of the painting at a time: the left side (title, can, logos, arrow) or the form; a swipe or the button moves between them
+  // the phone sees one side at a time: the mural and the can, or the flyer; a swipe or the button moves between them
   let ePan = 1, ePanT = 1, eDrag = null, eSlid = false; // a phone lands on the whole flyer (Tom 11-22): WRITE TO ME, the form and the tabs first
   const DAY_CX = (-MURALS.wide.w / 2 + eU(E.flyer[2])) / 2; // the morning's laptop view: from the mural's left edge to the flyer's right one
   // a laptop lands wide (the mural, the can, the flyer: the morning after), then slides in to the flyer once the form shows, so the form reads at
@@ -1403,7 +1404,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const endWide = () => [V(DAY_CX + .15, 2, 21.8), V(DAY_CX + .15, 1.9, 20.5), V(DAY_CX + .15, 1.3, 0)]; // the landing, a third wider (Tom 11-23): the tags round the mural and the flyer are in view
   function endCams() { if (!narrowNow()) { const w = endWide();
       return [w[0].lerp(DAY_CLOSE[0], ePan), w[1].lerp(DAY_CLOSE[0], ePan), w[2].lerp(DAY_CLOSE[1], ePan)]; }
-    const x = (eU(E.flyer[0]) + eU(E.flyer[2])) / 2 * ePan, z = 18.5 - 5.2 * ePan, y = .2 + .1 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
+    const x = (eU(E.flyer[0]) + eU(E.flyer[2])) / 2 * ePan, z = 24 - 10.7 * ePan, y = 1.2 - .9 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
   function endWallState(now, show) { const dt = Math.min(.1, (now - eLast) / 1000); eLast = now;
     eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) { m.visible = eOp > .01; m.material.opacity = eOp; } tornPlace(now, eOp);
     if (show && !pick.mode) { scene.fog.density = .012; eFog = true; } else if (!show && eFog && !pick.mode) { scene.fog.density = .04; eFog = false; } // the painting is 16 m away: the haze of the opening would wash it out
@@ -1882,13 +1883,21 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     renderer.toneMappingExposure = EXPO * (1 + 5 * w * w);
     if (day) { const k = sm(cl((sv - CUT) / (SV_END - CUT))); const mc = endCams(); cp.lerpVectors(mc[0], mc[1], k); look.copy(mc[2]);
       lamp.intensity = pool.intensity = bulbM.emissiveIntensity = lamp2.intensity = work.intensity = stairLight.intensity = manL.intensity = dawnL.intensity = 0;
-      sky.color.copy(SKYM); sky.groundColor.copy(GNDM); sky.intensity = .75; sun.intensity = 2.1; scene.background.copy(BGM); scene.fog.color.copy(FOGM); lens.uniforms.uAper.value = .5; }
+      sky.color.copy(SKYM); sky.groundColor.copy(GNDM); sky.intensity = .75; sun.intensity = 2.1; scene.background.copy(BGM); scene.fog.color.copy(FOGM); lens.uniforms.uAper.value = .5;
+      // the loop (Tom 11-23): scrolled on past the end, the sun goes down on the same wall, the street light flickers on and the camera steps
+      // back to the start's view; at the end of it the page jumps to the start (svY(0)), which shows the same picture. Scrolled back up, it is morning again.
+      if (sv > SV_END + 5) { const dk = cl((sv - SV_END - 5) / (LOOP - 15)), sunK = sm(cl(dk / .7)), lampK = sm(cl((dk - .35) / .4)), flick = lampK > 0 && lampK < .6 && Math.random() < .3 ? .2 : 1, camK = sm(cl((dk - .15) / .85));
+        sun.intensity = 2.1 * (1 - sunK); sky.color.lerp(SKY0, sunK); sky.groundColor.lerp(GND0, sunK); sky.intensity = .75 + (.35 - .75) * sunK; scene.background.lerp(BG0, sunK); scene.fog.color.lerp(FOG0, sunK);
+        skyU.uDawn.value = 0; dawnL.intensity = 0; cityFar.material.color.setScalar(1 - .75 * sunK); lens.uniforms.uAper.value = .5 + (1 - .5) * sunK;
+        lamp.intensity = 5.5 * lampK * flick; pool.intensity = 9 * lampK * flick; bulbM.emissiveIntensity = 2.2 * lampK * flick; work.intensity = 4.2 * .3 * lampK;
+        cp.lerp(CAM.A[0], camK); look.lerp(CAM.A[1], camK);
+        if (dk >= 1 && introOver) scrollTo(0, svY(0)); } }
     else { sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); }
     if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
     const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
-    const on = day && !pick.mode && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
+    const on = day && sv <= SV_END + 5 && !pick.mode && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
     if (on !== mail.classList.contains("on")) { mail.classList.toggle("on", on); mail.inert = !on; }
-    endWallState(now, day); }
+    endWallState(now, day && sv <= SV_END + 5); }
   // the camera's way: over the cover, straight down the shaft, back into the room and a stop in front of each tool, under the far shaft,
   // straight up it, out to EDGE, on towards the sunrise (then morning() cuts to the opening wall). In a shaft it stays on its centre line, so it never touches the concrete.
   const stop = (x, y, z, ly) => [V(x + .1, y, z), V(x, ly, 0)];
@@ -1919,7 +1928,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");
   const lerpV = (a, b, t) => a.clone().lerp(b, t);
   const CAM = NARROW
-    ? { A: [V(.4, .9, 13.5), V(0, .9, 0)], B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX + .3, EY + .6, 21.5), V(EX + .3, EY + .4, 0)], D: [V(EX + 3.2, EY + .5, 16), V(EX + 3.2, EY + .3, 0)], E: [V(RX - 2.2, -.4 - 2 * DROP, 17), V(RX - 2.2, -.6 - 2 * DROP, 0)], F: [V(RX - 2.2, -.5 - 2 * DROP, 17.5), V(RX - 2.2, -.7 - 2 * DROP, -1)] } // phone: the raddavarfruberga painting (centre x RX - 2.2, 6.4 m wide) centred across the whole width, uncut
+    ? { A: [V(.4, 1.6, 18), V(0, 1.5, 0)], /* a third wider (Tom 11-23): tags above and round the mural are in the first picture */ B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX + .3, EY + .6, 21.5), V(EX + .3, EY + .4, 0)], D: [V(EX + 3.2, EY + .5, 16), V(EX + 3.2, EY + .3, 0)], E: [V(RX - 2.2, -.4 - 2 * DROP, 17), V(RX - 2.2, -.6 - 2 * DROP, 0)], F: [V(RX - 2.2, -.5 - 2 * DROP, 17.5), V(RX - 2.2, -.7 - 2 * DROP, -1)] } // phone: the raddavarfruberga painting (centre x RX - 2.2, 6.4 m wide) centred across the whole width, uncut
     : { A: [V(1.3, 1.4, 14.6), V(.1, 1.3, 0)], /* a third wider (Tom 11-23): the wall round the mural, where the visitors' tags go, is in the first picture */ B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
   // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street, low enough for the can at its foot; phone: closer, the middle of it
   const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)], tagUp = document.getElementById("tagUp"), UP_AT = V(-6, .2, 0);
@@ -1933,16 +1942,19 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     let next = pr; if (med > 21 && pr > PR_MIN) { prCap = Math.min(prCap, pr * .92); next = Math.max(PR_MIN, pr * (med > 40 ? .6 : .8)); prFast = 0; } // keeping up with the screen (60 Hz frames can't measure under 16.7 ms): try a little sharper after 2 s
     else if (med < 18.5) { prCap = Math.min(PR_MAX, prCap * 1.02); if (pr < prCap && (prCap >= PR_MAX || prCap - pr > PR_MAX * .25) && ++prFast >= 6) { next = prCap; prFast = 0; } } else prFast = 0; // the ceiling comes back slowly; the size climbs in one step to it (each change costs a frame on a phone)
     if (next !== pr) { pr = next; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); fit(); } }
+  let svKeep = -1, svKeepH = 0; // the walk's place, kept across resizes
   const START = 1600, t0 = performance.now(); let last = t0, si = 0, cmx = 0, cmy = 0;
   if (!WL.want) document.documentElement.dataset.wallAt = 1; // no tags on the wall: nothing to wait for (the checks read 0 as never)
   const PARK = V(EX - EW / 2 - 1, G2, 1.9), canPos = PARK.clone(), canAim = V(); let canOn = 0;
   renderer.setAnimationLoop(now => {
     const raw = now - last, dt = Math.min(.05, raw / 1000); last = now; const t = now - t0 - START;
     autoRes(raw);
+    if (introOver && svKeep >= 0 && svKeepH !== document.documentElement.scrollHeight) { scrollTo(0, svY(svKeep)); svKeepH = document.documentElement.scrollHeight; } // a resize or a turned phone: the walk stays where it was (the page goes on past the end now, so a pixel scroll would land in the dusk)
     if (introOver && up0 && upPx() !== up0 && Math.abs(scrollY - up0) < 2) scrollTo(0, upPx()); // a resize or a turned phone while parked: stay parked, not half turned
-    const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? cl((scrollY - up) / H2) * SV_END : 0,
+    const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? cl((scrollY - up) / H2) * SV_MAX : 0,
       lft = introOver && up > 0 ? cl(1 - scrollY / up) : 0, lookL = sm(cl(lft / .6)), goL = sm(cl((lft - .25) / .75)), // up the page: the head turns first, then the camera walks left
       pAll = cl(sv / 540), p = cl(sv / 320); // sv: the scroll in vh below the park (the page is UP + SV_END + 100 vh); the first three scenes keep the scroll they had
+    if (introOver && svKeepH === document.documentElement.scrollHeight) svKeep = sv; else if (svKeep < 0) { svKeep = sv; svKeepH = document.documentElement.scrollHeight; }
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
     // scroll moves the camera only: step back (0-.12), walk right to the second wall (.18-.38), step back to look (.75-.95).
     const back = sm(cl(p / .12)), pan = sm(cl((p - .18) / .2)), end = sm(cl((p - .75) / .2));
@@ -1980,6 +1992,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     else if (t < 0) canAim.set(3.6, -1.4, 2.2);
     canPos.lerp(canAim, Math.min(1, (pen && !stencilOn ? 21 : 2.4) * dt)); // per second, so the can moves the same on 60 and 120 Hz screens
     const rest = stencilOn || done, moving = !stencilOn && !!pen;
+    if (storeW) for (const m of storeW.meshes) if (m && m.material.map !== wallEmpty) { const mt = m.material; if (mt.emissiveMap !== mt.map) { mt.emissiveMap = mt.map; mt.emissive.setScalar(1); mt.needsUpdate = true; } mt.emissiveIntensity = endS.show ? 0 : .12; } // visitors' tags glow faintly at night, like reflective paint (Tom 11-23)
     can.visible = !endS.show; can.position.copy(canPos); // by day the night's can is gone: the only can is Leave your tag's
     can.rotation.set(rest ? 0 : -.08 + (moving ? .05 : 0), rest ? -.5 : -.12, moving ? (canAim.x - canPos.x) * -.6 : rest ? 0 : .06);
     capMat.emissive.setRGB(pressing && !stencilOn ? .25 : 0, pressing && !stencilOn ? .05 : 0, 0);

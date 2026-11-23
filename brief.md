@@ -26,8 +26,8 @@ A bucket of paint waits on a dark wall at night. The visitor tips it, the paint 
 2. epaRadar and raddavarfruberga: the facts and links sprayed through stencils onto their walls.
 3. The workshop: my own tools in a row: the self-hosted platform, ttoolbox, dot and tthermal.
 4. EDGE: client work on its own clean wall, a printed sheet pasted up.
-5. Dawn grows to white, and out of the white it is morning at the opening wall. The form to write to me, GitHub and LinkedIn.
-6. The loop: Back to the start brings the night back. Leave your tag lets a visitor paint on the wall. Scrolling up from the start shows the visitors' tags.
+5. Dawn grows to white, and out of the white it is morning at the opening wall: the mural, the visitors' tags round it and a flyer to write to me, with GitHub and LinkedIn.
+6. The loop: scrolling on, the sun goes down on the same wall and the walk starts again. The can at the mural's foot lets a visitor paint their tag on the wall. Scrolling up from the start shows the visitors' tags.
 
 Every screen has something moving and some depth. The scroll never waits for an animation.
 

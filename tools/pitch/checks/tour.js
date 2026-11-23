@@ -9,7 +9,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   for (const sv of [128, 432, 540, 590, 615, 700, 770, 840, 910, 960, 995, 1045, 1110, 1180]) { await go(sv); await page.waitForTimeout(sv >= 700 ? 3200 : 1500);
     await page.screenshot({ path: '__SHOTS__pitch-' + W + '-' + sv + '.png' }); }
   res.end = await page.evaluate(() => { const f = document.getElementById('mail'); return { form: !!f && f.classList.contains('on') && !f.inert && getComputedStyle(f).opacity > .9 }; });
-  // the end wall (Tom 11-19): the form sits in the painted frame; Leave your tag, the email, GitHub and LinkedIn tabs and Back to the start are painted marks with tap areas over them
+  // the end wall (Tom 11-19): the form sits in the painted frame; the email, GitHub and LinkedIn tabs are painted marks and Leave your tag is the can with tap areas over them
   // (a phone sees the links side or the form side: the button at the bottom moves between them; the three tabs sit under the form)
   const measure = ids => page.evaluate(ids => ids.map(id => { const e = document.getElementById(id), b = e.getBoundingClientRect(); return { id, shown: e.style.display === 'block', l: b.left, t: b.top, r: b.right, b: b.bottom, w: b.width, h: b.height, label: e.getAttribute('aria-label') }; }), ids);
   const TABS = ['endMail', 'endGit', 'endLi'];
