@@ -10,7 +10,7 @@ __TOKENS__
 html, body { background: var(--look-ground); color: var(--look-text); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 1320vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP + SV_END + 100 */
+.track { height: 1370vh; } /* the visitor wall above the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; UP (90: the visitors' wall, the pole on the way) + SV_END + 100 */
 html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall: pulling further must not reload it on a phone */
 .tag.edge { left: 16px; transform: translateY(-50%); } /* top: follows a spot on the wall (UP_AT) */
 .hud { position: fixed; inset: 0; pointer-events: none; }
@@ -127,8 +127,6 @@ html { overscroll-behavior-y: none; } /* the top of the page is the visitor wall
 .hl { position: fixed; z-index: 30; pointer-events: none; opacity: 0; transition: opacity 140ms cubic-bezier(.2, 0, 0, 1); white-space: nowrap; font: 500 13px/1 "Inter", system-ui, sans-serif; letter-spacing: 0; color: var(--look-text); background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; padding: 8px 10px; } /* the labels' plate (one look with the front, 11-22) */
 .hl.on { opacity: 1; }
 button.hot { background: none; border: 0; padding: 0; }
-#endPan { display: none; position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); min-width: 120px; min-height: 48px; padding: 0 18px; font: 500 15px/1 "Inter", system-ui, sans-serif; color: var(--look-form-ink); background: color-mix(in srgb, var(--look-hover-box) 88%, transparent); border: 1px solid color-mix(in srgb, var(--look-form-ink) 35%, transparent); border-radius: 24px; cursor: pointer; pointer-events: auto; z-index: 5; }
-#endPan:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
 /* the end form: it sits on the painted frame's dark panel (the page puts it there) */
 html form#mail { position: absolute; left: 0; top: 0; right: auto; bottom: auto; transform: none; rotate: none; width: 400px; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr; align-content: center; gap: 8px 14px; padding: 12px 18px; background: none; border: 0; border-radius: 0; filter: none; text-shadow: none; box-shadow: none;
   font: 500 14px/1.3 "Inter", system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: var(--ink); --panel: var(--look-cream); --ink: var(--look-dark); --ink2: var(--look-dark-soft); --line: var(--look-dark); --acc: var(--front-spray); }
@@ -156,6 +154,33 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 :root .tag { width: auto; max-width: min(var(--look-label-width), 74vw); background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; padding: 10px 14px 12px; color: var(--look-soft); font-family: "Inter", system-ui, sans-serif; font-weight: 400; text-transform: none; letter-spacing: 0; filter: none; text-shadow: none; box-shadow: none; }
 :root .tag b { display: block; margin-bottom: .3em; font-family: "Inter", system-ui, sans-serif; font-weight: 600; font-size: 1.2em; line-height: 1.25; letter-spacing: -.01em; text-transform: none; color: var(--look-text); text-shadow: none; }
 :root .tag.facts { text-transform: none; }
+/* the sticker bomb's Write to me (pitch 11-23, the motion): tap the sticker and it peels off and unfolds into the flyer. The sticker is the flyer folded once: the folded half has the sticker's shape */
+.stk { position: fixed; z-index: 6; background: none; border: 0; padding: 0; cursor: pointer; pointer-events: auto; }
+.stk:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
+#bombHot { display: none; }
+#corner { right: 12px; bottom: 12px; width: 92px; min-height: 48px; rotate: -7deg; filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--look-dark) 55%, transparent)); transition: rotate var(--toggle) var(--ease), translate var(--toggle) var(--ease), opacity var(--toggle) var(--ease); }
+#corner img { display: block; width: 100%; height: auto; transition: transform var(--toggle) var(--ease); transform-origin: 100% 100%; }
+#corner:hover img, #corner:focus-visible img { transform: perspective(300px) rotateX(-14deg) rotateY(16deg); } /* the corner lifts */
+#corner.off { opacity: 0; pointer-events: none; }
+.stk .tick { position: absolute; right: -6px; top: -10px; width: 26px; height: 26px; border-radius: 50%; background: var(--front-spray); color: var(--look-dark); font: 700 16px/26px "Inter", system-ui, sans-serif; text-align: center; display: none; }
+.stk.sent .tick { display: block; }
+#dim { position: fixed; inset: 0; z-index: 40; background: color-mix(in srgb, var(--look-dark) 64%, transparent); opacity: 0; pointer-events: none; }
+#dim.on { pointer-events: auto; }
+#sheet { position: fixed; inset: 0; z-index: 41; perspective: 1600px; pointer-events: none; display: none; } /* full screen, so the turn is seen from the middle */
+#sheet.on { display: block; }
+#sheet .fly { position: absolute; left: 0; top: 0; transform-style: preserve-3d; transform-origin: 0 0; pointer-events: auto; }
+#sheet .face { position: absolute; left: 0; width: 100%; background-repeat: no-repeat; background-size: 100% 200%; backface-visibility: hidden; }
+#sheet .top { top: 0; height: 50%; transform-style: preserve-3d; }
+#sheet .top .paper { inset: 0; height: 100%; background-position: 0 0; }
+#sheet .top .cover { inset: 0; height: 100%; background-size: 100% 100%; transform: rotateY(180deg); } /* the folded flyer's outside: the sticker */
+#sheet .bot { top: 50%; height: 50%; transform-origin: 50% 0; transform-style: preserve-3d; }
+#sheet .bot .paper { inset: 0; height: 100%; background-position: 0 100%; }
+#sheet .bot .back { inset: 0; height: 100%; background: var(--look-cream); filter: brightness(.86); transform: rotateX(180deg); }
+#sheet .x { position: absolute; right: 2%; top: 5%; width: 48px; height: 48px; border: 0; border-radius: 50%; background: var(--look-cream); color: var(--look-dark); font: 400 34px/48px "Inter", system-ui, sans-serif; cursor: pointer; opacity: 0; }
+#sheet .x:focus-visible { outline: 2px solid var(--look-dark); }
+#sheet .tab { position: absolute; display: block; opacity: 0; }
+#sheet .tab:focus-visible { opacity: 1; outline: 2px solid var(--look-dark); outline-offset: -4px; }
+#sheet.open .x { opacity: 1; }
 </style>
 <svg class="pitch-svg" aria-hidden="true"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></svg>
 
@@ -214,12 +239,12 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the workshop (storyboard 5; Tom 11-17: you go in like a "brunn", a manhole). A room under the street from HX0 to CX1; a round cover on the
   // pavement by the wall at MX_IN slides aside, a ladder goes down a shaft into it; at MX_OUT a second shaft climbs out. MR: the shaft's radius,
   // MZ: its centre from the wall. DY: the room's ceiling (the ground above is 1.5 m deep), WF: its floor. The street stays at G3 from here on.
-  const SV_END = 1180; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it
+  const SV_END = 1180, SV_MAX = SV_END; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it. No loop (Tom 11-23): the walk ends back at the start wall
   // the walk is a loop (Tom 11-17): after the pour the page parks UP vh down; scrolling up from there turns the camera left to the visitor wall.
   // upPx: the park in pixels, from the track's own height (a phone's vh and innerHeight differ while its address bar moves)
-  const UP = 40, track = document.querySelector(".track"), upPx = () => track.offsetHeight * UP / (UP + SV_END + 100);
+  const UP = 90, track = document.querySelector(".track"), upPx = () => track.offsetHeight * UP / (UP + SV_MAX + 100);
   let up0 = 0; // the park at the last frame
-  window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * sv / SV_END; // the checks scroll with this
+  window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * sv / SV_MAX; // the checks scroll with this
   const HX0 = 35, CX1 = 66, MX_IN = 36.8, MX_OUT = 64, MZ = 1.1, MR = .42, RZ = 9, DY = G3 - 1.5, WF = G3 - 4.5, END_X = 104;
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
   const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + 2 * TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
@@ -293,6 +318,29 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const head = new THREE.Mesh(new THREE.CylinderGeometry(.13, .32, .18, 20), postM); head.position.set(POST.x, GROUND + 6.45, POST.z + 1.25);
     const bulb = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .02, 20), bulbM); bulb.position.set(POST.x, GROUND + 6.35, POST.z + 1.25);
     scene.add(pole, arm, head, bulb); POSTMESH.push(pole, arm, head, bulb); }
+
+  // ---- the sticker bomb (Tom 11-23): real stickers about Tom slapped on the street light's pole, each once, waist to head height; Write to me on top opens the flyer
+  const tok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const STK = { emblem: 1.075, hello: 1.414, writetome: 1.781, omarchy: 3.357, tom: .877, gosta: .521 }, BOMBMESH = []; let BOMB_WTM = null; // the last Write to me made: the one on top
+  let bombSeed = 7; const brnd = () => (bombSeed = (bombSeed * 16807) % 2147483647) / 2147483647; // the same scuffs and curls every load
+  // one sticker: a thin sheet of glossy vinyl bent onto a surface. put(a, b, layer) gives the point for a spot (a, b metres) of the sheet and its outward normal; one corner lifts a few mm
+  function sticker(name, size, rot, curl, put, layer) {
+    const asp = STK[name], w = asp >= 1 ? size : size * asp, h = asp >= 1 ? size / asp : size, N = 14, pos = new Float32Array((N + 1) * (N + 1) * 3), uv = [], idx = [], cs = Math.cos(rot), sn = Math.sin(rot), cu = brnd() < .5 ? 0 : 1, cv = brnd() < .5 ? 0 : 1;
+    const bend = (c, R) => { let k = 0; for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) { const u = i / N, v = j / N, a0 = (u - .5) * w, b0 = (v - .5) * h; // R: how far from the lifted corner the sheet comes off (.5 = the corner only; past 1.4 = the whole sticker, a peel)
+      const d = Math.hypot(u - cu, v - cv) / Math.SQRT2, lift = c * Math.pow(Math.max(0, R - d) / R, 2) + .0012 * Math.sin(Math.PI * u) * Math.sin(Math.PI * v);
+      const [p, n] = put(a0 * cs - b0 * sn, a0 * sn + b0 * cs, layer); pos[k++] = p.x + n.x * lift; pos[k++] = p.y + n.y * lift; pos[k++] = p.z + n.z * lift; } };
+    bend(curl, .5); for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) uv.push(i / N, j / N);
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const a = j * (N + 1) + i, b = a + 1, c = a + N + 1, d = c + 1; idx.push(a, b, c, b, d, c); }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshPhysicalMaterial({ map: tex("assets/stickers/" + name + ".webp", true, 1, 1), alphaTest: .5, roughness: .32, metalness: 0, clearcoat: .7, clearcoatRoughness: .15, envMapIntensity: .8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1 - layer, polygonOffsetUnits: -1 - layer }));
+    m.userData = { curl, bend: (c, R) => { bend(c, R); g.attributes.position.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingBox(); } }; // the Write to me sticker lifts on hover and peels on a tap
+    if (name === "writetome") BOMB_WTM = m;
+    scene.add(m); BOMBMESH.push(m); return m; }
+  { // wrapped round the pole, overlapping a little; th: the angle round it (0 faces the street), y: the centre over the ground. The last one is on top
+    const rad = y => .075 - .015 * (y - (GROUND + 3.3)) / 3.3, onPole = (th0, yc) => (a, b, L) => { const y = GROUND + yc + b, r = rad(y) + .0025 + L * .0009, th = th0 + a / rad(y); return [V(POST.x + r * Math.sin(th), y, POST.z + r * Math.cos(th)), V(Math.sin(th), 0, Math.cos(th))]; };
+    [["gosta", .18, .95, 1.2, .1, .004], ["tom", .15, -1.0, 1.24, -.12, .005], ["emblem", .135, 1.25, 1.64, .2, .005], ["hello", .18, -.75, 1.72, -.1, .005], ["omarchy", .195, .5, 1.9, -.05, .004], ["writetome", .2, .05, 1.47, .03, .006]]
+      .forEach(([n, size, th, y, rot, curl], i) => sticker(n, size, rot, curl, onPole(th, y), i)); }
+  const BOMB_CLEAR = [[POST.x - .35, GROUND + .9, POST.x + .35, GROUND + 2.1]]; // the tag tool keeps clear of it (a tag is saved in metres: the cabinet's spot on both layouts)
   // the steps (edges blended over at least a pixel, fwidth: a hard 1 cm edge stair-stepped from a few metres away, design review 11-23): worn yellow paint on each edge, a handrail by the wall, a wall lamp over each flight; one light, moved to the flight in view
   { const prev = ground.material.onBeforeCompile; ground.material.onBeforeCompile = sh => { prev(sh);
     sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", `float nose = 0.;
@@ -320,7 +368,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   ground.receiveShadow = true; scene.add(ground);
 
   // one warm street light grazing the wall from the left, so every pit in the concrete shows; a cold sky fill
-  const lamp = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp.position.set(-8.5, 4.2, 1.6); lamp.target.position.set(.5, .2, 0);
+  const lamp = new THREE.SpotLight(0xfff3e6, 0, 30, .8, .85, 1.3); /* .8 rad, soft (Tom 11-23): the wall round the mural is dimly lit too, where the visitors' tags are; the mural stays the brightest */ lamp.position.set(-8.5, 4.2, 1.6); lamp.target.position.set(.5, .2, 0);
   scene.add(lamp, lamp.target);
   const sky = new THREE.HemisphereLight(0x4f6699, 0x0a0a0c, .35); scene.add(sky);
   const bounce = new THREE.PointLight(0xffffff, 0, 4, 2); scene.add(bounce); // coloured with the paint below, once it is read
@@ -1317,20 +1365,17 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
     <p class="err" role="alert" hidden></p><button>Send</button></div></form>
     <button type="button" class="hot" id="leave" aria-label="Leave your tag" tabindex="-1" style="display: none"></button>
-    <a class="hot" id="endMail" href="mailto:hello@ttdevs.com" aria-label="Email" tabindex="-1" style="display: none"></a>
-    <a class="hot" id="endGit" href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener" aria-label="GitHub" tabindex="-1" style="display: none"></a>
-    <a class="hot" id="endLi" href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener" aria-label="LinkedIn" tabindex="-1" style="display: none"></a>
-    <button type="button" id="endPan">&lsaquo; Leave your tag</button>`);
+`);
   const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
   const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
   mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true; let why;
     try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
-      if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
+      if (a.ok) { sheetSent = true; const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
       why = WHY[((await a.json().catch(() => ({}))).error) || ""] || "The mail service didn't answer."; } catch (_) { why = "The page couldn't reach the server."; }
     mailErr.textContent = "Couldn't send your message. " + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
   // the end wall (Tom 11-19, try 67): one painting on the graphics card (CREDITS.txt), the bare concrete keyed out so the wall
   // shows through; the can is the Leave your tag button, the form sits in the painted frame, the two sprayed stencils (GitHub's and LinkedIn's own marks, drawn from their vector shapes) are the links to GitHub and
-  // LinkedIn, the arrow on the ground is Back to the start. Picture pixels: 1536 x 960; foot: the row
+  // LinkedIn. Picture pixels: 1536 x 960; foot: the row
   // where the wall meets the ground (what is below it lies flat on the street); form: the dark panel's inside.
   const FORM_W = 500, FORM_H = 276, FLYER_TILT = -.012; // the form laid out once at this size, then scaled to the flyer; the flyer's tilt
   const E = { foot: 795, flyer: [816, 130, 1384, 772], form: [846, 330, 1354, 610], tabs: [[822, 650, 1004, 766], [1007, 650, 1193, 766], [1196, 650, 1378, 766]], bbox: [800, 120, 1400, 790] }; E.signs = E.tabs; // a flyer pasted on the concrete (Tom 11-22): WRITE TO ME printed, the form on the paper, tear-off tabs (email, GitHub, LinkedIn)
@@ -1340,7 +1385,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const endMat = extra => new THREE.MeshStandardMaterial(Object.assign({ transparent: true, depthWrite: false, roughness: .55, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }, extra));
   const eHW = E.foot / 960, eHF = 1 - eHW,  eWallH = E.foot * EK, eFD = (960 - E.foot) * EK * EFLOOR;
   // the end wall is painted here, on a canvas, in the front's words and colours (Tom 11-22, walk step 3): WRITE TO ME with the front's blue
-  // swipe under WRITE, the address, GitHub and LinkedIn, Leave your tag, the form's dark panel, and Back to the start on the ground.
+  // swipe under WRITE, the address, GitHub and LinkedIn, Leave your tag, and the form's panel (Tom 11-23: only the flyer is left).
   // Dark paint on the day-lit concrete (the front's dark words on cream); words, not logos (Tom 11-22).
   const eCan = Object.assign(document.createElement("canvas"), { width: 1536, height: 960 }); let eFile = "";
   const eTex = () => { const t = new THREE.CanvasTexture(eCan); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
@@ -1371,49 +1416,95 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   eWall.position.set(ECX, GROUND + ELIFT + eWallH / 2, .003);
   const eFloor = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eFD), endMat({ map: eMapF, roughness: .8 })); eFloor.rotation.x = -Math.PI / 2; eFloor.position.set(ECX, GROUND + .004, eFD / 2);
   eWall.visible = eFloor.visible = false; scene.add(eWall, eFloor);
-  // a tear-off tab (Tom 11-22): the link opens at once and the tab tears off at the same moment, peels out from the flyer and lands on the street
-  // in front of the wall, where it stays; the gap stays on the flyer. Reduced motion: it lies there at once.
-  const TORN = [];
-  function tearTab(k) { if (TORN.some(t => t.k === k)) return; const [fx0, fy0, fx1, fy1] = E.flyer, t = E.tabs[k];
-    const x0 = k ? t[0] - 2 : fx0 - 4, x1 = k < E.tabs.length - 1 ? E.tabs[k + 1][0] - 2 : fx1 + 4, y0 = t[1] - 2, y1 = fy1 + 8, w = x1 - x0, h = y1 - y0;
-    const edge = (g, ox, oy) => { let sd = 7 + k; const rn = () => (sd = sd * 16807 % 2147483647) / 2147483647; g.beginPath(); g.moveTo(ox, oy + 6); for (let x = 0; x <= w; x += 9) g.lineTo(ox + x, oy + 2 + rn() * 8); g.lineTo(ox + w, oy + h); g.lineTo(ox, oy + h); g.closePath(); }; // the torn top: a ragged line along the cut
-    const pc = Object.assign(document.createElement("canvas"), { width: w, height: h }), pg = pc.getContext("2d"); edge(pg, 0, 0); pg.clip(); pg.drawImage(eCan, x0, y0, w, h, 0, 0, w, h);
-    const g = eCan.getContext("2d"); g.save(); g.globalCompositeOperation = "destination-out"; edge(g, x0, y0); g.fill(); g.restore(); eMapW.needsUpdate = eMapF.needsUpdate = true;
-    const map = new THREE.CanvasTexture(pc); map.encoding = THREE.sRGBEncoding; map.anisotropy = maxAniso;
-    const pw = w * EK, ph = h * EK, me = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph), new THREE.MeshStandardMaterial({ map, transparent: true, roughness: .8, side: THREE.DoubleSide }));
-    const top = eAt((x0 + x1) / 2, y0).add(V(0, 0, .02)), rest = V(top.x + (k - 1) * .25, GROUND + .012 + k * .002, .45 + ph / 2 + k * .12);
-    TORN.push({ k, me, top, ph, rest, at: performance.now() - (REDUCED ? 1e5 : 0), spin: (k - 1) * .35 + .15 }); scene.add(me); }
-  window.endTorn = () => TORN.map(t => ({ k: t.k, landed: t.me.position.distanceTo(t.rest) < .01, shown: t.me.visible })); // for the tour check
-  function untear() { if (!TORN.length) return; for (const t of TORN) { scene.remove(t.me); t.me.geometry.dispose(); t.me.material.map.dispose(); t.me.material.dispose(); }
-    TORN.length = 0; HOTL.forEach(h => { h.glow.gone = false; }); paintEnd(eSwipe); } // a fresh flyer for the next walk (Tom 11-22): the tabs back on the paper, the street clear
-  function tornPlace(now, op) { for (const t of TORN) { const s = (now - t.at) / 1000, PEEL = .22, FALL = .7, a1 = .45, me = t.me; me.visible = op > .01; me.material.opacity = op;
-    const peel = (a, rz) => { me.position.set(t.top.x, t.top.y - t.ph / 2 * Math.cos(a), t.top.z + t.ph / 2 * Math.sin(a)); me.rotation.set(-a, 0, rz); };
-    if (s < PEEL) peel(a1 * (s / PEEL) ** 2, 0); // pulled out from the bottom, still held along the cut
-    else { const u = Math.min(1, (s - PEEL) / FALL), uy = u * u; peel(a1, 0); const p0 = me.position.clone();
-      me.position.set(p0.x + (t.rest.x - p0.x) * u, p0.y + (t.rest.y - p0.y) * uy, p0.z + (t.rest.z - p0.z) * u); me.rotation.set(-(a1 + (Math.PI / 2 - a1) * u), 0, t.spin * u); } } } // free: falls (slow, then faster) and lands face up
+  // ---- Write to me from the sticker bomb (pitch 11-23, the motion only; the end flyer stays on this branch). The sticker is the flyer folded once:
+  // hover lifts its corner, a tap peels it off the pole, it flies to the middle turning over, and the folded half opens down into the flyer with the form.
+  // x, Esc or a tap outside folds it back onto the pole (into the screen's corner when the pole is out of view). After Send it wears a tick.
+  document.body.insertAdjacentHTML("beforeend", `<div id="dim"></div>
+    <div id="sheet" role="dialog" aria-modal="true" aria-label="Write to me"><div class="fly"><div class="top"><div class="face paper"></div><div class="face cover"></div></div>
+      <div class="bot"><div class="face paper"></div><div class="face back"></div></div>
+      <a class="tab" href="mailto:hello@ttdevs.com" aria-label="Email"></a><a class="tab" href="${GHUB.slice(0, -1)}" target="_blank" rel="noopener" aria-label="GitHub"></a><a class="tab" href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener" aria-label="LinkedIn"></a>
+      <button type="button" class="x" aria-label="Close">&times;</button></div></div>
+    <button type="button" class="stk" id="bombHot" aria-label="Write to me"><span class="tick" aria-hidden="true">&check;</span></button>
+    <button type="button" class="stk" id="corner" aria-label="Write to me"><img src="assets/stickers/writetome.webp" alt=""><span class="tick" aria-hidden="true">&check;</span></button>`);
+  const sheet = document.getElementById("sheet"), fly = sheet.querySelector(".fly"), flyBot = sheet.querySelector(".bot"), flyX = sheet.querySelector(".x"), sTabs = [...sheet.querySelectorAll(".tab")];
+  const dim = document.getElementById("dim"), bombHot = document.getElementById("bombHot"), corner = document.getElementById("corner"), mailHome = mail.parentNode;
+  const FL = E.flyer, FLW = FL[2] - FL[0], FLH = FL[3] - FL[1], msOf = n => REDUCED ? 0 : parseFloat(tok(n)) || 0, EASE = "cubic-bezier(.2, 0, 0, 1)"; // --ease
+  let sheetOpen = false, sheetBusy = false, sheetSent = false, sheetFrom = null, wtmCurl = null, wtmCurlT = null;
+  function sheetPaper() { const c = Object.assign(document.createElement("canvas"), { width: FLW, height: FLH }), g = c.getContext("2d"); // the flyer off the wall, straightened
+    g.translate(FLW / 2, FLH / 2); g.rotate(-FLYER_TILT); g.translate(-(FL[0] + FLW / 2), -(FL[1] + FLH / 2)); g.drawImage(eCan, 0, 0); return `url(${c.toDataURL()})`; }
+  const sheetBox = () => { const ph = narrowNow(), w = ph ? innerWidth : Math.min(innerWidth * .9, Math.min(innerHeight * .9, 760) * FLW / FLH), h = w * FLH / FLW; return { w, h, x: (innerWidth - w) / 2, y: ph ? innerHeight - h : (innerHeight - h) / 2 }; }; // a phone: a sheet along the bottom, full width
+  function sheetLay(b) { const k = b.w / FLW, fx = (E.form[0] - FL[0]) * k, fy = (E.form[1] - FL[1]) * k, fw = (E.form[2] - E.form[0]) * k, fh = (E.form[3] - E.form[1]) * k;
+    Object.assign(fly.style, { width: b.w + "px", height: b.h + "px" });
+    if (narrowNow()) Object.assign(mail.style, { transform: "", left: fx + "px", top: fy + "px", width: fw + "px", minHeight: fh + "px" }); // the form at full size: 16 px typing, 48 px taps
+    else { const z = Math.min(fw / FORM_W, fh / FORM_H); Object.assign(mail.style, { width: FORM_W + "px", minHeight: FORM_H + "px", left: fx + (fw - FORM_W * z) / 2 + "px", top: fy + (fh - FORM_H * z) / 2 + "px", transformOrigin: "0 0", transform: `scale(${z})` }); }
+    sTabs.forEach((t, i) => { const r = E.tabs[i]; Object.assign(t.style, { left: (r[0] - FL[0]) * k + "px", top: (r[1] - FL[1]) * k + "px", width: (r[2] - r[0]) * k + "px", height: (r[3] - r[1]) * k + "px" }); }); }
+  function wtmRect() { const m = BOMB_WTM; if (!m || !m.visible || !BOMB_WTM.material.map) return null; if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); const bb = m.geometry.boundingBox, P = [];
+    for (let i = 0; i < 8; i++) P.push(proj(V(i & 1 ? bb.max.x : bb.min.x, i & 2 ? bb.max.y : bb.min.y, i & 4 ? bb.max.z : bb.min.z)));
+    if (!P.every(q => q[2])) return null; const xs = P.map(q => q[0]), ys = P.map(q => q[1]), l = Math.min(...xs), r = Math.max(...xs), t = Math.min(...ys), b = Math.max(...ys);
+    return r < 0 || l > innerWidth || b < 0 || t > innerHeight ? null : { l, t, w: r - l, h: b - t }; }
+  const cornerRect = () => { const r = corner.querySelector("img").getBoundingClientRect(); return { l: r.left, t: r.top, w: r.width, h: r.height }; };
+  // the fly's transform: the folded half (the top of the flyer) laid over rect r, or the open flyer in its box b
+  const flyAt = (r, b, turn, z) => r ? `translate(${r.l}px, ${r.t}px) scale(${r.w / b.w}, ${r.h / (b.h / 2)}) translate(${b.w / 2}px, ${b.h / 4}px) rotateY(${turn}deg) rotateZ(${z}deg) translate(${-b.w / 2}px, ${-b.h / 4}px)`
+    : `translate(${b.x}px, ${b.y}px) scale(1, 1) translate(${b.w / 2}px, ${b.h / 4}px) rotateY(0deg) rotateZ(0deg) translate(${-b.w / 2}px, ${-b.h / 4}px)`;
+  const FOLD = "translateZ(1px) rotateX(180deg)", FLAT = "translateZ(0px) rotateX(0deg)";
+  const tween = (ms, f) => new Promise(ok => { const t0 = performance.now(); (function st(now) { const u = ms ? Math.min(1, (now - t0) / ms) : 1; f(u); if (u < 1) requestAnimationFrame(st); else ok(); })(t0); });
+  const bendTo = (c, R, ms) => { const m = BOMB_WTM; if (!m) return Promise.resolve(); const c0 = wtmCurl ?? m.userData.curl, R0 = wtmCurlT ?? .5; return tween(ms, u => { const e = u * u; wtmCurl = c0 + (c - c0) * e; wtmCurlT = R0 + (R - R0) * e; m.userData.bend(wtmCurl, wtmCurlT); }); };
+  async function sheetOpenFrom(src) { if (sheetOpen || sheetBusy) return; sheetBusy = true; sheetOpen = true; sheetFrom = src;
+    const P = msOf("--panel"), T = msOf("--toggle"); let r = src === "pole" ? wtmRect() : null;
+    if (r) { await bendTo(.05, 1.7, REDUCED ? 0 : 110); r = wtmRect() || r; BOMB_WTM.visible = false; } // the corner comes away first, then the whole sticker
+    else { r = cornerRect(); corner.classList.add("off"); }
+    const b = sheetBox(); sheet.querySelectorAll(".paper").forEach(e => e.style.backgroundImage = sheetPaper()); sheet.querySelector(".cover").style.backgroundImage = "url(assets/stickers/writetome.webp)";
+    fly.appendChild(mail); sheetLay(b); mail.classList.add("on"); mail.style.opacity = 0; mail.inert = false; sheet.classList.add("on"); dim.classList.add("on");
+    flyBot.style.transform = FOLD; sTabs.forEach(t => t.tabIndex = -1);
+    dim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: P + T, fill: "forwards" });
+    await fly.animate([{ transform: flyAt(r, b, -180, -3) }, { transform: flyAt(null, b) }], { duration: P, easing: EASE, fill: "forwards" }).finished; // off the pole, turning over on the way: the blank back of the paper
+    await flyBot.animate([{ transform: FOLD }, { transform: FLAT }], { duration: T, easing: EASE, fill: "forwards" }).finished; // the folded half opens down
+    mail.animate([{ opacity: 0 }, { opacity: 1 }], { duration: T / 2, fill: "forwards" }); mail.style.opacity = "";
+    sheet.classList.add("open"); sTabs.forEach(t => t.tabIndex = 0); sheetBusy = false; (mail.querySelector("input") || flyX).focus({ preventScroll: true }); }
+  async function sheetClose() { if (!sheetOpen || sheetBusy) return; sheetBusy = true; sheet.classList.remove("open");
+    const P = msOf("--panel"), T = msOf("--toggle"), b = sheetBox(), back = sheetFrom === "pole" && BOMB_WTM ? (BOMB_WTM.visible = true, wtmRect()) : null; if (back) BOMB_WTM.visible = false; // folds back onto the pole when it is in view, else into the corner
+    const r = back || cornerRect(); mail.animate([{ opacity: 1 }, { opacity: 0 }], { duration: T / 2, fill: "forwards" });
+    dim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: P + T, fill: "forwards" });
+    await flyBot.animate([{ transform: FLAT }, { transform: FOLD }], { duration: T, easing: EASE, fill: "forwards" }).finished; // folded again
+    await fly.animate([{ transform: flyAt(null, b) }, { transform: flyAt(r, b, -180, -3) }], { duration: P, easing: EASE, fill: "forwards" }).finished; // and back where it came from
+    if (sheetSent) { bombTick(); corner.classList.add("sent"); }
+    if (BOMB_WTM) BOMB_WTM.visible = true; if (back && BOMB_WTM) { bendTo(BOMB_WTM.userData.curl, .5, REDUCED ? 0 : 160); } // stuck down again
+    corner.classList.remove("off"); sheet.classList.remove("on"); dim.classList.remove("on"); fly.getAnimations().forEach(a => a.cancel()); mail.getAnimations().forEach(a => a.cancel());
+    mailHome.appendChild(mail); mail.style.cssText = ""; mail.classList.remove("on"); mail.inert = true; sheetOpen = sheetBusy = false; (back ? bombHot : corner).focus({ preventScroll: true }); }
+  function bombTick() { const m = BOMB_WTM, img = m && m.material.map && m.material.map.image; if (!img || m.userData.ticked) return; m.userData.ticked = true; // a small tick on the sticker: sent
+    const c = Object.assign(document.createElement("canvas"), { width: img.width, height: img.height }), g = c.getContext("2d"), r = c.height * .2, cx = c.width - r * 1.25, cy = r * 1.25; g.drawImage(img, 0, 0);
+    g.fillStyle = tok("--front-spray"); g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill(); g.strokeStyle = tok("--look-dark"); g.lineWidth = r * .3; g.lineCap = g.lineJoin = "round";
+    g.beginPath(); g.moveTo(cx - r * .45, cy); g.lineTo(cx - r * .1, cy + r * .38); g.lineTo(cx + r * .48, cy - r * .35); g.stroke();
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; m.material.map = t; m.material.needsUpdate = true; }
+  bombHot.addEventListener("click", () => sheetOpenFrom("pole")); corner.addEventListener("click", () => sheetOpenFrom("corner"));
+  bombHot.addEventListener("pointerenter", () => { bombHot.dataset.hover = 1; }); bombHot.addEventListener("pointerleave", () => { delete bombHot.dataset.hover; });
+  dim.addEventListener("click", sheetClose); flyX.addEventListener("click", sheetClose); addEventListener("keydown", e => { if (e.key === "Escape" && sheetOpen) sheetClose(); });
+  addEventListener("resize", () => { if (sheetOpen && !sheetBusy) { const b = sheetBox(); sheetLay(b); fly.getAnimations().forEach(a => a.cancel()); fly.style.transform = flyAt(null, b); } });
+  window.sheetDbg = () => ({ open: sheetOpen, busy: sheetBusy, pole: wtmRect(), corner: cornerRect() }); // pictures only
+  function bombPlace() { // the tap area over the sticker on the pole (when it is big enough to aim at), its lifted corner on hover, and the corner sticker
+    const r = !sheetOpen && !pick.mode ? wtmRect() : null, big = r && r.w >= 16;
+    if (big) { const w = Math.max(48, r.w), h = Math.max(48, r.h); Object.assign(bombHot.style, { display: "block", left: r.l + r.w / 2 - w / 2 + "px", top: r.t + r.h / 2 - h / 2 + "px", width: w + "px", height: h + "px" }); }
+    else { bombHot.style.display = "none"; delete bombHot.dataset.hover; }
+    if (!sheetOpen && BOMB_WTM) { const want = bombHot.dataset.hover || bombHot.matches(":focus-visible") ? .035 : BOMB_WTM.userData.curl; if (wtmCurl == null) wtmCurl = BOMB_WTM.userData.curl;
+      if (Math.abs(want - wtmCurl) > .0005) { wtmCurl += (want - wtmCurl) * (REDUCED ? 1 : .25); wtmCurlT = .5 + (wtmCurl - BOMB_WTM.userData.curl) * 4; BOMB_WTM.userData.bend(wtmCurl, wtmCurlT); } }
+    corner.classList.toggle("off", sheetOpen || pick.mode || !introOver); corner.inert = sheetOpen || pick.mode || !introOver; }
   window.endDbg2 = () => { const out = []; scene.traverse(o => { if (o.isMesh && o.visible) { o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld); if (b.max.y - b.min.y > 3 && b.min.x > -9 && b.max.x < 3) out.push([o.geometry.type, b.min.toArray().map(v => +v.toFixed(1)), b.max.toArray().map(v => +v.toFixed(1))]); } }); return out; };
   window.endDbg = () => ({ fl: [eFloor.visible, eFloor.material.opacity, eFloor.position.toArray(), eFD], map: eMapF.repeat.toArray(), off: eMapF.offset.toArray() });
   const endS = { day: false, show: false }; let eOp = 0, eLast = 0, eFog = false;
-  // the phone sees a third of the painting at a time: the left side (title, can, logos, arrow) or the form; a swipe or the button moves between them
-  let ePan = 1, ePanT = 1, eDrag = null, eSlid = false; // a phone lands on the whole flyer (Tom 11-22): WRITE TO ME, the form and the tabs first
-  const DAY_CX = (-MURALS.wide.w / 2 + eU(E.flyer[2])) / 2; // the morning's laptop view: from the mural's left edge to the flyer's right one
+  // the phone sees one side at a time: the mural and the can, or the flyer; a swipe or the button moves between them
+  let ePan = 0, endReady = false; // a phone lands on the whole flyer (Tom 11-22): WRITE TO ME, the form and the tabs first
+  const DAY_CX = (POST.x - .8 + MURALS.wide.w / 2 + 1.2) / 2; // the morning's laptop view: from the sticker pole to the can past the mural's right end (no flyer, Tom 11-23)
   // a laptop lands wide (the mural, the can, the flyer: the morning after), then slides in to the flyer once the form shows, so the form reads at
   // about its own size; the can stays in view, so a laptop needs no button back (Tom 11-23, design review: ~9 px from the wide view); its right edge stops short of the epaRadar wall
   const DAY_CLOSE = [V(eU(E.flyer[2]) - 4.75, .7, 11.8), V(eU(E.flyer[2]) - 4.75, .45, 0)];
-  function endCams() { if (!narrowNow()) { const w = [V(DAY_CX + .15, 1.3, 16.4), V(DAY_CX + .15, 1.2, 15.4), V(DAY_CX + .15, .6, 0)];
+  const endWide = () => [V(DAY_CX + .15, 2, 21.8), V(DAY_CX + .15, 1.9, 20.5), V(DAY_CX + .15, 1.3, 0)]; // the landing, a third wider (Tom 11-23): the tags round the mural and the flyer are in view
+  function endCams() { if (!narrowNow()) { const w = endWide();
       return [w[0].lerp(DAY_CLOSE[0], ePan), w[1].lerp(DAY_CLOSE[0], ePan), w[2].lerp(DAY_CLOSE[1], ePan)]; }
-    const x = (eU(E.flyer[0]) + eU(E.flyer[2])) / 2 * ePan, z = 18.5 - 5.2 * ePan, y = .2 + .1 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
+    const x = (eU(E.flyer[0]) + eU(E.flyer[2])) / 2 * ePan, z = 24 - 10.7 * ePan, y = 1.2 - .9 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
   function endWallState(now, show) { const dt = Math.min(.1, (now - eLast) / 1000); eLast = now;
-    eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) { m.visible = eOp > .01; m.material.opacity = eOp; } tornPlace(now, eOp);
+    eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) m.visible = false; // the flyer is not on the wall any more (Tom 11-23): the sticker on the pole holds it
     if (show && !pick.mode) { scene.fog.density = .012; eFog = true; } else if (!show && eFog && !pick.mode) { scene.fog.density = .04; eFog = false; } // the painting is 16 m away: the haze of the opening would wash it out
-    endS.show = show; if (!show) { ePan = ePanT = narrowNow() ? 1 : 0; eSlid = false; if (eOp <= .01) untear(); } }
-  // phone: swipe sideways on the wall, or the button at the bottom; once the form shows the camera slides to it by itself
-  const panBtn = document.getElementById("endPan");
-  panBtn.addEventListener("click", () => { ePanT = ePanT ? 0 : 1; });
-  if (NARROW || matchMedia("(pointer: coarse)").matches) {
-    canvas.addEventListener("pointerdown", e => { eDrag = endS.show && !pick.mode && narrowNow() ? { x: e.clientX, y: e.clientY } : null; });
-    canvas.addEventListener("pointermove", e => { if (!eDrag) return; const dx = e.clientX - eDrag.x, dy = e.clientY - eDrag.y; if (Math.abs(dx) > 40 && Math.abs(dx) > 1.5 * Math.abs(dy)) { ePanT = dx < 0 ? 1 : 0; eDrag = null; } });
-    canvas.addEventListener("pointerup", () => { eDrag = null; }); canvas.addEventListener("pointercancel", () => { eDrag = null; }); }
+    endS.show = show; }
   // ---- hover on every painted link (Tom 11-19): the mark's shape lights up with a soft outline glow in its own colour, the cursor is a spray can, a small label
   // says what it does; keyboard focus shows the same; on a phone the mark pulses once, faintly, when it first comes into view
   function makeGlow(file, B, [x0, y0, x1, y1], o = {}) { const g = { op: 0, pulse: -1, pulsed: false, started: false, mesh: null };
@@ -1440,11 +1531,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   { EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAB, b, i ? { rect: true, colour: "#ffffff", fill: 0, hole: 1 } : {})));
     hotOn(hot3, labelOf(hot3), RVF_GLOW());
     U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}))));
-    const leaveHot = document.getElementById("leave"), mailHot = document.getElementById("endMail"), gitHot = document.getElementById("endGit"), liHot = document.getElementById("endLi");
+    const leaveHot = document.getElementById("leave");
     hotOn(leaveHot, "Leave your tag", { build() {}, pulse: -1, op: 0, mesh: null }); // a real can: its tap area is the can itself, no glow drawn from paint
-    E.signs.forEach((b, i) => hotOn([mailHot, gitHot, liHot][i], labelOf([mailHot, gitHot, liHot][i]), makeGlow(() => eFile, EB, b, { colour: PAINT_HEX })));
-    [mailHot, gitHot, liHot].forEach((el, k) => el.addEventListener("click", () => { tearTab(k); HOTL.find(h => h.el === el).glow.gone = true; })); // the gap has no glow: the tab it lit is on the ground // the link itself opens as usual: nothing waits for the tear
-    endS.hots = { leaveHot, mailHot, gitHot, liHot }; }
+    endS.hots = { leaveHot }; }
   // The visitors' wall's way in (walk step 4, Tom 11-22): scrolled up from the start, the bare wall says what it is for. "Leave your tag" sprayed
   // low in the street light, in the front's blue, and a can standing at the wall's foot beside it; both open the tag tool, as the can at the flyer does.
   // Gone once this browser has a tag of its own (it shows instead) and by day (the flyer has its own Leave your tag beside it).
@@ -1470,21 +1559,13 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const l = Math.max(0, Math.min(...xs)), r = Math.min(innerWidth, Math.max(...xs)), t = Math.max(0, Math.min(...ys)), b = Math.min(innerHeight, Math.max(...ys));
     Object.assign(leaveUp.style, { display: "block", left: l + "px", top: t + "px", width: r - l + "px", height: b - t + "px" }); leaveUp.tabIndex = 0; }
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
-    const { leaveHot, mailHot, gitHot, liHot } = endS.hots, ui = endS.show && !pick.mode && mail.classList.contains("on"), marks = ui && !(narrowNow() && ePanT); // a phone looking at the form has no marks over it to tap: nothing may lie over the form; the tabs sit under it, so they stay live
-    if (endS.show) { const [ax, ay] = proj(eAt(E.form[0], E.form[1])), [bx, by] = proj(eAt(E.form[2], E.form[3])), w = bx - ax, h = by - ay;
-      if (narrowNow()) { mail.style.transform = ""; mail.style.left = ax + "px"; mail.style.width = w + "px"; mail.style.minHeight = h + "px"; mail.style.top = Math.max(ay + 6, (ay + by) / 2 - mail.offsetHeight / 2) + "px"; } // a phone: the form at full size, for 16 px typing and 48 px taps
-      else { const k = Math.min(w / FORM_W, h / FORM_H); mail.style.width = FORM_W + "px"; mail.style.minHeight = FORM_H + "px"; mail.style.left = ax + (w - FORM_W * k) / 2 + "px"; mail.style.top = ay + (h - FORM_H * k) / 2 + "px";
-        mail.style.transformOrigin = "0 0"; mail.style.transform = `scale(${k}) rotate(${FLYER_TILT}rad)`; } } // print on the paper: the form keeps its layout and grows and shrinks with the flyer
+    const { leaveHot } = endS.hots, ui = endS.show && !pick.mode && endReady, marks = ui; // a phone looking at the form has no marks over it to tap: nothing may lie over the form; the tabs sit under it, so they stay live
     const grow = ([a, b, c, d]) => [a - 4, b - 4, c + 4, d + 4];
     eCan3.visible = endS.show && !leaveHot.hidden;
     { const P = [ECAN.clone().add(V(-.45, 0, 0)), ECAN.clone().add(V(.45, 1.3, 0))].map(proj), l = Math.min(P[0][0], P[1][0]), r = Math.max(P[0][0], P[1][0]), t = Math.min(P[0][1], P[1][1]), b = Math.max(P[0][1], P[1][1]);
       if (!marks || leaveHot.hidden || !P.every(q => q[2]) || r < 0 || l > innerWidth || b < 0 || t > innerHeight) { leaveHot.style.display = "none"; leaveHot.tabIndex = -1; }
       else { const w = Math.max(48, r - l), h = Math.max(48, b - t); Object.assign(leaveHot.style, { display: "block", left: (l + r) / 2 - w / 2 + "px", top: (t + b) / 2 - h / 2 + "px", width: w + "px", height: h + "px" }); leaveHot.tabIndex = 0; } }
-    placeHots([mailHot, gitHot, liHot], E.signs.map(grow), EB, ui);
-    // the phone: the button at the bottom, and the slide to the form once it shows
     canvas.style.touchAction = narrowNow() ? "pan-y" : "";
-    if (!narrowNow() && ui && !eSlid) { ePanT = 1; eSlid = true; } // a laptop: once, when the form shows
-    ePan += (ePanT - ePan) * (REDUCED ? 1 : Math.min(1, .06)); panBtn.style.display = ui && narrowNow() ? "block" : "none"; panBtn.textContent = ePanT ? "‹ Leave your tag" : "Write to me ›";
     // hover: the glow, the label
     let act = null, dt = Math.min(.1, (now - (endPlace.last || now)) / 1000); endPlace.last = now;
     for (const h of HOTL) { const el = h.el, shown = el.style.display === "block" && !el.hidden, on = shown && el.matches(":hover, :focus-visible"), g = h.glow; let target = on ? 1 : 0;
@@ -1510,7 +1591,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     for (const M of NARROW ? [MURALS.narrow, MURALS.wide] : [MURALS.wide, MURALS.narrow]) { /* this screen's mural first: CLEAR[0] is the title (pickTest) */ const lx = -(M.w / 2 + .2) - .55; b.push([-M.w / 2 - m, M.cy - M.h / 2 - m, M.w / 2 + m, M.cy + M.h / 2 + m], [lx - 1.2, WALL_TOP - 2, lx + 1.6, WALL_TOP]); }
     if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); }
     const calm = .6, box = o => { const c = new THREE.Box3().setFromObject(o); return [c.min.x - m, c.min.y - m, c.max.x + m, c.max.y + m]; };
-    b.push([eU(E.flyer[0]) - calm, GROUND - .2, eU(E.flyer[2]) + calm, eV(E.flyer[1]) + calm], box(vWords), box(vCan3)); return b; }
+    b.push([eU(E.flyer[0]) - calm, GROUND - .2, eU(E.flyer[2]) + calm, eV(E.flyer[1]) + calm], box(vWords), box(vCan3), ...BOMB_CLEAR); return b; }
   const inArea = (x, y) => [cl(x, AREA.x0 + FRAME.w / 2, AREA.x1 - FRAME.w / 2), cl(y, AREA.y0 + FRAME.h / 2, AREA.y1 - FRAME.h / 2)];
   const hits = (x, y) => c => x + FRAME.w / 2 > c[0] && x - FRAME.w / 2 < c[2] && y + FRAME.h / 2 > c[1] && y - FRAME.h / 2 < c[3];
   const keptBy = (x, y) => CLEAR.some(hits(x, y)) ? "clear" : HELD.some(hits(x, y)) ? "held" : null, kept = (x, y) => !!keptBy(x, y); // HELD: where a waiting tag of someone else is (the store); it stays lit, only the frame turns yellow
@@ -1557,7 +1638,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   addEventListener("keydown", e => { if (e.key === "Escape" && pick.mode > 0) pickBack(); });
   function pickCam(now, dt, cp, look) { // after the morning set the form's view: from there to the wide shot, or in close to the spot, or back
     skyMesh.visible = !pick.mode; // the dawn sky ends above the opening: the wide shot would show its edge, and by day the plain sky is right
-    if (!pick.mode) { pick.last[0].copy(cp); pick.last[1].copy(look); if (pick.refocus && !mail.inert) { const t = leaveB; if (!t.hidden && t.style.display === "block") { pick.refocus = false; t.focus({ preventScroll: true }); } } return; } // the painted marks show a frame after the form (endPlace) // after Cancel the keyboard is back where it left
+    if (!pick.mode) { pick.last[0].copy(cp); pick.last[1].copy(look); if (pick.refocus && endReady) { const t = leaveB; if (!t.hidden && t.style.display === "block") { pick.refocus = false; t.focus({ preventScroll: true }); } } return; } // the painted marks show a frame after the form (endPlace) // after Cancel the keyboard is back where it left
     const tk = REDUCED ? 1 : sm(cl((now - pick.t0) / 1000 / pick.dur));
     { const f = Math.min(1, (REDUCED ? 60 : 3) * dt); pick.cx += (pick.x - pick.cx) * f; pick.cy += (pick.y - pick.cy) * f; } // the camera follows the spot
     let P, L; if (pick.mode === 1) { const oy = (AREA.y0 + AREA.y1) / 2; P = V(pick.ox, oy, ovD()); L = V(pick.ox, oy, 0); } else if (pick.mode === 2) { P = V(pick.cx, pick.cy, closeD()); L = V(pick.cx, pick.cy, 0); } else { P = cp.clone(); L = look.clone(); }
@@ -1583,6 +1664,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     worldAt: (px, py) => wallAt(px, py),
     spotOnScreen: () => { const [px, py] = proj(V(pick.x, pick.y, 0)); return { x: px, y: py }; },
     // for the space check: the kept-clear boxes the tag tool would use now, and where the wall's own parts are (metres, [x0, y0, x1, y1])
+    // for the space check: which of these frame spots (centres, metres) the camera shows whole right now
+    onScreen: (spots, wide) => { const keep = [camera.position.clone(), camera.quaternion.clone()]; if (wide && !narrowNow()) { const w = endWide(); camera.position.copy(w[1]); camera.lookAt(w[2]); } camera.updateMatrixWorld();
+      const out = spots.map(([x, y]) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].every(([a, b]) => { const [px, py, front] = proj(V(x + a * FRAME.w / 2, y + b * FRAME.h / 2, 0)); return front && px >= 0 && px <= innerWidth && py >= 0 && py <= innerHeight; }));
+      camera.position.copy(keep[0]); camera.quaternion.copy(keep[1]); camera.updateMatrixWorld(); return out; },
     space: () => { const bx = o => { const b = new THREE.Box3().setFromObject(o); return [b.min.x, b.min.y, b.max.x, b.max.y]; };
       return { narrow: NARROW, area: AREA, frame: FRAME, clear: clearBoxes(), things: { mural: bx(paint), flyer: [eU(E.flyer[0]), eV(E.flyer[3]), eU(E.flyer[2]), eV(E.flyer[1])], words: bx(vWords), can: bx(vCan3) } }; } };
   // ---- Tag it (Tom 11-17, PR6): after Lock spot the visitor draws in the frame with real graffiti tools; every stroke keeps its own tool
@@ -1881,9 +1966,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     else { sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); }
     if (introOver && sv > WHITE_OUT - 10 && !mornAt) mornAt = now; // once per visit
     const sec = mornAt ? (REDUCED ? 99 : (now - mornAt) / 1000) : -1;
-    const on = day && !pick.mode && (mail.classList.contains("on") || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : .6)); // once shown it stays while it is day: a phone keyboard shrinks the window and moves sv back
-    if (on !== mail.classList.contains("on")) { mail.classList.toggle("on", on); mail.inert = !on; }
-    endWallState(now, day); }
+    endReady = day && sv <= SV_END + 5 && !pick.mode && (endReady || sv > WHITE_OUT - 10 && sec > (REDUCED ? 0 : .6)); // the end's Leave your tag can, a beat after the morning shows
+    if (document.documentElement.dataset.endReady !== (endReady ? "1" : "0")) document.documentElement.dataset.endReady = endReady ? "1" : "0"; // the checks wait for it
+    endWallState(now, day && sv <= SV_END + 5); }
   // the camera's way: over the cover, straight down the shaft, back into the room and a stop in front of each tool, under the far shaft,
   // straight up it, out to EDGE, on towards the sunrise (then morning() cuts to the opening wall). In a shaft it stays on its centre line, so it never touches the concrete.
   const stop = (x, y, z, ly) => [V(x + .1, y, z), V(x, ly, 0)];
@@ -1914,8 +1999,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");
   const lerpV = (a, b, t) => a.clone().lerp(b, t);
   const CAM = NARROW
-    ? { A: [V(.4, .9, 13.5), V(0, .9, 0)], B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX + .3, EY + .6, 21.5), V(EX + .3, EY + .4, 0)], D: [V(EX + 3.2, EY + .5, 16), V(EX + 3.2, EY + .3, 0)], E: [V(RX - 2.2, -.4 - 2 * DROP, 17), V(RX - 2.2, -.6 - 2 * DROP, 0)], F: [V(RX - 2.2, -.5 - 2 * DROP, 17.5), V(RX - 2.2, -.7 - 2 * DROP, -1)] } // phone: the raddavarfruberga painting (centre x RX - 2.2, 6.4 m wide) centred across the whole width, uncut
-    : { A: [V(1.3, .5, 11), V(.1, .6, 0)], B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
+    ? { A: [V(.4, 1.6, 18), V(0, 1.5, 0)], /* a third wider (Tom 11-23): tags above and round the mural are in the first picture */ B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX + .3, EY + .6, 21.5), V(EX + .3, EY + .4, 0)], D: [V(EX + 3.2, EY + .5, 16), V(EX + 3.2, EY + .3, 0)], E: [V(RX - 2.2, -.4 - 2 * DROP, 17), V(RX - 2.2, -.6 - 2 * DROP, 0)], F: [V(RX - 2.2, -.5 - 2 * DROP, 17.5), V(RX - 2.2, -.7 - 2 * DROP, -1)] } // phone: the raddavarfruberga painting (centre x RX - 2.2, 6.4 m wide) centred across the whole width, uncut
+    : { A: [V(1.3, 1.4, 14.6), V(.1, 1.3, 0)], /* a third wider (Tom 11-23): the wall round the mural, where the visitors' tags go, is in the first picture */ B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
   // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street, low enough for the can at its foot; phone: closer, the middle of it
   const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)], tagUp = document.getElementById("tagUp"), UP_AT = V(-6, .2, 0);
   let stencilAt = 0;
@@ -1928,16 +2013,19 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     let next = pr; if (med > 21 && pr > PR_MIN) { prCap = Math.min(prCap, pr * .92); next = Math.max(PR_MIN, pr * (med > 40 ? .6 : .8)); prFast = 0; } // keeping up with the screen (60 Hz frames can't measure under 16.7 ms): try a little sharper after 2 s
     else if (med < 18.5) { prCap = Math.min(PR_MAX, prCap * 1.02); if (pr < prCap && (prCap >= PR_MAX || prCap - pr > PR_MAX * .25) && ++prFast >= 6) { next = prCap; prFast = 0; } } else prFast = 0; // the ceiling comes back slowly; the size climbs in one step to it (each change costs a frame on a phone)
     if (next !== pr) { pr = next; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); fit(); } }
+  let svKeep = -1, svKeepH = 0; // the walk's place, kept across resizes
   const START = 1600, t0 = performance.now(); let last = t0, si = 0, cmx = 0, cmy = 0;
   if (!WL.want) document.documentElement.dataset.wallAt = 1; // no tags on the wall: nothing to wait for (the checks read 0 as never)
   const PARK = V(EX - EW / 2 - 1, G2, 1.9), canPos = PARK.clone(), canAim = V(); let canOn = 0;
   renderer.setAnimationLoop(now => {
     const raw = now - last, dt = Math.min(.05, raw / 1000); last = now; const t = now - t0 - START;
     autoRes(raw);
+    if (introOver && svKeep >= 0 && svKeepH !== document.documentElement.scrollHeight) { scrollTo(0, svY(svKeep)); svKeepH = document.documentElement.scrollHeight; } // a resize or a turned phone: the walk stays where it was (the page goes on past the end now, so a pixel scroll would land in the dusk)
     if (introOver && up0 && upPx() !== up0 && Math.abs(scrollY - up0) < 2) scrollTo(0, upPx()); // a resize or a turned phone while parked: stay parked, not half turned
-    const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? cl((scrollY - up) / H2) * SV_END : 0,
+    const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? cl((scrollY - up) / H2) * SV_MAX : 0,
       lft = introOver && up > 0 ? cl(1 - scrollY / up) : 0, lookL = sm(cl(lft / .6)), goL = sm(cl((lft - .25) / .75)), // up the page: the head turns first, then the camera walks left
       pAll = cl(sv / 540), p = cl(sv / 320); // sv: the scroll in vh below the park (the page is UP + SV_END + 100 vh); the first three scenes keep the scroll they had
+    if (introOver && svKeepH === document.documentElement.scrollHeight) svKeep = sv; else if (svKeep < 0) { svKeep = sv; svKeepH = document.documentElement.scrollHeight; }
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
     // scroll moves the camera only: step back (0-.12), walk right to the second wall (.18-.38), step back to look (.75-.95).
     const back = sm(cl(p / .12)), pan = sm(cl((p - .18) / .2)), end = sm(cl((p - .75) / .2));
@@ -1975,6 +2063,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     else if (t < 0) canAim.set(3.6, -1.4, 2.2);
     canPos.lerp(canAim, Math.min(1, (pen && !stencilOn ? 21 : 2.4) * dt)); // per second, so the can moves the same on 60 and 120 Hz screens
     const rest = stencilOn || done, moving = !stencilOn && !!pen;
+    if (storeW) for (const m of storeW.meshes) if (m && m.material.map !== wallEmpty) { const mt = m.material; if (mt.emissiveMap !== mt.map) { mt.emissiveMap = mt.map; mt.emissive.setScalar(1); mt.needsUpdate = true; } mt.emissiveIntensity = endS.show ? 0 : .12; } // visitors' tags glow faintly at night, like reflective paint (Tom 11-23)
     can.visible = !endS.show; can.position.copy(canPos); // by day the night's can is gone: the only can is Leave your tag's
     can.rotation.set(rest ? 0 : -.08 + (moving ? .05 : 0), rest ? -.5 : -.12, moving ? (canAim.x - canPos.x) * -.6 : rest ? 0 : .06);
     capMat.emissive.setRGB(pressing && !stencilOn ? .25 : 0, pressing && !stencilOn ? .05 : 0, 0);
@@ -1987,12 +2076,17 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
     endK = cl((sv - 548) / 30); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp); morning(now, sv, cp, cl_);
     if (lft > 0) { cp.lerp(VISIT[0], goL); cl_.lerp(VISIT[1], lookL); }
+    // past the pole (Tom 11-23: look closer at the stickers as we pass by): on the way up to the visitors' wall the camera steps in to the pole and
+    // walks round it at arm's length, right to left, so each sticker comes past; the page's longer park (UP) gives the pass its own stretch of scroll
+    const poleK = lft > 0 ? sm(cl((lft - .06) / .16)) * (1 - sm(cl((lft - .58) / .16))) : 0;
+    if (poleK > 0) { const th = .9 - 1.8 * cl((lft - .12) / .5), r = NARROW ? 1.9 : 1.7, y = GROUND + 1.55; cp.lerp(V(POST.x + r * Math.sin(th), y + .05, POST.z + r * Math.cos(th)), poleK); cl_.lerp(V(POST.x, y, POST.z), poleK); }
     pickCam(now, dt, cp, cl_);
     // the opening's street light swings round to graze the visitor wall from the right (no extra light: every light costs a frame on the T14s)
-    lamp.position.set(-8.5 + 2.5 * lookL, 4.2 + .6 * lookL, 1.6 + .8 * lookL); lamp.target.position.set(.5 - 12.5 * lookL, .2 + 2.4 * lookL, 0);
+    const lampL = sm(cl((lft - .5) / .45)); // after the pole: the light stays on it while the camera goes round
+    lamp.position.set(-8.5 + 2.5 * lampL, 4.2 + .6 * lampL, 1.6 + .8 * lampL); lamp.target.position.set(.5 - 12.5 * lampL, .2 + 2.4 * lampL, 0);
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
-    const hand = (1 - inShaft(cp)) * (1 - pick.k); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(lft); endPlace(now);
+    const hand = (1 - inShaft(cp)) * (1 - pick.k) * (1 - poleK); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
+    camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(lft); endPlace(now); bombPlace();
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);

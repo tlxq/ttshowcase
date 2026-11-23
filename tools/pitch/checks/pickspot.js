@@ -8,13 +8,13 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.goto('__URL__'); await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
-  let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('mail').classList.contains('on')); if (!on) await page.waitForTimeout(200); }
+  let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(200); }
   if (!on) { errs.push('the morning form never showed, so Leave your tag was not tested'); return JSON.stringify(res); }
   const state = () => page.evaluate(() => { const f = document.getElementById('pickFrame'), r = f.getBoundingClientRect(), p = document.getElementById('pick');
     return { mode: p.dataset.mode, on: p.classList.contains('on'), x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), vw: innerWidth, vh: innerHeight,
       taken: f.classList.contains('taken'), stage: window.tagTest.state().stage, focus: document.activeElement === f, held: document.documentElement.style.overflow === 'hidden',
-      form: document.getElementById('mail').classList.contains('on'), hint: document.getElementById('pickHint').textContent }; });
-  const toLeft = async () => { if (await page.isVisible('#endPan') && (await page.textContent('#endPan')).includes('Leave your tag')) { await page.click('#endPan'); await page.waitForTimeout(2200); } }; // a phone lands on the flyer; Leave your tag and Back to the start are on the left side
+      form: document.documentElement.dataset.endReady === '1', hint: document.getElementById('pickHint').textContent }; });
+  const toLeft = async () => {}; // one end view on every screen (Tom 11-23: no flyer, no button)
   await toLeft(); await page.click('#leave'); await page.waitForTimeout(500);
   res.going = await state();
   if (!res.going.held) errs.push('the scroll was not held on the way to the wide shot');

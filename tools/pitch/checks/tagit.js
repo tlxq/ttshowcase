@@ -7,14 +7,14 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
     for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
-    let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('mail').classList.contains('on')); if (!on) await page.waitForTimeout(200); }
+    let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(200); }
     return on; };
   const st = () => page.evaluate(() => ({ ...window.tagTest.state(), bar: !document.getElementById('tagBar').hidden, send: !document.getElementById('tagSend').hidden,
-    form: document.getElementById('mail').classList.contains('on'), held: document.documentElement.style.overflow === 'hidden', hint: document.getElementById('pickHint').textContent }));
+    form: document.documentElement.dataset.endReady === '1', held: document.documentElement.style.overflow === 'hidden', hint: document.getElementById('pickHint').textContent }));
   await page.goto('__URL__'); await page.evaluate(() => { try { localStorage.clear(); } catch (_) {} return fetch('/api/tags-local/reset', { method: 'POST' }); });
   await page.goto('__URL__');
   if (!(await toForm())) { errs.push('the morning form never showed, so Tag it was not tested'); return JSON.stringify(res); }
-  const toLeft = async () => { if (await page.isVisible('#endPan') && (await page.textContent('#endPan')).includes('Leave your tag')) { await page.click('#endPan'); await page.waitForTimeout(2200); } }; // a phone lands on the flyer; Leave your tag and Back to the start are on the left side
+  const toLeft = async () => {}; // one end view on every screen (Tom 11-23: no flyer, no button)
   await toLeft(); await page.click('#leave'); await page.waitForTimeout(1700);
   const spot = await page.evaluate(() => window.pickTest.freeOnScreen()); await page.mouse.click(spot.x, spot.y); await page.waitForTimeout(1500);
   res.locked = await st();
