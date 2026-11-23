@@ -37,7 +37,7 @@ job() { # check, then "desktop" or "phone": its own servers and browser session;
     curl -fs "http://127.0.0.1:$port/paint.html" >/dev/null 2>&1 && curl -fs "http://127.0.0.1:$port/api/tags" >/dev/null 2>&1 && break
     sleep 0.1
   done
-  local page=paint.html; case "$1" in front*) page=front.html ;; esac
+  local page="paint.html?hour=23"; case "$1" in front*) page=front.html ;; esac # the clock light (Tom 11-23): the checks walk at night, the start's own light; contrast walks at noon too
   sed -e "s#__URL__#http://127.0.0.1:$port/$page#g" -e "s#__SHOTS__#$root/.cache/shots/#g" "tools/pitch/checks/$1.js" > "$script"
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi

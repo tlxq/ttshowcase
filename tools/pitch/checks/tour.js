@@ -21,9 +21,10 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   // the flyer, open: the form shows and takes typing, the three tabs are links with 48 px areas, nothing overlaps, it fits the screen; Esc folds it back
   const flyer = async (from, shot) => { await page.waitForTimeout(1200); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-' + shot + '.png' });
     const f = await page.evaluate(() => { const m = document.getElementById('mail'), r = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
-      return { sent: !!m.querySelector('[role="status"]'), open: document.getElementById('sheet').classList.contains('open'), inSheet: !!m.closest('#sheet'), inert: m.inert, op: +getComputedStyle(m).opacity, name: r('#mail .f-name span'), email: r('#mail .f-email span'), send: r('#mail button'), vw: innerWidth, vh: innerHeight,
+      return { coarse: matchMedia('(pointer: coarse)').matches, focused: document.activeElement && document.activeElement.tagName, typing: document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName) && matchMedia('(pointer: coarse)').matches, sent: !!m.querySelector('[role="status"]'), open: document.getElementById('sheet').classList.contains('open'), inSheet: !!m.closest('#sheet'), inert: m.inert, op: +getComputedStyle(m).opacity, name: r('#mail .f-name span'), email: r('#mail .f-email span'), send: r('#mail button'), vw: innerWidth, vh: innerHeight,
         tabs: [...document.querySelectorAll('#sheet .tab')].map(a => { const b = a.getBoundingClientRect(); return { href: a.href, w: b.width, h: b.height, b: b.bottom }; }) }; });
     const overlap = (a, b) => Math.min(a[2], b[2]) > Math.max(a[0], b[0]) && Math.min(a[3], b[3]) > Math.max(a[1], b[1]);
+    if (f.typing) errs.push(from + ': on a touch screen the flyer opened with a field focused, so the keyboard covers it');
     if (!f.open || !f.inSheet || f.inert || f.op < .9) errs.push(from + ': the flyer did not open with the form: ' + JSON.stringify(f));
     if (f.name && (overlap(f.name, f.email) || f.send[2] > f.vw || f.send[3] > f.vh || f.send[0] < 0)) errs.push(from + ': the form does not fit: ' + JSON.stringify(f));
     if (f.tabs.length !== 3 || f.tabs.some(t => !t.href || t.w < 47.5 || t.h < 47.5 || t.b > f.vh + 1)) errs.push(from + ': the tabs are not three 48 px links on screen: ' + JSON.stringify(f.tabs));
@@ -47,4 +48,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.evaluate(() => scrollTo(0, Math.round(svY(0) * .7))); await page.waitForTimeout(2500); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-pole.png' });
   res.pole = await box('#bombHot'); big(res.pole, 'Write to me (the sticker on the pole)');
   if (res.pole && res.pole.shown) { await page.click('#bombHot'); await flyer('the pole sticker', 'pole-flyer'); await shut('the pole sticker'); }
+  // the loop (Tom 11-23): scrolled on past the end, the camera steps back to the start's view and the page is at the start again
+  await page.evaluate(() => scrollTo(0, svY(1180))); await page.waitForTimeout(1500); await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); await page.waitForTimeout(1500);
+  res.loop = await page.evaluate(() => ({ y: Math.round(scrollY), start: Math.round(svY(0)) })); if (Math.abs(res.loop.y - res.loop.start) > 4) errs.push('past the end the page did not come back to the start: ' + JSON.stringify(res.loop));
   return JSON.stringify(res); }

@@ -26,8 +26,8 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   };
   await page.goto('__URL__'); await page.evaluate(() => fetch('/api/tags-local/reset', { method: 'POST' })); // each run starts with an empty store
   res.now = await run('');
-  res.full = await run('?tags=full');
-  res.fullEarlyTap = await run('?tags=full', true);
+  res.full = await run('&tags=full');
+  res.fullEarlyTap = await run('&tags=full', true);
   await page.evaluate(() => fetch('/api/tags-local/seed?n=40', { method: 'POST' }));
   res.store = await run('', false, true);
   res.storeEarlyTap = await run('', true, true);
