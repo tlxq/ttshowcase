@@ -45,7 +45,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.focus('#pickFrame'); await page.keyboard.press('Enter'); await page.waitForTimeout(1500); res.enter = await state();
   if (res.enter.mode !== '2' || res.enter.stage !== 'draw') errs.push('Enter on the frame in the wide shot did not fly in: ' + JSON.stringify(res.enter));
   await page.click('#pickCancel'); await page.waitForTimeout(2000);
-  res.gone = await state(); res.gone.restored = await page.evaluate(() => window.pickTest.restored()); res.gone.leaveFocus = await page.evaluate(() => document.activeElement?.id === 'leave');
+  res.gone = await state(); res.gone.restored = await page.evaluate(() => window.pickTest.restored()); res.gone.leaveFocus = await page.evaluate(() => document.activeElement?.id === 'leaveUp');
   if (!res.gone.leaveFocus) errs.push('after Cancel the keyboard focus is not on Leave your tag');
   if (res.gone.held || !res.gone.form || res.gone.on || !res.gone.restored || res.gone.stage) errs.push('Cancel did not walk back to the form with the scroll free: ' + JSON.stringify(res.gone));
   return JSON.stringify(res); }

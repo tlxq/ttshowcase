@@ -58,7 +58,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-send.png' });
   await page.fill('#tagName', 'Walker'); await page.click('#tagPut'); await page.waitForTimeout(2200);
   res.put = await st();
-  if (res.put.stage || !res.put.saved || res.put.leave || !res.put.shown || !res.put.form || res.put.held) errs.push('Put it on the wall did not keep the tag and step back to the form: ' + JSON.stringify(res.put));
+  if (res.put.stage || !res.put.saved || res.put.leave || !res.put.shown || res.put.held) errs.push('Put it on the wall did not keep the tag and step back to the walk: ' + JSON.stringify(res.put));
   if (!(res.put.wet > 0 && res.put.wet < 1)) errs.push('the paint is not drying as you step back: wet ' + res.put.wet);
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-put.png' });
   res.sentTo = await page.evaluate(async () => ({ rows: (await (await fetch('/api/tags-local/rows')).json()).map(r => ({ name: r.name, strokes: r.strokes.map(s => s.tool + ' ' + s.col), device: r.device })), saved: window.tagTest.state() }));

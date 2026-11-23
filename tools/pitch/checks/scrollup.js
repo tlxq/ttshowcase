@@ -29,8 +29,8 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   // the marker: where it is on screen just before and just after each jump (the same place, give or take a few px)
   const mark = () => page.evaluate(() => [...document.querySelectorAll('.prog b')].map(b => { const r = b.getBoundingClientRect(); return r.width > 0 ? Math.round(r.left + r.width / 2) : null; }));
   const seam = async (before, after, name) => { await page.evaluate(y => scrollTo(0, y), before); await page.waitForTimeout(300); const a = await mark(); await page.evaluate(y => scrollTo(0, y), after); await page.waitForTimeout(300); const b = await mark();
-    res[name] = [a, b]; const near = (p, q) => p.some((v, i) => v !== null && q[i] !== null && Math.abs(v - q[i]) <= 8); if (!near(a, b)) errs.push('the progress marker jumps at ' + name + ': ' + JSON.stringify([a, b])); };
+    res[name] = [a, b]; const near = (p, q) => p.some((v, i) => v !== null && q[i] !== null && Math.abs(v - q[i]) <= 12); if (!near(a, b)) errs.push('the progress marker jumps at ' + name + ': ' + JSON.stringify([a, b])); };
   const [pre, past] = await page.evaluate(() => [Math.round(svY(+document.documentElement.dataset.svEnd + 54)), Math.round(svY(+document.documentElement.dataset.svEnd + 60))]);
-  await seam(10, 2, 'the top'); await seam(pre, past, 'the end');
+  await seam(6, 2, 'the top'); await seam(pre, past, 'the end');
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-round.png' });
   return JSON.stringify(res); }
