@@ -1,5 +1,5 @@
 // The loop's left turn (PR3): after the pour the page parks a little way down, with no label (Tom 11-23: the progress line alone says where you are);
-// up at the visitors' wall the camera faces it (x -17..-7); on up past it the page lands near its end, where the start's view shows again;
+// up at the visitors' wall the camera faces it (x -17..-7); on up past it the page lands near its end, which shows the same wall (the seam); the tag tool works on both sides of it;
 // pulling past the top can't reload (overscroll-behavior); a resize while parked stays parked; the progress line's marker never jumps at either seam.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
@@ -33,4 +33,17 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const [pre, past] = await page.evaluate(() => [Math.round(svY(+document.documentElement.dataset.svEnd + 54)), Math.round(svY(+document.documentElement.dataset.svEnd + 60))]);
   await seam(6, 2, 'the top'); await seam(pre, past, 'the end');
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-round.png' });
+  // signing the wall on both sides of the seam (Tom 11-23): Leave your tag shows, the tool opens with the scroll held and no jump, Cancel gives the
+  // same place back with the scroll free
+  for (const [side, y] of [['the end side', res.round.end], ['the top side', 10]]) {
+    await page.evaluate(y => scrollTo(0, y), y); await page.waitForTimeout(2500);
+    const at0 = await page.evaluate(() => Math.round(scrollY)), shown = await page.evaluate(() => document.getElementById('leaveUp').style.display === 'block');
+    if (!shown) { errs.push('Leave your tag is not on the visitors\' wall at ' + side); continue; }
+    await page.click('#leaveUp'); await page.waitForTimeout(2200);
+    const open = await page.evaluate(() => ({ y: Math.round(scrollY), held: document.documentElement.style.overflow === 'hidden', mode: document.getElementById('pick').dataset.mode }));
+    if (!open.held || open.mode !== '1' || Math.abs(open.y - at0) > 4) errs.push('the tag tool did not open in place at ' + side + ': ' + JSON.stringify(open));
+    await page.click('#pickCancel'); await page.waitForTimeout(2200);
+    const back = await page.evaluate(() => ({ y: Math.round(scrollY), free: document.documentElement.style.overflow === '', leave: document.getElementById('leaveUp').style.display === 'block' }));
+    res['sign ' + side] = { at0, open, back };
+    if (!back.free || !back.leave || Math.abs(back.y - at0) > 4) errs.push('after Cancel at ' + side + ' the wall did not come back with the scroll free: ' + JSON.stringify(back)); }
   return JSON.stringify(res); }
