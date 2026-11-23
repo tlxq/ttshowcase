@@ -33,6 +33,9 @@
   /* The new front's one spray colour (Tom picked it over the orange 11-20): ring, signature, the loop round RUN.
      The old pages keep the orange until the new front replaces them. */
   --front-spray: #4aa8ff;
+  /* The progress line (Tom 11-23): one line at the bottom and one at the top of the screen, a loop the marker runs round */
+  --look-progress: 3px;
+  --look-progress-dash: 48px;
   /* The first screen's words: as big as fits four lines on the screen and "MYSELF." across it */
   --look-hero: min(19.5vw, 17.5svh, 158px);
   /* The four parts' names, as big as fits EXPERIMENTS across the screen, up to this */

@@ -6,16 +6,16 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const toForm = async () => {
     await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
-    for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
-    let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(200); }
+    await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(2500); // Leave your tag lives on the visitors' wall (Tom 11-23: no end landing)
+    let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('leaveUp').style.display === 'block'); if (!on) await page.waitForTimeout(200); }
     return on; };
   const st = () => page.evaluate(() => ({ ...window.tagTest.state(), bar: !document.getElementById('tagBar').hidden, send: !document.getElementById('tagSend').hidden,
-    form: document.documentElement.dataset.endReady === '1', held: document.documentElement.style.overflow === 'hidden', hint: document.getElementById('pickHint').textContent }));
+    form: document.getElementById('leaveUp').style.display === 'block', held: document.documentElement.style.overflow === 'hidden', hint: document.getElementById('pickHint').textContent }));
   await page.goto('__URL__'); await page.evaluate(() => { try { localStorage.clear(); } catch (_) {} return fetch('/api/tags-local/reset', { method: 'POST' }); });
   await page.goto('__URL__');
   if (!(await toForm())) { errs.push('the morning form never showed, so Tag it was not tested'); return JSON.stringify(res); }
-  const toLeft = async () => {}; // one end view on every screen (Tom 11-23: no flyer, no button)
-  await toLeft(); await page.click('#leave'); await page.waitForTimeout(1700);
+  const toLeft = async () => {}; // one view of the visitors' wall on every screen
+  await toLeft(); await page.click('#leaveUp'); await page.waitForTimeout(1700);
   const spot = await page.evaluate(() => window.pickTest.freeOnScreen()); await page.mouse.click(spot.x, spot.y); await page.waitForTimeout(1500);
   res.locked = await st();
   if (res.locked.stage !== 'draw' || !res.locked.bar || !res.locked.shown) errs.push('a tap on the wall did not open the drawing bar: ' + JSON.stringify(res.locked));
@@ -58,7 +58,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-send.png' });
   await page.fill('#tagName', 'Walker'); await page.click('#tagPut'); await page.waitForTimeout(2200);
   res.put = await st();
-  if (res.put.stage || !res.put.saved || res.put.leave || !res.put.shown || !res.put.form || res.put.held) errs.push('Put it on the wall did not keep the tag and step back to the form: ' + JSON.stringify(res.put));
+  if (res.put.stage || !res.put.saved || res.put.leave || !res.put.shown || res.put.held) errs.push('Put it on the wall did not keep the tag and step back to the walk: ' + JSON.stringify(res.put));
   if (!(res.put.wet > 0 && res.put.wet < 1)) errs.push('the paint is not drying as you step back: wet ' + res.put.wet);
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-put.png' });
   res.sentTo = await page.evaluate(async () => ({ rows: (await (await fetch('/api/tags-local/rows')).json()).map(r => ({ name: r.name, strokes: r.strokes.map(s => s.tool + ' ' + s.col), device: r.device })), saved: window.tagTest.state() }));

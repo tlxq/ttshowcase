@@ -7,15 +7,15 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   await page.goto('__URL__'); await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
-  for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
-  let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(200); }
+  await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(2500); // Leave your tag lives on the visitors' wall (Tom 11-23: no end landing)
+  let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('leaveUp').style.display === 'block'); if (!on) await page.waitForTimeout(200); }
   if (!on) { errs.push('the morning form never showed, so Leave your tag was not tested'); return JSON.stringify(res); }
   const state = () => page.evaluate(() => { const f = document.getElementById('pickFrame'), r = f.getBoundingClientRect(), p = document.getElementById('pick');
     return { mode: p.dataset.mode, on: p.classList.contains('on'), x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), vw: innerWidth, vh: innerHeight,
       taken: f.classList.contains('taken'), stage: window.tagTest.state().stage, focus: document.activeElement === f, held: document.documentElement.style.overflow === 'hidden',
-      form: document.documentElement.dataset.endReady === '1', hint: document.getElementById('pickHint').textContent }; });
-  const toLeft = async () => {}; // one end view on every screen (Tom 11-23: no flyer, no button)
-  await toLeft(); await page.click('#leave'); await page.waitForTimeout(500);
+      form: document.getElementById('leaveUp').style.display === 'block', hint: document.getElementById('pickHint').textContent }; });
+  const toLeft = async () => {}; // one view of the visitors' wall on every screen
+  await toLeft(); await page.click('#leaveUp'); await page.waitForTimeout(500);
   res.going = await state();
   if (!res.going.held) errs.push('the scroll was not held on the way to the wide shot');
   if (res.going.form) errs.push('the form still showed on the way to the wide shot');
@@ -45,7 +45,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.focus('#pickFrame'); await page.keyboard.press('Enter'); await page.waitForTimeout(1500); res.enter = await state();
   if (res.enter.mode !== '2' || res.enter.stage !== 'draw') errs.push('Enter on the frame in the wide shot did not fly in: ' + JSON.stringify(res.enter));
   await page.click('#pickCancel'); await page.waitForTimeout(2000);
-  res.gone = await state(); res.gone.restored = await page.evaluate(() => window.pickTest.restored()); res.gone.leaveFocus = await page.evaluate(() => document.activeElement?.id === 'leave');
+  res.gone = await state(); res.gone.restored = await page.evaluate(() => window.pickTest.restored()); res.gone.leaveFocus = await page.evaluate(() => document.activeElement?.id === 'leaveUp');
   if (!res.gone.leaveFocus) errs.push('after Cancel the keyboard focus is not on Leave your tag');
   if (res.gone.held || !res.gone.form || res.gone.on || !res.gone.restored || res.gone.stage) errs.push('Cancel did not walk back to the form with the scroll free: ' + JSON.stringify(res.gone));
   return JSON.stringify(res); }

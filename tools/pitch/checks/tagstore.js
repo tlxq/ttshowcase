@@ -55,18 +55,18 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await fresh(); await page.goto('__URL__');
   await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
-  for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
-  let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.documentElement.dataset.endReady === '1'); if (!on) await page.waitForTimeout(200); }
+  await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(2500); // Leave your tag lives on the visitors' wall (Tom 11-23: no end landing)
+  let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('leaveUp').style.display === 'block'); if (!on) await page.waitForTimeout(200); }
   if (!on) { errs.push('the morning form never showed, so the held spot was not tested'); return JSON.stringify(res); }
   const frame = () => page.evaluate(() => { const f = document.getElementById('pickFrame'); return { taken: f.classList.contains('taken'), mode: document.getElementById('pick').dataset.mode, hint: document.getElementById('pickHint').textContent, held: window.tagTest.held() }; });
-  const toLeft = async () => {}; // one end view on every screen (Tom 11-23: no flyer, no button)
-  await toLeft(); await page.click('#leave'); await page.waitForTimeout(2200);
+  const toLeft = async () => {}; // one view of the visitors' wall on every screen
+  await toLeft(); await page.click('#leaveUp'); await page.waitForTimeout(2200);
   const free = await page.evaluate(() => window.pickTest.freeOnScreen()); if (!free) { errs.push('no free part of the wall on screen'); return JSON.stringify(res); }
   const at = await page.evaluate(([x, y]) => window.pickTest.worldAt(x, y), [free.x, free.y]);
   res.other = await page.evaluate(async ([x, y]) => (await fetch('/api/tags', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: '', device: 'other-device-' + Math.random().toString(16).slice(2), spot: { x: x + .13, y: y + .07, w: 2.4, h: 1.35, turn: 0 }, // off the page's 0.4 m grid: a free spot that touches its edge exactly is a coin toss
     strokes: [{ tool: 'fat', col: '#ff4f1a', seed: 5, pts: [100, 100, 0, .5, 300, 200, 50, .5], dr: [] }] }) })).status, at);
   if (res.other !== 200) errs.push('the other visitor\'s tag was not taken: ' + res.other);
-  await page.click('#pickCancel'); await page.waitForTimeout(2000); await toLeft(); await page.click('#leave'); await page.waitForTimeout(2600);
+  await page.click('#pickCancel'); await page.waitForTimeout(2000); await toLeft(); await page.click('#leaveUp'); await page.waitForTimeout(2600);
   const held = await page.evaluate(() => window.pickTest.heldOnScreen()); if (!held) { errs.push('the waiting tag\'s spot was not told to the page'); return JSON.stringify(res); }
   await page.mouse.click(held.x, held.y); await page.waitForTimeout(500); res.held = await frame();
   if (res.held.mode !== '1' || !res.held.taken || res.held.hint !== 'Someone\'s tagging here. Pick another spot.') errs.push('a tap on a waiting tag\'s spot did not stay in the wide shot with a yellow frame and its words: ' + JSON.stringify(res.held));
