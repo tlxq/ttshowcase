@@ -293,10 +293,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const head = new THREE.Mesh(new THREE.CylinderGeometry(.13, .32, .18, 20), postM); head.position.set(POST.x, GROUND + 6.45, POST.z + 1.25);
     const bulb = new THREE.Mesh(new THREE.CylinderGeometry(.24, .24, .02, 20), bulbM); bulb.position.set(POST.x, GROUND + 6.35, POST.z + 1.25);
     scene.add(pole, arm, head, bulb); POSTMESH.push(pole, arm, head, bulb); }
-  // the steps: worn yellow paint on each edge, a handrail by the wall, a wall lamp over each flight; one light, moved to the flight in view
+  // the steps (edges blended over at least a pixel, fwidth: a hard 1 cm edge stair-stepped from a few metres away, design review 11-23): worn yellow paint on each edge, a handrail by the wall, a wall lamp over each flight; one light, moved to the flight in view
   { const prev = ground.material.onBeforeCompile; ground.material.onBeforeCompile = sh => { prev(sh);
     sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", `float nose = 0.;
-          ${STAIRS.map(([a, b]) => `if (vWP.x > ${a.toFixed(3)} && vWP.x < ${(b + .001).toFixed(3)} && (${a.toFixed(3)} < ${RA.toFixed(3)} || vWP.z < ${SW.toFixed(2)})) { float f = fract((vWP.x - ${a.toFixed(3)}) / ${((b - a) / NSTEP).toFixed(4)}); nose = max(nose, smoothstep(.8, .84, f) + (1. - smoothstep(.0, .02, f))); }`).join("\n")}
+          ${STAIRS.map(([a, b]) => `if (vWP.x > ${a.toFixed(3)} && vWP.x < ${(b + .001).toFixed(3)} && (${a.toFixed(3)} < ${RA.toFixed(3)} || vWP.z < ${SW.toFixed(2)})) { float f = fract((vWP.x - ${a.toFixed(3)}) / ${((b - a) / NSTEP).toFixed(4)}), aa = fwidth(f) * 1.5; nose = max(nose, smoothstep(.8 - aa, .84 + aa, f) + (1. - smoothstep(.0, .02 + aa, f))); }`).join("\n")}
           nose *= smoothstep(.42, .62, gf(vWP.xz * 4.1 + 7.)) * (1. - gWet) * .8;
           diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.5, .39, .09) * (.6 + .4 * gn(vWP.xz * 40.)), clamp(nose, 0., 1.));
           #include <emissivemap_fragment>`); }; }
