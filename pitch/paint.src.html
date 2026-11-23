@@ -1429,6 +1429,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const sheet = document.getElementById("sheet"), fly = sheet.querySelector(".fly"), flyBot = sheet.querySelector(".bot"), flyX = sheet.querySelector(".x"), sTabs = [...sheet.querySelectorAll(".tab")];
   const dim = document.getElementById("dim"), bombHot = document.getElementById("bombHot"), corner = document.getElementById("corner"), mailHome = mail.parentNode;
   const FL = E.flyer, FLW = FL[2] - FL[0], FLH = FL[3] - FL[1], msOf = n => REDUCED ? 0 : parseFloat(tok(n)) || 0, EASE = "cubic-bezier(.2, 0, 0, 1)"; // --ease
+  const TOUCH = matchMedia("(pointer: coarse)").matches; fly.tabIndex = -1; fly.style.outline = "none";
   let sheetOpen = false, sheetBusy = false, sheetSent = false, sheetFrom = null, wtmCurl = null, wtmCurlT = null;
   function sheetPaper() { const c = Object.assign(document.createElement("canvas"), { width: FLW, height: FLH }), g = c.getContext("2d"); // the flyer off the wall, straightened
     g.translate(FLW / 2, FLH / 2); g.rotate(-FLYER_TILT); g.translate(-(FL[0] + FLW / 2), -(FL[1] + FLH / 2)); g.drawImage(eCan, 0, 0); return `url(${c.toDataURL()})`; }
@@ -1460,7 +1461,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     await fly.animate([{ transform: flyAt(r, b, -180, -3) }, { transform: flyAt(null, b) }], { duration: P, easing: EASE, fill: "forwards" }).finished; // off the pole, turning over on the way: the blank back of the paper
     await flyBot.animate([{ transform: FOLD }, { transform: FLAT }], { duration: T, easing: EASE, fill: "forwards" }).finished; // the folded half opens down
     mail.animate([{ opacity: 0 }, { opacity: 1 }], { duration: T / 2, fill: "forwards" }); mail.style.opacity = "";
-    sheet.classList.add("open"); sTabs.forEach(t => t.tabIndex = 0); sheetBusy = false; (mail.querySelector("input") || flyX).focus({ preventScroll: true }); }
+    sheet.classList.add("open"); sTabs.forEach(t => t.tabIndex = 0); sheetBusy = false;
+    (TOUCH ? fly : mail.querySelector("input") || flyX).focus({ preventScroll: true }); } // a touch screen: the flyer itself, so the keyboard opens only when a field is tapped (S23 11-23: it covered the form)
   async function sheetClose() { if (!sheetOpen || sheetBusy) return; sheetBusy = true; sheet.classList.remove("open");
     const P = msOf("--panel"), T = msOf("--toggle"), b = sheetBox(), back = sheetFrom === "pole" && BOMB_WTM ? (BOMB_WTM.visible = true, wtmRect()) : null; if (back) BOMB_WTM.visible = false; // folds back onto the pole when it is in view, else into the corner
     const r = back || cornerRect(); mail.animate([{ opacity: 1 }, { opacity: 0 }], { duration: T / 2, fill: "forwards" });
