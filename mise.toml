@@ -113,3 +113,8 @@ run = "npm outdated || true"
 [tasks."tags:live"]
 description = "One real tag round on a deployment: send, held spot, approve, on the wall, remove (Tom gets one test mail); default ttdevs.com, or name a preview address"
 run = "tools/tags/live.sh"
+
+[tasks."pitch:sheet"]
+description = "The whole-walk sheet: the same moments on master (or a named base) and on this branch, laptop + phone, night + day, side by side, changed pictures marked; shown before every visual step. Desk GPU, about 2 min; opens at /sheet/ while mise run pitch runs"
+depends = ["install"]
+run = "tools/pitch/sheet.sh"
