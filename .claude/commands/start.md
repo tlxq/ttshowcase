@@ -15,5 +15,5 @@ Start a session in this repo. Rules: `CLAUDE.md`. One moment at a time: name the
    S23. Site work: `mise run dev`.
 6. Before changing what you see: load `workflow:signum` for words, read `docs/design.md` for the site, the "look
    good/bad" memory for both.
-7. Build it. When a first version runs, send Tom the link right away; the checks come after.
+7. Build it. When a first version runs, send Tom the link right away, with the whole-walk sheet (`mise run pitch:sheet`); the checks come after.
 8. Checks: `mise run pitch:check` (pitch) or `mise run walk` (site), and `mise run check`. Then `/ship`.
