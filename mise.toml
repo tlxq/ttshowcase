@@ -56,6 +56,11 @@ description = "Make the share card (public/share.jpg) from the first screen of /
 depends = ["build"]
 run = "tools/share.sh"
 
+[tasks."share:front"]
+description = "Make the new front's share card (pitch/assets/share.jpg) from tools/share-front/card.html; run it when the card changes"
+depends = ["build"]
+run = "tools/share-front/make.sh"
+
 [tasks.previews]
 description = "Film the sites in src/content/recordings.json scrolling, for the Live part's screens (the walk fails once a film is 30 days old); name one site to film only that"
 run = "tools/previews.sh"
