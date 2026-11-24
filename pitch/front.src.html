@@ -156,6 +156,13 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .proj.a { --fh: 86svh; --fw: calc(var(--fh) * 540 / 1170); --fx: 6vw; width: calc(var(--fx) + var(--fw) + 18vw + min(32vw, 470px) + 10vw); }
 .proj.a .film { position: absolute; left: var(--fx); top: calc(50svh - var(--fh) / 2 + 2svh); width: var(--fw); aspect-ratio: 540 / 1170; overflow: hidden; border-radius: var(--look-device-round); transform-origin: 0 50%; will-change: transform; }
 .proj.a .film video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.proj .vbox { overflow: hidden; } .proj .vbox video { display: block; width: 100%; height: auto; }
+/* tap a film to pause it, again to play (WCAG 2.2.2, Tom 11-24): the mark shows on hover and focus, and stays while paused by hand */
+.vp { position: absolute; right: var(--s1); bottom: var(--s1); width: var(--tap); height: var(--tap); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--look-dark) 70%, transparent); color: var(--look-cream); cursor: pointer; opacity: 0; transition: opacity var(--toggle) var(--ease); }
+.vp svg { width: 20px; height: 20px; fill: currentColor; } .vp .pl, .vp.rest .ps { display: none; } .vp.rest .pl { display: inline; }
+.film:hover .vp, .vbox:hover .vp, .vp:focus-visible, .vp.held { opacity: 1; }
+.vp:focus-visible { outline: 2px solid var(--look-cream); outline-offset: 2px; }
+.film video, .vbox video { cursor: pointer; }
 .proj.a .cap { left: var(--fx); top: calc(50svh + var(--fh) / 2 + 2svh + 10px); } /* under the film: above it, it met the header */
 .note { position: absolute; left: calc(var(--fx) + var(--fw) + 1.5vw); top: 44svh; margin: 0; display: grid; justify-items: start; pointer-events: none; }
 .note span { font: 400 clamp(26px, 2.4vw, 38px)/1 "Sedgwick Ave Display", var(--f-text); color: var(--front-spray); rotate: -6deg; white-space: nowrap; }
@@ -366,7 +373,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <p>Each one is live. Open it, or read the code.</p>
       </div>
       <article class="proj a" aria-labelledby="p1">
-        <div class="film"><video src="projects/eparadar-map.mp4" poster="projects/eparadar-map.webp" muted loop playsinline preload="none" width="540" height="1170" aria-label="The epaRadar app: friends driving on a live map of Södermalm, made-up test friends"></video></div>
+        <div class="film"><video src="projects/eparadar-map.mp4" poster="projects/eparadar-map.webp" muted loop playsinline preload="none" width="540" height="1170" aria-label="The epaRadar app: friends driving on a live map of Södermalm, made-up test friends"></video><button type="button" class="vp" aria-label="Pause the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ps" d="M7 5h3v14H7zM14 5h3v14h-3z"/><path class="pl" d="M8 5l11 7-11 7z"/></svg></button></div>
         <span class="cap">The app · test data</span>
         <p class="note" aria-hidden="true"><span>see who's out</span><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg></p>
         <div class="txt">
@@ -403,7 +410,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <div class="shot big morph"><img src="projects/app-utveckling-top.webp" alt="app-utveckling.se: Vi bygger appar som används." width="1440" height="900" loading="lazy"><img class="to" src="projects/mjukvaruutvecklare-top.webp" alt="mjukvaruutvecklare.com, the same page from the same code: Vi bygger system som håller." width="1440" height="900" loading="lazy"><i class="seam"></i></div>
         <span class="cap">app-utveckling.se → mjukvaruutvecklare.com</span>
         <p class="note up" aria-hidden="true"><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg><span>same code, two sites</span></p>
-        <video class="shot small" data-speed="1" src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video>
+        <div class="shot small vbox" data-speed="1"><video src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video><button type="button" class="vp" aria-label="Pause the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ps" d="M7 5h3v14H7zM14 5h3v14h-3z"/><path class="pl" d="M8 5l11 7-11 7z"/></svg></button></div>
         <div class="txt">
           <span class="no">03 / 03 · Work project, built alone</span>
           <h3 id="p3">EDGE</h3>
@@ -494,8 +501,16 @@ __LIBS__
   });
 
   // the EDGE films play only while on screen
-  const vids = new IntersectionObserver((es) => es.forEach((e) => { const v = e.target; if (e.isIntersecting && !still) { v.preload = "auto"; v.play().catch(() => {}); } else v.pause(); }), { threshold: 0.3 });
+  const vids = new IntersectionObserver((es) => es.forEach((e) => { const v = e.target; if (e.isIntersecting && (!still || v.dataset.on) && !v.dataset.held) { v.preload = "auto"; v.play().catch(() => {}); } else v.pause(); }), { threshold: 0.3 });
   document.querySelectorAll("video").forEach((v) => vids.observe(v));
+  // a tap on a film or its mark pauses it, another plays it; a film paused by hand stays paused when it comes back on screen
+  document.querySelectorAll(".vp").forEach((b) => { const v = b.parentElement.querySelector("video");
+    // the mark says what a tap does next, from the film's own state (off screen it is paused too)
+    const mark = () => { b.classList.toggle("rest", v.paused); b.setAttribute("aria-label", v.paused ? "Play the video" : "Pause the video"); };
+    v.addEventListener("play", mark); v.addEventListener("pause", mark); mark();
+    const flip = () => { const hold = !v.paused; b.classList.toggle("held", hold); v.dataset.held = hold ? "1" : ""; v.dataset.on = hold ? "" : "1";
+      if (hold) v.pause(); else { v.preload = "auto"; v.play().catch(() => {}); } };
+    b.addEventListener("click", flip); v.addEventListener("click", flip); });
   // epaRadar's numbers, live from GitHub at load (no token); no answer shows nothing, never an old number
   const gh = async (u) => { const r = await fetch("https://api.github.com/" + u); if (!r.ok) throw 0; return r; };
   const commits = gh("repos/tlxq/eparadar/commits?per_page=1").then((r) => { const m = /[?&]page=(\d+)>; rel="last"/.exec(r.headers.get("Link") || ""); if (!m) throw 0; return +m[1]; });
