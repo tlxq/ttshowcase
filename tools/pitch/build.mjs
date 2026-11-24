@@ -96,8 +96,9 @@ const embed =
   `@font-face{font-family:'Clash Display';src:url(data:font/woff2;base64,${b64(await clash())}) format('woff2');font-weight:700;font-display:swap}` +
   `@font-face{font-family:'Saira Stencil One';src:url(data:font/woff2;base64,${b64(await saira())}) format('woff2');font-display:block}` +
   `@font-face{font-family:'Sedgwick Ave Display';src:url(data:font/woff2;base64,${b64(await google("SedgwickAveDisplay.woff2", "Sedgwick+Ave+Display", "Sedgwick Ave Display"))}) format('woff2');font-display:block}` +
-  `@font-face{font-family:'Inter';src:url(data:font/woff2;base64,${b64(await google("Inter.woff2", "Inter:wght@400..700", "Inter"))}) format('woff2');font-weight:400 700;font-display:block}` +
-  // the front's code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono (both SIL OFL)
+  `@font-face{font-family:'Inter';src:url(data:font/woff2;base64,${b64(await google("Inter.woff2", "Inter:wght@400..700", "Inter"))}) format('woff2');font-weight:400 700;font-display:block}`;
+// the front's code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono (both SIL OFL); the front only
+const frontFonts =
   `@font-face{font-family:'Archivo';src:url(data:font/woff2;base64,${b64(await google("ArchivoExpandedBlack.woff2", "Archivo:wdth,wght@125,900", "Archivo"))}) format('woff2');font-weight:900;font-stretch:125%;font-display:block}` +
   `@font-face{font-family:'JetBrains Mono';src:url(data:font/woff2;base64,${b64(await google("JetBrainsMono.woff2", "JetBrains+Mono:wght@500..800", "JetBrains Mono"))}) format('woff2');font-weight:500 800;font-display:block}`;
 
@@ -163,7 +164,7 @@ const libs = ["gsap/dist/gsap.min.js", "gsap/dist/ScrollTrigger.min.js", "lenis/
   .map((f) => `<script>${lib(f)}</script>`)
   .join("\n");
 let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
-  .replaceAll("__EMBED__", () => embed)
+  .replaceAll("__EMBED__", () => embed + frontFonts)
   .replaceAll("__TOKENS__", () => parts.__TOKENS__)
   .replaceAll("__LIBS__", () => libs)
   .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
