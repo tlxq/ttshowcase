@@ -10,7 +10,7 @@ __TOKENS__
 html, body { background: var(--look-ground); color: var(--look-text); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 1480vh; } /* the visitors' wall, the seam (TOP, 50: at its top the page is at its end) and the way down past the pole to the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; TOP (50) + UP (90: the visitors' wall, the pole on the way) + SV_END + LOOP (60) + 100 */
+.track { height: 843vh; } /* the visitors' wall, the seam (TOP, 50: at its top the page is at its end) and the way down past the pole to the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; TOP (50) + UP (90: the visitors' wall, the pole on the way) + SV_END + LOOP (60) + 100 */
 html { overscroll-behavior-y: none; } /* the top of the page is the way round to the end: pulling further must not reload it on a phone */
 .hud { position: fixed; inset: 0; pointer-events: none; }
 .hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -251,7 +251,14 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the walk is a loop (Tom 11-17): after the pour the page parks UP vh down; scrolling up from there turns the camera left to the visitor wall.
   // upPx: the park in pixels, from the track's own height (a phone's vh and innerHeight differ while its address bar moves)
   // TOP (Tom 11-23, the loop both ways): the camera rests on the visitors' wall; at the very top the page is at its end, which shows that wall too
-  const UP = 90, TOP = 50, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / (TOP + UP + SV_MAX + 100), topPx = () => track.offsetHeight * TOP / (TOP + UP + SV_MAX + 100);
+  // the scroll's own pace (R2, Tom 11-24: "a lot of scrolling"): the walk keeps its own count (sv, 0..SV_MAX: every moment, light and check is set in it),
+  // but the page is shorter: a wall holds ~20-25 vh of scroll, a move between walls about half what it took. PACE: [sv, vh down the page below the park];
+  // straight between pairs, so a move keeps its own easing. The checks scroll with svY(sv), which reads it.
+  const PACE = [[0, 0], [60, 45], [240, 70], [304, 90], [340, 95], [416, 145], [486, 170], [529, 190], [548, 195], [655, 245], [700, 275], [725, 295], [770, 325], [795, 345],
+    [840, 375], [865, 395], [910, 425], [935, 445], [995, 480], [1045, 520], [1058, 545], [SV_MAX - 10, 595], [SV_MAX, 603]], WALK = PACE[PACE.length - 1][1];
+  const paceOf = (v, a, b) => { if (v <= PACE[0][a]) return PACE[0][b]; for (let i = 1; i < PACE.length; i++) if (v <= PACE[i][a]) { const [p, q] = [PACE[i - 1], PACE[i]]; return p[b] + (q[b] - p[b]) * (v - p[a]) / (q[a] - p[a]); } return PACE[PACE.length - 1][b]; };
+  const UP = 90, TOP = 50, PAGE = TOP + UP + WALK + 100, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / PAGE, topPx = () => track.offsetHeight * TOP / PAGE;
+  track.style.height = PAGE + "vh"; // the stylesheet says the same, for the first paint
   window.visitY = () => topPx(); // the visitors' wall in pixels; the checks scroll with this
   let up0 = 0, endVisit = 0; // the park at the last frame; how far the end has walked in to the visitors' wall (0..1)
   // The progress line (Tom 11-23): the only thing that says where on the site you are. The bottom line is the walk (start → EDGE, left to right),
@@ -266,7 +273,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     for (const [e, a, b] of [[prog[1], 0, W], [prog[0], W, 2 * W]]) { let lo = 0, hi = 0, m = e.firstChild; // each line shows its part of the dash; round a corner it is on both
       for (const o of [-2 * W, 0, 2 * W]) { const l = Math.max(a, s + o - DASH / 2), h = Math.min(b, s + o + DASH / 2); if (h > l) { lo = l; hi = h; } }
       const x = e === prog[1] ? lo : 2 * W - hi; m.style.width = (hi - lo).toFixed(1) + "px"; m.style.transform = `translateX(${x.toFixed(1)}px)`; } }
-  window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * sv / SV_MAX; // the checks scroll with this
+  window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * paceOf(sv, 0, 1) / WALK; // the checks scroll with this
   const HX0 = 35, CX1 = 66, MX_IN = 36.8, MX_OUT = 64, MZ = 1.1, MR = .42, RZ = 9, DY = G3 - 1.5, WF = G3 - 4.5, END_X = 104;
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
   const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + 2 * TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
@@ -2086,14 +2093,14 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     autoRes(raw);
     if (introOver && svKeep >= 0 && svKeepH !== document.documentElement.scrollHeight) { scrollTo(0, svY(svKeep)); svKeepH = document.documentElement.scrollHeight; } // a resize or a turned phone: the walk stays where it was (the page goes on past the end now, so a pixel scroll would land in the dusk)
     if (introOver && up0 && upPx() !== up0 && Math.abs(scrollY - up0) < 2) scrollTo(0, upPx()); // a resize or a turned phone while parked: stay parked, not half turned
-    const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? cl((scrollY - up) / H2) * SV_MAX : 0,
+    const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? paceOf(cl((scrollY - up) / H2) * WALK, 1, 0) : 0,
       tp = topPx(), lft = introOver && up > tp ? cl(1 - (scrollY - tp) / (up - tp)) : 0, lookL = sm(cl(lft / .6)), goL = sm(cl((lft - .25) / .75)), // up the page: the head turns first, then the camera walks left
-      pAll = cl(sv / 540), p = cl(sv / 320); // sv: the scroll in vh below the park (the page is UP + SV_END + 100 vh); the first three scenes keep the scroll they had
+      pAll = cl(sv / 540), p = cl(sv / 320); // sv: the walk's own count below the park (PACE turns the page's scroll into it); the first three scenes keep the scroll they had
     if (introOver && svKeepH === document.documentElement.scrollHeight) svKeep = sv; else if (svKeep < 0) { svKeep = sv; svKeepH = document.documentElement.scrollHeight; }
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
     // scroll moves the camera only: step back (0-.12), walk right to the second wall (.18-.38), step back to look (.75-.95).
     const back = sm(cl(p / .12)), pan = sm(cl(sv / RAIL_SV)), end = sm(cl((p - .75) / .2));
-    const gv = scrollY / track.offsetHeight * (TOP + UP + SV_MAX + 100), railR = !introOver ? 2 : gv < TOP ? cl((gv - 2) / (TOP - 2)) : gv < TOP + UP ? 1 + cl((gv - TOP) / UP) : 2 + cl(sv / RAIL_SV);
+    const gv = scrollY / track.offsetHeight * PAGE, railR = !introOver ? 2 : gv < TOP ? cl((gv - 2) / (TOP - 2)) : gv < TOP + UP ? 1 + cl((gv - TOP) / UP) : 2 + cl(sv / RAIL_SV);
     if (introOver && pan > .5 && !stencilAt) stencilAt = now; // the wall is reached: its label and links come a beat later
     const stencilOn = pan > .5;
     head.style.opacity = 1 - pan;
