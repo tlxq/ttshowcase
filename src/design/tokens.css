@@ -36,6 +36,9 @@
   /* The new front's one spray colour (Tom picked it over the orange 11-20): ring, signature, the loop round RUN.
      The old pages keep the orange until the new front replaces them. */
   --front-spray: #4aa8ff;
+  /* the front's first screen, the code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono */
+  --front-name: "Archivo", "Arial Black", sans-serif;
+  --front-code: "JetBrains Mono", ui-monospace, Menlo, monospace;
   /* The progress line (Tom 11-23): one line at the bottom and one at the top of the screen, a loop the marker runs round */
   --look-progress: 3px;
   --look-progress-dash: 48px;

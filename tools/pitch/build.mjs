@@ -34,6 +34,17 @@ async function get(url, what) {
   return res;
 }
 
+// Google Fonts' answer lists one face per alphabet; the Latin one is marked /* latin */. Its link doesn't always end in
+// .woff2 (sometimes it is .../l/font?kit=...), so the face is found by its format('woff2') label, not the link's ending.
+function latinWoff2(css) {
+  const faces = [
+    ...css.matchAll(
+      /(?:\/\*\s*([\w-]+)\s*\*\/\s*)?@font-face\s*\{[^}]*?url\((https:[^)]+)\)\s*format\(['"]woff2['"]\)/g,
+    ),
+  ];
+  return (faces.find((f) => f[1] === "latin") ?? faces.at(-1))?.[2];
+}
+
 async function clash() {
   const file = join(fonts, "ClashDisplay-Bold.woff2");
   if (existsSync(file)) return file;
@@ -63,10 +74,7 @@ async function saira() {
       "Saira Stencil One",
     )
   ).text();
-  const url = css
-    .match(/url\((https:[^)]+\.woff2)\)/g)
-    ?.at(-1)
-    ?.slice(4, -1); // the last face is the Latin one
+  const url = latinWoff2(css);
   if (!url) throw new Error("Couldn't find Saira Stencil One's woff2 in Google Fonts' answer");
   writeFileSync(file, Buffer.from(await (await get(url, "Saira Stencil One")).arrayBuffer()));
   return file;
@@ -80,10 +88,7 @@ async function google(name, family, what) {
   const css = await (
     await get(`https://fonts.googleapis.com/css2?family=${family}&display=block`, what)
   ).text();
-  const url = css
-    .match(/url\((https:[^)]+\.woff2)\)/g)
-    ?.at(-1)
-    ?.slice(4, -1);
+  const url = latinWoff2(css);
   if (!url) throw new Error(`Couldn't find ${what}'s woff2 in Google Fonts' answer`);
   writeFileSync(file, Buffer.from(await (await get(url, what)).arrayBuffer()));
   return file;
@@ -97,6 +102,10 @@ const embed =
   `@font-face{font-family:'Saira Stencil One';src:url(data:font/woff2;base64,${b64(await saira())}) format('woff2');font-display:block}` +
   `@font-face{font-family:'Sedgwick Ave Display';src:url(data:font/woff2;base64,${b64(await google("SedgwickAveDisplay.woff2", "Sedgwick+Ave+Display", "Sedgwick Ave Display"))}) format('woff2');font-display:block}` +
   `@font-face{font-family:'Inter';src:url(data:font/woff2;base64,${b64(await google("Inter.woff2", "Inter:wght@400..700", "Inter"))}) format('woff2');font-weight:400 700;font-display:block}`;
+// the front's code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono (both SIL OFL); the front only
+const frontFonts =
+  `@font-face{font-family:'Archivo';src:url(data:font/woff2;base64,${b64(await google("ArchivoExpandedBlack.woff2", "Archivo:wdth,wght@125,900", "Archivo"))}) format('woff2');font-weight:900;font-stretch:125%;font-display:block}` +
+  `@font-face{font-family:'JetBrains Mono';src:url(data:font/woff2;base64,${b64(await google("JetBrainsMono.woff2", "JetBrains+Mono:wght@500..800", "JetBrains Mono"))}) format('woff2');font-weight:500 800;font-display:block}`;
 
 const parts = {
   __EMBED__: embed,
@@ -160,7 +169,7 @@ const libs = ["gsap/dist/gsap.min.js", "gsap/dist/ScrollTrigger.min.js", "lenis/
   .map((f) => `<script>${lib(f)}</script>`)
   .join("\n");
 let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
-  .replaceAll("__EMBED__", () => embed)
+  .replaceAll("__EMBED__", () => embed + frontFonts)
   .replaceAll("__TOKENS__", () => parts.__TOKENS__)
   .replaceAll("__LIBS__", () => libs)
   .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
