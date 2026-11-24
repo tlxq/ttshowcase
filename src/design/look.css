@@ -1306,8 +1306,8 @@ html:has(.lk) body {
   }
 }
 
-/* An address that isn't a page, in the front's design (the code poster): cream, the one blue word big in the
-   poster face, the address struck through and the one way back in the code voice. */
+/* An address that isn't a page, in the front's design (the code poster): cream, 404 big in the poster face and the
+   page's dark (blue failed contrast on cream, Tom 11-24), the blue on the strike, the address struck through and the one way back in the code voice. */
 .lk-missing {
   position: relative;
   display: grid;
@@ -1337,7 +1337,6 @@ html:has(.lk) body {
   font: 900 var(--look-big) / 0.86 var(--look-poster);
   font-stretch: 125%;
   letter-spacing: -0.03em;
-  color: var(--front-spray);
 }
 .lk-missing-path {
   margin: 0;
