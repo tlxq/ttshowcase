@@ -30,6 +30,9 @@
   --look-dark-soft: #2b2925;
   --look-dark-quiet: #4a4740;
   --look-spray: #ff4f1a;
+  /* paint on dark concrete (EDGE's words, Tom 11-24): light, and the light blue beside it */
+  --look-paint-light: #e9edf2;
+  --look-paint-blue: #7db8ff;
   /* The new front's one spray colour (Tom picked it over the orange 11-20): ring, signature, the loop round RUN.
      The old pages keep the orange until the new front replaces them. */
   --front-spray: #4aa8ff;
