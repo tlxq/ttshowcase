@@ -809,20 +809,20 @@ __LIBS__
       if (!frames[i] || !frames[i + 1]) { i = MID; k = 0; }
       const G = grid(frames[Math.round(f)] ? Math.round(f) : MID); if (!G) return;
       // the window: over his face when nothing moves, else where the mouse or finger is
-      const hx = (pr.x + pr.w / 2) / W, hy = (pr.y + pr.h * 0.3) / H;
+      const hx = (pr.x + pr.w / 2) / W, hy = (pr.y + pr.h * 0.34) / H; // his eyes
       const idle = still || t - aLast > 2500;
       const tx = idle ? hx + (still ? 0 : Math.sin(t / 1700) * (pr.w / W) * 0.12) : ax, ty = idle ? hy + (still ? 0 : Math.sin(t / 1100) * (pr.h / H) * 0.08) : ay;
       if (px === null || still) { px = tx; py = ty; } else { px += (tx - px) * 0.12; py += (ty - py) * 0.12; }
       const cx = px * W, cy = py * H, R = Math.min(W, H) * 0.2;
       x.clearRect(0, 0, W, H);
       wx.globalCompositeOperation = "source-over"; wx.clearRect(0, 0, W, H);
-      const a0 = twoTone(i), a1 = k > 0 ? twoTone(i + 1) : null;
-      if (a0) { wx.globalAlpha = 1; wx.drawImage(a0, pr.x, pr.y, pr.w, pr.h); if (a1) { wx.globalAlpha = k; wx.drawImage(a1, pr.x, pr.y, pr.w, pr.h); } wx.globalAlpha = 1; }
+      const a0 = twoTone(k < 0.5 || !frames[i + 1] ? i : i + 1); // the nearest frame alone: two blended frames show a double face
+      if (a0) wx.drawImage(a0, pr.x, pr.y, pr.w, pr.h);
       wx.globalCompositeOperation = "destination-in";
       const g = wx.createRadialGradient(cx, cy, R * 0.35, cx, cy, R); g.addColorStop(0, "#000"); g.addColorStop(1, "rgba(0,0,0,0)"); wx.fillStyle = g; wx.fillRect(0, 0, W, H);
       // a thin cream edge round his head, like a sticker's (Tom picked it over swapping the name's colours)
       rx.globalCompositeOperation = "source-over"; rx.clearRect(0, 0, W, H); rx.drawImage(win, 0, 0); rx.globalCompositeOperation = "source-in"; rx.fillStyle = CREAM; rx.fillRect(0, 0, W, H);
-      const e = 3.5 * dpr; for (let a = 0; a < 6.28; a += 0.785) x.drawImage(rim, Math.cos(a) * e, Math.sin(a) * e);
+      const e = 4 * dpr; for (let a = 0; a < 6.28; a += 0.785) for (let n = 0; n < 3; n++) x.drawImage(rim, Math.cos(a) * e, Math.sin(a) * e); // three times: solid where the window is already soft
       x.drawImage(win, 0, 0);
       x.font = `800 ${Math.round(cell * 1.3)}px "JetBrains Mono", ui-monospace, monospace`; x.textBaseline = "top";
       const { lum, al, ch } = G;
@@ -1141,11 +1141,11 @@ __LIBS__
       .to(s, { shrink: 1, duration: 0.34, onUpdate: apply }, 0.14)
       .to([".role", ".hint"], { opacity: 0, duration: 0.06 }, 0.02)
       .to(".name", { y: () => -(document.querySelector(".name").offsetTop + document.querySelector(".name").offsetHeight + 40), opacity: 0, ease: "power2.in", duration: 0.13 }, 0.01)
-      .to(".code", { opacity: 0, duration: 0.12 }, 0.1)
-      .to([".photo.col", ".gl"], { opacity: 1, duration: 0.12 }, 0.1)
+      .to(".code", { opacity: 0, duration: 0.08 }, 0.04)
+      .to([".photo.col", ".gl"], { opacity: 1, duration: 0.08 }, 0.1)
       .to(".photo.bw", { opacity: 1, duration: 0.16 }, 0.14)
       .to(".photo.bw", { opacity: 1, duration: 0.2 }, 0.14)
-      .to(look, { grey: 1, duration: 0.2 }, 0.14)
+      .to(look, { grey: 1, duration: 0.16, ease: "power1.out" }, 0.04) // mostly grey before the photo comes in after the characters
       .to(look, { spin: 0.9, duration: 0.3 }, 0.02)
       .to(look, { unwind: 1, duration: 0.16 }, 0.2) // joint 1: the ring unwinds and its front arrives where the signature starts (0.36)
       .to(look, { leadTail: 1, duration: 0.08 }, 0.34) // then the line it ran along is taken up into the first stroke
