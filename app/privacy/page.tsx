@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { posterFont } from "@/look/posterFont";
 import { TlxqMark } from "@/look/TlxqMark";
+import "./privacy.css";
 
 export const metadata: Metadata = {
   title: "Privacy, Tom Larsson",

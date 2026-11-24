@@ -1391,37 +1391,6 @@ html:has(.lk) body {
   }
 }
 
-/* What the site keeps (/privacy): the 404's page, a smaller title in the poster face and short mono sections. */
-.lk-privacy {
-  align-content: start;
-  padding-top: calc(var(--s7) + var(--s4));
-}
-.lk-privacy-title {
-  margin: 0 0 var(--s2) var(--look-poster-side);
-  font: 900 var(--look-index) / 0.9 var(--look-poster);
-  font-stretch: 125%;
-  letter-spacing: -0.03em;
-}
-.lk-privacy section,
-.lk-privacy p {
-  max-width: var(--look-form);
-}
-.lk-privacy h2 {
-  margin: 0 0 var(--s1);
-  font: 500 var(--look-label) / 1.2 var(--look-mono);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.lk-privacy p {
-  margin: 0;
-  font: 400 var(--look-reading) / 1.6 var(--look-mono);
-}
-@media (max-aspect-ratio: 4/5) {
-  .lk-privacy p {
-    font-size: var(--look-label-phone);
-  }
-}
-
 /* Tom's sign-in, /admin: one field and one button, nothing else on the page. */
 .lk-admin-page {
   display: grid;
