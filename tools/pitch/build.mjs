@@ -130,9 +130,10 @@ if (left)
 // The page's own script rule, on top of the site's header (vercel.json): only its inline scripts, by their hash, and
 // three from jsDelivr at the pinned version run here. Hashed last, after every change to the page's text.
 function withScriptRule(html) {
-  // every script is either inline with no attributes (hashed here) or loaded by src: anything else would be blocked
+  // every script is either inline with no attributes (hashed here) or loaded by src: anything else would be blocked.
+  // Structured data (type="application/ld+json") is never run, so the rule doesn't need it.
   const odd = [...html.matchAll(/<script(\s[^>]*)?>/g)].find(
-    (m) => m[1] && !/^\s+src="[^"]+"$/.test(m[1]),
+    (m) => m[1] && !/^\s+src="[^"]+"$/.test(m[1]) && m[1] !== ' type="application/ld+json"',
   );
   if (odd)
     throw new Error(`pitch/paint.src.html has ${odd[0]}: give it no attributes, or load it by src`);
