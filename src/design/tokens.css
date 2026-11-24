@@ -146,4 +146,6 @@
   --look-mono: var(--font-jetbrains-mono), ui-monospace, Menlo, Consolas, monospace;
   /* the front's poster face (--front-name) as Next hosts it, for the Next pages in the front's design (the 404) */
   --look-poster: var(--font-archivo), "Arial Black", sans-serif;
+  /* the poster face's own side space before its first letter: pulled back so a big word lines up with the text under it */
+  --look-poster-side: -0.03em;
 }

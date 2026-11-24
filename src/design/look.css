@@ -1309,6 +1309,7 @@ html:has(.lk) body {
 /* An address that isn't a page, in the front's design (the code poster): cream, the one blue word big in the
    poster face, the address struck through and the one way back in the code voice. */
 .lk-missing {
+  position: relative;
   display: grid;
   align-content: center;
   justify-items: start;
@@ -1318,8 +1319,21 @@ html:has(.lk) body {
   background: var(--look-cream);
   color: var(--look-dark);
 }
+/* Tom's tlxq mark at the top: whose site this is, with no new words */
+.lk-missing-mark {
+  position: absolute;
+  top: var(--s4);
+  left: var(--gutter);
+  width: var(--s7);
+  color: var(--look-dark);
+}
+.lk-missing-mark svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .lk-missing-tag {
-  margin: 0 0 var(--s2);
+  margin: 0 0 var(--s2) var(--look-poster-side);
   font: 900 var(--look-big) / 0.86 var(--look-poster);
   font-stretch: 125%;
   letter-spacing: -0.03em;
@@ -1327,18 +1341,18 @@ html:has(.lk) body {
 }
 .lk-missing-path {
   margin: 0;
-  font: 400 var(--look-label) / 1.4 var(--look-mono);
+  font: 400 var(--look-reading) / 1.4 var(--look-mono);
   overflow-wrap: anywhere;
 }
 /* The marker's strike: a thin spray line through the middle, so every letter of the address still reads */
 .lk-missing-path span {
   text-decoration: line-through;
   text-decoration-color: var(--front-spray);
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: 1px;
 }
 .lk-missing-say {
   margin: 0;
-  font: 500 var(--look-label) / 1.4 var(--look-mono);
+  font: 500 var(--look-reading) / 1.4 var(--look-mono);
 }
 .lk .lk-missing-back {
   display: inline-flex;
@@ -1347,7 +1361,7 @@ html:has(.lk) body {
   padding-inline: var(--s3);
   background: var(--look-dark);
   border-radius: 2px;
-  font: 500 var(--look-label) / 1 var(--look-mono);
+  font: 500 var(--look-reading) / 1 var(--look-mono);
   color: var(--look-cream);
 }
 .lk-missing-back:focus-visible {
