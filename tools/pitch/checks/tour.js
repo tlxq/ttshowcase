@@ -17,7 +17,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   res.leave = await box('#leaveUp'); big(res.leave, 'Leave your tag (the visitors\' wall)');
   res.cursor = await page.evaluate(() => getComputedStyle(document.getElementById('leaveUp')).cursor.slice(0, 30)); if (!/data:image\/svg/.test(res.cursor)) errs.push('Leave your tag has no spray-can cursor');
   if (W >= 600) { const r = res.leave; await page.mouse.move((r.l + r.r) / 2, (r.t + r.b) / 2); await page.waitForTimeout(500);
-    res.hover = await page.evaluate(() => { const l = document.querySelector('.hl'); return { text: l.textContent, op: +getComputedStyle(l).opacity }; }); if (res.hover.text !== 'Leave your tag' || res.hover.op < .9) errs.push('hovering Leave your tag shows no label: ' + JSON.stringify(res.hover)); await page.mouse.move(2, 2); }
+    res.hover = await page.evaluate(() => { const l = document.querySelector('.hl'); return { text: l.textContent, op: +getComputedStyle(l).opacity }; }); if (res.hover.op > .1) errs.push('hovering Leave your tag shows a label over the painted words (Tom 11-24: said once, the glow is enough): ' + JSON.stringify(res.hover)); await page.mouse.move(2, 2); }
   // the flyer, open: the form shows and takes typing, the three tabs are links with 48 px areas, nothing overlaps, it fits the screen; Esc folds it back
   const flyer = async (from, shot) => { await page.waitForTimeout(1200); await page.screenshot({ path: '__SHOTS__pitch-' + W + '-' + shot + '.png' });
     const f = await page.evaluate(() => { const m = document.getElementById('mail'), r = s => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
