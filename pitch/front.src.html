@@ -61,7 +61,7 @@ a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; o
 .who b { display: block; font: 900 13px/1.15 var(--front-name); font-stretch: 125%; letter-spacing: -.01em; text-transform: uppercase; }
 .who span { display: block; font: 500 12px/1.4 var(--front-code); opacity: .8; }
 .links { display: flex; gap: 20px; font-size: 14px; font-weight: 500; }
-.links a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: flex-start; }
+.links a { text-decoration: none; min-height: var(--tap); display: inline-flex; align-items: flex-start; }
 .links a:hover { text-decoration: underline; text-underline-offset: 4px; }
 
 /* moments 1 + 2: one pinned stage; the ground is the stage's own dark, the first screen sits on it as the pane */
@@ -195,7 +195,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 /* the poster's code voice for every small label */
 .say .label, .cap, .count .w, .story b, .txt .no, .txt dt { font-family: var(--front-code); font-weight: 500; letter-spacing: .02em; }
 .go { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 8px; font-size: 15px; font-weight: 600; }
-.go a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
+.go a { min-height: var(--tap); display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
 .go a:hover { color: var(--front-spray); }
 
 /* moment 5: the end. WRITE TO ME, then the email, the ways on and the form (plain lines, no boxes). The last wash
@@ -217,13 +217,13 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 .specks { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
 .end .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6vw; align-items: start; max-width: 1180px; }
 .end .say-mail { display: grid; gap: 26px; }
-.end .addr { font: 600 min(3.4vw, 40px)/1.1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 8px; min-height: 44px; width: fit-content; }
+.end .addr { font: 600 min(3.4vw, 40px)/1.1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 8px; min-height: var(--tap); width: fit-content; }
 .end .addr:hover, .end .ways a:hover { color: var(--front-spray); }
 .end .ways { display: flex; flex-wrap: wrap; gap: 8px 26px; font-size: 15px; font-weight: 600; }
-.end .ways a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
+.end .ways a { min-height: var(--tap); display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
 .form { display: grid; gap: 26px; }
 .form label { display: grid; gap: 2px; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
-.form input, .form textarea { font: 400 17px/1.4 var(--f-text); color: var(--look-cream); background: transparent; border: 0; border-bottom: 1px solid var(--look-rule); border-radius: 0; padding: 4px 0 10px; min-height: 44px; box-sizing: border-box; width: 100%; resize: vertical; }
+.form input, .form textarea { font: 400 17px/1.4 var(--f-text); color: var(--look-cream); background: transparent; border: 0; border-bottom: 1px solid var(--look-rule); border-radius: 0; padding: 4px 0 10px; min-height: var(--tap); box-sizing: border-box; width: 100%; resize: vertical; }
 .form input:focus-visible, .form textarea:focus-visible, .form input:focus, .form textarea:focus { outline: none; border-bottom-color: var(--look-cream); box-shadow: 0 1px 0 var(--look-cream); }
 .form label:focus-within { color: var(--look-cream); }
 .form .trap { position: absolute; left: -9999px; }
@@ -378,7 +378,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
             <p><b>Hard part</b>A push notification carries your message through Expo, Google and Apple. Mine don't. They only say 'Sent a message', so the words stay between friends.</p>
           </div>
           <dl><dt>Result</dt><dd>Live on eparadar.se</dd><dt>Stack</dt><dd>React Native, Expo, Supabase, Postgres, pgTAP</dd><dt id="epaLiveKey" hidden>GitHub</dt><dd id="epaLive" hidden></dd></dl>
-          <div class="go"><a href="https://eparadar.se">Open the site ↗</a><a href="https://github.com/tlxq/eparadar">Code ↗</a></div>
+          <div class="go"><a href="https://eparadar.se" aria-label="Open the site, epaRadar">Open the site ↗</a><a href="https://github.com/tlxq/eparadar" aria-label="Code for epaRadar">Code ↗</a></div>
         </div>
       </article>
       <article class="proj b" aria-labelledby="p2">
@@ -396,7 +396,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
             <p><b>Hard part</b>Mail scanners open every link in an email. If the sign-in link logged you in, it would log the scanner in too. So the link only asks, and a button you press logs you in.</p>
           </div>
           <dl><dt>Result</dt><dd>1,024 signatures. The council hasn't decided yet.</dd><dt>Stack</dt><dd>Next.js, TypeScript, Supabase, Resend, Vercel</dd></dl>
-          <div class="go"><a href="https://raddavarfruberga.se">Open the site ↗</a></div>
+          <div class="go"><a href="https://raddavarfruberga.se" aria-label="Open the site, Rädda Vårfruberga">Open the site ↗</a></div>
         </div>
       </article>
       <article class="proj c" aria-labelledby="p3">
