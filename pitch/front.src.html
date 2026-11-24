@@ -230,6 +230,8 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 .form button { justify-self: start; margin-top: 10px; font: 600 15px/1 var(--f-text); color: var(--look-cream); background: transparent; border: 1px solid var(--front-spray); border-radius: 2px; min-height: 48px; padding: 0 28px; cursor: pointer; }
 .form button:hover { background: var(--front-spray); color: var(--look-dark); }
 .form .err { margin: 0; color: var(--look-cream); }
+.form .send { display: flex; align-items: center; gap: var(--s3); } /* Send and the small privacy word: what the site keeps, in a new tab so the message stays */
+.form .pv { display: inline-flex; align-items: center; min-height: var(--tap); margin-top: 10px; font: 400 var(--look-label)/1 var(--front-code); color: var(--look-quiet); }
 @media (max-width: 640px) {
   .end { padding-top: 18svh; }
   .end h2 { font-size: 11.6vw; line-height: 1.02; } /* room for WRITE's swipe above ME */
@@ -430,7 +432,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <label>Email<input name="email" type="email" autocomplete="email" required maxlength="200" enterkeyhint="next"></label>
         <label>Message<textarea name="message" rows="3" required maxlength="4000"></textarea></label>
         <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
-        <p class="err" id="mailErr" role="alert" hidden></p><button>Send</button>
+        <p class="err" id="mailErr" role="alert" hidden></p><div class="send"><button>Send</button><a class="pv" href="/privacy" target="_blank" rel="noopener">privacy</a></div>
       </form>
     </div>
   </section>

@@ -132,9 +132,15 @@ export function MailForm() {
           Couldn&apos;t send your message. {why}
         </p>
       )}
-      <button type="submit" className="lk-mail-send" disabled={state === "sending"}>
-        {state === "sending" ? "sending…" : state === "failed" ? "try again ↵" : "send ↵"}
-      </button>
+      <div className="lk-mail-foot">
+        <button type="submit" className="lk-mail-send" disabled={state === "sending"}>
+          {state === "sending" ? "sending…" : state === "failed" ? "try again ↵" : "send ↵"}
+        </button>
+        {/* What the site keeps, where the data is given (Tom 11-24: one small word, the page in a new tab so the message stays). */}
+        <a className="lk-mail-privacy" href="/privacy" target="_blank" rel="noopener">
+          privacy
+        </a>
+      </div>
     </form>
   );
 }
