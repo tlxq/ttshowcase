@@ -238,7 +238,7 @@ export const lookLive: {
   },
   {
     name: "raddavarfruberga.se",
-    line: "Petition site for our preschool's parents. I'm one of the parents.",
+    line: "Petition site for the parents of 20 children set to lose their preschool places.",
     role: "Volunteer project, live",
     did: [
       "1,000+ signatures, stored in the EU, no one's row public",
