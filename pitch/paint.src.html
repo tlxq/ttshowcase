@@ -236,6 +236,12 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     // a surface asking before the picture is in gets an empty texture that takes the picture on load: clone() marks it for upload at once, and an upload with no picture warns every frame
     const t = !c.all.length ? c.base : c.base.image ? c.base.clone() : new THREE.Texture(); c.all.push(t); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.offset.set(ox, oy); t.anisotropy = maxAniso; if (srgb) t.encoding = THREE.sRGBEncoding; return t; };
   const WW = 90, WX = 24, WH = 10, GROUND = -2.2, TILE = 6;
+  // the concrete's bumps under a painting (Tom 11-24: black lines across EDGE and epaRadar): three.js r147 places every map of a material by the colour map's
+  // repeat and offset, so the bump texture was squeezed into the painting's own size and its joints fell where the wall has none. This reads it by its own.
+  const wallBump = m => { m.onBeforeCompile = sh => { m.normalMap.updateMatrix(); sh.uniforms.uNorT = { value: m.normalMap.matrix };
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform mat3 uNorT;").replace("#include <normal_fragment_maps>",
+      THREE.ShaderChunk.normal_fragment_maps.replaceAll("texture2D( normalMap, vUv )", "texture2D( normalMap, ( uNorT * vec3( vUv, 1. ) ).xy )")); };
+    m.customProgramCacheKey = () => "wallBump"; return m; };
   // downhill (Tom 11-16: scrolling down should go down): the street steps down 1.8 m twice, between the scenes
   const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, STAIRS = [[5, 8, GROUND, G2], [19.3, 22.3, G2, G3]], NSTEP = 12;
   // the workshop (storyboard 5; Tom 11-17: you go in like a "brunn", a manhole). A room under the street from HX0 to CX1; a round cover on the
@@ -408,8 +414,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const PW = (NARROW ? MURALS.narrow : MURALS.wide).w, PH = (NARROW ? MURALS.narrow : MURALS.wide).h, PX = 256, PCY = (NARROW ? MURALS.narrow : MURALS.wide).cy;
   const pc = document.createElement("canvas"); pc.width = PW * PX; pc.height = PH * PX; const g = pc.getContext("2d", { willReadFrequently: true });
   const paintTex = new THREE.CanvasTexture(pc); paintTex.encoding = THREE.sRGBEncoding; paintTex.anisotropy = maxAniso;
-  const paintMat = new THREE.MeshPhysicalMaterial({ map: paintTex, transparent: true, depthWrite: false, roughness: .2, clearcoat: .9, clearcoatRoughness: .12, envMapIntensity: .9,
-    normalMap: tex("assets/wall4_nor_gl.jpg", false, PW / TILE, PH / TILE, (WW / 2 - WX - PW / 2) / TILE, (PCY - PH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.5, .5), polygonOffset: true, polygonOffsetFactor: -2 });
+  const paintMat = wallBump(new THREE.MeshPhysicalMaterial({ map: paintTex, transparent: true, depthWrite: false, roughness: .2, clearcoat: .9, clearcoatRoughness: .12, envMapIntensity: .9,
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, PW / TILE, PH / TILE, (WW / 2 - WX - PW / 2) / TILE, (PCY - PH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.5, .5), polygonOffset: true, polygonOffsetFactor: -2 }));
   const paint = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), paintMat); paint.position.set(0, PCY, .002); paint.receiveShadow = true; scene.add(paint);
 
   // pen samples → canvas pixels, at Tom's timing
@@ -956,8 +962,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the bare concrete around it keyed out so the wall shows through. 1536 x 960 px; the paint ends 35 px above its foot, on the floor.
   const EX = 13, EW = 7.6, EH = EW * 960 / 1536, EY = G2 - EH * 35 / 960 + EH / 2;
   const pieceMap = tex("assets/epa_wall.webp", true, 1, 1); pieceMap.wrapS = pieceMap.wrapT = THREE.ClampToEdgeWrapping;
-  const piece = new THREE.Mesh(new THREE.PlaneGeometry(EW, EH), new THREE.MeshStandardMaterial({ map: pieceMap, transparent: true, depthWrite: false, roughness: .55,
-    normalMap: tex("assets/wall4_nor_gl.jpg", false, EW / TILE, EH / TILE, (EX - EW / 2 - (WX - WW / 2)) / TILE, (EY - EH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.9, .9), polygonOffset: true, polygonOffsetFactor: -2 }));
+  const piece = new THREE.Mesh(new THREE.PlaneGeometry(EW, EH), wallBump(new THREE.MeshStandardMaterial({ map: pieceMap, transparent: true, depthWrite: false, roughness: .55,
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, EW / TILE, EH / TILE, (EX - EW / 2 - (WX - WW / 2)) / TILE, (EY - EH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.4, .4), polygonOffset: true, polygonOffsetFactor: -2 })));
   piece.position.set(EX, EY, .002); scene.add(piece); PROT.push(["epaRadar's painting", V(EX - EW / 2, EY + EH / 2 - 924 / 960 * EH, 0), V(EX + EW / 2, EY + EH / 2 - 98 / 960 * EH, 0)]); // the painted rows 98 to 924 of its 960: the rest is bare concrete
   // the two link marks, in the picture's pixels (left, top, right, bottom): a green motorway exit sign "Open the site" on its pole by the road, and the car's own
   // rear number plate "CODE" (Tom 11-19: marks that belong to the wall's story, not the blue street signs every wall had)
@@ -966,8 +972,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // concrete keyed out so the wall shows through, 1536 x 960 px each. paintOn puts picture pixel (px, py) at the wall point (wx, wy), the picture w m wide.
   // at(u, v) is any picture pixel in the wall's own space; the link marks and the painted areas are in picture pixels. The wall's own hole (moment 3) cuts through it too.
   function paintOn(file, w, [px, py], [wx, wy], z = .002, [pw, ph] = [1536, 960]) { const h = w * ph / pw, k = w / pw, cx = wx - px * k + w / 2, cy = wy + py * k - h / 2, map = tex(file, true, 1, 1); map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .55,
-      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2) - (cx > CX1 ? SEAM_D.x : 0)) / TILE, (cy - h / 2 - GROUND - (cx > CX1 ? SEAM_D.y : 0)) / TILE), normalScale: new THREE.Vector2(.9, .9), polygonOffset: true, polygonOffsetFactor: -2 }));
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallBump(new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .55,
+      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2) - (cx > CX1 ? SEAM_D.x : 0)) / TILE, (cy - h / 2 - GROUND - (cx > CX1 ? SEAM_D.y : 0)) / TILE), normalScale: new THREE.Vector2(.4, .4), polygonOffset: true, polygonOffsetFactor: -2 })));
     m.position.set(cx, cy, z); scene.add(m);
     const at = (u, v) => V(cx - w / 2 + u * k, cy + h / 2 - v * k, 0);
     return { m, at, w, h, k, protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y1), at(x1, y0)]) }; }
@@ -1176,8 +1182,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     L.order = L.st.map((_, i) => i).sort((i, j) => Math.abs(L.x0 + (i + .5) * sw / px) - Math.abs(L.x0 + (j + .5) * sw / px)); // the first screen's first
     // a mesh per stretch that has tags, with an empty picture until its own arrives: the shader is the same before and after, so warmUp builds it
     const meshes = L.st.map((S, i) => { if (!S.tags.length) return null;
-      const mat = new THREE.MeshPhysicalMaterial({ map: wallEmpty, transparent: true, depthWrite: false, alphaTest: .004, roughness: .25, clearcoat: .8, clearcoatRoughness: .15, // alphaTest: bare wall stops before the light is worked out
-        normalMap: tex("assets/wall4_nor_gl.jpg", false, 1, 1), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 });
+      const mat = wallBump(new THREE.MeshPhysicalMaterial({ map: wallEmpty, transparent: true, depthWrite: false, alphaTest: .004, roughness: .25, clearcoat: .8, clearcoatRoughness: .15, // alphaTest: bare wall stops before the light is worked out
+        normalMap: tex("assets/wall4_nor_gl.jpg", false, 1, 1), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 }));
       const me = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); me.position.set(L.x0 + (i + .5) * sw / px, (WALL_TOP + GROUND) / 2, z); me.scale.set(.01, .01, 1);
       me.renderOrder = -1; scene.add(me); return me; }); // under everything else on the wall: the poured line, the runs (sorted by distance they swapped places as the camera moved: flicker, Tom 11-17)
     const W = { L, tags, meshes, up: [], done: 0, want: L.st.filter(S => S.tags.length).length }; WLS.push(W); return W; };
@@ -1188,7 +1194,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     W.up.push({ i, t, x, y, w, h }); }
   function wallUpload() { const W = WLS.find(W => W.up.length); if (!W) return; const u = W.up.shift(), { L } = W, me = W.meshes[u.i], m = me.material, ww = u.w / L.px, hh = u.h / L.px;
     const x0 = L.x0 + (L.sw * u.i + u.x) / L.px, y1 = L.y1 - u.y / L.px; me.scale.set(ww, hh, 1); me.position.set(x0 + ww / 2, y1 - hh / 2, me.position.z);
-    m.normalMap.repeat.set(ww / TILE, hh / TILE); m.normalMap.offset.set((x0 - L.x0) / TILE, (y1 - hh - GROUND) / TILE);
+    m.normalMap.repeat.set(ww / TILE, hh / TILE); m.normalMap.offset.set((x0 - L.x0) / TILE, (y1 - hh - GROUND) / TILE); m.normalMap.updateMatrix();
     m.map = u.t; renderer.initTexture(u.t); // sent now, on a frame with nothing else to send, not on the first frame it shows
     if (++W.done === W.want) document.documentElement.dataset[W === WL ? "wallAt" : "storeAt"] = Math.round(performance.now() - t0); }
   // paints a layer: in a worker off the page's own thread when the browser has canvases there, else here a few ms a frame
@@ -1441,7 +1447,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     eMapW.needsUpdate = eMapF.needsUpdate = true; eFile = eCan.toDataURL(); }
   let eSwipe = null; { const sw = new Image(); sw.onload = () => document.fonts.ready.then(() => Promise.all(['700 100px "Clash Display"', '600 40px "Inter"', '700 40px "Inter"'].map(f => document.fonts.load(f).catch(() => {})))).then(() => paintEnd(eSwipe = sw)); sw.onerror = () => paintEnd(null); sw.src = "assets/swipe.webp"; }
   for (const t of [eMapW, eMapF]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
-  const eWall = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eWallH), endMat({ map: eMapW, normalMap: tex("assets/wall4_nor_gl.jpg", false, EPW / TILE, eWallH / TILE, (ECX - EPW / 2 - (WX - WW / 2)) / TILE, 0), normalScale: new THREE.Vector2(.9, .9) }));
+  const eWall = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eWallH), wallBump(endMat({ map: eMapW, normalMap: tex("assets/wall4_nor_gl.jpg", false, EPW / TILE, eWallH / TILE, (ECX - EPW / 2 - (WX - WW / 2)) / TILE, 0), normalScale: new THREE.Vector2(.9, .9) })));
   eWall.position.set(ECX, GROUND + ELIFT + eWallH / 2, .003);
   const eFloor = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eFD), endMat({ map: eMapF, roughness: .8 })); eFloor.rotation.x = -Math.PI / 2; eFloor.position.set(ECX, GROUND + .004, eFD / 2);
   eWall.visible = eFloor.visible = false; scene.add(eWall, eFloor);
