@@ -265,8 +265,14 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
   const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + 2 * TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
   wall.position.set(WX, GROUND - 2 * TILE + (WH + 2 * TILE) / 2, 0); wall.receiveShadow = true; scene.add(wall); // reaches down to the workshop floor
+  // the bare stretch left of the visitors' wall (R3): the page's top starts on it; its twin past EDGE ends the walk on the same view
+  const WALL_ADD = (x0, x1, yb, yt, shift) => { const w = x1 - x0, h = yt - yb, ox = (x0 - shift.x - (WX - WW / 2)) / TILE, oy = (yb - shift.y - (GROUND - 2 * TILE)) / TILE, rx = w / TILE, ry = h / TILE, g = new THREE.PlaneGeometry(w, h); g.setAttribute("uv2", g.attributes.uv);
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, rx, ry, ox, oy), normalMap: tex("assets/wall4_nor_gl.jpg", false, rx, ry, ox, oy), roughnessMap: tex("assets/wall4_rough.jpg", false, rx, ry, ox, oy), aoMap: tex("assets/wall4_ao.jpg", false, rx, ry, ox, oy), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
+    m.position.set((x0 + x1) / 2, yb + h / 2, 0); m.receiveShadow = true; scene.add(m);
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, envMapIntensity: .3 })); cap.position.set((x0 + x1) / 2, yt - .02, -.17); scene.add(cap); return m; };
+  WALL_ADD(-39, WX - WW / 2, GROUND - 2 * TILE, GROUND + WH, V());
   const MANHOLE_CUT = `if (vWP.y > ${(G3 - 1.6).toFixed(2)} && min(length(vWP.xz - vec2(${MX_IN.toFixed(2)}, ${MZ.toFixed(2)})), length(vWP.xz - vec2(${MX_OUT.toFixed(2)}, ${MZ.toFixed(2)}))) < ${MR.toFixed(3)}) discard;`; // the two shafts through the street and the ceiling
-  const PROF = (() => { const pts = [[-28, GROUND]]; for (const [a, b, h0, h1] of STAIRS) { const t = (b - a) / NSTEP, r = (h0 - h1) / NSTEP;
+  const PROF = (() => { const pts = [[-40, GROUND]]; for (const [a, b, h0, h1] of STAIRS) { const t = (b - a) / NSTEP, r = (h0 - h1) / NSTEP;
       pts.push([a, h0]); for (let k = 0; k < NSTEP; k++) { pts.push([a + k * t, h0 - (k + 1) * r], [a + (k + 1) * t, h0 - (k + 1) * r]); } } pts.push([END_X, G3]); return pts; })();
   const groundAt = x => { let h = GROUND; for (const [a, b, h0, h1] of STAIRS) { if (x >= b) h = h1; else if (x >= a) h = h0 - (Math.floor((x - a) / ((b - a) / NSTEP)) + 1) * (h0 - h1) / NSTEP; } return h; };
   // under the bridge (Tom 11-18: a 20 m wide field of steps looked painful) the second flight is only SW wide, along the wall; beside it
@@ -336,7 +342,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     scene.add(pole, arm, head, bulb); POSTMESH.push(pole, arm, head, bulb); }
   // the visitors' wall's own street light (Tom 11-23: the swinging light goes), and its twin past EDGE at the same place on the wall, a whole number of tiles
   // on (SEAM_D): in close, the concrete under each looks the same, so the walk changes from one to the other without a cut you can see
-  const SEAM_D = V(102, -2 * DROP - 2.4, 0), VPOST = V(-18.6, 0, 2.45);
+  const SEAM_D = V(110.4, -2 * DROP, 0), VPOST = V(-18.6, 0, 2.45); // R3 (Tom 11-24: no zoom): the street past EDGE is the street left of the visitors' wall, moved; 110.4 + 3.6 is a whole number of tiles, so the pavement lines up too
   for (const [d, g] of [[V(), GROUND], [SEAM_D, GROUND - 2 * DROP]]) { const q = VPOST.clone().add(d), hy = GROUND + 6.45 + d.y, L = hy + .15 - g; // the twin's street is lower: a shorter pole, its head at the same place
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(.06, .09, L, 16), postM); pole.position.set(q.x, g + L / 2, q.z);
     const arm = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, 1.3, 10), postM); arm.rotation.x = Math.PI / 2 - .2; arm.position.set(q.x, hy + .05, q.z + .62);
@@ -1293,12 +1299,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const pipe = (a, b, r = .022) => { const d = b.clone().sub(a), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 8), pipeM); m.position.copy(a).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); scene.add(m); return m; };
   pipe(V(HX0 + .2, DY - .14, .06), V(CX1 - .2, DY - .14, .06));
   // the last wall past the climb out, lower, so the sky shows over it; the coping on top
-  const XW0 = CX1 - .3, XW1 = END_X, XWT = G3 + 4.2;
-  { const w = XW1 - XW0, h = XWT - G3 + .6, rx = w / TILE, ry = h / TILE, ox = (XW0 + 21) / TILE, oy = (G3 - .6 - GROUND) / TILE, g = new THREE.PlaneGeometry(w, h); g.setAttribute("uv2", g.attributes.uv);
-    // the main wall's own surface, lined up with it (Tom 11-23: the walk changes to the visitors' wall in close to this concrete, so it must be the same)
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, rx, ry, ox, oy), normalMap: tex("assets/wall4_nor_gl.jpg", false, rx, ry, ox, oy), roughnessMap: tex("assets/wall4_rough.jpg", false, rx, ry, ox, oy), aoMap: tex("assets/wall4_ao.jpg", false, rx, ry, ox, oy), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
-    m.position.set((XW0 + XW1) / 2, G3 - .6 + h / 2, 0); scene.add(m);
-    const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, .5 / TILE), envMapIntensity: .3 })); cap.position.set((XW0 + XW1) / 2, XWT - .02, -.17); scene.add(cap); }
+  const XW0 = CX1 - .3, XW1 = END_X, XWT = G3 + WH;
+  WALL_ADD(XW0, XW1, G3 - .6, XWT, SEAM_D); // R3: full height now, its concrete the bare stretch's by the visitors' wall, moved by SEAM_D
   // the sky over the last wall, the city's roofs against it; by day it is the day sky (the clock), so it never shows as a dark block over a wall
   const skyU = { uDay: { value: 0 }, uBg: { value: new THREE.Color() } };
   const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(220, 110), new THREE.ShaderMaterial({ uniforms: skyU, depthWrite: false, fog: false,
@@ -1319,7 +1321,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const cityFar = new THREE.Mesh(new THREE.PlaneGeometry(170, 34), new THREE.MeshBasicMaterial({ map: roofs("#3a3044", 60, 230, .01), transparent: true, depthWrite: false, fog: false }));
   cityFar.position.set(103, G3 - 2 + 17, -70); scene.add(cityFar);
   const city = new THREE.Mesh(new THREE.PlaneGeometry(130, 26), new THREE.MeshBasicMaterial({ map: roofs("#0a0c11", 40, 300, .035), transparent: true, depthWrite: false, fog: false }));
-  city.position.set(103, G3 - 2 + 13, -40); scene.add(city);
+  city.position.set(103, G3 - 2 + 13, -40); scene.add(city); city.visible = cityFar.visible = false; // R3: the wall past EDGE is full height, no roofs over it
   const washL = new THREE.SpotLight(0xfff0dc, 0, 22, .95, 1, 1.2); washL.position.set(80, G3 + 7, 9); washL.target.position.set(80.5, G3 + 1.6, 0); scene.add(washL, washL.target); // takes the old sunrise light's place: no light more than before
   cityFar.material.color.setScalar(.6); const FOG0 = scene.fog.color.clone(), SKY0 = sky.color.clone();
   // EDGE (Tom 11-16, storyboard 6): client work stands apart from my own. Up out of the workshop, in the open: a clean plastered wall, a lamp over it,
@@ -1989,12 +1991,12 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * k); skyU.uBg.value.copy(scene.background); }
   document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
   function morning(now, sv, cp, look) { // after endCam: past EDGE, in close to the bare wall, the change to the visitors' wall, the light
-    const day = sv >= CUT;
+    const day = sv >= CUT; endVisit = 0;
     // no landing, no flash (Tom 11-23): past EDGE the camera steps in close to the bare wall (as Leave your tag does), changes there to the same bare wall by the
     // visitors' wall (CLOSE_V, SEAM_D: the same concrete, the same lamp over it) and steps back out to the visitors' wall, the page's seam. The page's top shows
     // that same wall, so scrolling down past the end jumps there, and scrolling up from the wall jumps here; nothing turns back, nothing shows
     if (sv > 1060 && !pick.mode) { scene.fog.density = .04; lens.uniforms.uAper.value = 1; }
-    if (day) { const k = sm(cl((sv - CUT) / (SV_MAX - 6 - CUT))); cp.lerpVectors(CLOSE_V.clone().add(V(0, 0, CLOSE_D())), VISIT[0], k); look.lerpVectors(CLOSE_V, VISIT[1], k); endVisit = k;
+    if (day) { const k = sm(cl((sv - CUT) / (SV_MAX - 6 - CUT))); 
       // back at the start wall in the visitor's own light (Tom 11-23): the night is the start's own set-up, the clock blends it to day
       lamp.intensity = 5.5; pool.intensity = 9; bulbM.emissiveIntensity = 2.2; work.intensity = 4.2 * .3; stairLight.intensity = manL.intensity = 0;
       sky.color.copy(SKY0); sky.groundColor.copy(GND0); sky.intensity = .35; sun.intensity = 0; scene.background.copy(BG0); scene.fog.color.copy(FOG0); lens.uniforms.uAper.value = 1; cityFar.material.color.setScalar(.25);
@@ -2010,18 +2012,23 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the visitors' wall's street light (Tom 11-23: one more light, no swing) is lamp2, which is off wherever that wall is in view: at the epaRadar wall on the
   // walk, at the visitors' wall (and the start beside it) and at its twin past EDGE, where the walk changes from one to the other in close
   const CLOSE_V = V(-16, 1.8, 0), CLOSE_D = () => NARROW ? 1.2 : 1.4, L2_VIS = [V(-18.6, GROUND + 6.35, 3.7), V(-11, 1.2, 0)], L2_EPA = [lamp2.position.clone(), lamp2.target.position.clone()];
-  function lamp2At(sv) { const vis = sv < 44 || sv >= CUT, twin = !vis && sv > 1040;
+  function lamp2At(sv) { const vis = sv < 44, twin = !vis && sv > 1040;
     if (!vis && !twin) { lamp2.position.copy(L2_EPA[0]); lamp2.target.position.copy(L2_EPA[1]); lamp2.angle = .62; lamp2.penumbra = .75; return; }
     const d = twin ? SEAM_D : V(); lamp2.position.copy(L2_VIS[0]).add(d); lamp2.target.position.copy(L2_VIS[1]).add(d); lamp2.angle = .9; lamp2.penumbra = .75; lamp2.intensity = 6.2;
     }
-  function washAt(sv) { washL.intensity = 2.6 * sm(cl((sv - 1000) / 25)) * (1 - sm(cl((sv - 1082) / 22))); } // the wall between EDGE and the next street light, lit while the head turns over it (no black screen), gone before the close-up so the change matches
+  // the wash (R3): the visitors' lamp's own pool on the wall under it, at the page's top; past EDGE the same light moved by SEAM_D lights the way to
+  // its twin, so the walk's end and the page's top are lit the same (no new light: off everywhere between)
+  const WASH_TOP = () => [V(VPOST.x - .6, GROUND + 6.2, VPOST.z + 1.25), V(BARE[1].x + .4, GROUND + 1.2, 0)];
+  function washAt(sv, top) { const end = sv > 990, d = end ? SEAM_D : V(), w = WASH_TOP(); washL.position.copy(w[0]).add(d); washL.target.position.copy(w[1]).add(d);
+    washL.intensity = 2.6 * (end ? sm(cl((sv - 1000) / 25)) : sm(cl(top / .3))); }
   const EDGE_STOP = N_ ? stop(75, G3 + 1.9, 8.4, G3 + 1.9) : stop(75, G3 + 1.7, 9.2, G3 + 2);
+  const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)];
+  const BARE = NARROW ? [V(-19.5, 2.6, 8), V(-19.5, 2.4, 0)] : [V(-21.2, 2.6, 8), V(-21.2, 2.4, 0)], BARE_T = BARE.map(v => v.clone().add(SEAM_D)); // R3: the page's top and the walk's end, the same view: the visitors' lamp post and the wall under it, left of the tags, the street out of view
   const KEYS = [[548, 590, V(MX_IN - 1.7, G3 + 2.1, MZ + 1.6), V(MX_IN + .1, G3, MZ)], [590, 615, V(MX_IN, G3 + 1.3, MZ), V(MX_IN + .35, G3 - 3, MZ)],
     [615, 655, V(MX_IN, WF + 1.6, MZ), V(U4[0].x, WF + 1.75, 0)] /* on the way down the eyes go to the first tool's wall, not the dark room (Tom 11-22: no empty screens) */,
     ...U4.slice(0, 4).map((u, i) => [i ? u.key - 45 : 655, u.key, ...(N_ ? stop(u.x, WF + 1.55, 8.2, WF + 1.55) : stop(u.x, WF + 1.3, 7.6, WF + 1.75))]),
     [935, 960, V(MX_OUT, WF + 1.6, MZ), V(MX_OUT + .35, WF + 6, MZ)], [960, 995, V(MX_OUT, G3 + 1.5, MZ), V(MX_OUT + .6, G3, MZ + .1)] /* up, then a look at the hole and the cover you pushed aside */,
-    [995, 1045, ...EDGE_STOP], [1058, 1080, EDGE_STOP[0], CLOSE_V.clone().add(SEAM_D)] /* from EDGE the head turns to the next street light, so a lit wall is always in view */,
-    [1080, 1105, V(CLOSE_V.x + SEAM_D.x - .5, CLOSE_V.y + SEAM_D.y + .2, 4.6), CLOSE_V.clone().add(SEAM_D)], [1105, CUT, CLOSE_V.clone().add(SEAM_D).add(V(0, 0, CLOSE_D())), CLOSE_V.clone().add(SEAM_D)] /* on past EDGE to the bare wall under the next street light, and in close */];
+    [995, 1045, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
   const inShaft = p => (1 - sm(cl((Math.min(Math.hypot(p.x - MX_IN, p.z - MZ), Math.hypot(p.x - MX_OUT, p.z - MZ)) - .3) / 1.2))) * (1 - sm(cl((p.y - G3 - 1) / 1.2))); // 1 in a shaft, 0 away from it: the hand sway fades out as you near one
   function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cx) {
@@ -2046,12 +2053,11 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     ? { A: [V(.4, 1.6, 18), V(0, 1.5, 0)], /* a third wider (Tom 11-23): tags above and round the mural are in the first picture */ B: [V(2.9, 2.1, 18), V(.6, .65, 0)], C: [V(EX + .3, EY + .6, 21.5), V(EX + .3, EY + .4, 0)], D: [V(EX + 3.2, EY + .5, 16), V(EX + 3.2, EY + .3, 0)], E: [V(RX - 2.2, -.4 - 2 * DROP, 17), V(RX - 2.2, -.6 - 2 * DROP, 0)], F: [V(RX - 2.2, -.5 - 2 * DROP, 17.5), V(RX - 2.2, -.7 - 2 * DROP, -1)] } // phone: the raddavarfruberga painting (centre x RX - 2.2, 6.4 m wide) centred across the whole width, uncut
     : { A: [V(1.3, 1.4, 14.6), V(.1, 1.3, 0)], /* a third wider (Tom 11-23): the wall round the mural, where the visitors' tags go, is in the first picture */ B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
   // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street, low enough for the can at its foot; phone: closer, the middle of it
-  const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)];
   // the rail (Tom 11-24, B2; prototype R1): the visitors' wall, the start and epaRadar on one smooth line, the head always on the wall.
   // Scroll is the place along the line; at each painting the camera slows to RAIL_SLOW of its speed but never stands still.
-  const RAIL = [VISIT, CAM.A, CAM.C], RAIL_POS = new THREE.CatmullRomCurve3(RAIL.map(r => r[0])), RAIL_LOOK = new THREE.CatmullRomCurve3(RAIL.map(r => r[1])), RAIL_SV = 60, RAIL_SLOW = .2;
-  function railAt(r, cp, look) { // r: 0 at the visitors' wall, 1 at the start, 2 at epaRadar
-    const i = Math.min(1, Math.floor(r)), f = r - i, e = f - (1 - RAIL_SLOW) * Math.sin(2 * Math.PI * f) / (2 * Math.PI), u = (i + e) / 2;
+  const RAIL = [BARE, VISIT, CAM.A, CAM.C], RAIL_POS = new THREE.CatmullRomCurve3(RAIL.map(r => r[0])), RAIL_LOOK = new THREE.CatmullRomCurve3(RAIL.map(r => r[1])), RAIL_SV = 60, RAIL_SLOW = .2;
+  function railAt(r, cp, look) { // r: 0 on the bare stretch (the page's top), 1 at the visitors' wall, 2 at the start, 3 at epaRadar
+    const i = Math.min(2, Math.floor(r)), f = r - i, e = f - (1 - RAIL_SLOW) * Math.sin(2 * Math.PI * f) / (2 * Math.PI), u = (i + e) / 3;
     cp.copy(RAIL_POS.getPoint(u)); look.copy(RAIL_LOOK.getPoint(u)); }
   let stencilAt = 0;
   let mx = 0, my = 0; addEventListener("pointermove", e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; });
@@ -2079,7 +2085,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
     // scroll moves the camera only: step back (0-.12), walk right to the second wall (.18-.38), step back to look (.75-.95).
     const back = sm(cl(p / .12)), pan = sm(cl(sv / RAIL_SV)), end = sm(cl((p - .75) / .2));
-    const gv = scrollY / track.offsetHeight * (TOP + UP + SV_MAX + 100), railR = !introOver ? 1 : gv < TOP + UP ? cl((gv - TOP) / UP) : 1 + cl(sv / RAIL_SV);
+    const gv = scrollY / track.offsetHeight * (TOP + UP + SV_MAX + 100), railR = !introOver ? 2 : gv < TOP ? cl((gv - 2) / (TOP - 2)) : gv < TOP + UP ? 1 + cl((gv - TOP) / UP) : 2 + cl(sv / RAIL_SV);
     if (introOver && pan > .5 && !stencilAt) stencilAt = now; // the wall is reached: its label and links come a beat later
     const stencilOn = pan > .5;
     head.style.opacity = 1 - pan;
@@ -2115,7 +2121,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     canPos.lerp(canAim, Math.min(1, (pen && !stencilOn ? 21 : 2.4) * dt)); // per second, so the can moves the same on 60 and 120 Hz screens
     const rest = stencilOn || done, moving = !stencilOn && !!pen;
     if (storeW) for (const m of storeW.meshes) if (m && m.material.map !== wallEmpty) { const mt = m.material; if (mt.emissiveMap !== mt.map) { mt.emissiveMap = mt.map; mt.emissive.setScalar(1); mt.needsUpdate = true; } mt.emissiveIntensity = endS.show ? 0 : .12; } // visitors' tags glow faintly at night, like reflective paint (Tom 11-23)
-    can.visible = !endS.show; can.position.copy(canPos); // by day the night's can is gone: the only can is Leave your tag's
+    can.visible = false; can.position.copy(canPos); // Tom 11-24: the can that hung in the air goes; Leave your tag's own can stays // by day the night's can is gone: the only can is Leave your tag's
     can.rotation.set(rest ? 0 : -.08 + (moving ? .05 : 0), rest ? -.5 : -.12, moving ? (canAim.x - canPos.x) * -.6 : rest ? 0 : .06);
     capMat.emissive.setRGB(pressing && !stencilOn ? .25 : 0, pressing && !stencilOn ? .05 : 0, 0);
     if (pen && pressing && !stencilOn) { emit(can.localToWorld(NOZZLE.clone()), pen.clone().add(V(0, 0, .01)), 26); bounce.position.copy(pen).add(V(0, 0, .3)); bounce.intensity = 1.6; } else bounce.intensity *= .9;
@@ -2125,14 +2131,14 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     cmx += (mx - cmx) * .04; cmy += (my - cmy) * .04;
     const drift = now / 1000;
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
-    endK = cl((sv - 548) / 30); lamp2At(sv); washAt(sv); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp); morning(now, sv, cp, cl_);
-    if (railR < 2) railAt(railR, cp, cl_);
+    endK = cl((sv - 548) / 30); lamp2At(sv); washAt(sv, lft); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp); morning(now, sv, cp, cl_);
+    if (railR < 3) railAt(railR, cp, cl_);
     // the seam (Tom 11-23): above the pole the camera rests on the visitors' wall (TOP); at the very top the page jumps to its end, which shows
     // the same wall, and scrolling on up walks back through the glare to EDGE. Never while the tag tool or the flyer is open.
     if (scrollY <= 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, svY(SV_MAX - 8));
     // past the pole (Tom 11-23: look closer at the stickers as we pass by): on the way up to the visitors' wall the camera steps in to the pole and
     // walks round it at arm's length, right to left, so each sticker comes past; the page's longer park (UP) gives the pass its own stretch of scroll
-    const poleK = 0; // on the rail the camera passes the pole without stepping in (prototype R1)
+    const poleK = lft > 0 ? sm(cl((lft - .06) / .16)) * (1 - sm(cl((lft - .58) / .16))) : 0; // the pole's stickers (Tom 11-24: keep it on the rail)
     if (poleK > 0) { const th = .9 - 1.8 * cl((lft - .12) / .5), r = NARROW ? 1.9 : 1.7, y = GROUND + 1.55; cp.lerp(V(POST.x + r * Math.sin(th), y + .05, POST.z + r * Math.cos(th)), poleK); cl_.lerp(V(POST.x, y, POST.z), poleK); }
     pickCam(now, dt, cp, cl_);
     // the opening's street light swings round to graze the visitor wall from the right (no extra light: every light costs a frame on the T14s),
