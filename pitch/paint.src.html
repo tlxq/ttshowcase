@@ -2047,6 +2047,12 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     : { A: [V(1.3, 1.4, 14.6), V(.1, 1.3, 0)], /* a third wider (Tom 11-23): the wall round the mural, where the visitors' tags go, is in the first picture */ B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .5, EY + .5, 12.2), V(EX + .4, EY + .2, 0)], D: [V(EX + .6, EY + .4, 11), V(EX + .5, EY + .1, 0)], E: [V(RX - 1.9, .1 - 2 * DROP, 13.2), V(RX - 1.8, -.5 - 2 * DROP, 0)], F: [V(RX - 1.5, -.1 - 2 * DROP, 11.4), V(RX - 1.4, -.7 - 2 * DROP, -1)] }; // the painting and its pillar, the floor under it
   // the visitor wall (VISITOR_WALL x -17..-7, y .6..6.6), seen from the street, low enough for the can at its foot; phone: closer, the middle of it
   const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)];
+  // the rail (Tom 11-24, B2; prototype R1): the visitors' wall, the start and epaRadar on one smooth line, the head always on the wall.
+  // Scroll is the place along the line; at each painting the camera slows to RAIL_SLOW of its speed but never stands still.
+  const RAIL = [VISIT, CAM.A, CAM.C], RAIL_POS = new THREE.CatmullRomCurve3(RAIL.map(r => r[0])), RAIL_LOOK = new THREE.CatmullRomCurve3(RAIL.map(r => r[1])), RAIL_SV = 60, RAIL_SLOW = .2;
+  function railAt(r, cp, look) { // r: 0 at the visitors' wall, 1 at the start, 2 at epaRadar
+    const i = Math.min(1, Math.floor(r)), f = r - i, e = f - (1 - RAIL_SLOW) * Math.sin(2 * Math.PI * f) / (2 * Math.PI), u = (i + e) / 2;
+    cp.copy(RAIL_POS.getPoint(u)); look.copy(RAIL_LOOK.getPoint(u)); }
   let stencilAt = 0;
   let mx = 0, my = 0; addEventListener("pointermove", e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; });
   // render size follows the machine: weak graphics (T14s, Intel UHD: 46-57 ms a frame at full size, 12 ms at half, 11-16) draw fewer pixels
@@ -2072,7 +2078,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     if (introOver && svKeepH === document.documentElement.scrollHeight) svKeep = sv; else if (svKeep < 0) { svKeep = sv; svKeepH = document.documentElement.scrollHeight; }
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
     // scroll moves the camera only: step back (0-.12), walk right to the second wall (.18-.38), step back to look (.75-.95).
-    const back = sm(cl(p / .12)), pan = sm(cl((p - .18) / .2)), end = sm(cl((p - .75) / .2));
+    const back = sm(cl(p / .12)), pan = sm(cl(sv / RAIL_SV)), end = sm(cl((p - .75) / .2));
+    const gv = scrollY / track.offsetHeight * (TOP + UP + SV_MAX + 100), railR = !introOver ? 1 : gv < TOP + UP ? cl((gv - TOP) / UP) : 1 + cl(sv / RAIL_SV);
     if (introOver && pan > .5 && !stencilAt) stencilAt = now; // the wall is reached: its label and links come a beat later
     const stencilOn = pan > .5;
     head.style.opacity = 1 - pan;
@@ -2119,13 +2126,13 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const drift = now / 1000;
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
     endK = cl((sv - 548) / 30); lamp2At(sv); washAt(sv); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp.x); manAt(cp); morning(now, sv, cp, cl_);
-    if (lft > 0) { cp.lerp(VISIT[0], goL); cl_.lerp(VISIT[1], lookL); }
+    if (railR < 2) railAt(railR, cp, cl_);
     // the seam (Tom 11-23): above the pole the camera rests on the visitors' wall (TOP); at the very top the page jumps to its end, which shows
     // the same wall, and scrolling on up walks back through the glare to EDGE. Never while the tag tool or the flyer is open.
     if (scrollY <= 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, svY(SV_MAX - 8));
     // past the pole (Tom 11-23: look closer at the stickers as we pass by): on the way up to the visitors' wall the camera steps in to the pole and
     // walks round it at arm's length, right to left, so each sticker comes past; the page's longer park (UP) gives the pass its own stretch of scroll
-    const poleK = lft > 0 ? sm(cl((lft - .06) / .16)) * (1 - sm(cl((lft - .58) / .16))) : 0;
+    const poleK = 0; // on the rail the camera passes the pole without stepping in (prototype R1)
     if (poleK > 0) { const th = .9 - 1.8 * cl((lft - .12) / .5), r = NARROW ? 1.9 : 1.7, y = GROUND + 1.55; cp.lerp(V(POST.x + r * Math.sin(th), y + .05, POST.z + r * Math.cos(th)), poleK); cl_.lerp(V(POST.x, y, POST.z), poleK); }
     pickCam(now, dt, cp, cl_);
     // the opening's street light swings round to graze the visitor wall from the right (no extra light: every light costs a frame on the T14s),
