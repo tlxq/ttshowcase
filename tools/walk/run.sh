@@ -70,7 +70,22 @@ walk a11y-phone a11y.js phone
 # checks as pitch:check's front, so a page that works in the pitch but not on the site fails here
 walk front-desktop ../pitch/checks/front.js desktop
 walk front-phone ../pitch/checks/front.js phone
-walk speed-look speed.js desktop
+# Speed is only true on a quiet desk (F-R-1, 11-24): another session's browser or build made the paint read 124-148 ms
+# against 76-88 ms alone. Wait up to 90 s for the 1-minute load to drop under half the cores; still busy = say so
+# plainly instead of reporting a slow page.
+if [ -z "$only" ] || [ "$only" = speed-look ]; then
+  cores=$(nproc); busy=""
+  for _ in $(seq 1 45); do
+    busy=$(awk -v c="$cores" '$1 >= c / 2 {print $1}' /proc/loadavg)
+    [ -z "$busy" ] && break
+    sleep 2
+  done
+  if [ -n "$busy" ]; then
+    names="$names speed-look"; ran=1
+    echo "speed-look: FAILED the desk is busy (load $busy on $cores cores), so paint times would be wrong. Stop the other work, then run: mise run walk speed-look"
+    failed=1
+  else walk speed-look speed.js desktop; fi
+else walk speed-look speed.js desktop; fi
 [ "$ran" = 1 ] || { echo "Couldn't find a walk named $only. Names: recordings$names" >&2; exit 2; }
 [ -n "$only" ] || [ "$failed" != 0 ] || tools/passes/passes.sh save walk
 exit "$failed"
