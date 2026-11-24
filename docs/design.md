@@ -9,9 +9,9 @@ Tom approved the Direction page on 2026-11-21. It is private; its link is in `~/
 
 - **Recruiter gate.** Before anything is made, an idea passes five rules: readable in 2 seconds; the effect stays behind the words; one effect per screen; the phone gets the same story, under 400 KB per moment; finished without motion.
 - **Grounds.** Cream (`--look-cream`) for the first screen, warm dark (`--look-dark-soft`) for the statement, black (`--look-ground`) for the work.
-- **The blue.** #4aa8ff, a new token `--front-spray` that comes with the front's PR. It is only the travelling thing and focus rings, never buttons or words. It changes form at every moment: ring, signature, paint drips, ink behind RUN, a wash behind each project, a dot at the end.
+- **The blue.** #4aa8ff, a new token `--front-spray` that comes with the front's PR. It is the travelling thing, focus rings and one word per big heading (LARSSON on the poster, I RUN, ME), never buttons. It changes form at every moment: the poster's drawing and its window, ring, signature, paint drips, ink behind RUN, a wash behind each project, a dot at the end.
 - **No line between moving parts.** Two things that scroll at different speeds are never joined by a line (Tom 2026-11-21, on the phone).
-- **Type.** Clash Display for big words, Inter for reading.
+- **Type.** Archivo Expanded (black, 125 % wide) for the name and every big word, JetBrains Mono for labels and for drawing Tom on the first screen, Inter for reading (Tom 2026-11-24, the code poster).
 - **Handwriting.** Each project's note is Tom's own hand, traced like the signature. Never AI handwriting.
 - **Assets.** Made on the desk's graphics card first (Z-Image, BiRefNet, Depth Anything, potrace), then moved by small shaders. No video models.
 
