@@ -406,7 +406,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const stairLight = new THREE.SpotLight(0xffd9a8, 0, 7, .95, .8, 1.4); scene.add(stairLight, stairLight.target);
   function stairsAt(cx) { const i = cx < 12 ? 0 : 1, s = stairLamps[i];
     const w = i === 0 ? 1 - sm(cl((cx - 10) / 2)) : sm(cl((cx - 12) / 2)) * (1 - sm(cl((cx - 27) / 2)));
-    stairLight.position.set(s.x, s.y, .4); stairLight.target.position.set(s.x, s.y - 3, 1.6); stairLight.intensity = 7 * w * (introOver ? 1 : 0); }
+    if (i) { stairLight.position.set((UP0 + UP1) / 2, DECK - .15, 2.2); stairLight.target.position.set((UP0 + UP1) / 2, G3 + .8, 0); stairLight.angle = 1.2; stairLight.distance = 10; } // under the bridge: the deck's own tubes light the abutment and the steps (Tom 11-24: no dark block)
+    else { stairLight.position.set(s.x, s.y, .4); stairLight.target.position.set(s.x, s.y - 3, 1.6); stairLight.angle = .95; stairLight.distance = 7; }
+    stairLight.intensity = (i ? 9 : 7) * w * (introOver ? 1 : 0); }
   const pool = new THREE.SpotLight(0xffd2a0, 0, 14, .62, .85, 1.6); pool.position.set(POST.x, GROUND + 6.3, POST.z + 1.25); pool.target.position.set(POST.x + .3, GROUND, POST.z + 1.6); scene.add(pool, pool.target); // a curb stone at the pavement's edge; the darker band beyond is the road
   ground.receiveShadow = true; scene.add(ground);
 
@@ -2038,13 +2040,15 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the room under the street (Tom 11-24: a straight drop, no look down or up a shaft): from raddavarfruberga the camera glides down through the street
   // to the first tool's wall, still facing the wall, and after the last one up through it to EDGE, so a painting is always coming in. The covers stay shut.
   const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, 8.2, floor + 1.55) : stop(x, floor + 1.3, 7.6, floor + 1.75);
-  const KEYS = [...U4.slice(0, 4).map((u, i) => [i ? u.key - 45 : 548, u.key, ...toolStop(u.x, WF)]),
-    [935, 1045, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
+  // the glides cross the street inside the room's length (HX0..CX1), never through solid ground (the via point: a key's fifth entry bends its way)
+  const KEYS = [...U4.slice(0, 4).map((u, i) => [i ? u.key - 45 : 548, u.key, ...toolStop(u.x, WF), ...(i ? [] : [V(HX0 + 3, G3 + .3, 8)])]),
+    [935, 1045, ...EDGE_STOP, V(CX1 - 6, G3 + .3, 8)], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
   const inShaft = p => (1 - sm(cl((Math.min(Math.hypot(p.x - MX_IN, p.z - MZ), Math.hypot(p.x - MX_OUT, p.z - MZ)) - .3) / 1.2))) * (1 - sm(cl((p.y - G3 - 1) / 1.2))); // 1 in a shaft, 0 away from it: the hand sway fades out as you near one
-  function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
+  function endCam(sv, cp, look) { for (const [a, b, P, L, via] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue;
+    if (via) cp.multiplyScalar((1 - k) * (1 - k)).addScaledVector(via, 2 * k * (1 - k)).addScaledVector(P, k * k); else cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cx) {
     const under = sm(cl((cx - HX0 - .5) / 1.5)) * (1 - sm(cl((cx - CX1 + 1) / 2)));
-    tubeLight.intensity = 5.5 * under; roomFill.intensity = 6 * under; roomFill.position.set(cx + 2.5, DY - .25, 5.5); edgeL.intensity = 6.5 * (1 - sm(cl((Math.abs(cx - EDGE_X) - 2) / 6))); tubeLight.position.set(cx, DY - .1, 1.6); tubeLight.target.position.set(cx, WF + .9, 0);
+    tubeLight.intensity = 5.5 * under; roomFill.intensity = 6 * under; roomFill.position.set(cx + 2.5, DY - .25, 5.5); edgeL.intensity = 6.5 * (cx > EDGE_X ? 1 : 1 - sm(cl((EDGE_X - cx - 2) / 6))); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */ tubeLight.position.set(cx, DY - .1, 1.6); tubeLight.target.position.set(cx, WF + .9, 0);
     tubeBad.emissiveIntensity = Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4;
     scene.fog.color.copy(FOG0); sky.intensity *= 1 - .55 * under; sky.color.copy(SKY0);
     const FADE = .8; // seconds a painting takes to come up on its wall
