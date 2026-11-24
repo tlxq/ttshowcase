@@ -41,7 +41,7 @@ async (page) => {
   const stops = [
     [128, "04-epaRadar"],
     [432, "05-raddavarfruberga"],
-    [620, "06-the-way-down"], // master: down the manhole; the rail (11-24): the glide down through the street
+    [670, "06-the-way-down"], // master: down the manhole; the rail (11-24): the glide down, just under the street (the slab itself is a flick of scroll)
     [700, "07-Self-hosted"],
     [770, "08-ttoolbox"],
     [840, "09-dot"],
