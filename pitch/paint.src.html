@@ -1599,6 +1599,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     if (!ui) { leaveUp.style.display = "none"; leaveUp.tabIndex = -1; return; }
     const P = [VB.at(0, 0), VB.at(1024, 200), VCAN.clone().add(V(.35, 1.4, 0)), VCAN.clone().add(V(-.35, 0, 0))].map(proj), xs = P.map(p => p[0]), ys = P.map(p => p[1]);
     const l = Math.max(0, Math.min(...xs)), r = Math.min(innerWidth, Math.max(...xs)), t = Math.max(0, Math.min(...ys)), b = Math.min(innerHeight, Math.max(...ys));
+    if (P.some(p => !p[2]) || r - l < 48 || b - t < 48) { leaveUp.style.display = "none"; leaveUp.tabIndex = -1; return; } // the words out of view (the page's top looks at the bare wall beside them): no tap area, nothing to tab to
     Object.assign(leaveUp.style, { display: "block", left: l + "px", top: t + "px", width: r - l + "px", height: b - t + "px" }); leaveUp.tabIndex = 0; }
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
     const { leaveHot } = endS.hots, ui = endS.show && !pick.mode && endReady, marks = ui; // a phone looking at the form has no marks over it to tap: nothing may lie over the form; the tabs sit under it, so they stay live
