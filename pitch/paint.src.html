@@ -1362,7 +1362,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
         u.parts = [...[...Array(nums).keys()].map(i => makeSpray({ key, only: i, name: u.name + "'s number " + (i + 1), colour: "#f3ead8", piece: colour, font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, inline: true, z,
             rect: long ? [u.x - 1.4, top - (i + 1) * nh / nums, u.x + 1.4, top - i * nh / nums] : [u.x - 1.4 + i * 2.8 / nums + .05, top - nh, u.x - 1.4 + (i + 1) * 2.8 / nums - .05, top] })), // a long word: each number its own line
           ...stack.map((t, i) => { const r = Math.floor(i / per), c = i % per, y = top - nh - (r + 1) * th + (c % 2 ? th * .12 : 0);
-            return makeSpray({ key: key + "Tag" + i, name: u.name + "'s tag " + t, colour: key === "edge" ? (i % 2 ? "#e9edf2" : "#7db8ff") : i % 2 ? "#20232b" : colour, /* EDGE (Tom 11-24): on the concrete now, light paint so the words read */ stack: [t], row: true, fill: .8, z, rect: [u.x - 1.4 + c * tw, y, u.x - 1.4 + (c + 1) * tw, y + th * .88] }); })]; }
+            return makeSpray({ key: key + "Tag" + i, name: u.name + "'s tag " + t, colour: key === "edge" ? (i % 2 ? "#e9edf2" : "#7db8ff") : i % 2 ? (key === "ttoolbox" ? "#f3ead8" : "#20232b") : colour, /* EDGE (Tom 11-24): on the concrete now, light paint so the words read; ttoolbox: its dark word sat on the dark strip (audit A10) */ stack: [t], row: true, fill: .8, z, rect: [u.x - 1.4 + c * tw, y, u.x - 1.4 + (c + 1) * tw, y + th * .88] }); })]; }
       else { // (Tom 11-19) laptop: the numbers painted big in the piece's style on the right, one over the other; each tool its own tag on the sides, staggered
         const [b0, b1, b2, b3] = u.bb, bh = b3 - b1, R = ([p0, q0, p1, q1]) => [u.B.at(p0, 0).x, u.B.at(0, q1).y, u.B.at(p1, 0).x, u.B.at(0, q0).y], nums = (LIVE[key] || []).length;
         const NUM = i => makeSpray({ key, only: i, name: u.name + "'s number " + (i + 1), colour: "#f3ead8", piece: colour, font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, rect: R([b2 + 30, b1 + i * bh / 2, b2 + 340, b1 + (i + 1) * bh / 2 - 30]) }); // inside what the camera sees beside a wide painting
@@ -1575,7 +1575,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     vTex.needsUpdate = true; vFile = vCan.toDataURL(); });
   const leaveUp = document.createElement("button"); Object.assign(leaveUp, { type: "button", className: "hot", id: "leaveUp", tabIndex: -1 }); leaveUp.setAttribute("aria-label", "Leave your tag"); leaveUp.style.display = "none";
   document.querySelector(".hud").append(leaveUp); leaveUp.addEventListener("click", e => { e.preventDefault(); pickNear = [-12, 3.6]; document.getElementById("leave").click(); });
-  hotOn(leaveUp, "Leave your tag", makeGlow(() => vFile, VB, [0, 0, 1024, 200], { colour: "#ffffff", hole: 1, fill: 0 })); // a light glow round the blue words, none over them: they stay sharp
+  hotOn(leaveUp, "", makeGlow(() => vFile, VB, [0, 0, 1024, 200], { colour: "#ffffff", hole: 1, fill: 0 })); // a light glow round the blue words, none over them: they stay sharp
   const ECAN = V(PW / 2 - .3, GROUND, .8), eCan3 = can.clone(); eCan3.position.copy(ECAN); eCan3.rotation.y = .5; eCan3.visible = false; scene.add(eCan3); // the end's Leave your tag: a can at the foot of the mural's right end, between it and the flyer, where a hand would reach (a phone sees it beside its narrower mural)
   const visitOn = () => !document.getElementById("leave").hidden && !endS.show;
   function visitPlace(lft) { const on = visitOn(); vWords.visible = vCan3.visible = on; // the words and the can, one tap area round both
@@ -1594,10 +1594,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     canvas.style.touchAction = narrowNow() ? "pan-y" : "";
     // hover: the glow, the label
     let act = null, dt = Math.min(.1, (now - (endPlace.last || now)) / 1000); endPlace.last = now;
-    for (const h of HOTL) { const el = h.el, shown = el.style.display === "block" && !el.hidden, on = shown && el.matches(":hover, :focus-visible"), g = h.glow; let target = on ? 1 : 0;
+    for (const h of HOTL) { const el = h.el, shown = el.style.display === "block" && !el.hidden, on = shown && el.matches(":hover, :focus-visible"), g = h.glow; let target = on ? 1 : 0; // a hot spot with no label (Tom 11-24: the painted Leave your tag says it once) still glows
       if (shown) { g.build(); if (!g.pulsed && PULSE && !REDUCED) { g.pulsed = true; g.pulse = now; } }
       if (g.pulse >= 0) { const t = (now - g.pulse) / 1400; if (t < 1) target = Math.max(target, .5 * Math.sin(Math.PI * t)); else g.pulse = -1; }
-      g.op += (target - g.op) * (REDUCED ? 1 : Math.min(1, dt * 10)); if (g.mesh) { g.mesh.material.opacity = g.op; g.mesh.visible = g.op > .01 && !g.gone; } if (on) act = h; }
+      g.op += (target - g.op) * (REDUCED ? 1 : Math.min(1, dt * 10)); if (g.mesh) { g.mesh.material.opacity = g.op; g.mesh.visible = g.op > .01 && !g.gone; } if (on && h.label) act = h; }
     if (!act && endS.show) { const h = HOTL.find(h => h.el === endS.hots.leaveHot); if (h && h.el.style.display === "block") { act = h; act.below = true; } } // the can says what it is without a hover: a phone has none (design review 11-23)
     if (act) { const r = act.el.getBoundingClientRect(); hlEl.textContent = act.label; hlEl.classList.add("on"); const lw = hlEl.offsetWidth, lh = hlEl.offsetHeight;
       hlEl.style.left = cl((r.left + r.right) / 2 - lw / 2, 8, innerWidth - lw - 8) + "px"; hlEl.style.top = (act.below || r.top - lh - 8 < 8 ? r.bottom + 8 : r.top - lh - 8) + "px"; act.below = false; } else hlEl.classList.remove("on"); }
@@ -2009,7 +2009,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the visitors' wall's street light (Tom 11-23: one more light, no swing) is lamp2, which is off wherever that wall is in view: at the epaRadar wall on the
   // walk, at the visitors' wall (and the start beside it) and at its twin past EDGE, where the walk changes from one to the other in close
   const CLOSE_V = V(-16, 1.8, 0), CLOSE_D = () => NARROW ? 1.2 : 1.4, L2_VIS = [V(-18.6, GROUND + 6.35, 3.7), V(-11, 1.2, 0)], L2_EPA = [lamp2.position.clone(), lamp2.target.position.clone()];
-  function lamp2At(sv) { const vis = sv < 44, twin = !vis && sv > 1040;
+  function lamp2At(sv) { const vis = sv < 4, twin = !vis && sv > 1040;
     if (!vis && !twin) { lamp2.position.copy(L2_EPA[0]); lamp2.target.position.copy(L2_EPA[1]); lamp2.angle = .62; lamp2.penumbra = .75; return; }
     const d = twin ? SEAM_D : V(); lamp2.position.copy(L2_VIS[0]).add(d); lamp2.target.position.copy(L2_VIS[1]).add(d); lamp2.angle = .9; lamp2.penumbra = .75; lamp2.intensity = 6.2;
     }
@@ -2092,7 +2092,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       if (ic < 30) { for (const g of grounds) if (uTnow > g.land && uTnow < g.feed) splashGround(V(g.x, GROUND + .01, 0), uTnow < g.land + .25 ? 4 : 1);
         let lit_ = 0; for (const s of streams) if (uTnow > s.land && uTnow < s.end) { splash(V(s.x, s.y, 0), 2); if (!lit_++) { bounce.position.set(s.x, s.y, .4); bounce.intensity = 1.2; } } } }
     if (creep) { const ct = ic - creep.at; creepU.uFront.value = ct < 0 ? -1 : REDUCED ? creep.L : Math.min(creep.L, .2 + .26 * ct + .045 * Math.sin(ct * 2.3)); }
-    const on2 = sm(cl((p - .15) / .07)); lamp2.intensity = 6.2 * on2 * (on2 > 0 && on2 < 1 && Math.random() < .35 ? .15 : 1);
+    const on2 = sm(cl((sv - 8) / 16)); lamp2.intensity = 6.2 * on2 * (on2 > 0 && on2 < 1 && Math.random() < .35 ? .15 : 1);
     // paint everything the pen reached since the last frame
     const done0 = si >= samples.length;
     let pen = null, pressing = false;
