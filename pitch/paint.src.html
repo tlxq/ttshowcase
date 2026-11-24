@@ -436,7 +436,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const pourNor = tex("assets/wall4_nor_gl.jpg", false, PW / TILE, HT / TILE, (WW / 2 - WX - PW / 2) / TILE, 0);
   const PAINT_HEX = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(), PAINT = new THREE.Color(PAINT_HEX); if (!/^#[0-9a-f]{6}$/i.test(PAINT_HEX)) throw new Error("--front-spray is missing from tokens.css"); bounce.color.copy(PAINT); // the paint (and the glow where it lands): the front's blue (Tom 11-22, one site), from tokens.css
   const mistCol = [1, 3, 5].map(i => parseInt(PAINT_HEX.slice(i, i + 2), 16) / 255); // the mist and the splashes are the paint's own blue (its sRGB: their shader writes it straight out)
-  const pourU = { uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
+  const pourU = { uInk: { value: new THREE.Color("#20232b") } /* the outline (Tom 11-24): the walls' dark ink */, uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
     uA: { value: Array.from({ length: NS }, () => new THREE.Vector4(0, -99, -99, 99)) }, uB: { value: Array.from({ length: NS }, () => new THREE.Vector4()) },
     uC: { value: PAINT }, uRep: { value: pourNor.repeat }, uOff: { value: pourNor.offset }, uDims: { value: new THREE.Vector4(PW, PH, HT, GROUND) }, uYB: { value: YB },
     uSh: { value: new THREE.Vector4(.3, VSH, WALL_TOP, 0) }, uL: { value: new THREE.Vector4(LEDGE.tip + .05, LEDGE.x0, LEDGE.spread, 0) } };
@@ -444,13 +444,18 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   pourMat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, pourU);
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
-      uniform sampler2D uMask, uWet; uniform float uT; uniform vec4 uA[${NS}], uB[${NS}]; uniform int uN; uniform vec3 uC; uniform vec2 uRep, uOff; uniform vec4 uDims, uSh, uL; uniform float uYB;
+      uniform sampler2D uMask, uWet; uniform vec3 uInk; uniform float uT; uniform vec4 uA[${NS}], uB[${NS}]; uniform int uN; uniform vec3 uC; uniform vec2 uRep, uOff; uniform vec4 uDims, uSh, uL; uniform float uYB;
       float wetG;`)
       .replace("#include <map_fragment>", `
         vec2 uv0 = (vUv - uOff) / uRep;
         float wx = (uv0.x - .5) * uDims.x, wy = uDims.w + uv0.y * uDims.z, pa = 0.; wetG = 0.;
         vec2 cuv = vec2(uv0.x, (wy - uYB) / uDims.y);
         if (cuv.y > 0. && cuv.y < 1.) { float m = texture2D(uMask, cuv).r, T = texture2D(uWet, cuv).r * ${TMAX}.; float age = uT - T; pa = m * smoothstep(-.03, .06, age); wetG = pa * (1. - smoothstep(.3, 3., age)); }
+        // a thin dark outline round the letters, sprayed as each part of them lands (Tom 11-24: the line read 1.74:1 by day)
+        float pl = pa, ol = 0.;
+        if (cuv.y > -.02 && cuv.y < 1.02) { vec2 o = vec2(.04 / uDims.x, .04 / uDims.y);
+          for (int k = 0; k < 8; k++) { float an = float(k) * .785398; vec2 q = cuv + o * vec2(cos(an), sin(an));
+            ol = max(ol, texture2D(uMask, q).r * smoothstep(-.03, .06, uT - texture2D(uWet, q).r * ${TMAX}.)); } }
         float aa = fwidth(wx);
         // the sheet: comes over the edge where the ledge paint reaches it, slides down, slows, gathers a bead at its lower edge
         { float ft = uT - (uL.x + max(0., wx - uL.y) / uL.z); if (ft > 0.) {
@@ -476,7 +481,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
           float br = b.x * .8; vec2 bc = vec2(a.x + wob, a.y - head + br * .5);
           if (b.z > .5 || head < L - .001) sa = max(sa, 1. - smoothstep(br - aa, br + aa, length(vec2(wx, wy) - bc)));
           sa *= film; pa = max(pa, sa); wetG = max(wetG, sa * (fall < tail ? .3 : 1.)); }
-        diffuseColor = vec4(uC * (1. - .18 * wetG), pa);`)
+        float ring = max(0., ol - pl) * (1. - pa); diffuseColor = vec4(mix(uInk, uC * (1. - .18 * wetG), pa / max(pa + ring, 1e-4)), max(pa, ring * .92));`)
       .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n roughnessFactor = mix(roughnessFactor, .04, wetG);");
   };
   const puddleU = { uT: pourU.uT, uC: pourU.uC, uP: { value: Array.from({ length: 12 }, () => new THREE.Vector4(0, 99, 0, 0)) }, uPN: { value: 0 } };
