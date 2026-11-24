@@ -237,6 +237,8 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 .form button { justify-self: start; margin-top: 10px; font: 600 15px/1 var(--f-text); color: var(--look-cream); background: transparent; border: 1px solid var(--front-spray); border-radius: 2px; min-height: 48px; padding: 0 28px; cursor: pointer; }
 .form button:hover { background: var(--front-spray); color: var(--look-dark); }
 .form .err { margin: 0; color: var(--look-cream); }
+.form .send { display: flex; align-items: center; gap: var(--s3); } /* Send and the small privacy word: what the site keeps, in a new tab so the message stays */
+.form .pv { display: inline-flex; align-items: center; min-height: var(--tap); margin-top: 10px; font: 400 var(--look-label)/1 var(--front-code); color: var(--look-quiet); }
 @media (max-width: 640px) {
   .end { padding-top: 18svh; }
   .end h2 { font-size: 11.6vw; line-height: 1.02; } /* room for WRITE's swipe above ME */
@@ -395,14 +397,14 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <p class="note" aria-hidden="true"><span>let them stay</span><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg></p>
         <div class="tall" data-speed="1"><img src="projects/raddavarfruberga-phone.webp" alt="The site on a phone" width="780" height="5233" loading="lazy"></div>
         <div class="txt">
-          <span class="no">02 / 03 · Built alone, for the parents</span>
+          <span class="no">02 / 03 · Built alone, for a parents' group</span>
           <h3 id="p2">Rädda Vårfruberga</h3>
-          <p class="line">We started this site to collect <span class="mark">signatures</span> for our preschool.</p>
+          <p class="line">A site to collect <span class="mark">signatures</span> so 20 children keep their preschool places.</p>
           <div class="story">
-            <p><b>Why</b>The council wanted to close our children's preschool. The parents needed one place to sign, share and follow the case, so I built it.</p>
+            <p><b>Why</b>The council turned down the preschool's permit for 75 places, so 20 children were set to lose theirs. Their parents needed one place to sign, share and follow the case, so I built it.</p>
             <p><b>Hard part</b>Mail scanners open every link in an email. If the sign-in link logged you in, it would log the scanner in too. So the link only asks, and a button you press logs you in.</p>
           </div>
-          <dl><dt>Result</dt><dd>1,024 signatures. The council hasn't decided yet.</dd><dt>Stack</dt><dd>Next.js, TypeScript, Supabase, Resend, Vercel</dd></dl>
+          <dl><dt>Result</dt><dd>1,024 signatures. The appeal is still open.</dd><dt>Stack</dt><dd>Next.js, TypeScript, Supabase, Resend, Vercel</dd></dl>
           <div class="go"><a href="https://raddavarfruberga.se" aria-label="Open the site, Rädda Vårfruberga">Open the site ↗</a></div>
         </div>
       </article>
@@ -437,7 +439,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <label>Email<input name="email" type="email" autocomplete="email" required maxlength="200" enterkeyhint="next"></label>
         <label>Message<textarea name="message" rows="3" required maxlength="4000"></textarea></label>
         <label class="trap" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
-        <p class="err" id="mailErr" role="alert" hidden></p><button>Send</button>
+        <p class="err" id="mailErr" role="alert" hidden></p><div class="send"><button>Send</button><a class="pv" href="/privacy" target="_blank" rel="noopener">privacy</a></div>
       </form>
     </div>
   </section>
@@ -584,12 +586,12 @@ __LIBS__
 
   // the form: the same fields and words as the live site's, sent by the server (api/contact.ts); signum W3, W5, W6
   { const mail = document.getElementById("mail"), err = mail.querySelector(".err"), btn = mail.querySelector("button");
-    const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters." };
+    const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters.", "too-many": "This address has sent all its messages for today. Try again tomorrow." };
     mail.addEventListener("submit", async (e) => { e.preventDefault(); btn.disabled = true; btn.textContent = "Sending\u2026"; err.hidden = true; let why;
       try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
         if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.tabIndex = -1; sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.replaceChildren(sent); sent.focus(); return; } // focus moves to the answer: the button it was on is gone
         const code = ((await a.json().catch(() => ({}))).error) || ""; why = WHY[code] || "The mail service didn't answer.";
-        if (WHY[code]) { const field = mail.elements[code]; field.setAttribute("aria-invalid", "true"); field.setAttribute("aria-describedby", err.id); } } catch (_) { why = "The page couldn't reach the server."; }
+        const field = WHY[code] && mail.elements[code]; if (field) { field.setAttribute("aria-invalid", "true"); field.setAttribute("aria-describedby", err.id); } } catch (_) { why = "The page couldn't reach the server."; }
       err.textContent = "Couldn't send your message. " + why; err.hidden = false; btn.disabled = false; btn.textContent = "Try again"; });
     mail.addEventListener("input", (e) => { if (e.target.getAttribute("aria-invalid")) { e.target.removeAttribute("aria-invalid"); e.target.removeAttribute("aria-describedby"); } }); }
   const endPull = { p: 0 }; // moment 5: how far the last wash has become the form's lines (0 -> 1)

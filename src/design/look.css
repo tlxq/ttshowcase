@@ -1198,6 +1198,22 @@ html:has(.lk) body {
   position: absolute;
   left: -9999px;
 }
+.lk-mail-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-top: var(--s2);
+}
+.lk-mail-foot .lk-mail-send {
+  margin-top: 0;
+}
+.lk .lk-mail-privacy {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  font-size: var(--look-label);
+  color: var(--look-quiet);
+}
 .lk-mail-send {
   justify-self: start;
   margin-top: var(--s2);
