@@ -1,5 +1,6 @@
 // The loop's left turn (PR3): after the pour the page parks a little way down, with no label (Tom 11-23: the progress line alone says where you are);
-// up at the visitors' wall the camera faces it (x -17..-7); on up past it the page lands near its end, which shows the same wall (the seam); the tag tool works on both sides of it;
+// up at the visitors' wall the camera faces it (x -17..-7); on up past it, at the page's top, the bare wall by the lamp post, and the page lands near its end, which shows
+// the same view (the seam, R3 11-24); the tag tool works at the visitors' wall, and at the seam, where the words are out of view, its tap area is gone;
 // pulling past the top can't reload (overscroll-behavior); a resize while parked stays parked; the progress line's marker never jumps at either seam.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
@@ -33,9 +34,14 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const [pre, past] = await page.evaluate(() => [Math.round(svY(+document.documentElement.dataset.svEnd + 54)), Math.round(svY(+document.documentElement.dataset.svEnd + 60))]);
   await seam(6, 2, 'the top'); await seam(pre, past, 'the end');
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-round.png' });
-  // signing the wall on both sides of the seam (Tom 11-23): Leave your tag shows, the tool opens with the scroll held and no jump, Cancel gives the
-  // same place back with the scroll free
+  // at the seam (both sides) the visitors' words are out of view: no tap area on screen and nothing to tab to
   for (const [side, y] of [['the end side', res.round.end], ['the top side', 10]]) {
+    await page.evaluate(y => scrollTo(0, y), y); await page.waitForTimeout(2500);
+    const h = await page.evaluate(() => { const e = document.getElementById('leaveUp'); return { shown: e.style.display === 'block', tab: e.tabIndex }; });
+    if (h.shown || h.tab >= 0) errs.push('Leave your tag has a tap area at ' + side + ', where its words are out of view: ' + JSON.stringify(h)); }
+  // signing the wall at the visitors' wall (Tom 11-23): Leave your tag shows, the tool opens with the scroll held and no jump, Cancel gives the
+  // same place back with the scroll free
+  for (const [side, y] of [['the visitors\' wall', await page.evaluate(() => Math.round(visitY()))]]) {
     await page.evaluate(y => scrollTo(0, y), y); await page.waitForTimeout(2500);
     const at0 = await page.evaluate(() => Math.round(scrollY)), shown = await page.evaluate(() => document.getElementById('leaveUp').style.display === 'block');
     if (!shown) { errs.push('Leave your tag is not on the visitors\' wall at ' + side); continue; }

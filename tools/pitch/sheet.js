@@ -41,18 +41,21 @@ async (page) => {
   const stops = [
     [128, "04-epaRadar"],
     [432, "05-raddavarfruberga"],
-    [590, "06-manhole"],
+    [670, "06-the-way-down"], // master: down the manhole; the rail (11-24): the glide down, just under the street (the slab itself is a flick of scroll)
     [700, "07-Self-hosted"],
     [770, "08-ttoolbox"],
     [840, "09-dot"],
     [910, "10-tthermal"],
     [1045, "11-EDGE"],
-    [1180, "12-end"],
+    [1230, "12-end"], // the walk's last view, the same as the page's top (13)
   ];
   for (const [sv, name] of stops) {
     await page.evaluate((sv) => scrollTo(0, svY(sv)), sv);
     await page.waitForTimeout(sv >= 700 ? 3200 : 1800);
     await shot(name);
   }
+  await page.evaluate(() => scrollTo(0, 10)); // the page's top: the far side of the seam
+  await page.waitForTimeout(2500);
+  await shot("13-top");
   return JSON.stringify({ errs });
 }
