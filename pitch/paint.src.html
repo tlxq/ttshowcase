@@ -19,6 +19,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the way round to
 /* the one plate (Tom 11-18): every label, the form, the tag bars and the menus sit on it, beside what they describe and never over a picture (the plate check) */
 .tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm { background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; color: var(--look-text); font-family: ui-monospace, "IBM Plex Mono", monospace; font-size: var(--look-label); }
 @media (max-aspect-ratio: 4/5) { .tag, .mail, .pick .top, .pick .bar, .pick .menu, .adm, .mail label, .pick .menu small { font-size: var(--look-label-phone); } }
+#tagBucket:focus-visible { outline: 2px solid var(--look-text); outline-offset: 3px; } /* the start, reached with Tab (Tom 11-24, audit 4b) */
 .tag { position: absolute; font-weight: 500; line-height: 1.5; letter-spacing: .06em; padding: 7px 10px; text-transform: uppercase; white-space: nowrap; opacity: 0; transition: opacity .6s; }
 .tag.wrap { white-space: normal; width: min(300px, 70vw); }
 /* the facts label: the label word small and uppercase, the sentences in sentence case (signum K3) */
@@ -822,7 +823,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // a reload starts at the top: some hosts put the old scroll place back after load, so hold the top until the intro ends
   addEventListener("pageshow", () => { if (!introOver) scrollTo(0, upPx()); });
   const root = document.documentElement; root.style.overflow = "hidden"; root.style.touchAction = "none";
-  const go = () => { if (!goAt) { goAt = performance.now(); tilt0 = tilt; } };
+  const go = () => { if (!goAt) { goAt = performance.now(); tilt0 = tilt; tagBucket.tabIndex = -1; tagBucket.removeAttribute("role"); tagBucket.blur(); } };
   addEventListener("pointerdown", () => { if (goAt && !introOver) skipped = true; else if (readyAt) go(); });
   addEventListener("keydown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && !goAt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } }); // only while the bucket waits: later Enter and Space belong to the form and its links
   addEventListener("wheel", () => { if (goAt && !introOver) skipped = true; }, { passive: true });
@@ -834,7 +835,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     if (!goAt) {
       const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 2.2);
       level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 3.5);
-      if (pourReady && level > .975 && !readyAt) { readyAt = now; root.dataset.readyAt = Math.round(now - t0); warmUp(); } else warmStep();
+      if (pourReady && level > .975 && !readyAt) { readyAt = now; root.dataset.readyAt = Math.round(now - t0); warmUp(); tagBucket.tabIndex = 0; tagBucket.setAttribute("role", "button"); tagBucket.setAttribute("aria-label", "Tip the bucket to enter"); } // Tab reaches the start, Enter tips it (B-4) else warmStep();
       if (pourReady && REDUCED) goAt = now - 60000;
       // a small rock now and then shows it can move
       { if (readyAt && Math.floor((now - readyAt) / 3200) > rocks) { rocks++; tiltV += .55; } tiltV += (-42 * tilt - 6 * tiltV) * dt; tilt = Math.max(-.04, tilt + tiltV * dt); }
