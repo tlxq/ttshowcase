@@ -962,7 +962,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // at(u, v) is any picture pixel in the wall's own space; the link marks and the painted areas are in picture pixels. The wall's own hole (moment 3) cuts through it too.
   function paintOn(file, w, [px, py], [wx, wy], z = .002, [pw, ph] = [1536, 960]) { const h = w * ph / pw, k = w / pw, cx = wx - px * k + w / 2, cy = wy + py * k - h / 2, map = tex(file, true, 1, 1); map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .55,
-      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2)) / TILE, (cy - h / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.9, .9), polygonOffset: true, polygonOffsetFactor: -2 }));
+      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2) - (cx > CX1 ? SEAM_D.x : 0)) / TILE, (cy - h / 2 - GROUND - (cx > CX1 ? SEAM_D.y : 0)) / TILE), normalScale: new THREE.Vector2(.9, .9), polygonOffset: true, polygonOffsetFactor: -2 }));
     m.position.set(cx, cy, z); scene.add(m);
     const at = (u, v) => V(cx - w / 2 + u * k, cy + h / 2 - v * k, 0);
     return { m, at, w, h, k, protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y1), at(x1, y0)]) }; }
@@ -1328,9 +1328,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // and one blockbuster painting on it (Tom 11-19; it replaced the printed sheet), "EDGE". Its two links are marks of its own story (Tom 11-19): two banners sprayed under
   // the letters in the piece's blue, their own picture over the painting. Spray, no pen tag.
   const EDGE_X = 75, EDGE_W = NARROW ? 3.7 : 6.2, EDGE_H = 4;
-  { const w = EDGE_W, h = EDGE_H, m = new THREE.Mesh(new THREE.BoxGeometry(w, h, .05), new THREE.MeshStandardMaterial({ color: 0x9c9a95, roughness: .78, envMapIntensity: .35,
-      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (EDGE_X - w / 2 + 21) / TILE, 0), normalScale: new THREE.Vector2(.12, .12) }));
-    m.position.set(EDGE_X, G3 + h / 2, .025); scene.add(m);
+  { const h = EDGE_H; // Tom 11-24: no board behind it (it lit up as a pale block); the painting is sprayed on the concrete like every other wall, its lamp stays
     const arm = new THREE.Mesh(new THREE.BoxGeometry(.05, .05, 1.1), fixM); arm.position.set(EDGE_X, G3 + h - .12, .55); const hood = new THREE.Mesh(new THREE.BoxGeometry(.7, .09, .22), fixM); hood.position.set(EDGE_X, G3 + h - .14, 1.1); hood.rotation.x = .35; scene.add(arm, hood); }
   const edgeL = new THREE.SpotLight(0xfff0dc, 0, 12, 1.15, 1, 1.2); edgeL.position.set(EDGE_X, G3 + EDGE_H - .2, 1.15); edgeL.target.position.set(EDGE_X, G3 + 1.7, 0); scene.add(edgeL, edgeL.target);
   const GHUB = "https://github.com/tlxq/";
@@ -1351,9 +1349,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     tool(60.5, 910, "tthermal", "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.",
       { leave: 935, art: ["assets/tthermal_wall.webp", 5.6, 3.4, [775, 525], 1.5, [[104, 254, 1447, 796]]], marks: [[162, 675, 390, 775]] }),
     { x: 75, key: 1045, leave: 1045, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
-      art: ["assets/edge_wall.webp", 6.6, 3.5, [714, 518], 1.9, [[20, 200, 1409, 745], ...EDGE_V.areas], .056], ov: EDGE_V.ov, marks: EDGE_V.marks,
+      art: ["assets/edge_wall.webp", 6.6, 3.5, [714, 518], 1.9, [[20, 200, 1409, 745], ...EDGE_V.areas]], ov: EDGE_V.ov, marks: EDGE_V.marks,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base. Work project, built alone." } ];
-  U4.forEach((u, i) => { const [file, wL, wP, c, y, areas, z] = u.art; u.B = paintOn(file, N_ ? wP : wL, c, [u.x, u.floor + y], z); if (u.ov) { u.O = paintOn(u.ov, N_ ? wP : wL, c, [u.x, u.floor + y], z + .001); u.O.m.renderOrder = 2; } areas.forEach((a, j) => u.B.protect(u.name + "'s painting" + (j ? " " + (j + 1) : ""), a));
+  U4.forEach((u, i) => { const [file, wL, wP, c, y, areas, z = .002] = u.art; u.B = paintOn(file, N_ ? wP : wL, c, [u.x, u.floor + y], z); if (u.ov) { u.O = paintOn(u.ov, N_ ? wP : wL, c, [u.x, u.floor + y], z + .001); u.O.m.renderOrder = 2; } areas.forEach((a, j) => u.B.protect(u.name + "'s painting" + (j ? " " + (j + 1) : ""), a));
     u.bb = [0, 1, 2, 3].map(n => Math[n < 2 ? "min" : "max"](...areas.map(a => a[n]))); u.start = 0; // the painted area as one box
     u.links.forEach((l, j) => l.box = u.marks[j]);
     { const [key, colour, stack] = { "Self-hosted platform": ["self", "#2d3a5c", ["TypeScript", "Next.js", "Hono", "SQLite", "Java", "Docker", "Caddy", "Tailscale"]], ttoolbox: ["ttoolbox", "#c8402a", ["Claude Code", "Python", "Bash"]],
