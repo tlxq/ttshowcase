@@ -45,6 +45,12 @@ test("a message goes to Tom with the visitor as reply-to", async () => {
   ]);
 });
 
+test("the subject is one line: line breaks and hidden characters in the name are dropped", async () => {
+  const w = world();
+  await w.post(send({ ...letter, name: "Kas\r\nBcc: x@y.z\u200eper" }));
+  assert.equal(w.mails[0]!.subject, "Message from KasBcc: x@y.zper <k@example.com>");
+});
+
 test(`${MAIL_PER_ADDRESS} messages a day per address, then too-many and no mail`, async () => {
   const w = world();
   for (let i = 0; i < MAIL_PER_ADDRESS; i++) assert.equal((await w.post(send(letter))).status, 200);

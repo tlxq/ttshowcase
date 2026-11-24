@@ -1,5 +1,5 @@
 Fonts (SIL Open Font License), self-hosted by Next.js from Google Fonts at build time:
-  Inter Tight, JetBrains Mono.
+  Inter Tight, JetBrains Mono, Archivo.
 
 Three.js 0.187.0 (MIT), bundled (the wall).
 
