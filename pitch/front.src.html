@@ -797,13 +797,14 @@ __LIBS__
       cx.putImageData(id, 0, 0); return (duo[i] = c);
     };
     const size = () => {
+      if (!cv.offsetWidth || !cv.offsetHeight) return;
       fitName();
       dpr = Math.min(2, devicePixelRatio || 1);
       W = cv.width = win.width = rim.width = Math.round(cv.offsetWidth * dpr); H = cv.height = win.height = rim.height = Math.round(cv.offsetHeight * dpr);
       const w = photo.offsetWidth * dpr, h = photo.offsetHeight * dpr;
       pr = { x: photo.offsetLeft * dpr - w / 2, y: photo.offsetTop * dpr, w, h };
       cell = Math.max(4, Math.round(w / dpr / 88)) * dpr; chH = cell * 1.55;
-      { const a = role.getBoundingClientRect(), b = cv.getBoundingClientRect(), m = 10; hole = { x0: (a.left - b.left - m) * dpr, y0: (a.top - b.top - m) * dpr, x1: (a.right - b.left + m) * dpr, y1: (a.bottom - b.top + m) * dpr }; }
+      { const m = 10; hole = { x0: (role.offsetLeft - m) * dpr, y0: (role.offsetTop - m) * dpr, x1: (role.offsetLeft + role.offsetWidth + m) * dpr, y1: (role.offsetTop + role.offsetHeight + m) * dpr }; } // in the pane's own pixels, like the canvas: a scrolled, shrunk pane can't shift it
       cols = sm.width = Math.ceil(W / cell); rows = sm.height = Math.ceil(H / chH); grids = [];
       if (still) draw(0);
     };
@@ -832,6 +833,7 @@ __LIBS__
       rx.globalCompositeOperation = "source-over"; rx.clearRect(0, 0, W, H); rx.drawImage(win, 0, 0); rx.globalCompositeOperation = "source-in"; rx.fillStyle = CREAM; rx.fillRect(0, 0, W, H);
       x.globalAlpha = WA; const e = 4 * dpr; for (let a = 0; a < 6.28; a += 0.785) for (let n = 0; n < 3; n++) x.drawImage(rim, Math.cos(a) * e, Math.sin(a) * e); // three times: solid where the window is already soft
       x.globalAlpha = WA; x.drawImage(win, 0, 0); x.globalAlpha = 1;
+      if (hole) x.clearRect(hole.x0, hole.y0, hole.x1 - hole.x0, hole.y1 - hole.y0); // the role stays on clean cream, the window too
       x.font = `800 ${Math.round(cell * 1.3)}px "JetBrains Mono", ui-monospace, monospace`; x.textBaseline = "top";
       const { lum, al, ch } = G;
       for (let j = 0; j < rows; j++) for (let c = 0; c < cols; c++) {
@@ -849,7 +851,9 @@ __LIBS__
     };
     const load = (i) => new Promise((ok) => { const f = new Image(); f.src = `assets/turn/t${String(i).padStart(2, "0")}.webp`; f.decode().then(() => { frames[i] = f; ok(); }, ok); });
     Promise.all([load(MID), document.fonts.load('800 20px "JetBrains Mono"'), document.fonts.load('900 100px "Archivo"')].map((p) => p.catch(() => {}))).then(() => {
-      size(); addEventListener("resize", size); document.fonts.ready.then(size);
+      size(); document.fonts.ready.then(size);
+      let lastW = innerWidth, lastH = innerHeight; // a phone's address bar coming and going is not a new layout
+      addEventListener("resize", () => { if (innerWidth === lastW && Math.abs(innerHeight - lastH) < 120) return; lastW = innerWidth; lastH = innerHeight; size(); });
       // the rest of the turn after the first screen is up, nearest the middle first
       if (!still) [...Array(TURN).keys()].filter((i) => i !== MID).sort((a, b) => Math.abs(a - MID) - Math.abs(b - MID)).forEach((i, n) => setTimeout(() => load(i), 400 + n * 20));
       new IntersectionObserver(([e]) => (shown = e.isIntersecting)).observe(document.querySelector(".hero"));
