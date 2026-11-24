@@ -10,7 +10,7 @@ __TOKENS__
 html, body { background: var(--look-ground); color: var(--look-text); }
 body { font-family: "Clash Display", system-ui, sans-serif; overflow-x: clip; }
 #c { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-.track { height: 843vh; } /* the visitors' wall, the seam (TOP, 50: at its top the page is at its end) and the way down past the pole to the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; TOP (50) + UP (90: the visitors' wall, the pole on the way) + SV_END + LOOP (60) + 100 */
+.track { height: 783vh; } /* the visitors' wall, the seam (TOP, 50: at its top the page is at its end) and the way down past the pole to the opening (UP), then bucket, epaRadar, raddavarfruberga, down the hatch to the workshop, EDGE, into the dawn and back at the opening wall; TOP (50) + UP (90: the visitors' wall, the pole on the way) + SV_END + LOOP (60) + 100 */
 html { overscroll-behavior-y: none; } /* the top of the page is the way round to the end: pulling further must not reload it on a phone */
 .hud { position: fixed; inset: 0; pointer-events: none; }
 .hud svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -254,8 +254,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the scroll's own pace (R2, Tom 11-24: "a lot of scrolling"): the walk keeps its own count (sv, 0..SV_MAX: every moment, light and check is set in it),
   // but the page is shorter: a wall holds ~20-25 vh of scroll, a move between walls about half what it took. PACE: [sv, vh down the page below the park];
   // straight between pairs, so a move keeps its own easing. The checks scroll with svY(sv), which reads it.
-  const PACE = [[0, 0], [60, 45], [240, 70], [304, 90], [340, 95], [416, 145], [486, 170], [529, 190], [548, 195], [655, 245], [700, 275], [725, 295], [770, 325], [795, 345],
-    [840, 375], [865, 395], [910, 425], [935, 445], [995, 480], [1045, 520], [1058, 545], [SV_MAX - 10, 595], [SV_MAX, 603]], WALK = PACE[PACE.length - 1][1];
+  const PACE = [[0, 0], [60, 45], [240, 70], [304, 90], [340, 95], [416, 145], [486, 170], [529, 190], [548, 195], [700, 240], [725, 260], [770, 290], [795, 310],
+    [840, 340], [865, 360], [910, 390], [935, 410], [1045, 460], [1058, 485], [SV_MAX - 10, 535], [SV_MAX, 543]], WALK = PACE[PACE.length - 1][1];
   const paceOf = (v, a, b) => { if (v <= PACE[0][a]) return PACE[0][b]; for (let i = 1; i < PACE.length; i++) if (v <= PACE[i][a]) { const [p, q] = [PACE[i - 1], PACE[i]]; return p[b] + (q[b] - p[b]) * (v - p[a]) / (q[a] - p[a]); } return PACE[PACE.length - 1][b]; };
   const UP = 90, TOP = 50, PAGE = TOP + UP + WALK + 100, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / PAGE, topPx = () => track.offsetHeight * TOP / PAGE;
   track.style.height = PAGE + "vh"; // the stylesheet says the same, for the first paint
@@ -1296,13 +1296,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     for (const dx of [-.18, .18]) { const rl = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, DY - WF, 8), rungM); rl.position.set(x + dx, (DY + WF) / 2, MZ - MR + .09); scene.add(rl);
       for (const y of [DY - .4, WF + 1.2]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, MZ - MR + .09, 8), rungM); st.rotation.x = Math.PI / 2; st.position.set(x + dx, y, (MZ - MR + .09) / 2); scene.add(st); } } // stays back to the wall
     const cover = new THREE.Mesh(new THREE.CylinderGeometry(MR + .04, MR + .04, .05, 40), [coverM, coverM, coverM]); cover.position.set(x, G3 + .02, MZ); scene.add(cover);
-    return { x, cover, sv: i ? 945 : 560, shut: i ? 975 : 615, start: 0 }; });
+    return { x, cover }; });
   // a street lamp's pool over the cover you are near, so you see it open; it fades as you go down or walk on
   const manL = new THREE.SpotLight(0xffd9a8, 0, 9, .55, .7, 1.4); scene.add(manL, manL.target);
-  // a cover slides aside by itself once you reach it (once per visit; open at once if you are already going through)
-  function coversAt(now, sv) { for (const c of covers) { if (introOver && sv > c.sv && !c.start) c.start = now;
-    const k = REDUCED ? 1 : Math.max(c.start ? cl((now - c.start) / 1300) : 0, sm(cl((sv - c.sv) / (c.shut - 10 - c.sv)))) /* by itself, or as fast as you scroll */, up = sm(cl(k / .25)), go = sm(cl((k - .2) / .8));
-    c.cover.position.set(c.x + go * (2 * MR + .3), G3 + .02 + .07 * up * (1 - go) + .01 * go, MZ + .05 * go); c.cover.rotation.z = -.12 * up * (1 - go); } }
   function manAt(cp) { const c = Math.abs(cp.x - MX_IN) < Math.abs(cp.x - MX_OUT) ? MX_IN : MX_OUT, d = Math.abs(cp.x - c);
     manL.position.set(c - 1.2, G3 + 4.2, MZ + 2.4); manL.target.position.set(c + .3, c === MX_OUT ? WF + 1 : G3, MZ); manL.distance = c === MX_OUT ? 13 : 9; const down = c === MX_OUT ? 1 : sm(cl((cp.y - G3 + .5) / 1.2)); // going down you leave it behind; the far one shines down its shaft once the cover is off
     manL.intensity = 9 * (1 - sm(cl((d - 1.5) / 5))) * down * (introOver ? 1 : 0); }
@@ -2039,11 +2035,11 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const EDGE_STOP = N_ ? stop(75, G3 + 1.9, 8.4, G3 + 1.9) : stop(75, G3 + 1.7, 9.2, G3 + 2);
   const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)];
   const BARE = NARROW ? [V(-19.5, 2.6, 8), V(-19.5, 2.4, 0)] : [V(-21.2, 2.6, 8), V(-21.2, 2.4, 0)], BARE_T = BARE.map(v => v.clone().add(SEAM_D)); // R3: the page's top and the walk's end, the same view: the visitors' lamp post and the wall under it, left of the tags, the street out of view
-  const KEYS = [[548, 590, V(MX_IN - 1.7, G3 + 2.1, MZ + 1.6), V(MX_IN + .1, G3, MZ)], [590, 615, V(MX_IN, G3 + 1.3, MZ), V(MX_IN + .35, G3 - 3, MZ)],
-    [615, 655, V(MX_IN, WF + 1.6, MZ), V(U4[0].x, WF + 1.75, 0)] /* on the way down the eyes go to the first tool's wall, not the dark room (Tom 11-22: no empty screens) */,
-    ...U4.slice(0, 4).map((u, i) => [i ? u.key - 45 : 655, u.key, ...(N_ ? stop(u.x, WF + 1.55, 8.2, WF + 1.55) : stop(u.x, WF + 1.3, 7.6, WF + 1.75))]),
-    [935, 960, V(MX_OUT, WF + 1.6, MZ), V(MX_OUT + .35, WF + 6, MZ)], [960, 995, V(MX_OUT, G3 + 1.5, MZ), V(MX_OUT + .6, G3, MZ + .1)] /* up, then a look at the hole and the cover you pushed aside */,
-    [995, 1045, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
+  // the room under the street (Tom 11-24: a straight drop, no look down or up a shaft): from raddavarfruberga the camera glides down through the street
+  // to the first tool's wall, still facing the wall, and after the last one up through it to EDGE, so a painting is always coming in. The covers stay shut.
+  const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, 8.2, floor + 1.55) : stop(x, floor + 1.3, 7.6, floor + 1.75);
+  const KEYS = [...U4.slice(0, 4).map((u, i) => [i ? u.key - 45 : 548, u.key, ...toolStop(u.x, WF)]),
+    [935, 1045, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
   const inShaft = p => (1 - sm(cl((Math.min(Math.hypot(p.x - MX_IN, p.z - MZ), Math.hypot(p.x - MX_OUT, p.z - MZ)) - .3) / 1.2))) * (1 - sm(cl((p.y - G3 - 1) / 1.2))); // 1 in a shaft, 0 away from it: the hand sway fades out as you near one
   function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cx) {
@@ -2051,7 +2047,6 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     tubeLight.intensity = 5.5 * under; roomFill.intensity = 6 * under; roomFill.position.set(cx + 2.5, DY - .25, 5.5); edgeL.intensity = 6.5 * (1 - sm(cl((Math.abs(cx - EDGE_X) - 2) / 6))); tubeLight.position.set(cx, DY - .1, 1.6); tubeLight.target.position.set(cx, WF + .9, 0);
     tubeBad.emissiveIntensity = Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4;
     scene.fog.color.copy(FOG0); sky.intensity *= 1 - .55 * under; sky.color.copy(SKY0);
-    coversAt(now, sv);
     const FADE = .8; // seconds a painting takes to come up on its wall
     U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && sv < u.leave + 15;
       if (introOver && sv > u.key - 14 && !u.start) u.start = now; // once per visit
