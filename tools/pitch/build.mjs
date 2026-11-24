@@ -34,6 +34,17 @@ async function get(url, what) {
   return res;
 }
 
+// Google Fonts' answer lists one face per alphabet; the Latin one is marked /* latin */. Its link doesn't always end in
+// .woff2 (sometimes it is .../l/font?kit=...), so the face is found by its format('woff2') label, not the link's ending.
+function latinWoff2(css) {
+  const faces = [
+    ...css.matchAll(
+      /(?:\/\*\s*([\w-]+)\s*\*\/\s*)?@font-face\s*\{[^}]*?url\((https:[^)]+)\)\s*format\(['"]woff2['"]\)/g,
+    ),
+  ];
+  return (faces.find((f) => f[1] === "latin") ?? faces.at(-1))?.[2];
+}
+
 async function clash() {
   const file = join(fonts, "ClashDisplay-Bold.woff2");
   if (existsSync(file)) return file;
@@ -63,10 +74,7 @@ async function saira() {
       "Saira Stencil One",
     )
   ).text();
-  const url = css
-    .match(/url\((https:[^)]+\.woff2)\)/g)
-    ?.at(-1)
-    ?.slice(4, -1); // the last face is the Latin one
+  const url = latinWoff2(css);
   if (!url) throw new Error("Couldn't find Saira Stencil One's woff2 in Google Fonts' answer");
   writeFileSync(file, Buffer.from(await (await get(url, "Saira Stencil One")).arrayBuffer()));
   return file;
@@ -80,10 +88,7 @@ async function google(name, family, what) {
   const css = await (
     await get(`https://fonts.googleapis.com/css2?family=${family}&display=block`, what)
   ).text();
-  const url = css
-    .match(/url\((https:[^)]+\.woff2)\)/g)
-    ?.at(-1)
-    ?.slice(4, -1);
+  const url = latinWoff2(css);
   if (!url) throw new Error(`Couldn't find ${what}'s woff2 in Google Fonts' answer`);
   writeFileSync(file, Buffer.from(await (await get(url, what)).arrayBuffer()));
   return file;
