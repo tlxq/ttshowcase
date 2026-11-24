@@ -53,7 +53,14 @@ export function contact(deps: () => ContactDeps | null) {
     // A field only robots fill in: they get a thank-you and nothing is sent.
     if (typeof body.website === "string" && body.website) return Response.json({ sent: true });
     const email = typeof body.email === "string" ? body.email.trim() : "";
-    const name = typeof body.name === "string" ? body.name.trim().slice(0, 100) : "";
+    // The name goes into the mail's subject: one line, without hidden characters (the tag tool drops the same ones).
+    const name =
+      typeof body.name === "string"
+        ? body.name
+            .replace(/[\p{Cc}\p{Cf}]/gu, "")
+            .trim()
+            .slice(0, 100)
+        : "";
     const message = typeof body.message === "string" ? body.message.trim() : "";
     if (!EMAIL.test(email) || email.length > 200) {
       return Response.json({ error: "email" }, { status: 400 });
