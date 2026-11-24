@@ -1,4 +1,4 @@
-import { Inter_Tight, JetBrains_Mono } from "next/font/google";
+import { Archivo, Inter_Tight, JetBrains_Mono } from "next/font/google";
 
 // The new look's two faces, self-hosted by Next at build time, for /look and /wall.
 const interTight = Inter_Tight({
@@ -14,5 +14,13 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-/** Put on the page's outer box: names the two faces for everything inside. */
-export const lookFonts = `${interTight.variable} ${jetbrainsMono.variable}`;
+// The front's poster face (Archivo Expanded), for the pages that take the front's design (the 404).
+const archivo = Archivo({
+  subsets: ["latin"],
+  axes: ["wdth"],
+  variable: "--font-archivo",
+  display: "swap",
+});
+
+/** Put on the page's outer box: names the faces for everything inside. */
+export const lookFonts = `${interTight.variable} ${jetbrainsMono.variable} ${archivo.variable}`;

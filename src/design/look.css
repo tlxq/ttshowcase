@@ -1306,56 +1306,53 @@ html:has(.lk) body {
   }
 }
 
-/* An address that isn't a page: Tom's 404 tag, the address struck through, one line, the parts. */
+/* An address that isn't a page, in the front's design (the code poster): cream, the one blue word big in the
+   poster face, the address struck through and the one way back in the code voice. */
 .lk-missing {
   display: grid;
-  place-content: center;
+  align-content: center;
   justify-items: start;
   gap: var(--s3);
+  min-height: 100svh;
   padding: var(--s6) var(--gutter);
+  background: var(--look-cream);
+  color: var(--look-dark);
 }
 .lk-missing-tag {
-  margin: 0;
-}
-.lk-missing-mark {
-  width: min(70vw, 560px);
+  margin: 0 0 var(--s2);
+  font: 900 var(--look-big) / 0.86 var(--look-poster);
+  font-stretch: 125%;
+  letter-spacing: -0.03em;
+  color: var(--front-spray);
 }
 .lk-missing-path {
   margin: 0;
   font: 400 var(--look-label) / 1.4 var(--look-mono);
-  color: var(--look-soft);
   overflow-wrap: anywhere;
 }
 /* The marker's strike: a thin spray line through the middle, so every letter of the address still reads */
 .lk-missing-path span {
   text-decoration: line-through;
-  text-decoration-color: var(--look-spray);
+  text-decoration-color: var(--front-spray);
   text-decoration-thickness: 2px;
-}
-/* The walk's plate, with the one line and the one way back on it */
-.lk-missing-plate {
-  display: grid;
-  justify-items: start;
-  gap: var(--s2);
-  padding: var(--s3);
-  background: var(--look-plate);
-  border: 1px solid var(--look-plate-edge);
-  border-radius: 3px;
 }
 .lk-missing-say {
   margin: 0;
-  font: 400 var(--look-label) / 1.4 var(--look-mono);
-  color: var(--look-text);
+  font: 500 var(--look-label) / 1.4 var(--look-mono);
 }
-.lk-missing-back {
+.lk .lk-missing-back {
   display: inline-flex;
   align-items: center;
   min-height: var(--tap);
   padding-inline: var(--s3);
-  border: 1px solid var(--look-spray);
+  background: var(--look-dark);
   border-radius: 2px;
   font: 500 var(--look-label) / 1 var(--look-mono);
-  color: var(--look-text);
+  color: var(--look-cream);
+}
+.lk-missing-back:focus-visible {
+  outline: 2px solid var(--front-spray);
+  outline-offset: 3px;
 }
 @media (max-aspect-ratio: 4/5) {
   .lk-missing-path,

@@ -144,4 +144,6 @@
 .lk {
   --look-words: var(--font-inter-tight), "Arial Black", Impact, sans-serif;
   --look-mono: var(--font-jetbrains-mono), ui-monospace, Menlo, Consolas, monospace;
+  /* the front's poster face (--front-name) as Next hosts it, for the Next pages in the front's design (the 404) */
+  --look-poster: var(--font-archivo), "Arial Black", sans-serif;
 }
