@@ -16,7 +16,7 @@ __TOKENS__
    centre lines while you scroll.
    Pitch: sizes inline until Tom says it feels right, then they go to tokens.css with his OK. */
 :root {
-  --f-big: "Clash Display", "Arial Narrow", sans-serif;
+  --f-big: var(--front-name); /* the poster's wide face for every big word (Tom 11-24: one design down the page) */
   --f-text: "Inter", system-ui, sans-serif;
   /* the photo on the first screen: its height and top, as parts of the screen height */
   --hp: 74svh; /* Tom 11-22: head and shoulders, standing on the screen's bottom edge (the face about 1.4 x before) */
@@ -43,8 +43,8 @@ a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; o
   -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); }
 .veil.on { opacity: 1; }
 .who.away { opacity: 0; visibility: hidden; } /* while the big name is on screen the header doesn't say it again */
-.who b { display: block; font-weight: 600; font-size: 15px; letter-spacing: -.005em; }
-.who span { display: block; font-size: 13px; opacity: .8; }
+.who b { display: block; font: 900 13px/1.15 var(--front-name); font-stretch: 125%; letter-spacing: -.01em; text-transform: uppercase; }
+.who span { display: block; font: 500 12px/1.4 var(--front-code); opacity: .8; }
 .links { display: flex; gap: 20px; font-size: 14px; font-weight: 500; }
 .links a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: flex-start; }
 .links a:hover { text-decoration: underline; text-underline-offset: 4px; }
@@ -87,8 +87,8 @@ a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; o
 /* the names behind the pane: two voices, like his mixed rows */
 .rows { position: absolute; left: 0; right: 0; top: 50%; translate: 0 -50%; opacity: 0; pointer-events: none; display: grid; gap: .1em; }
 .row { white-space: nowrap; text-transform: uppercase; will-change: transform; }
-.row.a { font: 400 min(6.4vw, 11svh)/1 var(--f-text); letter-spacing: -.03em; color: var(--look-quiet); }
-.row.b { font: 700 min(7.6vw, 13svh)/.92 var(--f-big); letter-spacing: -.015em; color: var(--look-cream); opacity: .9; }
+.row.a { font: 500 min(5.2vw, 9svh)/1 var(--front-code); letter-spacing: -.02em; color: var(--look-quiet); }
+.row.b { font: 900 min(6vw, 10.5svh)/.92 var(--f-big); font-stretch: 125%; letter-spacing: -.03em; color: var(--look-cream); opacity: .9; }
 .sig { position: absolute; left: 50%; top: 50%; width: min(46vw, 78svh); translate: -50% -46%; /* Tom 11-20: smaller */ overflow: visible; pointer-events: none; }
 .sig .ink { fill: var(--front-spray); } /* one clean ink (Tom 11-20): each stroke a shape, thick in the middle, thin at the ends */
 /* joint 1: the ring's front leaves the loop and runs to where the signature starts, in the stage's own pixels */
@@ -98,8 +98,8 @@ a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; o
 /* moment 3: the statement. Lines brighten and rise with the scroll, two voices like his; ink blooms behind one word */
 .say { position: relative; padding: 12svh max(var(--gutter), env(safe-area-inset-right)) 30svh max(var(--gutter), env(safe-area-inset-left)); text-align: center; }
 .say .label { margin: 0 0 32px; font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
-.say h2 { margin: 0 auto; max-width: 14ch; font: 700 min(7.4vw, 120px)/1 var(--f-big); letter-spacing: -.015em; text-transform: uppercase; color: var(--look-cream); text-wrap: balance; }
-.say h2 .q { font: 400 .9em/1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); } /* the second voice: another face, same ink, like his */
+.say h2 { margin: 0 auto; max-width: 15ch; font: 900 min(5.6vw, 92px)/1.02 var(--f-big); font-stretch: 125%; letter-spacing: -.03em; text-transform: uppercase; color: var(--look-cream); text-wrap: balance; }
+.say h2 .q { font: 500 .8em/1 var(--front-code); letter-spacing: -.03em; text-transform: none; color: var(--look-cream); } /* the second voice: another face, same ink, like his */
 .say .w { display: inline-block; }
 .say .run { display: inline-block; }
 /* the ink (Tom picked 11-21): one GPU still of ink in water, tinted blue, opened by a small shader as the words arrive;
@@ -123,7 +123,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .work .stage { position: sticky; top: 0; height: 100svh; overflow: clip; } /* clip, not hidden: a hidden box can still be scrolled sideways by focus, and the track stayed shoved */
 .track { position: absolute; top: 0; left: 0; height: 100%; display: flex; will-change: transform; }
 .intro { flex: none; width: 46vw; padding: 0 0 0 max(var(--gutter), env(safe-area-inset-left)); display: grid; align-content: center; gap: 20px; }
-.intro h2 { margin: 0; font: 700 min(7.4vw, 15svh)/.92 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
+.intro h2 { margin: 0; font: 900 min(5.6vw, 11.5svh)/.92 var(--f-big); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.03em; }
 .intro p { margin: 0; max-width: 30ch; color: var(--look-soft); }
 .proj { position: relative; flex: none; width: calc(var(--bw) + 52vw); height: 100%; }
 .proj .shot { position: absolute; display: block; height: auto; }
@@ -157,10 +157,10 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 /* Rädda Vårfruberga shown its own way (award step 4): the signatures are the thing. One big number above the site,
    counting up while the site slides in (back down if you scroll back), the same number the site itself shows */
 .count { position: absolute; margin: 0; display: flex; align-items: baseline; gap: 14px; white-space: nowrap; pointer-events: none; }
-.count .n { font: 700 min(9vw, 16svh)/.8 var(--f-big); letter-spacing: -.02em; color: var(--look-cream); font-variant-numeric: tabular-nums; }
+.count .n { font: 900 min(7vw, 12.5svh)/.8 var(--f-big); font-stretch: 125%; letter-spacing: -.03em; color: var(--look-cream); font-variant-numeric: tabular-nums; }
 .count .w { font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.proj.b .txt h3 { font-size: min(3.9vw, 7.5svh); } /* VÅRFRUBERGA is one long word: it fits its column */
+.proj.b .txt h3 { font-size: min(2.9vw, 5.6svh); } /* VÅRFRUBERGA is one long word: it fits its column */
 /* EDGE shown its own way (award step 4): one screen that is app-utveckling.se and becomes mjukvaruutvecklare.com as you
    scroll; same layout, same code, other words ("appar som används" -> "system som håller") */
 .morph { aspect-ratio: 16 / 10; overflow: hidden; }
@@ -172,11 +172,13 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .story b { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
 .txt { position: absolute; left: calc(2vw + var(--bw) + 12vw); top: 50svh; translate: 0 -50%; width: min(32vw, 470px); display: grid; gap: 14px; }
 .txt .no { font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
-.txt h3 { margin: 0; font: 700 min(5.2vw, 10svh)/.92 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
+.txt h3 { margin: 0; font: 900 min(4vw, 7.8svh)/.92 var(--f-big); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.03em; }
 .txt .line { margin: 0; font-size: 19px; line-height: 1.35; color: var(--look-cream); }
 .txt dl { margin: 6px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 14px; }
 .txt dt { color: var(--look-quiet); }
 .txt dd { margin: 0; color: var(--look-soft); }
+/* the poster's code voice for every small label */
+.say .label, .cap, .count .w, .story b, .txt .no, .txt dt { font-family: var(--front-code); font-weight: 500; letter-spacing: .02em; }
 .go { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 8px; font-size: 15px; font-weight: 600; }
 .go a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
 .go a:hover { color: var(--front-spray); }
@@ -184,7 +186,8 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 /* moment 5: the end. WRITE TO ME, then the email, the ways on and the form (plain lines, no boxes). The last wash
    flies off as specks that paint the form's lines (Tom picked it 11-21) */
 .end { position: relative; padding: 26svh max(var(--gutter), env(safe-area-inset-right)) 18svh max(var(--gutter), env(safe-area-inset-left)); }
-.end h2 { margin: 0 0 7svh; font: 700 min(9.6vw, 17svh)/.9 var(--f-big); text-transform: uppercase; letter-spacing: -.015em; }
+.end h2 { margin: 0 0 7svh; font: 900 min(7.4vw, 13svh)/.9 var(--f-big); font-stretch: 125%; text-transform: uppercase; letter-spacing: -.03em; }
+.hi { color: var(--front-spray); } /* one blue word, like LARSSON on the poster */
 /* small details (Tom 11-21: the spray stays; stamp and trail are gone, the edge drops became the washes' hand-over drops; ?off=spray turns it off) */
 .fx { position: fixed; inset: 0; z-index: 25; width: 100%; height: 100%; pointer-events: none; } /* 1: the puff of specks off a link */
 a, .form button { transition: text-decoration-color var(--toggle) var(--ease), color var(--toggle) var(--ease); }
@@ -214,7 +217,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 .form .err { margin: 0; color: var(--look-cream); }
 @media (max-width: 640px) {
   .end { padding-top: 18svh; }
-  .end h2 { font-size: 15vw; line-height: 1.02; } /* room for WRITE's swipe above ME */
+  .end h2 { font-size: 11.6vw; line-height: 1.02; } /* room for WRITE's swipe above ME */
   .end .cols { grid-template-columns: 1fr; gap: 56px; }
   .form { gap: 22px; }
   .end .addr { font-size: 26px; }
@@ -257,14 +260,14 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .count { position: relative; order: -3; }
   .proj.b .note { order: -2; }
   .note.up svg { order: 1; scale: 1 1; margin: 2px 0 0 -40px; } /* phone: the screen is below the note */
-  .count .n { font-size: 24vw; }
+  .count .n { font-size: 17vw; } /* the wide face: the number and its word fit the screen */
 }
 @media (max-width: 640px) {
   /* phone: the film is the screen, edge to edge */
   .proj.a .film { width: 100vw; margin-left: calc(-1 * max(var(--gutter), env(safe-area-inset-left))); border-radius: 0; }
   .note { order: -1; margin-bottom: -6px; }
   .note span { font-size: 30px; }
-  .proj.b .txt h3 { font-size: 10.6vw; }
+  .proj.b .txt h3 { font-size: 7.6vw; }
 }
 
 
@@ -279,10 +282,10 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .links { gap: 14px; font-size: 13px; }
   /* phone: the pane sits higher, the names run under it where they can be read */
   .rows { top: 60%; translate: 0 0; }
-  .row.a { font-size: 8.4vw; }
-  .row.b { font-size: 10.5vw; }
+  .row.a { font-size: 6.6vw; }
+  .row.b { font-size: 8.2vw; }
   .sig { width: 64vw; top: 40%; translate: -50% -50%; }
-  .say h2 { font-size: 10.4vw; max-width: 12ch; }
+  .say h2 { font-size: 8vw; max-width: 13ch; }
   .say h2 { line-height: 1.1; }
   /* phone: each project its own arrangement too */
   .proj.b .tall { justify-self: start; width: 40%; margin-top: -30%; }
@@ -344,7 +347,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
       <div class="intro">
         <img class="tgt" src="assets/mark-target.webp" alt="" width="62" height="63" aria-hidden="true">
         <p class="cap" style="position:static">Selected work</p>
-        <h2 id="work-h">Three builds<br>I run</h2>
+        <h2 id="work-h">Three builds<br><span class="hi">I run</span></h2>
         <p>Each one is live. Open it, or read the code.</p>
       </div>
       <article class="proj a" aria-labelledby="p1">
@@ -401,7 +404,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
     </div></div>
   </section>
   <section class="end" aria-labelledby="end-h">
-    <h2 id="end-h"><span class="mark">Write</span> to me</h2>
+    <h2 id="end-h"><span class="mark">Write</span> to <span class="hi">me</span></h2>
     <div class="cols">
       <div class="say-mail">
         <a class="addr" href="mailto:hello@ttdevs.com">hello@ttdevs.com</a>
@@ -747,12 +750,12 @@ __LIBS__
   // window shows the film in the poster's two colours where the mouse or a finger is (with no mouse it drifts over his
   // face), with a thin cream edge round his head. He turns with the 3D photo's frames: it says which (poster.fi); without
   // it, the mouse does. Shadows are dense dark characters, the light is blue, the brightest skin only faint dots.
-  const poster = { fi: null };
+  const poster = { fi: null, k: 0 }; // k: the hand-over, 0 = the poster, 1 = the characters lit on the dark
   {
     const cv = document.querySelector(".code"), x = cv.getContext("2d"), photo = document.querySelector(".photo.col"), name = document.querySelector(".name");
     const RAMP = " .,:;-=+*cotxzLJ#%@".split("");
     const css = getComputedStyle(document.documentElement), hex = (v) => { const h = css.getPropertyValue(v).trim(); return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)); };
-    const DARK = hex("--look-dark"), BLUE = hex("--front-spray"), CREAM = css.getPropertyValue("--look-cream").trim();
+    const DARK = hex("--look-dark"), BLUE = hex("--front-spray"), CREAM = css.getPropertyValue("--look-cream").trim(), CR = hex("--look-cream");
     const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a.toFixed(2)})`;
     const TURN = 22, MID = 12, frames = [], duo = [];
     const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
@@ -817,7 +820,8 @@ __LIBS__
       const idle = still || t - aLast > 2500;
       const tx = idle ? hx + (still ? 0 : Math.sin(t / 1700) * (pr.w / W) * 0.12) : ax, ty = idle ? hy + (still ? 0 : Math.sin(t / 1100) * (pr.h / H) * 0.08) : ay;
       if (px === null || still) { px = tx; py = ty; } else { px += (tx - px) * 0.12; py += (ty - py) * 0.12; }
-      const cx = px * W, cy = py * H, R = Math.max(Math.min(W, H) * 0.2, pr.w * 0.27); // on a phone too the window shows his whole face
+      const K = poster.k, ink = DARK.map((v, j) => Math.round(v + (CR[j] - v) * K));
+      const cx = px * W, cy = py * H, R = Math.max(Math.min(W, H) * 0.2, pr.w * 0.27), WA = Math.max(0, 1 - 2 * K); // on a phone too the window shows his whole face; on the hand-over it fades, the characters fill in
       x.clearRect(0, 0, W, H);
       wx.globalCompositeOperation = "source-over"; wx.clearRect(0, 0, W, H);
       const a0 = twoTone(k < 0.5 || !frames[i + 1] ? i : i + 1); // the nearest frame alone: two blended frames show a double face
@@ -826,21 +830,21 @@ __LIBS__
       const g = wx.createRadialGradient(cx, cy, R * 0.35, cx, cy, R); g.addColorStop(0, "#000"); g.addColorStop(1, "rgba(0,0,0,0)"); wx.fillStyle = g; wx.fillRect(0, 0, W, H);
       // a thin cream edge round his head, like a sticker's (Tom picked it over swapping the name's colours)
       rx.globalCompositeOperation = "source-over"; rx.clearRect(0, 0, W, H); rx.drawImage(win, 0, 0); rx.globalCompositeOperation = "source-in"; rx.fillStyle = CREAM; rx.fillRect(0, 0, W, H);
-      const e = 4 * dpr; for (let a = 0; a < 6.28; a += 0.785) for (let n = 0; n < 3; n++) x.drawImage(rim, Math.cos(a) * e, Math.sin(a) * e); // three times: solid where the window is already soft
-      x.drawImage(win, 0, 0);
+      x.globalAlpha = WA; const e = 4 * dpr; for (let a = 0; a < 6.28; a += 0.785) for (let n = 0; n < 3; n++) x.drawImage(rim, Math.cos(a) * e, Math.sin(a) * e); // three times: solid where the window is already soft
+      x.globalAlpha = WA; x.drawImage(win, 0, 0); x.globalAlpha = 1;
       x.font = `800 ${Math.round(cell * 1.3)}px "JetBrains Mono", ui-monospace, monospace`; x.textBaseline = "top";
       const { lum, al, ch } = G;
       for (let j = 0; j < rows; j++) for (let c = 0; c < cols; c++) {
         const q = j * cols + c, a = al[q]; if (a < 0.3) continue;
         const x0 = c * cell, y0 = j * chH; if (hole && x0 + cell > hole.x0 && x0 < hole.x1 && y0 + chH > hole.y0 && y0 < hole.y1) continue;
-        const dd = Math.hypot(x0 + cell / 2 - cx, y0 + chH / 2 - cy) / R, show = Math.min(1, Math.max(0, (dd - 0.55) / 0.5)); if (show <= 0) continue;
+        const dd = Math.hypot(x0 + cell / 2 - cx, y0 + chH / 2 - cy) / R, show = Math.max(1 - WA, Math.min(1, Math.max(0, (dd - 0.55) / 0.5))); if (show <= 0) continue;
         const l = lum[q]; let n = ch[q];
         if (!still && Math.random() < 0.015) n = Math.min(RAMP.length - 1, Math.max(1, n + (Math.random() < 0.5 ? -1 : 1)));
         const al2 = a * show;
-        if (Math.abs(dd - 0.9) < 0.33) { x.fillStyle = rgba(BLUE, al2); x.fillText(RAMP[Math.max(4, n)], x0, y0); }
+        if (WA > 0 && Math.abs(dd - 0.9) < 0.33) { x.fillStyle = rgba(BLUE, al2); x.fillText(RAMP[Math.max(4, n)], x0, y0); }
         else if (l > 0.74) { x.fillStyle = rgba(BLUE, al2 * 0.55); x.fillText(l > 0.86 ? "." : ":", x0, y0); }
         else if (l > 0.4) { x.fillStyle = rgba(BLUE, al2); x.fillText(RAMP[Math.max(4, n)], x0, y0); }
-        else { x.fillStyle = rgba(DARK, al2); x.fillText(RAMP[Math.max(9, n)], x0, y0); }
+        else { x.fillStyle = rgba(ink, al2); x.fillText(RAMP[Math.max(9, n)], x0, y0); }
       }
     };
     const load = (i) => new Promise((ok) => { const f = new Image(); f.src = `assets/turn/t${String(i).padStart(2, "0")}.webp`; f.decode().then(() => { frames[i] = f; ok(); }, ok); });
@@ -1146,8 +1150,9 @@ __LIBS__
       .to(s, { shrink: 1, duration: 0.34, onUpdate: apply }, 0.14)
       .to([".role", ".hint"], { opacity: 0, duration: 0.06 }, 0.02)
       .to(".name", { y: () => -(document.querySelector(".name").offsetTop + document.querySelector(".name").offsetHeight + 40), opacity: 0, ease: "power2.in", duration: 0.13 }, 0.01)
-      .to(".code", { opacity: 0, duration: 0.08 }, 0.04)
-      .to([".photo.col", ".gl"], { opacity: 1, duration: 0.08 }, 0.1)
+      .to(poster, { k: 1, duration: 0.1 }, 0.02) // the characters light up as the dark comes in
+      .to(".code", { opacity: 0, duration: 0.08 }, 0.14) // and go once the grey photo is under them
+      .to([".photo.col", ".gl"], { opacity: 1, duration: 0.1 }, 0.08)
       .to(".photo.bw", { opacity: 1, duration: 0.16 }, 0.14)
       .to(".photo.bw", { opacity: 1, duration: 0.2 }, 0.14)
       .to(look, { grey: 1, duration: 0.16, ease: "power1.out" }, 0.04) // mostly grey before the photo comes in after the characters
