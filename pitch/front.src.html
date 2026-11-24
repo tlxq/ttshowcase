@@ -269,11 +269,12 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 
 
 @media (max-width: 640px) {
-  :root { --hp: 62svh; }
-  .name { top: 9svh; }
-  .photo { left: 50%; }
+  /* the poster as in Tom's pick: he stands on the bottom edge on the right, LARSSON runs over his hair, the role bottom left */
+  :root { --hp: 64svh; }
+  .name { top: calc(100svh - var(--hp) - var(--name-size, 15vw) * 1.2); }
+  .photo { left: 70%; }
   .hint { display: none; }
-  .role { top: calc(9svh + var(--name-size, 15vw) * 1.7 + 14px); bottom: auto; max-width: 30ch; } /* under the name: name and role in the first look */
+  .role { max-width: 30ch; }
   .role b { font-size: 18px; }
   .links { gap: 14px; font-size: 13px; }
   /* phone: the pane sits higher, the names run under it where they can be read */
@@ -756,6 +757,8 @@ __LIBS__
     const TURN = 22, MID = 12, frames = [], duo = [];
     const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
     const win = mk(1, 1), wx = win.getContext("2d"), rim = mk(1, 1), rx = rim.getContext("2d"), sm = mk(1, 1), smx = sm.getContext("2d", { willReadFrequently: true });
+    const role = document.querySelector(".role");
+    let hole = null; // the role's box: no characters under its text
     let W = 0, H = 0, dpr = 1, pr = null, cell = 8, chH = 12, cols = 0, rows = 0, grids = [], shown = false;
     let px = null, py = null, ax = 0, ay = 0, aLast = -1e9, mx = 0;
     // the name: as wide as 84 % of the screen (a phone: the whole width), never taller than a third of it
@@ -797,6 +800,7 @@ __LIBS__
       const w = photo.offsetWidth * dpr, h = photo.offsetHeight * dpr;
       pr = { x: photo.offsetLeft * dpr - w / 2, y: photo.offsetTop * dpr, w, h };
       cell = Math.max(4, Math.round(w / dpr / 88)) * dpr; chH = cell * 1.55;
+      { const a = role.getBoundingClientRect(), b = cv.getBoundingClientRect(), m = 10; hole = { x0: (a.left - b.left - m) * dpr, y0: (a.top - b.top - m) * dpr, x1: (a.right - b.left + m) * dpr, y1: (a.bottom - b.top + m) * dpr }; }
       cols = sm.width = Math.ceil(W / cell); rows = sm.height = Math.ceil(H / chH); grids = [];
       if (still) draw(0);
     };
@@ -813,7 +817,7 @@ __LIBS__
       const idle = still || t - aLast > 2500;
       const tx = idle ? hx + (still ? 0 : Math.sin(t / 1700) * (pr.w / W) * 0.12) : ax, ty = idle ? hy + (still ? 0 : Math.sin(t / 1100) * (pr.h / H) * 0.08) : ay;
       if (px === null || still) { px = tx; py = ty; } else { px += (tx - px) * 0.12; py += (ty - py) * 0.12; }
-      const cx = px * W, cy = py * H, R = Math.min(W, H) * 0.2;
+      const cx = px * W, cy = py * H, R = Math.max(Math.min(W, H) * 0.2, pr.w * 0.27); // on a phone too the window shows his whole face
       x.clearRect(0, 0, W, H);
       wx.globalCompositeOperation = "source-over"; wx.clearRect(0, 0, W, H);
       const a0 = twoTone(k < 0.5 || !frames[i + 1] ? i : i + 1); // the nearest frame alone: two blended frames show a double face
@@ -828,7 +832,8 @@ __LIBS__
       const { lum, al, ch } = G;
       for (let j = 0; j < rows; j++) for (let c = 0; c < cols; c++) {
         const q = j * cols + c, a = al[q]; if (a < 0.3) continue;
-        const x0 = c * cell, y0 = j * chH, dd = Math.hypot(x0 + cell / 2 - cx, y0 + chH / 2 - cy) / R, show = Math.min(1, Math.max(0, (dd - 0.55) / 0.5)); if (show <= 0) continue;
+        const x0 = c * cell, y0 = j * chH; if (hole && x0 + cell > hole.x0 && x0 < hole.x1 && y0 + chH > hole.y0 && y0 < hole.y1) continue;
+        const dd = Math.hypot(x0 + cell / 2 - cx, y0 + chH / 2 - cy) / R, show = Math.min(1, Math.max(0, (dd - 0.55) / 0.5)); if (show <= 0) continue;
         const l = lum[q]; let n = ch[q];
         if (!still && Math.random() < 0.015) n = Math.min(RAMP.length - 1, Math.max(1, n + (Math.random() < 0.5 ? -1 : 1)));
         const al2 = a * show;
