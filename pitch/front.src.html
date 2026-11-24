@@ -61,7 +61,7 @@ a:focus-visible, .form button:focus-visible { outline: 2px solid currentColor; o
 .who b { display: block; font: 900 13px/1.15 var(--front-name); font-stretch: 125%; letter-spacing: -.01em; text-transform: uppercase; }
 .who span { display: block; font: 500 12px/1.4 var(--front-code); opacity: .8; }
 .links { display: flex; gap: 20px; font-size: 14px; font-weight: 500; }
-.links a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: flex-start; }
+.links a { text-decoration: none; min-height: var(--tap); display: inline-flex; align-items: flex-start; }
 .links a:hover { text-decoration: underline; text-underline-offset: 4px; }
 
 /* moments 1 + 2: one pinned stage; the ground is the stage's own dark, the first screen sits on it as the pane */
@@ -156,6 +156,13 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .proj.a { --fh: 86svh; --fw: calc(var(--fh) * 540 / 1170); --fx: 6vw; width: calc(var(--fx) + var(--fw) + 18vw + min(32vw, 470px) + 10vw); }
 .proj.a .film { position: absolute; left: var(--fx); top: calc(50svh - var(--fh) / 2 + 2svh); width: var(--fw); aspect-ratio: 540 / 1170; overflow: hidden; border-radius: var(--look-device-round); transform-origin: 0 50%; will-change: transform; }
 .proj.a .film video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.proj .vbox { overflow: hidden; } .proj .vbox video { display: block; width: 100%; height: auto; }
+/* tap a film to pause it, again to play (WCAG 2.2.2, Tom 11-24): the mark shows on hover and focus, and stays while paused by hand */
+.vp { position: absolute; right: var(--s1); bottom: var(--s1); width: var(--tap); height: var(--tap); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: color-mix(in srgb, var(--look-dark) 70%, transparent); color: var(--look-cream); cursor: pointer; opacity: 0; transition: opacity var(--toggle) var(--ease); }
+.vp svg { width: 20px; height: 20px; fill: currentColor; } .vp .pl, .vp.rest .ps { display: none; } .vp.rest .pl { display: inline; }
+.film:hover .vp, .vbox:hover .vp, .vp:focus-visible, .vp.held { opacity: 1; }
+.vp:focus-visible { outline: 2px solid var(--look-cream); outline-offset: 2px; }
+.film video, .vbox video { cursor: pointer; }
 .proj.a .cap { left: var(--fx); top: calc(50svh + var(--fh) / 2 + 2svh + 10px); } /* under the film: above it, it met the header */
 .note { position: absolute; left: calc(var(--fx) + var(--fw) + 1.5vw); top: 44svh; margin: 0; display: grid; justify-items: start; pointer-events: none; }
 .note span { font: 400 clamp(26px, 2.4vw, 38px)/1 "Sedgwick Ave Display", var(--f-text); color: var(--front-spray); rotate: -6deg; white-space: nowrap; }
@@ -195,7 +202,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 /* the poster's code voice for every small label */
 .say .label, .cap, .count .w, .story b, .txt .no, .txt dt { font-family: var(--front-code); font-weight: 500; letter-spacing: .02em; }
 .go { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 8px; font-size: 15px; font-weight: 600; }
-.go a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
+.go a { min-height: var(--tap); display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
 .go a:hover { color: var(--front-spray); }
 
 /* moment 5: the end. WRITE TO ME, then the email, the ways on and the form (plain lines, no boxes). The last wash
@@ -217,13 +224,13 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 .specks { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }
 .end .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6vw; align-items: start; max-width: 1180px; }
 .end .say-mail { display: grid; gap: 26px; }
-.end .addr { font: 600 min(3.4vw, 40px)/1.1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 8px; min-height: 44px; width: fit-content; }
+.end .addr { font: 600 min(3.4vw, 40px)/1.1 var(--f-text); letter-spacing: -.02em; color: var(--look-cream); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 8px; min-height: var(--tap); width: fit-content; }
 .end .addr:hover, .end .ways a:hover { color: var(--front-spray); }
 .end .ways { display: flex; flex-wrap: wrap; gap: 8px 26px; font-size: 15px; font-weight: 600; }
-.end .ways a { min-height: 44px; display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
+.end .ways a { min-height: var(--tap); display: inline-flex; align-items: center; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
 .form { display: grid; gap: 26px; }
 .form label { display: grid; gap: 2px; font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
-.form input, .form textarea { font: 400 17px/1.4 var(--f-text); color: var(--look-cream); background: transparent; border: 0; border-bottom: 1px solid var(--look-rule); border-radius: 0; padding: 4px 0 10px; min-height: 44px; box-sizing: border-box; width: 100%; resize: vertical; }
+.form input, .form textarea { font: 400 17px/1.4 var(--f-text); color: var(--look-cream); background: transparent; border: 0; border-bottom: 1px solid var(--look-rule); border-radius: 0; padding: 4px 0 10px; min-height: var(--tap); box-sizing: border-box; width: 100%; resize: vertical; }
 .form input:focus-visible, .form textarea:focus-visible, .form input:focus, .form textarea:focus { outline: none; border-bottom-color: var(--look-cream); box-shadow: 0 1px 0 var(--look-cream); }
 .form label:focus-within { color: var(--look-cream); }
 .form .trap { position: absolute; left: -9999px; }
@@ -368,7 +375,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <p>Each one is live. Open it, or read the code.</p>
       </div>
       <article class="proj a" aria-labelledby="p1">
-        <div class="film"><video src="projects/eparadar-map.mp4" poster="projects/eparadar-map.webp" muted loop playsinline preload="none" width="540" height="1170" aria-label="The epaRadar app: friends driving on a live map of Södermalm, made-up test friends"></video></div>
+        <div class="film"><video src="projects/eparadar-map.mp4" poster="projects/eparadar-map.webp" muted loop playsinline preload="none" width="540" height="1170" aria-label="The epaRadar app: friends driving on a live map of Södermalm, made-up test friends"></video><button type="button" class="vp" aria-label="Pause the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ps" d="M7 5h3v14H7zM14 5h3v14h-3z"/><path class="pl" d="M8 5l11 7-11 7z"/></svg></button></div>
         <span class="cap">The app · test data</span>
         <p class="note" aria-hidden="true"><span>see who's out</span><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg></p>
         <div class="txt">
@@ -380,7 +387,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
             <p><b>Hard part</b>A push notification carries your message through Expo, Google and Apple. Mine don't. They only say 'Sent a message', so the words stay between friends.</p>
           </div>
           <dl><dt>Result</dt><dd>Live on eparadar.se</dd><dt>Stack</dt><dd>React Native, Expo, Supabase, Postgres, pgTAP</dd><dt id="epaLiveKey" hidden>GitHub</dt><dd id="epaLive" hidden></dd></dl>
-          <div class="go"><a href="https://eparadar.se">Open the site ↗</a><a href="https://github.com/tlxq/eparadar">Code ↗</a></div>
+          <div class="go"><a href="https://eparadar.se" aria-label="Open the site, epaRadar">Open the site ↗</a><a href="https://github.com/tlxq/eparadar" aria-label="Code for epaRadar">Code ↗</a></div>
         </div>
       </article>
       <article class="proj b" aria-labelledby="p2">
@@ -398,14 +405,14 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
             <p><b>Hard part</b>Mail scanners open every link in an email. If the sign-in link logged you in, it would log the scanner in too. So the link only asks, and a button you press logs you in.</p>
           </div>
           <dl><dt>Result</dt><dd>1,024 signatures. The appeal is still open.</dd><dt>Stack</dt><dd>Next.js, TypeScript, Supabase, Resend, Vercel</dd></dl>
-          <div class="go"><a href="https://raddavarfruberga.se">Open the site ↗</a></div>
+          <div class="go"><a href="https://raddavarfruberga.se" aria-label="Open the site, Rädda Vårfruberga">Open the site ↗</a></div>
         </div>
       </article>
       <article class="proj c" aria-labelledby="p3">
         <div class="shot big morph"><img src="projects/app-utveckling-top.webp" alt="app-utveckling.se: Vi bygger appar som används." width="1440" height="900" loading="lazy"><img class="to" src="projects/mjukvaruutvecklare-top.webp" alt="mjukvaruutvecklare.com, the same page from the same code: Vi bygger system som håller." width="1440" height="900" loading="lazy"><i class="seam"></i></div>
         <span class="cap">app-utveckling.se → mjukvaruutvecklare.com</span>
         <p class="note up" aria-hidden="true"><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg><span>same code, two sites</span></p>
-        <video class="shot small" data-speed="1" src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video>
+        <div class="shot small vbox" data-speed="1"><video src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video><button type="button" class="vp" aria-label="Pause the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ps" d="M7 5h3v14H7zM14 5h3v14h-3z"/><path class="pl" d="M8 5l11 7-11 7z"/></svg></button></div>
         <div class="txt">
           <span class="no">03 / 03 · Work project, built alone</span>
           <h3 id="p3">EDGE</h3>
@@ -496,8 +503,16 @@ __LIBS__
   });
 
   // the EDGE films play only while on screen
-  const vids = new IntersectionObserver((es) => es.forEach((e) => { const v = e.target; if (e.isIntersecting && !still) { v.preload = "auto"; v.play().catch(() => {}); } else v.pause(); }), { threshold: 0.3 });
+  const vids = new IntersectionObserver((es) => es.forEach((e) => { const v = e.target; if (e.isIntersecting && (!still || v.dataset.on) && !v.dataset.held) { v.preload = "auto"; v.play().catch(() => {}); } else v.pause(); }), { threshold: 0.3 });
   document.querySelectorAll("video").forEach((v) => vids.observe(v));
+  // a tap on a film or its mark pauses it, another plays it; a film paused by hand stays paused when it comes back on screen
+  document.querySelectorAll(".vp").forEach((b) => { const v = b.parentElement.querySelector("video");
+    // the mark says what a tap does next, from the film's own state (off screen it is paused too)
+    const mark = () => { b.classList.toggle("rest", v.paused); b.setAttribute("aria-label", v.paused ? "Play the video" : "Pause the video"); };
+    v.addEventListener("play", mark); v.addEventListener("pause", mark); mark();
+    const flip = () => { const hold = !v.paused; b.classList.toggle("held", hold); v.dataset.held = hold ? "1" : ""; v.dataset.on = hold ? "" : "1";
+      if (hold) v.pause(); else { v.preload = "auto"; v.play().catch(() => {}); } };
+    b.addEventListener("click", flip); v.addEventListener("click", flip); });
   // epaRadar's numbers, live from GitHub at load (no token); no answer shows nothing, never an old number
   const gh = async (u) => { const r = await fetch("https://api.github.com/" + u); if (!r.ok) throw 0; return r; };
   const commits = gh("repos/tlxq/eparadar/commits?per_page=1").then((r) => { const m = /[?&]page=(\d+)>; rel="last"/.exec(r.headers.get("Link") || ""); if (!m) throw 0; return +m[1]; });
