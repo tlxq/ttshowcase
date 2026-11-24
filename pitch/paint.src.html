@@ -2037,6 +2037,23 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const EDGE_STOP = N_ ? stop(75, G3 + 1.9, 8.4, G3 + 1.9) : stop(75, G3 + 1.7, 9.2, G3 + 2);
   const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)];
   const BARE = NARROW ? [V(-19.5, 2.6, 8), V(-19.5, 2.4, 0)] : [V(-21.2, 2.6, 8), V(-21.2, 2.4, 0)], BARE_T = BARE.map(v => v.clone().add(SEAM_D)); // R3: the page's top and the walk's end, the same view: the visitors' lamp post and the wall under it, left of the tags, the street out of view
+  // the stop-motion stencil (Tom 11-24, card B of the front-turn round): his head turn, 22 frames sprayed in three layers (cream, blue, night), on the bare
+  // wall left of the visitors' lamp post: the page's top, and its twin past EDGE that the walk ends on (one material, so both always show the same frame).
+  // 8 frames a second with a small wobble; it looks where the pointer is, and without one it looks round by itself. The frames are made from Tom's own
+  // photos, so they live outside git (media/, the local pitch only): where they don't load, nothing is drawn.
+  const STEN = { n: 22, h: NARROW ? 2.5 : 3, x: NARROW ? BARE[1].x - .7 : BARE[1].x - 1.2, y: GROUND + 4.3, frames: [], f: 11, dir: 1, step: -1, at: -1e9 };
+  { const w = STEN.h * 512 / 543, mat = wallBump(new THREE.MeshStandardMaterial({ transparent: true, depthWrite: false, roughness: .6, polygonOffset: true, polygonOffsetFactor: -2, visible: false,
+      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, STEN.h / TILE, (STEN.x - w / 2 - (WX - WW / 2)) / TILE, (STEN.y - STEN.h / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.4, .4) }));
+    STEN.mat = mat; STEN.meshes = [V(), SEAM_D].map(d => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, STEN.h), mat); m.position.set(STEN.x + d.x, STEN.y + d.y, .002); scene.add(m); return m; });
+    const tl2 = new THREE.TextureLoader(); let got = 0;
+    for (let i = 0; i < STEN.n; i++) tl2.load(`media/stencil/s${String(i).padStart(2, "0")}.webp`, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; STEN.frames[i] = t;
+      if (++got === STEN.n) { mat.map = STEN.frames[STEN.f]; mat.visible = true; mat.needsUpdate = true; STEN.frames.forEach(f => renderer.initTexture(f)); } }, undefined, () => {}); }
+  addEventListener("pointermove", () => STEN.at = performance.now());
+  function stencilTick(now, cp) { if (!STEN.mat.visible) return; const near = cp.x < -8 || cp.x > 80; STEN.meshes.forEach(m => m.visible = near); if (!near) return;
+    const step = Math.floor(now / 125); if (step === STEN.step) return; STEN.step = step;
+    if (REDUCED) STEN.f = 11; else if (now - STEN.at < 2500) STEN.f = Math.round((mx * .5 + .5) * (STEN.n - 1)); else { STEN.f += STEN.dir; if (STEN.f >= STEN.n - 1 || STEN.f <= 0) STEN.dir *= -1; STEN.f = cl(STEN.f, 0, STEN.n - 1); }
+    STEN.mat.map = STEN.frames[STEN.f]; const j = REDUCED ? [0, 0, 0] : [(Math.random() - .5) * .02, (Math.random() - .5) * .02, (Math.random() - .5) * .008];
+    STEN.meshes.forEach((m, k) => { m.position.set(STEN.x + j[0] + (k ? SEAM_D.x : 0), STEN.y + j[1] + (k ? SEAM_D.y : 0), .002); m.rotation.z = j[2]; }); }
   // the room under the street (Tom 11-24: a straight drop, no look down or up a shaft): from raddavarfruberga the camera glides down through the street
   // to the first tool's wall, still facing the wall, and after the last one up through it to EDGE, so a painting is always coming in. The covers stay shut.
   const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, 8.2, floor + 1.55) : stop(x, floor + 1.3, 7.6, floor + 1.75);
@@ -2154,7 +2171,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     // walks round it at arm's length, right to left, so each sticker comes past; the page's longer park (UP) gives the pass its own stretch of scroll
     const poleK = lft > 0 ? sm(cl((lft - .06) / .16)) * (1 - sm(cl((lft - .58) / .16))) : 0; // the pole's stickers (Tom 11-24: keep it on the rail)
     if (poleK > 0) { const th = .9 - 1.8 * cl((lft - .12) / .5), r = NARROW ? 1.9 : 1.7, y = GROUND + 1.55; cp.lerp(V(POST.x + r * Math.sin(th), y + .05, POST.z + r * Math.cos(th)), poleK); cl_.lerp(V(POST.x, y, POST.z), poleK); }
-    pickCam(now, dt, cp, cl_);
+    pickCam(now, dt, cp, cl_); stencilTick(now, cp);
     // the opening's street light swings round to graze the visitor wall from the right (no extra light: every light costs a frame on the T14s),
     // aimed at the middle of the view (step 5): the words, the can and the tags all stand in it, on a laptop and a phone
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }

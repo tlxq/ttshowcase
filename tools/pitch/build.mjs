@@ -170,6 +170,13 @@ rmSync(assets, { force: true, recursive: true });
 mkdirSync(assets);
 for (const name of readdirSync(join(root, "pitch/assets")))
   symlinkSync(join(root, "pitch/assets", name), join(assets, name));
+// Tom's own photos and what is made from them (the stencil of his head turn) stay out of git and off the site until
+// he says otherwise: they live in .cache/pitch-media and show only in the local pitch, as media/. The page draws
+// nothing where one is missing, so /next simply has no stencil.
+const media = join(out, "media");
+rmSync(media, { force: true, recursive: true });
+if (existsSync(join(root, ".cache/pitch-media")))
+  symlinkSync(join(root, ".cache/pitch-media"), media);
 console.log("Built .cache/pitch/paint.html");
 
 if (process.argv.includes("--site")) {
