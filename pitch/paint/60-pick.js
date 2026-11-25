@@ -27,7 +27,7 @@
   const HOTL = [], PULSE = NARROW || matchMedia("(pointer: coarse)").matches, hostOf = h => h.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
   const labelOf = el => el.protocol === "mailto:" ? "Opens your email" : el.hostname === "github.com" ? "Opens GitHub" : el.hostname.includes("linkedin") ? "Opens LinkedIn" : "Opens " + hostOf(el.href);
   const hotOn = (el, label, glow) => { el.dataset.hl = label; HOTL.push({ el, label, glow }); };
-  { EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAB, b, i ? { rect: true, colour: "#ffffff", fill: 0, hole: 1 } : {})));
+  { EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAN, b, i ? { rect: true, colour: "#ffffff", fill: 0, hole: 1 } : { rect: true })));
     hotOn(hot3, labelOf(hot3), RVF_GLOW());
     U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}))));
     const leaveHot = document.getElementById("leave");
