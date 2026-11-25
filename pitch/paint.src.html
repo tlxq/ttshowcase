@@ -809,12 +809,13 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   for (const m of [wall.material, cap2.material, bareL.material]) { const prev = m.onBeforeCompile; m.onBeforeCompile = (sh, rr) => { if (prev) prev(sh, rr); Object.assign(sh.uniforms, veilU);
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW;").replace("#include <project_vertex>", "#include <project_vertex>\nvVW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW; uniform float uIc, uAll;").replace("#include <dithering_fragment>", `
+      if (uAll < .999) { // the rest of the walk skips the veil
       float arrive = ${(LEDGE.tip + .05).toFixed(3)} + max(0., vVW.x - ${LEDGE.x0.toFixed(3)}) / ${LEDGE.spread.toFixed(3)};
       float xi = vVW.x * .7, i0 = floor(xi), h0 = fract(sin(i0 * 91.7) * 4375.5), h1 = fract(sin((i0 + 1.) * 91.7) * 4375.5), col = mix(h0, h1, smoothstep(0., 1., fract(xi))), age = uIc - arrive;
       float reach = max(0., age) * ${(LEDGE.run * 1.3).toFixed(2)} * (.75 + .5 * col), below = ${WALL_TOP.toFixed(3)} - vVW.y;
       float wet = smoothstep(${(LEDGE.x - .7).toFixed(3)}, ${(LEDGE.x + .3).toFixed(3)}, vVW.x) * smoothstep(-.1, .5, age) * (1. - smoothstep(reach - 1.4, reach + .6, below));
       float spot = exp(-pow((vVW.x - ${(LEDGE.x + .1).toFixed(3)}) / 1.1, 2.) - pow(max(0., below) / .18, 2.));
-      gl_FragColor.rgb *= clamp(max(max(wet, spot), uAll), 0., 1.);
+      gl_FragColor.rgb *= clamp(max(max(wet, spot), uAll), 0., 1.);  }
       #include <dithering_fragment>`); }; }
   const sheetU = { uFrom: { value: 99 }, uTo: { value: 99 }, uC: { value: PAINT } };
   const sheetMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .1, clearcoat: 1, clearcoatRoughness: .05, polygonOffset: true, polygonOffsetFactor: -2 });
@@ -876,9 +877,15 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   function startTick(now, ic) { const wt = (now - START_T) / 1000; // the lamp warms up: off, two flickers, on
     lampOn = REDUCED ? 1 : wt < .3 ? 0 : wt < 1.3 ? sm(cl((wt - .3) / .9)) * (Math.random() < .3 ? .25 : 1) : 1;
     const f = ic < 0 ? 0 : sm(cl(ic / 1.2)); if (f >= 1) { if (startEl.style.display !== "none") startEl.style.display = "none"; return; }
-    startEl.style.opacity = 1 - f; startEl.style.filter = f > 0 ? `blur(${(f * 8).toFixed(1)}px)` : "none";
+    const op = (1 - f).toFixed(3); if (startEl.style.opacity !== op) startEl.style.opacity = op; // opacity only: a full-screen blur each frame is heavy on a phone
     stPx += (stTx - stPx) * .06; stPy += (stTy - stPy) * .06;
-    const W = innerWidth, H = innerHeight, gu = Math.max(16, W * .03), P = q => { const v = bucketHome.localToWorld(q).project(camera); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
+    const W = innerWidth, H = innerHeight, lay = W + "x" + H + ":" + camera.position.toArray().map(v => v.toFixed(3)); if (lay !== stLay) { stLay = lay; startLayout(W, H, Math.max(16, W * .03)); } // the layout only when the screen or the camera moved
+    const tf = (e, k, v) => { if (stW[k] !== v) { stW[k] = v; if (k.endsWith("textContent")) e.textContent = v; else e.style[k.slice(2)] = v; } }; // each style written only when it changes: no per-frame style work on a phone
+    tf(stIm, "i.transform", `translate(${(-stPx * 14).toFixed(0)}px, ${(-stPy * 8).toFixed(0)}px)`); tf(stIm, "i.filter", lampOn < 1 ? `brightness(${(.15 + .85 * lampOn).toFixed(2)})` : "none");
+    tf(stNm, "n.transform", `translate(${(-stPx * 6).toFixed(0)}px, ${(-stPy * 4).toFixed(0)}px)`);
+    tf(stNum, "u.textContent", String(Math.round(level * 100))); tf(stNum, "u.opacity", readyAt ? "0" : "1"); tf(stGo, "g.opacity", readyAt && !goAt ? "1" : "0"); }
+  let stLay = ""; const stW = {};
+  function startLayout(W, H, gu) { const P = q => { const v = bucketHome.localToWorld(q).project(camera); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
     const [cx] = P(V(0, BK.h * .5, 0)), [ex] = P(V(BK.r1 + .06, BK.h * .5, 0)), [, ty] = P(V(0, BK.h + .12, 0)), [, by] = P(V(0, -.05, 0)), room = cx - Math.abs(ex - cx) - gu, AR = .73;
     const set = (e, o) => { for (const k in o) e.style[k] = o[k]; };
     if (room > W * .3) { // beside: the photo fills the room left of the bucket, his chest level with it; the name top right
@@ -891,9 +898,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       set(stIm, { left: "50%", top: H * .02 + "px", height: ph + "px", translate: "-50% 0" });
       set(stNm, { left: gu + "px", right: "auto", top: "auto", bottom: H * .04 + W * .2 * .8 + gu + "px", textAlign: "left", fontSize: fs + "px" }); // above the number
       for (const e of [stNum, stGo]) set(e, { left: gu + "px", right: "auto" }); stNum.style.fontSize = W * .2 + "px"; }
-    stIm.style.transform = `translate(${(-stPx * 14).toFixed(1)}px, ${(-stPy * 8).toFixed(1)}px)`; stIm.style.filter = `brightness(${(.15 + .85 * lampOn).toFixed(2)})`;
-    stNm.style.transform = `translate(${(-stPx * 6).toFixed(1)}px, ${(-stPy * 4).toFixed(1)}px)`;
-    stNum.textContent = Math.round(level * 100); stNum.style.opacity = readyAt ? 0 : 1; stGo.style.opacity = readyAt && !goAt ? 1 : 0; }
+    }
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
   function intro(now, dt) {
