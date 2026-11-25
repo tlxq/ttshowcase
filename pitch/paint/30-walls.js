@@ -93,7 +93,7 @@
         for (const [n, wd] of items) { parts.push([n, nfs, pad, y, "left"], [wd, Math.min(wfs, fit(wd, 1000, W - 2 * pad)), pad, y + nfs * 1.02, "left"]); y += nfs + wfs * 1.6 + H * .02; }
         y += items.length ? H * .03 : 0;
         for (const t of stack) { parts.push([t, sfs, pad, y, "left"]); y += sfs * 1.3; } }
-      if (o.glyphs) { parts.length = 0; const s = LIVE[o.key]?.[o.only]; if (s && s.n != null && GLYPH.naturalWidth) { // the number from painted digits, its words beside it (one or two lines)
+      if (o.glyphs) { parts.length = 0; sp.shown = null; const s = LIVE[o.key]?.[o.only]; if (s && s.n != null && GLYPH.naturalWidth) { sp.shown = s.n; // the number from painted digits, its words beside it (one or two lines)
         const digits = String(s.n).split(""), lines = o.glyphs.words, gap = 26, lineH = lines.length > 1 ? .5 : .62; // a small gap between thousands, no comma glyph
         let nw = 0; digits.forEach((d, i) => nw += GLYPH_AT[d][2] * .92 + ((digits.length - 1 - i) % 3 === 0 && i < digits.length - 1 ? gap : 0));
         const ww = Math.max(...lines.map(l => l.reduce((a, g) => a + GLYPH_AT[g][2], 0))) * lineH, k = Math.min((H * .9) / 160, (W - 2 * pad) / (nw + 30 + ww));
@@ -132,6 +132,7 @@
     const R = ([u0, v0, u1, v1]) => [EPAN.at(u0, 0).x, EPAN.at(0, v1).y, EPAN.at(u1, 0).x, EPAN.at(0, v0).y];
     var EPA_PARTS = [makeSpray({ key: "epa", only: 0, name: "epaRadar's commits", colour: "#ffb03a", glyphs: { words: [["commits"]] }, stack: [], rect: R([80, 28, 650, 178]) }),
       makeSpray({ key: "epa", only: 1, name: "epaRadar's merged pull requests", colour: "#ffb03a", glyphs: { words: [["merged"], ["pull requests"]] }, stack: [], rect: R([950, 22, 1500, 182]) })]; }
+  window.sprayTest = () => EPA_PARTS.map(p => { const c = p.mesh.material.map.image, d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let ink = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 128) ink++; return { shown: p.shown ?? null, ink }; }); // for the epanums check: the number each painted spray shows, and how much paint it has
   // the underpass (Tom 11-18): the street goes down its second flight under a bridge, from the painting's right edge to just short of
   // raddavarfruberga. The deck rests on its abutment, a wall that stands forward of the street wall: the car drives in behind its corner.
   const UP0 = EX + EW / 2 - .05, UP1 = 22.9, UD = .22, DECK = G2 + 3.8, DECK_Z = 30;
