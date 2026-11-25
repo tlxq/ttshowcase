@@ -1334,45 +1334,41 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // ---- moment 3: raddavarfruberga (Tom 11-19): one graffiti piece, soft pastel community mural: the name, the preschool sprayed in the name's style and
   // the parents' banner painted in. The banner's words are set by hand and sprayed on when you arrive; the banner is the link. No signers' names (never public).
   const RX = 31; // 4.5 m further on than the first version, so the sign beside it is clear of the underpass
-  const RVP = paintOn("assets/rvf_wall.webp", NARROW ? 6.4 : 9.2, [1290, 872], [RX, G3]); // its foot (picture row 872) stands on the street
-  for (const [n, b] of [["raddavarfruberga's name", [20, 180, 1000, 480]], ["raddavarfruberga's preschool", [860, 230, 1535, 872]], ["raddavarfruberga's banner", [77, 520, 842, 775]]]) RVP.protect(n, b);
-  let RVF_TAGS, RVF_PAINT; // the stack as tags round the piece; the banner's words sprayed on (k: 0 to 1)
-  const RVF_BOX = [77, 520, 842, 775], RVF_GLOW = () => makeGlow("assets/rvf_wall.webp", RVP, RVF_BOX, { rect: true, colour: "#ffe9a8", fill: 0, hole: 1 }); // the banner: the link's tap area and its glow
+  const RVP = paintOn("assets/rvf_wall.webp", NARROW ? 8 : 9.6, [1186, 905], [RX, G3]); // one painting (Tom 11-25): the piece at .8 inside its own dark backdrop, whose foot (row 905) stands on the street
+  const RVM = ([u0, v0, u1, v1]) => [u0 * .8 + 154, v0 * .8 + 110, u1 * .8 + 154, v1 * .8 + 110]; // the piece's old picture boxes, in the new picture
+  for (const [n, b] of [["raddavarfruberga's name", [20, 180, 1000, 480]], ["raddavarfruberga's preschool", [860, 230, 1535, 872]], ["raddavarfruberga's banner", [77, 520, 842, 775]]]) RVP.protect(n, RVM(b));
+  let RVF_TAGS, RVF_PAINT; // the stack is painted into the picture now (Tom 11-25); the banner's words sprayed on (k: 0 to 1)
+  const RVF_BOX = RVM([77, 520, 842, 775]), RVF_GLOW = () => makeGlow("assets/rvf_wall.webp", RVP, RVF_BOX, { cloth: true, colour: "#ffe9a8", fill: 0, hole: 1 }); // the banner: the link's tap area and its glow, round the cloth's own edge
   { // the banner's words, drawn once and sprayed on left to right; then the stack: each tool its own small tag round the piece, in its colours
-    const BB = RVF_BOX, tl = RVP.at(BB[0] + 45, BB[1] + 40), br = RVP.at(BB[2] - 45, BB[3] - 22), TW = br.x - tl.x, TH = tl.y - br.y, CW = 1400, CH = Math.round(CW * TH / TW);
+    const BB = RVF_BOX, tl = RVP.at(BB[0] + 16, BB[1] + 18), br = RVP.at(BB[2] - 16, BB[3] - 10), TW = br.x - tl.x, TH = tl.y - br.y, CW = 1400, CH = Math.round(CW * TH / TW);
     const full = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), show = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), bt = new THREE.CanvasTexture(show);
     bt.encoding = THREE.sRGBEncoding; bt.anisotropy = maxAniso;
-    const words = () => { const g = full.getContext("2d"), RED = "#b0231c", lines = ["Don't kick", "our kids out"]; g.clearRect(0, 0, CW, CH); g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = RED;
-      let fs = CH * .46; g.font = `${fs}px "Sedgwick Ave Display", cursive`; const wmax = Math.max(...lines.map(t => g.measureText(t).width)); fs = Math.min(fs, fs * CW * .94 / wmax);
-      lines.forEach((t, i) => { g.font = `${fs}px "Sedgwick Ave Display", cursive`; const x = CW / 2 + (i ? 14 : -18), y = CH * (i ? .9 : .45);
-        g.globalAlpha = .92; g.fillText(t, x, y); g.globalAlpha = .35; g.fillText(t, x + 3, y - 2); g.globalAlpha = 1; // a brush goes over twice
-        const w = g.measureText(t).width; for (let d = 0; d < 4; d++) { const dx = x - w / 2 + w * (.08 + Math.random() * .84), L = 10 + Math.random() * fs * .22, dw = 3 + Math.random() * 4; // paint that ran
-          g.beginPath(); g.moveTo(dx - dw / 2, y - 8); g.lineTo(dx - dw / 2.6, y + L); g.arc(dx, y + L, dw / 2.2, Math.PI, 0, true); g.lineTo(dx + dw / 2, y - 8); g.fill(); } });
-      shown = -1; };
-    let shown = -1; document.fonts.load('100px "Sedgwick Ave Display"').then(words, words);
+    const banWords = new Image(); // "Don't kick / our kids out" in the stack's street-tag hand (Tom 11-25), a mask painted red
+    const words = () => { const g = full.getContext("2d"); g.clearRect(0, 0, CW, CH); g.globalAlpha = .93; g.drawImage(banWords, 0, 0, CW, CH); g.globalAlpha = 1;
+      g.globalCompositeOperation = "source-in"; g.fillStyle = "#b0231c"; g.fillRect(0, 0, CW, CH); g.globalCompositeOperation = "source-over"; shown = -1; };
+    let shown = -1; banWords.onload = words; banWords.src = "assets/rvf_banner.webp";
     const ban = new THREE.Mesh(new THREE.PlaneGeometry(TW, TH), new THREE.MeshStandardMaterial({ map: bt, transparent: true, depthWrite: false, roughness: .7, polygonOffset: true, polygonOffsetFactor: -3 }));
     ban.position.set(tl.x + TW / 2, br.y + TH / 2, .005); ban.renderOrder = 2; scene.add(ban); // after the painting: both are see-through layers on the wall
     RVF_PAINT = k => { k = Math.round(k * 60) / 60; if (k === shown) return; shown = k; const g = show.getContext("2d"); g.clearRect(0, 0, CW, CH); if (k <= 0) { bt.needsUpdate = true; return; }
       const x = k * CW * 1.1; g.drawImage(full, 0, 0); g.globalCompositeOperation = "destination-in"; const gr = g.createLinearGradient(x - CW * .1, 0, x, 0); gr.addColorStop(0, "#000"); gr.addColorStop(1, "rgba(0,0,0,0)");
       g.fillStyle = gr; g.fillRect(0, 0, CW, CH); g.globalCompositeOperation = "source-over"; bt.needsUpdate = true; }; // left to right, a soft front like a can moving along
     const R = ([u0, v0, u1, v1]) => [RVP.at(u0, 0).x, RVP.at(0, v1).y, RVP.at(u1, 0).x, RVP.at(0, v0).y];
-    RVF_TAGS = [["Next.js", [60, 70, 420, 180], "#ffd23a"], ["TypeScript", [470, 75, 930, 185], "#4fb6ee"], ["Supabase", [1010, 95, 1400, 205], "#ffd23a"], ["Resend", [90, 785, 420, 872], "#4fb6ee"], ["Vercel", [500, 785, 800, 872], "#ffd23a"]]
-      .map(([t, b, c], i) => makeSpray({ key: "rvfTag" + i, name: "raddavarfruberga's tag " + t, colour: c, stack: [t], row: true, fill: .62, rect: R(b) }));
+    RVF_TAGS = []; // the stack is in the painting
   }
   const lamp3 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp3.position.set(RX - 9, 3.8 - 2 * DROP, 4.4); lamp3.target.position.set(RX - 1.6, .3 - 2 * DROP, 0); lamp3.castShadow = false; scene.add(lamp3, lamp3.target);
   document.querySelector(".hud").insertAdjacentHTML("beforeend", '<a class="hot" id="hot3" href="https://raddavarfruberga.se" target="_blank" rel="noopener" aria-label="Open the site" tabindex="-1"></a>'
     + '<div class="tag facts" id="tagRvf"><b>raddavarfruberga.se</b>A site to collect signatures so 20 children keep their preschool places.</div>');
   const hot3 = document.getElementById("hot3"), tagRvf = document.getElementById("tagRvf");
   svg.insertAdjacentHTML("beforeend", '<line id="l7"/><circle id="c7" r="4"/>'); const l7 = svg.querySelector("#l7"), c7 = svg.querySelector("#c7");
-  let rvfStart = 0; const RVF_END = 1.8; // the label comes once the banner's words are on
+  let rvfStart = 0; const RVF_END = 1.1; // the label comes once the banner's words are on
   let endK = 0; // how far the camera has left raddavarfruberga for the manhole
   function rvfAt(now, walk3, end3) {
     lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3));
-    if (introOver && walk3 > .5 && !rvfStart) rvfStart = now; // once per visit
+    if (introOver && walk3 > .3 && !rvfStart) rvfStart = now; // once per visit, while the camera is still coming in, so the cloth is never seen empty (Tom 11-25)
     const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1;
     const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0);
-    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - .84, G3 + .1, .3) : RVP.at(1300, 872), NARROW ? 14 : 8, NARROW ? 70 : 34); // below the painting's foot, on the dark street, where the neon box has room
-    RVF_PAINT(REDUCED ? 1 : sec < 0 ? 0 : cl((sec - .3) / 1.6)); RVF_TAGS.forEach((t, i) => t.fade(showL && sec > RVF_END + .2 + i * .3));
+    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - .84, G3 + .1, .3) : RVP.at(1194, 905), NARROW ? 14 : 8, NARROW ? 70 : 34); // below the painting's foot, on the dark street, where the neon box has room
+    RVF_PAINT(REDUCED ? 1 : sec < 0 ? 0 : cl(sec / .9)); RVF_TAGS.forEach((t, i) => t.fade(showL && sec > RVF_END + .2 + i * .3));
     placeHots([hot3], [RVF_BOX], RVP, sec >= .3 && walk3 > .5 && endK < .5); } // the banner is the link, once the camera is at the wall
 
   // ---- the ending (storyboard 11-16): past raddavarfruberga a hatch in the pavement, steps down along the wall into a workshop under the street.
@@ -1670,7 +1666,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       const mk = () => Object.assign(document.createElement("canvas"), { width: GW, height: GH });
       const src = mk(), sg = src.getContext("2d", { willReadFrequently: true }); sg.drawImage(bmp, 0, 0); bmp.close(); const px = sg.getImageData(0, 0, GW, GH).data;
       const mask = mk(), mg = mask.getContext("2d"), md = mg.createImageData(GW, GH), ch = [];
-      for (let y = M; y < M + bh; y++) for (let x = M; x < M + bw; x++) { const i = (y * GW + x) * 4; if (o.rect || px[i + 3] > 140) { md.data.set([255, 255, 255, 255], i); ch.push([Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]), px[i], px[i + 1], px[i + 2]]); } }
+      for (let y = M; y < M + bh; y++) for (let x = M; x < M + bw; x++) { const i = (y * GW + x) * 4; if (o.rect || (o.cloth ? Math.min(px[i], px[i + 1], px[i + 2]) > 165 && Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]) < 45 : px[i + 3] > 140)) { /* cloth: the painting's white fabric, not its box */ md.data.set([255, 255, 255, 255], i); ch.push([Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]), px[i], px[i + 1], px[i + 2]]); } }
       mg.putImageData(md, 0, 0); let col = o.colour;
       if (!col) { ch.sort((a, b) => b[0] - a[0]); const top = ch.slice(0, Math.max(1, ch.length >> 2)), m = [1, 2, 3].map(j => top.reduce((s, c) => s + c[j], 0) / top.length);
         col = top.length && top[0][0] > 40 ? `rgb(${m.map(v => Math.min(255, Math.round(v * .55 + 130))).join(",")})` : "#ffffff"; } // its own colour, lifted so it glows
