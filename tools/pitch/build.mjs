@@ -108,7 +108,7 @@ const frontFonts =
   `@font-face{font-family:'JetBrains Mono';src:url(data:font/woff2;base64,${b64(await google("JetBrainsMono.woff2", "JetBrains+Mono:wght@500..800", "JetBrains Mono"))}) format('woff2');font-weight:500 800;font-display:block}`;
 
 const parts = {
-  __EMBED__: embed,
+  __EMBED__: embed + frontFonts, // PITCH start-poster: the poster on the wall needs the front's fonts
   __TOKENS__: readFileSync(join(root, "src/design/tokens.css"), "utf8"), // the site's own colours, sizes and speeds: one source
   __HAND__: hand("hi-i-m-tom"),
   __HAND_WALL__: `{${["tom", "ttdevs", "larsson", "tt"].map((w) => `"${w}": ${hand(w)}`).join(", ")}}`,

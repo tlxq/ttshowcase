@@ -217,6 +217,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // The opening: a real concrete wall at night, one street light grazing it, and Tom's line poured down the wall
   // as the light comes on. (The hand-written tag code stays but is off: no pen samples.)
   const HAND = __HAND__;
+  const SV = (q => ["A", "B", "C"].includes(q) ? q : null)(new URLSearchParams(location.search).get("start")); // PITCH start-poster: A painted, B the pour fills the name, C pasted up
   const NARROW = innerWidth / innerHeight < .8, narrowNow = () => innerWidth / innerHeight < .8; // NARROW shapes the scene once, at load; the end wall asks again every frame, so a phone turned mid-walk gets the end wall for its new shape
   const PROT = []; // what a plate must never cover: [name, one corner, the other corner (in the wall's own space), which plates ("" = all)]; the plates check reads them
   const canvas = document.getElementById("c");
@@ -431,13 +432,39 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const bounce = new THREE.PointLight(0xffffff, 0, 4, 2); scene.add(bounce); // coloured with the paint below, once it is read
 
   // the paint layer: a canvas painted at the pen's own pace, wet and glossy, following the concrete's bumps
-  const MURALS = { wide: { w: 9.4, h: 3.4, cy: .75 }, narrow: { w: 4.6, h: 4.6, cy: 1 } }; // the mural's size on a laptop and on a phone; tags are kept clear of both (a tag is saved in metres and shown on every screen)
+  const MURALS = SV === "B" ? { wide: { w: 9.4, h: 8.45, cy: 3.275 }, narrow: { w: 4.6, h: 8.9, cy: 3.15 } } : { wide: { w: 9.4, h: 3.4, cy: .75 }, narrow: { w: 4.6, h: 4.6, cy: 1 } }; // the mural's size on a laptop and on a phone; tags are kept clear of both (a tag is saved in metres and shown on every screen)
   const PW = (NARROW ? MURALS.narrow : MURALS.wide).w, PH = (NARROW ? MURALS.narrow : MURALS.wide).h, PX = 256, PCY = (NARROW ? MURALS.narrow : MURALS.wide).cy;
   const pc = document.createElement("canvas"); pc.width = PW * PX; pc.height = PH * PX; const g = pc.getContext("2d", { willReadFrequently: true });
   const paintTex = new THREE.CanvasTexture(pc); paintTex.encoding = THREE.sRGBEncoding; paintTex.anisotropy = maxAniso;
   const paintMat = wallBump(new THREE.MeshPhysicalMaterial({ map: paintTex, transparent: true, depthWrite: false, roughness: .2, clearcoat: .9, clearcoatRoughness: .12, envMapIntensity: .9,
     normalMap: tex("assets/wall4_nor_gl.jpg", false, PW / TILE, PH / TILE, (WW / 2 - WX - PW / 2) / TILE, (PCY - PH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.5, .5), polygonOffset: true, polygonOffsetFactor: -2 }));
   const paint = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), paintMat); paint.position.set(0, PCY, .002); paint.receiveShadow = true; scene.add(paint);
+  // PITCH start-poster: the front's poster on the wall under the bucket, framed full screen at the start
+  const PL = NARROW ? { x0: -2.25, x1: .65, tom: [7.45, .28], lar: [7.02, .28], face: [-2.25, 2.55, .65, 6.6], role: 2.05, rc: .13, frame: [-1.15, 5.3, 8] }
+    : { x0: -4.6, x1: 3.8, tom: [7.3, .8], lar: [6.25, .8], face: [.6, 2.4, 4.4, 6.6], role: 2.9, rc: .26, frame: [-.65, 5.65, 6.4] }; // world metres: name lines [top, cap height], face [x0, y0, x1, y1], role baseline and cap, frame [cx, cy, height]
+  let posterL = null;
+  if (SV) {
+    const x0 = PL.x0 - .2, x1 = Math.max(PL.x1, PL.face[2]) + .2, y0 = Math.min(PL.face[1], PL.role - .6) - .2, y1 = PL.tom[0] + .2, PXP = 220;
+    const cv = document.createElement("canvas"); cv.width = Math.round((x1 - x0) * PXP); cv.height = Math.round((y1 - y0) * PXP); const c = cv.getContext("2d");
+    const X = x => (x - x0) * PXP, Y = y => (y1 - y) * PXP, css = getComputedStyle(document.documentElement), tk = n => css.getPropertyValue(n).trim();
+    const ptex = new THREE.CanvasTexture(cv); ptex.encoding = THREE.sRGBEncoding; ptex.anisotropy = maxAniso;
+    const pm = wallBump(new THREE.MeshStandardMaterial({ map: ptex, transparent: true, depthWrite: false, roughness: SV === "C" ? .85 : .45,
+      normalMap: tex("assets/wall4_nor_gl.jpg", false, (x1 - x0) / TILE, (y1 - y0) / TILE, (x0 - WX + WW / 2) / TILE, (y0 - GROUND) / TILE), normalScale: new THREE.Vector2(SV === "C" ? .25 : .5, SV === "C" ? .25 : .5), polygonOffset: true, polygonOffsetFactor: -1 }));
+    const pmesh = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, y1 - y0), pm); pmesh.position.set((x0 + x1) / 2, (y0 + y1) / 2, .0015); pmesh.receiveShadow = true; scene.add(pmesh);
+    const face = new Image(); face.src = "assets/start/face.webp";
+    Promise.all([face.decode(), document.fonts.load('900 100px "Archivo"'), document.fonts.load('700 20px "JetBrains Mono"')].map(q => q.catch(() => {}))).then(() => {
+      if (SV === "C") { c.fillStyle = tk("--look-cream"); c.fillRect(0, 0, cv.width, cv.height); c.fillStyle = "rgba(0,0,0,.05)"; c.fillRect(Math.round(X(x0 + (x1 - x0) / 2)), 0, 3, cv.height); } // a pasted-up sheet: two prints side by side
+      const fw = PL.face[2] - PL.face[0], fh = PL.face[3] - PL.face[1], s = Math.min(fw / face.width, fh / face.height);
+      if (face.width) c.drawImage(face, X(PL.face[0] + (fw - face.width * s) / 2), Y(PL.face[1] + face.height * s), face.width * s * PXP, face.height * s * PXP);
+      const line = (t, top, cap, col) => { c.font = `900 ${cap / .72 * PXP}px "Archivo"`; c.fillStyle = col; c.textBaseline = "alphabetic"; c.fillText(t, X(PL.x0), Y(top - cap)); };
+      line("TOM", PL.tom[0], PL.tom[1], tk("--look-dark"));
+      if (SV !== "B") line("LARSSON", PL.lar[0], PL.lar[1], tk("--front-spray"));
+      const rc = PL.rc; line("PRODUCT ENGINEER.", PL.role + rc * 1.9, rc, tk("--look-dark"));
+      if (!NARROW) c.font = `600 ${rc * .62 * PXP}px "JetBrains Mono"`, c.fillText("TypeScript, React and C#/.NET, from data model to server.", X(PL.x0), Y(PL.role)); // wraps on the real build; one line here
+      if (SV !== "C") { c.globalCompositeOperation = "destination-in"; const g2 = c.createLinearGradient(0, 0, 0, cv.height); g2.addColorStop(0, "rgba(0,0,0,.93)"); g2.addColorStop(1, "rgba(0,0,0,.9)"); c.fillStyle = g2; c.fillRect(0, 0, cv.width, cv.height); c.globalCompositeOperation = "source-over"; } // paint, not print: a touch of the concrete through it
+      ptex.needsUpdate = true; });
+    posterL = new THREE.SpotLight(0xfff1e0, 0, 0, NARROW ? .5 : .7, .9, 1); posterL.position.set(PL.frame[0] - 1.5, PL.frame[1] + 3, 9); posterL.target.position.set(PL.frame[0], PL.frame[1] - .3, 0); scene.add(posterL, posterL.target);
+  }
 
   // pen samples → canvas pixels, at Tom's timing
   let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; HAND.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); } });
@@ -458,6 +485,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the bucket stands at the left end of the wall's top; the visitor tips it over on its side, the paint floods right along the top and spills down
   const TS = .8, left = ic => ic < .2 ? 1 : Math.exp(-(ic - .2) / .6); // left(): how much is still in the bucket; the flow follows it
   const LEDGE = { x: -SPAN - .55, tip: .4, spread: NARROW ? 3 : 5, run: NARROW ? 3.6 : 4.2 };
+  if (SV && NARROW) LEDGE.x = -2.55; // PITCH: on a phone the bucket stands over the poster's first letter
   LEDGE.x0 = LEDGE.x + BK.r0 + BK.h;
   const ledgeArrive = x => LEDGE.tip + .05 + Math.max(0, x - LEDGE.x0) / LEDGE.spread;
   const pourNor = tex("assets/wall4_nor_gl.jpg", false, PW / TILE, HT / TILE, (WW / 2 - WX - PW / 2) / TILE, 0);
@@ -562,16 +590,18 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     creep = { mesh: new THREE.Mesh(geo, creepMat), L, at: src.land + 1.8 }; scene.add(creep.mesh); }
   const puddle = new THREE.Mesh(new THREE.PlaneGeometry(PW + 3, 1.6), puddleMat); puddle.rotation.x = -Math.PI / 2; puddle.position.set(0, GROUND + .004, .8); scene.add(puddle);
   const pourMesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, HT), pourMat); pourMesh.position.set(0, GROUND + HT / 2, .003); pourMesh.visible = false; scene.add(pourMesh);
-  document.fonts.load('700 100px "Clash Display"').catch(() => {}).then(buildPour);
+  Promise.all([document.fonts.load('700 100px "Clash Display"'), document.fonts.load('900 100px "Archivo"')].map(q => q.catch(() => {}))).then(buildPour);
 
   function buildPour() {
     const W = pc.width, H = pc.height, mk = document.createElement("canvas"); mk.width = W; mk.height = H; const m = mk.getContext("2d", { willReadFrequently: true });
     const font = n => `700 ${n}px "Clash Display", system-ui, sans-serif`;
     m.font = font(100); const w100 = Math.max(...MURAL.map(l => m.measureText(l).width));
-    const size = Math.min(100 * W * .9 / w100, H * .9 / (MURAL.length * .9)), lh = size * .9, lw = w100 * size / 100;
-    const x0 = (W - lw) / 2, top = (H - lh * MURAL.length) / 2 + size * .74;
+    const SUBH = SV === "B" ? (NARROW ? 4.6 : 3.4) * PX : H; // PITCH B: the line keeps its old place at the bottom of the taller plane
+    const size = Math.min(100 * W * .9 / w100, SUBH * .9 / (MURAL.length * .9)), lh = size * .9, lw = w100 * size / 100;
+    const x0 = (W - lw) / 2, top = H - SUBH + (SUBH - lh * MURAL.length) / 2 + size * .74;
     m.fillStyle = "#000"; m.fillRect(0, 0, W, H); m.fillStyle = "#fff"; m.font = font(size); m.textBaseline = "alphabetic";
     MURAL.forEach((l, i) => m.fillText(l, x0, top + i * lh));
+    if (SV === "B") { m.font = `900 ${PL.lar[1] / .72 * PX}px "Archivo"`; m.fillText("LARSSON", (PL.x0 + PW / 2) * PX, (PCY + PH / 2 - (PL.lar[0] - PL.lar[1])) * PX); m.font = font(size); } // PITCH B: the name, for the pour to fill first
     muralPin = toWorld(x0 + lw * (NARROW ? .55 : .985), top - size * .72);
     PROT.push(["the mural", toWorld(x0, top - size * .74), toWorld(x0 + lw, top + (MURAL.length - 1) * lh + size * .2), ".tag"], ["the mural's first line", toWorld(x0, top - size * .74), toWorld(x0 + lw, top + size * .2), ".mail"]); // the form on a phone covers the lower lines, never the first
     // a half-size grid for the flow
@@ -818,8 +848,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const workAt = { x: LEDGE.x + .1, y: WALL_TOP + .2 };
   const work = new THREE.SpotLight(0xffe6cc, 0, 14, .2, .8, 1.4); scene.add(work, work.target);
   work.position.set(LEDGE.x + .9, WALL_TOP + 4.2, 1.6); work.target.position.set(LEDGE.x + .1, WALL_TOP + .2, -.17);
-  const INTRO = NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x + .8, WALL_TOP + 2.2, 2.9), V(LEDGE.x + .25, WALL_TOP + .25, -.17)];
-  const CAM_IN = [.4, 0], FREE_AT = 3.2; // camera starts moving, finishes (set when the pour is known); FREE_AT: on the pour clock the scroll is free here, ~4 s after the tap, while the paint still runs
+  const INTRO = SV ? [V(PL.frame[0], PL.frame[1], PL.frame[2] / 2 / Math.tan(FOV0 * Math.PI / 360)), V(PL.frame[0], PL.frame[1], 0)] : NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x + .8, WALL_TOP + 2.2, 2.9), V(LEDGE.x + .25, WALL_TOP + .25, -.17)];
+  const CAM_IN = [SV ? (SV === "B" ? 2.7 : 1.8) : .4, 0], FREE_AT = SV ? 4.8 : 3.2; // PITCH: with the poster the camera holds while the pour runs through it (B: until LARSSON is full) // camera starts moving, finishes (set when the pour is known); FREE_AT: on the pour clock the scroll is free here, ~4 s after the tap, while the paint still runs
   // the visitor tips the bucket: one click or tap, or Enter/Space. Until then it waits, rocking a little now and then.
   let goAt = 0, level = 0, skipped = false, introOver = false, coatMax = 0, readyAt = 0, tilt = 0, tiltV = 0, tilt0 = 0, slosh = 0, sloshV = 0, rocks = 0;
   try { history.scrollRestoration = "manual"; } catch (e) {} scrollTo(0, upPx());
@@ -879,12 +909,12 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     // while it fills: the paint level as a number (nothing in the first second); when full: what to do (signum L1, L2)
     const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000);
     const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
-    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>Tom Larsson &middot; Product engineer</b>${txt}`; }
+    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = SV ? txt : `<b>Tom Larsson &middot; Product engineer</b>${txt}`; }
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
     const lk = ic < 0 ? 0 : sm(cl((ic - .6) / 1.1)), flick = lk > 0 && lk < .6 && Math.random() < .3 ? .2 : 1;
-    lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2))));
+    lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2)))); if (posterL) posterL.intensity = 1.3 * (1 - .4 * lk);
     // after the tip the work light widens and follows the paint's front along the top, so the sheet is seen coming down
     { const k = ic < 0 ? 0 : sm(cl((ic - .25) / .6)), fx = Math.min(SPAN - .6, LEDGE.x0 + Math.max(0, ic - LEDGE.tip - .2) * LEDGE.spread - .6);
       const tx = LEDGE.x + .1 + (fx - LEDGE.x - .1) * k, ty = WALL_TOP + .2 - (.2 + SB * .8) * k;
