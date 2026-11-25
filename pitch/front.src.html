@@ -587,7 +587,7 @@ __LIBS__
 
   // the form: the same fields and words as the live site's, sent by the server (api/contact.ts); signum W3, W5, W6
   { const mail = document.getElementById("mail"), err = mail.querySelector(".err"), btn = mail.querySelector("button");
-    const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters.", "too-many": "This address has sent all its messages for today. Try again tomorrow." };
+    const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters.", robot: "The browser check didn't pass. Reload the page, then try again.", "too-many": "This address has sent all its messages for today. Try again tomorrow." };
     mail.addEventListener("submit", async (e) => { e.preventDefault(); btn.disabled = true; btn.textContent = "Sending\u2026"; err.hidden = true; let why;
       try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
         if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.tabIndex = -1; sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.replaceChildren(sent); sent.focus(); return; } // focus moves to the answer: the button it was on is gone

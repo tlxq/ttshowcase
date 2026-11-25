@@ -1,6 +1,8 @@
 // The parts of `showcase` that only compute: command list, argument reading, typo hints, colours, completion.
 // Everything that runs something lives in cli.mjs. Tests: lib.test.mjs.
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { join } from "node:path";
 
 // One line each: the menu, --help and the completion all read this list.
 export const COMMANDS = [
@@ -346,4 +348,36 @@ export function freePort(taken, from = LOOK_PORT_FROM) {
   let p = from;
   while (taken.includes(p)) p++;
   return p;
+}
+
+/** The hash of dir's package-lock.json: what the last `npm ci` there was made from. */
+export function lockHash(dir) {
+  return createHash("sha256")
+    .update(readFileSync(join(dir, "package-lock.json")))
+    .digest("hex");
+}
+
+/**
+ * Whether dir's installed packages match its package-lock.json (F-look-1: after a pull with a changed lock the
+ * main checkout said "already installed", then failed with ERR_MODULE_NOT_FOUND). The stamp node_modules/.showcase-lock
+ * holds the lock's hash from the last install; with no stamp yet, npm's own copy of the lock must be newer than the lock.
+ */
+export function packagesCurrent(dir) {
+  try {
+    statSync(join(dir, "node_modules"));
+  } catch {
+    return false;
+  }
+  try {
+    return readFileSync(join(dir, "node_modules/.showcase-lock"), "utf8").trim() === lockHash(dir);
+  } catch {
+    try {
+      return (
+        statSync(join(dir, "node_modules/.package-lock.json")).mtimeMs >=
+        statSync(join(dir, "package-lock.json")).mtimeMs
+      );
+    } catch {
+      return false;
+    }
+  }
 }
