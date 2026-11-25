@@ -327,7 +327,30 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .sig, .lead { display: none; } /* they draw on the pane, which only exists with motion */
   .hero .stage::after { content: ""; position: absolute; inset: auto 0 0; height: 22svh; background: linear-gradient(transparent, var(--look-dark-soft)); pointer-events: none; }
 }
+/* PITCH start-poster: the walk's start as the poster with the bucket (?start=1 the front itself, ?start=2 its night sister) */
+.tip { display: none; }
+:root[data-start] .tip { display: flex; position: fixed; z-index: 20; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); translate: -50% 0;
+  flex-direction: column; align-items: center; gap: 6px; background: none; border: 0; padding: 8px 12px; cursor: pointer; color: var(--look-dark);
+  font: 600 13px/1.2 var(--front-code); letter-spacing: .02em; }
+:root[data-start] .tip svg { width: clamp(64px, 7vw, 92px); height: auto; transform-origin: 18% 96%; transition: transform .45s cubic-bezier(.5,0,.2,1); overflow: visible; }
+:root[data-start] .tip:hover svg { transform: rotate(-8deg); }
+:root[data-start] .tip.go svg { transform: rotate(-112deg); }
+:root[data-start] .tip:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 4px; }
+:root[data-start] .hint { display: none; }
+.flood { position: fixed; inset: 0; z-index: 40; background: var(--front-spray); pointer-events: none; clip-path: circle(0 at var(--fx, 50%) var(--fy, 90%)); }
+.flood.on { transition: clip-path 1s cubic-bezier(.6,0,.3,1); clip-path: circle(150vmax at var(--fx, 50%) var(--fy, 90%)); }
+:root[data-start="2"] { --look-cream: var(--look-ground); --look-dark: var(--look-text); }
+:root[data-start="2"] body { background: var(--look-ground); }
+:root[data-start="2"] .name .ln:first-child { color: var(--look-text); }
+:root[data-start="2"] .hero { height: 100svh; }
+:root[data-start="2"] main > section:not(.hero) { visibility: hidden; }
+:root[data-start="2"], :root[data-start="2"] body { overflow: hidden; }
+:root[data-start="2"] .sig, :root[data-start="2"] .lead, :root[data-start="2"] .rows, :root[data-start="2"] .ground { display: none; }
+:root[data-start] .tip { left: auto; right: max(var(--gutter), env(safe-area-inset-right)); translate: none; background: var(--look-cream); border-radius: 14px; padding: 12px 16px 10px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--look-dark) 12%, transparent); }
+@media (max-width: 640px) { :root[data-start] .tip { max-width: 128px; text-align: center; padding: 10px 10px 8px; } :root[data-start] .tip svg { width: 52px; } :root[data-start] .role { max-width: calc(100% - 128px - 3 * var(--gutter)); } }
+:root[data-start="2"] .bar { color: var(--look-text); }
 </style>
+<script>{ const v = new URLSearchParams(location.search).get("start"); if (v) document.documentElement.dataset.start = v; }</script>
 </head>
 <body>
 <div class="night" aria-hidden="true"></div>
@@ -444,6 +467,14 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
       </form>
     </div>
   </section>
+<button class="tip" type="button" aria-label="Tip the bucket to walk in"><svg viewBox="0 0 100 96" aria-hidden="true">
+  <path d="M30 22 Q50 -6 70 22" fill="none" stroke="currentColor" stroke-width="4"/>
+  <path d="M14 26 L86 26 L76 92 L24 92 Z" fill="currentColor"/>
+  <ellipse cx="50" cy="26" rx="36" ry="8" fill="currentColor"/>
+  <ellipse cx="50" cy="27" rx="31" ry="5.5" fill="var(--front-spray)"/>
+  <path d="M19 28 Q21 44 24 40 Q26 30 30 31" fill="var(--front-spray)"/>
+</svg><span>Tip the bucket to walk in</span></button>
+<div class="flood" aria-hidden="true"></div>
 </main>
 __LIBS__
 <script>
@@ -790,6 +821,7 @@ __LIBS__
     const css = getComputedStyle(document.documentElement), hex = (v) => { const h = css.getPropertyValue(v).trim(); return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)); };
     const DARK = hex("--look-dark"), BLUE = hex("--front-spray"), CREAM = css.getPropertyValue("--look-cream").trim(), CR = hex("--look-cream");
     const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a.toFixed(2)})`;
+    const D2 = document.documentElement.dataset.start === "2" ? hex("--look-ground") : DARK; // PITCH: the night window keeps its shadows dark
     const TURN = 22, MID = 12, frames = [], duo = [];
     const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
     const win = mk(1, 1), wx = win.getContext("2d"), rim = mk(1, 1), rx = rim.getContext("2d"), sm = mk(1, 1), smx = sm.getContext("2d", { willReadFrequently: true });
@@ -825,7 +857,7 @@ __LIBS__
       const id = cx.getImageData(0, 0, 600, 636), d = id.data;
       for (let k = 0; k < d.length; k += 4) {
         let l = Math.min(1, Math.max(0, (0.299 * d[k] + 0.587 * d[k + 1] + 0.114 * d[k + 2] - 30) / 180)); l = l * l * (3 - 2 * l);
-        for (let j = 0; j < 3; j++) d[k + j] = DARK[j] + (BLUE[j] - DARK[j]) * l;
+        for (let j = 0; j < 3; j++) d[k + j] = D2[j] + (BLUE[j] - D2[j]) * l;
       }
       cx.putImageData(id, 0, 0); return (duo[i] = c);
     };
@@ -843,6 +875,7 @@ __LIBS__
     };
     addEventListener("pointermove", (e) => { const r = cv.getBoundingClientRect(); ax = (e.clientX - r.left) / r.width; ay = (e.clientY - r.top) / r.height; aLast = performance.now(); mx = e.clientX / innerWidth - 0.5; }, { passive: true });
     addEventListener("pointerdown", (e) => { const r = cv.getBoundingClientRect(); ax = (e.clientX - r.left) / r.width; ay = (e.clientY - r.top) / r.height; aLast = performance.now(); }, { passive: true });
+    addEventListener("deviceorientation", (e) => { if (e.gamma == null) return; mx = Math.max(-0.5, Math.min(0.5, e.gamma / 50)); ax = 0.5 + mx * 0.7; ay = 0.38 + Math.max(-0.25, Math.min(0.25, (e.beta - 50) / 80)); aLast = performance.now(); }, { passive: true }); // PITCH: the phone's tilt moves him like the mouse
     const draw = (t) => {
       if (!pr || !frames[MID]) return;
       const f = Math.min(TURN - 1, Math.max(0, still ? MID : poster.fi ?? MID + Math.max(-1, Math.min(1, mx * 2.2)) * (mx < 0 ? MID : TURN - 1 - MID)));
@@ -1338,6 +1371,16 @@ __LIBS__
   photo.complete ? ready() : photo.addEventListener("load", ready, { once: true });
   let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(ready, 200); });
 })();
+// PITCH start-poster: the bucket tips, the blue floods the screen from its lip, and the walk opens
+{
+  const tip = document.querySelector(".tip"), flood = document.querySelector(".flood");
+  tip?.addEventListener("click", () => {
+    const r = tip.querySelector("svg").getBoundingClientRect();
+    flood.style.setProperty("--fx", `${r.left + r.width * 0.15}px`); flood.style.setProperty("--fy", `${r.top + r.height * 0.3}px`);
+    tip.classList.add("go"); setTimeout(() => flood.classList.add("on"), 380);
+    setTimeout(() => { location.href = "paint.html"; }, 1500);
+  });
+}
 </script>
 </body>
 </html>
