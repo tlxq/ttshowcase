@@ -2,7 +2,7 @@
 // script rule), no missing file, no sideways scroll at any step; at the bottom the signature count has reached its
 // number and every handwritten note has written itself.
 async page => { const W = page.viewportSize().width, errs = [], res = { errs, steps: 0 };
-  page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error' && !/status of 429\b/.test(m.text())) errs.push(m.text()); });
+  page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error' && !/status of (429|403)\b/.test(m.text())) errs.push(m.text()); });
   page.on('response', r => { if (r.status() >= 400 && !/\/api\/contact$/.test(r.url())) errs.push(r.status() + ' ' + r.url()); });
   page.on('requestfailed', r => { const f = r.failure()?.errorText || ''; if (!/ERR_ABORTED/.test(f)) errs.push('failed ' + r.url() + ' ' + f); });
   await page.route('https://api.github.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' })); // GitHub allows 60 asks an hour: no number is drawn, as when it fails
@@ -29,6 +29,11 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   await page.click('#mail button'); await page.waitForTimeout(800);
   res.limit = await page.evaluate(() => ({ err: document.getElementById('mailErr').textContent, kept: document.querySelector('#mail textarea').value }));
   if (!/all its messages for today/.test(res.limit.err) || res.limit.kept !== 'A test from the front check.') errs.push('a send past the limit does not say so or loses the message: ' + JSON.stringify(res.limit));
+  // BotID refusing the send (403 robot) says so, not that the mail service didn't answer (F-102-1, 11-26)
+  await page.route('**/api/contact', r => r.fulfill({ status: 403, contentType: 'application/json', body: '{"error":"robot"}' }));
+  await page.click('#mail button'); await page.waitForTimeout(800);
+  res.robot = await page.evaluate(() => document.getElementById('mailErr').textContent);
+  if (!/browser check didn't pass/.test(res.robot) || /mail service/.test(res.robot)) errs.push('a send BotID refuses does not say so: ' + res.robot);
   await page.unroute('**/api/contact');
   // every link, button and field is a 48 px tap (signum K4), and no two links read the same to a screen reader (Tom 11-24, audit 4b)
   res.taps = await page.evaluate(() => [...document.querySelectorAll('a, button, input:not([tabindex="-1"]), textarea')].filter(e => e.getClientRects().length).map(e => ({ n: (e.getAttribute('aria-label') || e.textContent || e.name).trim().slice(0, 30), h: Math.round(e.getBoundingClientRect().height), href: e.getAttribute('href') })));

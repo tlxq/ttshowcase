@@ -1,5 +1,5 @@
-  // ---- the end (Tom 11-23, no flash): past EDGE the head turns to the next street light, the camera steps in close to the bare wall, changes there to the
-  // same wall by the visitors' wall (CLOSE_V, SEAM_D) and steps back out to it; the visitors' wall is the page's seam, lit by the visitor's own clock.
+  // ---- the end (Tom 11-23, no flash): past EDGE the head turns to the next street light and the street goes on as its twin
+  // (SEAM_D) up to the visitors' wall; the visitors' wall is the page's seam, lit by the visitor's own clock.
   // No fly-back (a strip of walls from above looks like a set).
   const CUT = 1125; // the scroll (vh) where the walk changes from the bare wall past EDGE to the bare wall by the visitors' wall, in close (Tom 11-23: no flash)
   const sun = new THREE.DirectionalLight(0xffe4c8, 0); sun.position.set(14, 7, 9); sun.target.position.set(0, .5, 0); scene.add(sun, sun.target);
@@ -14,7 +14,7 @@
     <button type="button" class="hot" id="leave" aria-label="Leave your tag" tabindex="-1" style="display: none"></button>
 `);
   const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
-  const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters.", "too-many": "This address has sent all its messages for today. Try again tomorrow." };
+  const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters.", robot: "The browser check didn't pass. Reload the page, then try again.", "too-many": "This address has sent all its messages for today. Try again tomorrow." };
   mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true; let why;
     try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
       if (a.ok) { sheetSent = true; const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
