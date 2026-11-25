@@ -847,6 +847,16 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the visitor tips the bucket: one click or tap, or Enter/Space. Until then it waits, rocking a little now and then.
   let goAt = 0, level = 0, skipped = false, introOver = false, coatMax = 0, readyAt = 0, tilt = 0, tiltV = 0, tilt0 = 0, slosh = 0, sloshV = 0, rocks = 0;
   try { history.scrollRestoration = "manual"; } catch (e) {} scrollTo(0, upPx());
+  // the window changes shape (a phone turned, a tiled window made full screen): the street is laid out once, for a phone or a laptop (NARROW),
+  // so crossing that line reloads the walk at the same place, past the bucket, instead of showing the phone's street through a laptop's window.
+  // Not while the visitor writes a tag or a message: that would lose their work.
+  const RESUME_KEY = "tlxq-walk-resume", RESUME = (() => { try { const v = JSON.parse(sessionStorage.getItem(RESUME_KEY)); sessionStorage.removeItem(RESUME_KEY); return v && Date.now() - v.at < 15000 ? v.f : null; } catch (_) { return null; } })();
+  document.documentElement.dataset.narrow = NARROW ? "1" : "0"; // the checks read it
+  { let shapeT = 0; addEventListener("resize", () => { clearTimeout(shapeT); shapeT = setTimeout(() => {
+    if (narrowNow() === NARROW || sheetOpen || ["draw", "move", "send"].includes(tag.stage)) return;
+    const room = document.documentElement.scrollHeight - innerHeight - upPx();
+    try { if (introOver) sessionStorage.setItem(RESUME_KEY, JSON.stringify({ f: room > 0 ? Math.max(0, Math.min(1, (scrollY - upPx()) / room)) : 0, at: Date.now() })); } catch (_) {}
+    location.reload(); }, 400); }); }
   // a reload starts at the top: some hosts put the old scroll place back after load, so hold the top until the intro ends
   addEventListener("pageshow", () => { if (!introOver) scrollTo(0, upPx()); });
   const root = document.documentElement; root.style.overflow = "hidden"; root.style.touchAction = "none";
@@ -892,14 +902,14 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 2.2);
       level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 3.5);
       if (pourReady && level > .975 && !readyAt) { readyAt = now; root.dataset.readyAt = Math.round(now - t0); warmUp(); tagBucket.tabIndex = 0; tagBucket.setAttribute("role", "button"); tagBucket.setAttribute("aria-label", "Tip the bucket to enter"); } // Tab reaches the start, Enter tips it (B-4) else warmStep();
-      if (pourReady && REDUCED) goAt = now - 60000;
+      if (pourReady && (REDUCED || RESUME !== null)) goAt = now - 60000; // a reload for a new window shape skips the bucket: the visitor tipped it already
       // a small rock now and then shows it can move
       { if (readyAt && Math.floor((now - readyAt) / 3200) > rocks) { rocks++; tiltV += .55; } tiltV += (-42 * tilt - 6 * tiltV) * dt; tilt = Math.max(-.04, tilt + tiltV * dt); }
     } else if (skipped && now - goAt < 60000) goAt = now - 60000;
     const ic = goAt ? (now - goAt) / 1000 * TS : -1; // the pour clock: 0.8 of real time, so the whole pour is calmer
     if (pourReady && !CAM_IN[1]) CAM_IN[1] = Math.min(FREE_AT - .3, Math.max(CAM_IN[0] + 1.5, pourDone - .7));
     if (!introOver && (scrollX || Math.abs(scrollY - upPx()) > 1)) scrollTo(0, upPx());
-    if (!introOver && ic > Math.min(pourDone + .3, FREE_AT)) { scrollTo(0, upPx()); introOver = true; root.style.overflow = ""; root.style.touchAction = ""; document.body.style.cursor = ""; }
+    if (!introOver && ic > Math.min(pourDone + .3, FREE_AT)) { scrollTo(0, upPx()); introOver = true; root.style.overflow = ""; root.style.touchAction = ""; document.body.style.cursor = "";  if (RESUME !== null) scrollTo(0, upPx() + RESUME * Math.max(0, root.scrollHeight - innerHeight - upPx()));}
     if (!goAt) document.body.style.cursor = readyAt ? "pointer" : "";
     // the bucket fills
     const fillL = goAt ? Math.max(.03, left(ic)) : level; coatMax = Math.max(coatMax, fillL);
