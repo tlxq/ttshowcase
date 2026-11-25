@@ -22,7 +22,7 @@ async (page) => {
   });
   await page.goto("__URL__");
   await page.waitForTimeout(3500);
-  await page.mouse.click(W / 2, H / 2);
+  await page.evaluate(() => window.bucketAt()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (
     let i = 0;
     i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === ""));
