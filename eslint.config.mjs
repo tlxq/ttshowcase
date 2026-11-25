@@ -18,6 +18,7 @@ const config = [
       ".cache/",
       ".playwright-cli/",
       "tools/",
+      "pitch/paint/", // one script cut into parts (not linted before the split either)
     ],
   },
 ];

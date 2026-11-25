@@ -1,4 +1,4 @@
-// Builds the paint pitch (pitch/paint.src.html) into .cache/pitch/paint.html: fonts and hand-written words go
+// Builds the paint pitch (pitch/paint.src.html, its style and script in the parts of pitch/paint/) into .cache/pitch/paint.html: fonts and hand-written words go
 // into the page, the pictures are linked from pitch/assets.
 // --site also puts it into the built site (out/) as /next (behind its key, middleware.ts), pictures copied to
 // /next/assets/: `npm run build` runs it after next build, so Vercel deploys the pitch at ttdevs.com/next.
@@ -18,6 +18,7 @@ import {
 } from "node:fs";
 import { join, resolve } from "node:path";
 import { TAG_LIMITS } from "../../api/tags.ts";
+import { fillParts, readParts } from "./paint-parts.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const fonts = join(root, ".cache/fonts");
@@ -117,7 +118,11 @@ const parts = {
   __HAND_WALL__: `{${["tom", "ttdevs", "larsson", "tt"].map((w) => `"${w}": ${hand(w)}`).join(", ")}}`,
   __TAG_LIMITS__: JSON.stringify(TAG_LIMITS), // what one tag may hold: the store's own numbers (api/tags.ts)
 };
-let page = readFileSync(join(root, "pitch/paint.src.html"), "utf8");
+// the page's style and script come first, from their parts (pitch/paint/): they hold the __HAND__ etc. filled below
+let page = fillParts(
+  readFileSync(join(root, "pitch/paint.src.html"), "utf8"),
+  readParts(join(root, "pitch/paint")),
+);
 for (const [key, value] of Object.entries(parts)) {
   if (!page.includes(key))
     throw new Error(
