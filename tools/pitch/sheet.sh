@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# The whole-walk sheet (Tom 11-23, "hand in hand"): the same moments of the walk on a base build (default master) and on this
+# The whole-walk sheet (Tom 11-23, "hand in hand"): the same moments of the walk on a base build (default origin/master) and on this
 # branch, laptop 1440 x 900 + phone, by night (?hour=23) and by day (?hour=12), side by side, changed pictures marked. Shown to
 # Tom and the design reviewer before every visual step, so a change in one moment can't quietly hurt another.
 # Pictures and page: .cache/pitch/sheet/ (served by `mise run pitch` at /sheet/). Runs on the graphics card, 4 browsers at a time.
 # It rebuilds .cache/pitch, so it runs after pitch:check, not beside it.
 # Usage: sheet.sh [base-ref]
 set -u
-base="${1:-master}"
+base="${1:-origin/master}" # origin's: a worktree's own master is often behind
 cd "$(dirname "$0")/../.."
 root="$PWD" sheet="$PWD/.cache/pitch/sheet" src="$PWD/.cache/sheet-base"
 . tools/walk/graphics.sh || exit 1
@@ -20,9 +20,10 @@ cleanup # a browser left by an interrupted run would point at a dead server
 # the base build: its files from git (no worktree), with this checkout's packages and fonts
 rm -rf "$sheet" && mkdir -p "$src/.cache" "$sheet"
 git archive "$base" pitch tools/pitch/build.mjs api src | tar -x -C "$src" || { echo "Couldn't copy $base's files: it may be older than the paint pitch" >&2; exit 1; }
+# this branch first: its build fetches the fonts once into .cache/fonts, which the base build borrows (a fresh worktree has none yet)
+node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
 ln -s "$root/node_modules" "$src/node_modules"; ln -s "$root/.cache/fonts" "$src/.cache/fonts"
 node "$src/tools/pitch/build.mjs" >/dev/null || { echo "The build of $base failed. To see why: git switch $base && mise run pitch:build" >&2; exit 1; }
-node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
 
 free_port() { python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])'; }
 shoot() { # build (base|branch), screen (laptop|phone), hour; a failed shoot leaves <dir>.fail with the reason

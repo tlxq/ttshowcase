@@ -4,6 +4,9 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs };
   page.on('pageerror', e => errs.push(String(e)));
   await page.addInitScript(() => { const g = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (t, ...a) { return /webgl/i.test(t) ? null : g.call(this, t, ...a); }; });
   await page.goto('__URL__'); await page.waitForTimeout(2500);
+  // the page names its icon (audit 4a, 11-25): without one a browser asks for /favicon.ico, which is a 404 and a console error
+  res.icon = await page.evaluate(async () => { const l = document.querySelector('link[rel~="icon"]'); return l ? (await fetch(l.href)).status : 0; });
+  if (res.icon !== 200) errs.push('the page names no icon that loads (a browser then asks for /favicon.ico, a 404): ' + res.icon);
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-nogl.png' });
   res.ways = await page.evaluate(() => [...document.querySelectorAll('.nogl a')].map(a => { const b = a.getBoundingClientRect(), top = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
     return { text: a.textContent, href: a.getAttribute('href'), h: Math.round(b.height), onTop: !!top && a.contains(top) }; }));
