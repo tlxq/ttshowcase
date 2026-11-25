@@ -56,5 +56,14 @@ if [ -z "$expires" ] || [ "$(date -d "$expires" +%s)" -lt "$(date -d '+30 days' 
 fi
 grep -q '^Contact: https://' <<<"$txt" || no "security.txt has no Contact line"
 
-[ "$fail" = 0 ] && echo "header-check: page rules, /next's script hash and security.txt in place"
+# Vercel BotID: the path its browser part loads the checker from must be the one vercel.json sends to Vercel
+node -e '
+const core = require("fs").readFileSync("node_modules/botid/dist/client/core/index.mjs", "utf8");
+const base = core.match(/"(\/[0-9a-f-]{36}\/[0-9a-f-]{36})"/)?.[1], rw = require("./vercel.json").rewrites ?? [];
+const has = (src, to) => rw.some(r => r.source === src && r.destination.startsWith(to));
+if (!base || !has(base + "/a-4-a/c.js", "https://api.vercel.com/bot-protection/") || !has(base + "/:path*", "https://api.vercel.com/bot-protection/"))
+  { console.error("header-check: BotID loads from " + base + ", but vercel.json has no rewrite for it (README of botid)"); process.exit(1); }' ||
+  no "BotID's rewrites"
+
+[ "$fail" = 0 ] && echo "header-check: page rules, /next's script hash, security.txt and BotID's rewrites in place"
 exit "$fail"

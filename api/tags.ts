@@ -19,6 +19,7 @@
  * scanners open links but never press buttons. Settings in Vercel: DATABASE_URL (Neon), TAG_SECRET,
  * RESEND_API_KEY, CONTACT_TO, CONTACT_FROM, and ADMIN_KEY for Tom's own wall. Table: tools/tags/schema.sql. Tests: src/tags/tags.test.ts.
  */
+import { checkBotId } from "botid/server";
 import { neon } from "@neondatabase/serverless";
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -104,6 +105,8 @@ export type Deps = {
     statuses(ids: string[]): Promise<{ id: string; status: Status }[]>;
   };
   mail(subject: string, text: string): Promise<boolean>;
+  /** A person sent this, not a robot (Vercel BotID). Missing = no check (the tests). */
+  human?(): Promise<boolean>;
   secret: string;
   /** Tom's key (ADMIN_KEY); without it nothing on the admin side answers. */
   adminKey?: string | null;
@@ -313,6 +316,7 @@ export function handlers(deps: () => Deps | null) {
     if (!/^[\w-]{16,64}$/.test(device)) return json({ error: "device" }, 400);
     const tag = readTag(body);
     if ("error" in tag) return json(tag, 400);
+    if (d.human && !(await d.human())) return json({ error: "robot" }, 403);
     if ((await d.db.byDevice(device)) > 0) return json({ error: "one-tag" }, 409);
     const ipHash = sha(d.secret + address(request));
     if ((await d.db.byAddress(ipHash)) >= PER_ADDRESS) return json({ error: "too-many" }, 429);
@@ -619,7 +623,21 @@ function liveDeps(): Deps | null {
   };
 }
 
-const live = handlers(liveDeps);
+/** BotID's verdict. When the check itself fails (BotID down), the tag goes on: the per-address limit and Tom's
+ * approval still hold, and a visitor isn't refused for Vercel's fault. */
+async function human(): Promise<boolean> {
+  try {
+    return !(await checkBotId()).isBot;
+  } catch (e) {
+    console.error("botid: check failed", (e as Error).message);
+    return true;
+  }
+}
+
+const live = handlers(() => {
+  const d = liveDeps();
+  return d && { ...d, human };
+});
 export function GET(request: Request) {
   return live.GET(request);
 }

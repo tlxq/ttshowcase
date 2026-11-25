@@ -8,6 +8,7 @@
  * (DATABASE_URL, TAG_SECRET), under its own scrambled address, so mail and tags don't share a limit.
  * Tests: src/tags/contact.test.ts.
  */
+import { checkBotId } from "botid/server";
 import { neon } from "@neondatabase/serverless";
 import { createHash } from "node:crypto";
 
@@ -36,6 +37,8 @@ export type ContactDeps = {
   /** Takes back this address's latest count: the mail never went out, so it must not use up the day's messages. */
   refund(ipHash: string): Promise<void>;
   mail(m: { replyTo: string; subject: string; text: string }): Promise<boolean>;
+  /** A person sent this, not a robot (Vercel BotID). Missing = no check (the tests). */
+  human?(): Promise<boolean>;
 };
 
 export function contact(deps: () => ContactDeps | null) {
@@ -68,6 +71,7 @@ export function contact(deps: () => ContactDeps | null) {
     if (!message || message.length > LONGEST) {
       return Response.json({ error: "message" }, { status: 400 });
     }
+    if (d.human && !(await d.human())) return Response.json({ error: "robot" }, { status: 403 });
     const ipHash = mailHash(request, d.secret);
     // Counted before it goes, so a flood can't slip past while the mail is in flight; given back when the
     // mail fails. No count, no mail: when the database doesn't answer, nothing is sent.
@@ -141,7 +145,20 @@ function liveDeps(): ContactDeps | null {
   };
 }
 
-const live = contact(liveDeps);
+/** BotID's verdict; when the check itself fails, the message goes on (the per-address limit still holds). */
+async function human(): Promise<boolean> {
+  try {
+    return !(await checkBotId()).isBot;
+  } catch (e) {
+    console.error("botid: check failed", (e as Error).message);
+    return true;
+  }
+}
+
+const live = contact(() => {
+  const d = liveDeps();
+  return d && { ...d, human };
+});
 export function POST(request: Request) {
   return live(request);
 }
