@@ -54,6 +54,10 @@ def same(a, b):
     return hmac.compare_digest(a.encode("utf-8", "surrogateescape"), b.encode("utf-8", "surrogateescape"))
 
 
+# the path BotID's browser part loads its checker from (botid/dist/client/core; tools/header-check.sh keeps vercel.json on it)
+BOTID = re.compile(r"/[0-9a-f-]{36}/[0-9a-f-]{36}/a-4-a/c\.js")
+
+
 class NoStale(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         path = clean(urllib.parse.urlsplit(self.path).path)
@@ -146,6 +150,16 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.tags():
+            return
+        if BOTID.fullmatch(urllib.parse.urlsplit(self.path).path):
+            # Vercel BotID's checker lives only on Vercel (vercel.json's rewrites). Here a stand-in hands the page a
+            # "checked" answer at once, so the forms send as they do live, and the local tag store ignores the header.
+            body = b"(window.V_C=window.V_C||[]).push({b:1,local:true});"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
             return
         if urllib.parse.urlsplit(self.path).path == "/favicon.ico" and not os.path.isfile(os.path.join(DIR, "favicon.ico")):
             self.send_response(204)  # the pitch has no icon; a browser asking for one is not an error in the checks' console

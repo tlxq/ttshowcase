@@ -3,8 +3,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Tom Larsson</title>
+<title>Tom Larsson, product engineer</title>
+<!-- the same page info as the front (app/page.tsx), so the walk can take its place at release -->
+<meta name="description" content="Tom Larsson, product engineer from Sweden. I believe in AI and build with it every day. Arch Linux, btw.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ttdevs.com/">
+<meta property="og:title" content="Tom Larsson, product engineer">
+<meta property="og:description" content="Tom Larsson, product engineer from Sweden. I believe in AI and build with it every day. Arch Linux, btw.">
+<meta property="og:image" content="https://ttdevs.com/share.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="I build and run things myself, with Tom's tlxq tag">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-icon.png">
 <style>
 __EMBED__
 __TOKENS__
@@ -193,10 +205,24 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 #sheet .tab { position: absolute; display: block; opacity: 0; }
 #sheet .tab:focus-visible { opacity: 1; outline: 2px solid var(--look-dark); outline-offset: -4px; }
 #sheet.open .x { opacity: 1; }
+/* the start (Tom 11-25): on black, only the bucket in the work light, Tom's photo beside it and his name; the paint then shows the wall */
+.start { position: fixed; inset: 0; z-index: 4; pointer-events: none; visibility: hidden; } /* shown once it is placed round the bucket: before the 3D runs it has nowhere to be */
+.start.placed { visibility: visible; }
+#tagBucket:not(:focus-visible), #l5, #c5 { opacity: 0 !important; } /* the start says who: the plate shows only for the keyboard's focus */
+.start img { position: absolute; width: auto; -webkit-mask-image: linear-gradient(#000 78%, transparent); mask-image: linear-gradient(#000 78%, transparent); will-change: transform, filter; }
+.start h2 { position: absolute; margin: 0; white-space: nowrap; font: 900 7vw/.84 "Archivo", "Arial Black", sans-serif; font-stretch: 125%; letter-spacing: -.04em; text-transform: uppercase; color: var(--look-cream); }
+.start h2 span { display: block; }
+/* "portfolio" sprayed by the name (Tom 11-25, generated try B): the paint's blue through the marker's shape, sprayed on left to right as the bucket fills (--p) */
+.start .word { position: absolute; aspect-ratio: 900 / 369; background: var(--front-spray); /* its tilt is in the picture: a rotated masked box shows its edges in Chrome */ --p: -12%;
+  -webkit-mask: url("assets/start/portfolio.webp") center / 100% 100% no-repeat, linear-gradient(90deg, #000 var(--p), transparent calc(var(--p) + 12%)); -webkit-mask-composite: source-in;
+  mask: url("assets/start/portfolio.webp") center / 100% 100% no-repeat, linear-gradient(90deg, #000 var(--p), transparent calc(var(--p) + 12%)); mask-composite: intersect; }
+.start .num { position: absolute; bottom: 4svh; font: 900 min(9vw, 17svh)/.8 "Archivo", "Arial Black", sans-serif; font-stretch: 125%; letter-spacing: -.04em; color: var(--front-spray); font-variant-numeric: tabular-nums; }
+.start .go { position: absolute; bottom: 5svh; font: 700 15px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .02em; color: var(--look-cream); opacity: 0; transition: opacity .4s; }
 </style>
 <svg class="pitch-svg" aria-hidden="true"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></svg>
 
 <canvas id="c"></canvas>
+<div class="start" aria-hidden="true"><img src="assets/start/studio.webp" alt=""><h2>Tom<span>Larsson</span></h2><i class="word"></i><div class="num">0</div><div class="go">Tip the bucket to enter</div></div>
 <div class="track"></div>
 <div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map that only friends can see. Degree project, built alone.</div></div>
 <div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div id="admFrames" hidden></div><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="tagMoveB" hidden>Move it</button><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"><i class="hs" id="admSize" hidden aria-hidden="true"></i><i class="ht" id="admTurn" hidden aria-hidden="true"></i></div><div class="menu" id="tagTools" role="group" aria-label="Tool" hidden></div><div class="menu cols" id="tagCols" role="group" aria-label="Colour" hidden></div><div class="bar" id="admSel" hidden><button type="button" class="go" id="admApprove" hidden>Approve</button><button type="button" id="admRemove" hidden>Remove</button><button type="button" id="admUndo" hidden>Undo</button><button type="button" id="admDone">Done</button></div><div class="bar" id="tagBar" hidden><button type="button" id="tagTool" aria-expanded="false" aria-controls="tagTools"><span class="ic"></span><span class="nm"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagCol" aria-expanded="false" aria-controls="tagCols" aria-label="Colour"><span class="dot"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagUndo" aria-label="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="go" id="tagDone" disabled>Done</button></div><div class="bar" id="tagSend" hidden><input id="tagName" maxlength="24" placeholder="Your name (optional)" aria-label="Your name, optional" autocomplete="nickname" enterkeyhint="done" spellcheck="false"><button type="button" id="tagBack">Back</button><a class="pv" href="/privacy" target="_blank" rel="noopener">privacy</a><button type="button" class="go" id="tagPut">Put it on the wall</button></div></div>
@@ -295,7 +321,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, rx, ry, ox, oy), normalMap: tex("assets/wall4_nor_gl.jpg", false, rx, ry, ox, oy), roughnessMap: tex("assets/wall4_rough.jpg", false, rx, ry, ox, oy), aoMap: tex("assets/wall4_ao.jpg", false, rx, ry, ox, oy), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
     m.position.set((x0 + x1) / 2, yb + h / 2, 0); m.receiveShadow = true; scene.add(m);
     const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, envMapIntensity: .3 })); cap.position.set((x0 + x1) / 2, yt - .02, -.17); scene.add(cap); return m; };
-  WALL_ADD(-39, WX - WW / 2, GROUND - 2 * TILE, GROUND + WH, V());
+  const bareL = WALL_ADD(-39, WX - WW / 2, GROUND - 2 * TILE, GROUND + WH, V());
   const MANHOLE_CUT = `if (vWP.y > ${(G3 - 1.6).toFixed(2)} && min(length(vWP.xz - vec2(${MX_IN.toFixed(2)}, ${MZ.toFixed(2)})), length(vWP.xz - vec2(${MX_OUT.toFixed(2)}, ${MZ.toFixed(2)}))) < ${MR.toFixed(3)}) discard;`; // the two shafts through the street and the ceiling
   const PROF = (() => { const pts = [[-40, GROUND]]; for (const [a, b, h0, h1] of STAIRS) { const t = (b - a) / NSTEP, r = (h0 - h1) / NSTEP;
       pts.push([a, h0]); for (let k = 0; k < NSTEP; k++) { pts.push([a + k * t, h0 - (k + 1) * r], [a + (k + 1) * t, h0 - (k + 1) * r]); } } pts.push([END_X, G3]); return pts; })();
@@ -757,9 +783,11 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
         .replace("#include <map_fragment>", `
         float y = vWP.y, fall = max(0., uTop - y), wob = .035 * sin(y * 2.7 + uTm * 1.7) * min(1., fall * .4);
         float x = vWP.x - uCX - wob, w = uW / (1. + uNar * fall);
-        w *= 1. + .5 * exp(-max(y - uFront, 0.) * 9.);                                         // a bead at the front
-        float side = step(0., x), ew = 1. + .32 * (fn(vec2(y * 2.3 - uTm * 7. + side * 17., side * 5.)) - .5) * min(1., fall * .8 + .2); w *= ew; // uneven edges that move with the flow
-        float aa = fwidth(x) + .002, a = (1. - smoothstep(w - aa, w + aa, abs(x))) * step(uFront, y) * step(y, uTail);
+        float nearF = 1. - smoothstep(0., .5, y - uFront); w *= 1. - .55 * nearF;              // the front tapers
+        float side = step(0., x), ew = 1. + (.32 + .5 * exp(-fall * 5.)) * (fn(vec2(y * 2.3 - uTm * 7. + side * 17., side * 5.)) - .5) * min(1., fall * .8 + .45); w *= ew; // ragged most where it leaves the lip; // uneven edges that move with the flow
+        float aa = fwidth(x) + .002, a = (1. - smoothstep(w - aa, w + aa, abs(x))) * smoothstep(uFront - .02, uFront + .05, y) * step(y, uTail);
+        float dy = uFront - y, dr = fn(vec2(x * 22., (y + uTm * 2.6) * 9.)); // below the front: drops running ahead, fewer the further ahead
+        if (dy > 0. && dy < .45 && y < uTail) a = max(a, smoothstep(.62 + dy * .7, .7 + dy * .7, dr) * (1. - smoothstep(w * .5, w * .7, abs(x))));
         if (uBrk > 0.) a *= smoothstep(.32, .5, fn(vec2(x / max(w, .01) * 2.6 + 7., y * .35)) + 1.6 / (1. + fall * uBrk)); // splits into strands as it falls
         float r = abs(x) / max(w, .001); vec3 col = uC * .8; col *= mix(1., .5, smoothstep(.6, 1., r)); col += uC * .4 * (1. - smoothstep(.05, .5, r));
         col *= .82 + .32 * fn(vec2(x / max(w, .01) * 5., y * .9 - uTm * 9.)); // streaks running down: it flows
@@ -767,7 +795,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     const me = new THREE.Mesh(new THREE.PlaneGeometry(o.w * 2 + .5, WALL_TOP - GROUND + .2), m); me.position.set(cx, (WALL_TOP + GROUND) / 2, z); me.visible = false; me.frustumCulled = false; scene.add(me); return { me, u }; }
   const g2 = Math.sqrt(2 * (WALL_TOP - .05 - GROUND) / 9.8) * TS; // free fall from the wall top to the ground, in pour-clock seconds
   const CUR = { x: LEDGE.x0 + .28, c0: .38, c1: .2 + .6 * Math.log(1 / .45) }; CUR.land = CUR.c0 + g2; CUR.tailLand = CUR.c1 + g2;
-  const curtain = makeFall(CUR.x, .09, { w: .34, nar: .07, brk: .9 });
+  const curtain = makeFall(CUR.x, .09, { w: .34, nar: .07, brk: 1.8 }); // breaks into strands soon after the lip, not one tube
   const LRUNS = [{ x: LEDGE.x0 - .55, t0: .85, v: 2.4, w: .026 }, { x: LEDGE.x0 - 1.05, t0: 1.25, v: 2, w: .018 }].map(r => ({ ...r, land: r.t0 + (WALL_TOP - .12 - GROUND) / r.v, f: makeFall(r.x, .006, { w: r.w, nar: 0, brk: 0 }) }));
   // prepare everything that first shows during the pour while the bucket waits, so the pour itself has no first-use stalls (S23 11-16: 158 ms)
   // one piece a frame, with only the lights and that piece shown, so no single frame carries the whole cost
@@ -785,13 +813,27 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     scene.background = bg; m.frustumCulled = fc; anc.forEach(([o, v]) => o.visible = v); was.forEach(o => o.visible = true); }
   function fallsAt(ic) { const free = t => WALL_TOP - .05 - 4.9 * Math.pow(Math.max(0, t) / TS, 2);
     const cu = curtain.u, on = ic > CUR.c0 && ic < CUR.tailLand + .1; curtain.me.visible = on;
-    if (on) { cu.uFront.value = Math.max(GROUND - .1, free(ic - CUR.c0)); cu.uTail.value = ic < CUR.c1 ? WALL_TOP + .1 : free(ic - CUR.c1); cu.uW.value = .06 + .17 * left(Math.min(ic, CUR.c1)); cu.uTm.value = ic; }
+    if (on) { cu.uFront.value = Math.max(GROUND - .1, free(ic - CUR.c0)); cu.uTail.value = ic < CUR.c1 ? WALL_TOP + .1 : free(ic - CUR.c1); cu.uW.value = .045 + .11 * left(Math.min(ic, CUR.c1)) /* thinner where it leaves the lip */; cu.uTm.value = ic; }
     LRUNS.forEach(r => { const on = ic > r.t0; r.f.me.visible = on; if (on) { r.f.u.uTop.value = WALL_TOP - .1; r.f.u.uFront.value = Math.max(GROUND - .05, WALL_TOP - .12 - r.v * (ic - r.t0)); r.f.u.uTail.value = WALL_TOP - .1; r.f.u.uTm.value = ic < r.land ? ic : r.land + .8 * (1 - Math.exp(-(ic - r.land) / .8)); } }); } // the flow slows to a stop once the run reaches the floor (it ran forever: Tom 11-17)
   const column = (m, a, b, r) => { const d = b.clone().sub(a), L = d.length(); m.position.copy(a); m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize()); m.scale.set(r, L, r); };
   // the wall's cap: the bucket stands on it (ledge), the paint floods along it
   const capNor = tex("assets/wall4_nor_gl.jpg", false, WW / TILE, .5 / TILE);
   const cap2 = new THREE.Mesh(new THREE.BoxGeometry(WW, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, normalMap: capNor, envMapIntensity: .3 }));
   cap2.position.set(WX, WALL_TOP - .02, -.17); scene.add(cap2);
+  // the start's dark (Tom 11-25): until the tap only the work light's pool on the cap shows; then the wall appears where the paint has run,
+  // a soft curtain that follows the pour's own clock (ledgeArrive), and all of it once the camera follows the paint down
+  const veilU = { uIc: { value: -9 }, uAll: { value: 0 } };
+  for (const m of [wall.material, cap2.material, bareL.material]) { const prev = m.onBeforeCompile; m.onBeforeCompile = (sh, rr) => { if (prev) prev(sh, rr); Object.assign(sh.uniforms, veilU);
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW;").replace("#include <project_vertex>", "#include <project_vertex>\nvVW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW; uniform float uIc, uAll;").replace("#include <dithering_fragment>", `
+      if (uAll < .999) { // the rest of the walk skips the veil
+      float arrive = ${(LEDGE.tip + .05).toFixed(3)} + max(0., vVW.x - ${LEDGE.x0.toFixed(3)}) / ${LEDGE.spread.toFixed(3)};
+      float xi = vVW.x * .7, i0 = floor(xi), h0 = fract(sin(i0 * 91.7) * 4375.5), h1 = fract(sin((i0 + 1.) * 91.7) * 4375.5), col = mix(h0, h1, smoothstep(0., 1., fract(xi))), age = uIc - arrive;
+      float reach = max(0., age) * ${(LEDGE.run * 1.3).toFixed(2)} * (.75 + .5 * col), below = ${WALL_TOP.toFixed(3)} - vVW.y;
+      float wet = smoothstep(${(LEDGE.x - .7).toFixed(3)}, ${(LEDGE.x + .3).toFixed(3)}, vVW.x) * smoothstep(-.1, .5, age) * (1. - smoothstep(reach - 1.4, reach + .6, below));
+      float spot = exp(-pow((vVW.x - ${(LEDGE.x + .1).toFixed(3)}) / 1.1, 2.) - pow(max(0., below) / .18, 2.));
+      gl_FragColor.rgb *= clamp(max(max(wet, spot), uAll), 0., 1.);  }
+      #include <dithering_fragment>`); }; }
   const sheetU = { uFrom: { value: 99 }, uTo: { value: 99 }, uC: { value: PAINT } };
   const sheetMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .1, clearcoat: 1, clearcoatRoughness: .05, polygonOffset: true, polygonOffsetFactor: -2 });
   sheetMat.defines = { USE_UV: "" };
@@ -818,19 +860,73 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const workAt = { x: LEDGE.x + .1, y: WALL_TOP + .2 };
   const work = new THREE.SpotLight(0xffe6cc, 0, 14, .2, .8, 1.4); scene.add(work, work.target);
   work.position.set(LEDGE.x + .9, WALL_TOP + 4.2, 1.6); work.target.position.set(LEDGE.x + .1, WALL_TOP + .2, -.17);
-  const INTRO = NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x + .8, WALL_TOP + 2.2, 2.9), V(LEDGE.x + .25, WALL_TOP + .25, -.17)];
+  const INTRO = NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x - .2, WALL_TOP + 2.4, 3.9), V(LEDGE.x - 1.3, WALL_TOP + .75, -.17)]; // laptop (Tom 11-25): the bucket low in the bottom-right corner, Tom's photo on the left, the name across the top // laptop: the bucket right of centre, Tom's photo on the left
   const CAM_IN = [.4, 0], FREE_AT = 3.2; // camera starts moving, finishes (set when the pour is known); FREE_AT: on the pour clock the scroll is free here, ~4 s after the tap, while the paint still runs
   // the visitor tips the bucket: one click or tap, or Enter/Space. Until then it waits, rocking a little now and then.
   let goAt = 0, level = 0, skipped = false, introOver = false, coatMax = 0, readyAt = 0, tilt = 0, tiltV = 0, tilt0 = 0, slosh = 0, sloshV = 0, rocks = 0;
   try { history.scrollRestoration = "manual"; } catch (e) {} scrollTo(0, upPx());
+  // the window changes shape (a phone turned, a tiled window made full screen): the street is laid out once, for a phone or a laptop (NARROW),
+  // so crossing that line reloads the walk at the same place, past the bucket, instead of showing the phone's street through a laptop's window.
+  // Not while the visitor writes a tag or a message: that would lose their work.
+  const RESUME_KEY = "tlxq-walk-resume", RESUME = (() => { try { const v = JSON.parse(sessionStorage.getItem(RESUME_KEY)); sessionStorage.removeItem(RESUME_KEY); return v && Date.now() - v.at < 15000 ? v.f : null; } catch (_) { return null; } })();
+  document.documentElement.dataset.narrow = NARROW ? "1" : "0"; // the checks read it
+  { let shapeT = 0; addEventListener("resize", () => { clearTimeout(shapeT); shapeT = setTimeout(() => {
+    if (narrowNow() === NARROW || sheetOpen || ["draw", "move", "send"].includes(tag.stage)) return;
+    const room = document.documentElement.scrollHeight - innerHeight - upPx();
+    try { if (introOver) sessionStorage.setItem(RESUME_KEY, JSON.stringify({ f: room > 0 ? Math.max(0, Math.min(1, (scrollY - upPx()) / room)) : 0, at: Date.now() })); } catch (_) {}
+    location.reload(); }, 400); }); }
   // a reload starts at the top: some hosts put the old scroll place back after load, so hold the top until the intro ends
   addEventListener("pageshow", () => { if (!introOver) scrollTo(0, upPx()); });
   const root = document.documentElement; root.style.overflow = "hidden"; root.style.touchAction = "none";
   const go = () => { if (!goAt) { goAt = performance.now(); tilt0 = tilt; tagBucket.tabIndex = -1; tagBucket.removeAttribute("role"); tagBucket.blur(); } };
-  addEventListener("pointerdown", () => { if (goAt && !introOver) skipped = true; else if (readyAt) go(); });
+  addEventListener("pointerdown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && onBucket(e)) go(); }); // only the bucket tips it (Tom 11-25); a tap anywhere still skips the camera's ride
+  addEventListener("pointermove", e => { const c = readyAt && !goAt && onBucket(e) ? "pointer" : ""; if (document.body.style.cursor !== c) document.body.style.cursor = c; }, { passive: true });
   addEventListener("keydown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && !goAt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } }); // only while the bucket waits: later Enter and Space belong to the form and its links
   addEventListener("wheel", () => { if (goAt && !introOver) skipped = true; }, { passive: true });
   const tagBucket = document.getElementById("tagBucket"); let tagText = "";
+  // the start's page layer: the photo beside the bucket (a phone: above it), the name, the loading number. Measured from where the bucket is on screen.
+  // The photo is lit with the bucket: the work light warms up on both (lampOn), and both lean a little with the mouse or the phone's tilt.
+  let startDay = 0, START_T = 0; const startEl = document.querySelector(".start"), stIm = startEl.querySelector("img"), stNm = startEl.querySelector("h2"), stNum = startEl.querySelector(".num"), stGo = startEl.querySelector(".go"), stWd = startEl.querySelector(".word");
+  let stPx = 0, stPy = 0, stTx = 0, stTy = 0, lampOn = 0;
+  addEventListener("pointermove", e => { stTx = e.clientX / innerWidth - .5; stTy = e.clientY / innerHeight - .5; }, { passive: true });
+  addEventListener("deviceorientation", e => { if (e.gamma == null) return; stTx = Math.max(-.5, Math.min(.5, e.gamma / 50)); stTy = Math.max(-.5, Math.min(.5, (e.beta - 50) / 80)); }, { passive: true });
+  let nameW = 0, tomR = .45; const nameEm = () => { if (!nameW) { stNm.style.fontSize = "100px"; nameW = stNm.getBoundingClientRect().width / 100; const rg = document.createRange(); rg.selectNodeContents(stNm.firstChild); tomR = rg.getBoundingClientRect().width / 100 / nameW; } return 1 / nameW; }; // and TOM's width as a share of LARSSON's, for the word beside it // font size per px of width: LARSSON's real width
+  document.fonts.load('900 100px "Archivo"').then(() => { nameW = 0; }, () => {});
+  function startTick(now, ic) { const wt = START_T ? (now - START_T) / 1000 : 0; // the lamp warms up: off, two flickers, on
+    lampOn = REDUCED ? 1 : wt < .3 ? 0 : wt < 1.3 ? sm(cl((wt - .3) / .9)) * (Math.random() < .3 ? .25 : 1) : 1;
+    const f = ic < 0 ? 0 : sm(cl(ic / 1.2)); if (f >= 1) { if (startEl.style.display !== "none") startEl.style.display = "none"; return; }
+    const op = (1 - f).toFixed(3); if (startEl.style.opacity !== op) startEl.style.opacity = op; // opacity only: a full-screen blur each frame is heavy on a phone
+    stPx += (stTx - stPx) * .06; stPy += (stTy - stPy) * .06;
+    startLayout(innerWidth, innerHeight, Math.max(16, innerWidth * .03)); // measured every frame (cheap): the bucket's place can change while the page loads; styles are written only when they change
+    const tf = (e, k, v) => { const m = stW.get(e) || stW.set(e, {}).get(e), kk = k.slice(2); if (m[kk] !== v) { m[kk] = v; if (kk === "textContent") e.textContent = v; else e.style[kk] = v; } }; // each style written only when it changes: no per-frame style work on a phone
+    tf(stIm, "i.transform", `translate(${(-stPx * 14).toFixed(0)}px, ${(-stPy * 8).toFixed(0)}px)`); tf(stIm, "i.filter", lampOn < 1 ? `brightness(${(.15 + .85 * lampOn).toFixed(2)})` : "none");
+    tf(stNm, "n.transform", `translate(${(-stPx * 6).toFixed(0)}px, ${(-stPy * 4).toFixed(0)}px)`); tf(stWd, "w.transform", stNm.style.transform);
+    const sp = (REDUCED ? 112 : -12 + 124 * Math.min(1, level / .9)).toFixed(0) + "%"; const wm = stW.get(stWd) || stW.set(stWd, {}).get(stWd); if (wm.p !== sp) { wm.p = sp; stWd.style.setProperty("--p", sp); } // sprayed on as the bucket fills, whole a little before it is full
+    stShown = Math.max(stShown, Math.round(level * 100)); tf(stNum, "u.textContent", String(stShown)) /* never counts down */; tf(stNum, "u.opacity", readyAt ? "0" : "1"); tf(stGo, "g.opacity", readyAt && !goAt ? "1" : "0"); }
+  const stW = new Map(); let stShown = 0, stBox = [0, 0, 0, 0];
+  const onBucket = e => e.clientX >= stBox[0] && e.clientX <= stBox[2] && e.clientY >= stBox[1] && e.clientY <= stBox[3];
+  window.bucketAt = () => ({ x: (stBox[0] + stBox[2]) / 2, y: (stBox[1] + stBox[3]) / 2 }); // the checks click the bucket, not the middle
+  function startLayout(W, H, gu) { bucketHome.updateWorldMatrix(true, false); camera.updateMatrixWorld(); // placed now, not as of the last render: the first frames come before it
+    const P = q => { const v = bucketHome.localToWorld(q).project(camera); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
+    const [cx] = P(V(0, BK.h * .5, 0)), [ex] = P(V(BK.r1 + .06, BK.h * .5, 0)), [, ty] = P(V(0, BK.h + .12, 0)), [, by] = P(V(0, -.05, 0)), room = cx - Math.abs(ex - cx) - gu, AR = .73;
+    const set = (e, o) => { const m = stW.get(e) || stW.set(e, {}).get(e); for (const k in o) { const v = typeof o[k] === "number" ? o[k].toFixed(0) + "px" : o[k]; if (m[k] !== v) { m[k] = v; e.style[k] = v; } } };
+    if (room > W * .3) { // beside: the photo fills the room left of the bucket, his chest level with it; the name top right
+      const ph = Math.min(H * .94, (room - gu) / AR), fs = Math.min(H * .15, (W - gu * 3 - ph * AR) * nameEm()); // the room right of the photo
+      set(stIm, { left: gu, top: Math.max(H * .03, Math.min(H - ph, (ty + by) / 2 - ph * .42)), height: ph, translate: "0 0" });
+      set(stNm, { left: "auto", right: gu, top: H * .06, bottom: "auto", textAlign: "right", fontSize: fs });
+      const lw = fs / nameEm(), ww = lw * .46; // the word left of TOM, level with it
+      set(stWd, { left: "auto", right: gu + lw * tomR + lw * .025, top: H * .06 + fs * .22 - ww * 369 / 900 / 2, bottom: "auto", width: ww });
+      for (const e of [stNum, stGo]) set(e, { left: "auto", right: gu }); set(stNum, { fontSize: Math.min(W * .09, H * .17) });
+      { const nt = H * .06 + fs * .84 * 2 + gu; set(stNum, { top: nt, bottom: "auto" }); set(stGo, { right: W - (cx - Math.abs(ex - cx)) + gu, top: (ty + by) / 2, bottom: "auto" }); } // the bucket has the bottom: the number goes under the name, the line beside the bucket
+    } else { // stacked: the photo above the bucket, the name low, clear of the paint's fall
+      const ph = Math.max(0, ty - H * .03), fs = (W - gu * 2) * nameEm();
+      set(stIm, { left: "50%", top: H * .02, height: ph, translate: "-50% 0" });
+      const nb = H * .04 + W * .2 * .8 + gu; set(stNm, { left: gu, right: "auto", top: "auto", bottom: nb, textAlign: "left", fontSize: fs }); // above the number
+      const lw = W - gu * 2, wl = gu + lw * tomR + lw * .06; // the word right of TOM, on its line
+      set(stWd, { left: wl, right: "auto", top: "auto", bottom: nb + fs * .84 + fs * .1, width: W - gu - wl });
+      for (const e of [stNum, stGo]) set(e, { left: gu, right: "auto" }); set(stNum, { fontSize: W * .2 }); }
+    const hw = Math.abs(ex - cx), pad = Math.max(16, hw * .25); stBox = [cx - hw - pad, ty - pad, cx + hw + pad, by + pad]; // where a click tips it
+    if (!START_T) { START_T = performance.now(); startEl.classList.add("placed"); } } // the lamp warms up from the moment the start shows
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
   function intro(now, dt) {
@@ -839,21 +935,21 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 2.2);
       level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 3.5);
       if (pourReady && level > .975 && !readyAt) { readyAt = now; root.dataset.readyAt = Math.round(now - t0); warmUp(); tagBucket.tabIndex = 0; tagBucket.setAttribute("role", "button"); tagBucket.setAttribute("aria-label", "Tip the bucket to enter"); } // Tab reaches the start, Enter tips it (B-4) else warmStep();
-      if (pourReady && REDUCED) goAt = now - 60000;
+      if (pourReady && (REDUCED || RESUME !== null)) goAt = now - 60000; // a reload for a new window shape skips the bucket: the visitor tipped it already
       // a small rock now and then shows it can move
       { if (readyAt && Math.floor((now - readyAt) / 3200) > rocks) { rocks++; tiltV += .55; } tiltV += (-42 * tilt - 6 * tiltV) * dt; tilt = Math.max(-.04, tilt + tiltV * dt); }
     } else if (skipped && now - goAt < 60000) goAt = now - 60000;
     const ic = goAt ? (now - goAt) / 1000 * TS : -1; // the pour clock: 0.8 of real time, so the whole pour is calmer
     if (pourReady && !CAM_IN[1]) CAM_IN[1] = Math.min(FREE_AT - .3, Math.max(CAM_IN[0] + 1.5, pourDone - .7));
     if (!introOver && (scrollX || Math.abs(scrollY - upPx()) > 1)) scrollTo(0, upPx());
-    if (!introOver && ic > Math.min(pourDone + .3, FREE_AT)) { scrollTo(0, upPx()); introOver = true; root.style.overflow = ""; root.style.touchAction = ""; document.body.style.cursor = ""; }
-    if (!goAt) document.body.style.cursor = readyAt ? "pointer" : "";
+    if (!introOver && ic > Math.min(pourDone + .3, FREE_AT)) { scrollTo(0, upPx()); introOver = true; root.style.overflow = ""; root.style.touchAction = ""; document.body.style.cursor = "";  if (RESUME !== null) scrollTo(0, upPx() + RESUME * Math.max(0, root.scrollHeight - innerHeight - upPx()));}
+    if (goAt && document.body.style.cursor === "pointer") document.body.style.cursor = ""; // the hand is only over the bucket (pointermove), and gone once it tips
     // the bucket fills
     const fillL = goAt ? Math.max(.03, left(ic)) : level; coatMax = Math.max(coatMax, fillL);
     const inflowOn = !readyAt && !goAt, sy = fillL * FULL, sr = BK.r0 + (BK.r1 - BK.r0) * sy / BK.h - .006;
     inflow.visible = inflowOn;
     if (inflowOn) { const top = bucket.localToWorld(V(.1, sy, .06)), r = .02 * (1 + Math.sin(now / 70) * .08);
-      column(inflow, top, top.clone().add(V(0, 9, 0)), Math.max(1e-4, r)); if (Math.random() < .5) splash(top, 1); }
+      column(inflow, top, top.clone().add(V(0, 9, 0)), Math.max(1e-4, r)); } // no splash while it fills: on the black start the drops drift off as stray dots
     // the bucket tips: from where the visitor left it, all the way over on its side
     const k = cl(ic / .45), ang = goAt ? tilt0 + (1.52 - tilt0) * (k < 1 ? sm(k) * (1 + .12 * Math.sin(k * Math.PI)) : 1) : tilt;
     bucketTip.rotation.z = -ang;
@@ -883,8 +979,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
+    veilU.uIc.value = ic < 0 ? -9 : ic; veilU.uAll.value = startDay = sm(cl((ic - 1.1) / 1.5)); skyU.uVeil.value = startDay; cityFar.material.opacity = startDay;
     const lk = ic < 0 ? 0 : sm(cl((ic - .6) / 1.1)), flick = lk > 0 && lk < .6 && Math.random() < .3 ? .2 : 1;
-    lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2))));
+    lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * lampOn * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2))));
     // after the tip the work light widens and follows the paint's front along the top, so the sheet is seen coming down
     { const k = ic < 0 ? 0 : sm(cl((ic - .25) / .6)), fx = Math.min(SPAN - .6, LEDGE.x0 + Math.max(0, ic - LEDGE.tip - .2) * LEDGE.spread - .6);
       const tx = LEDGE.x + .1 + (fx - LEDGE.x - .1) * k, ty = WALL_TOP + .2 - (.2 + SB * .8) * k;
@@ -1237,45 +1334,41 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // ---- moment 3: raddavarfruberga (Tom 11-19): one graffiti piece, soft pastel community mural: the name, the preschool sprayed in the name's style and
   // the parents' banner painted in. The banner's words are set by hand and sprayed on when you arrive; the banner is the link. No signers' names (never public).
   const RX = 31; // 4.5 m further on than the first version, so the sign beside it is clear of the underpass
-  const RVP = paintOn("assets/rvf_wall.webp", NARROW ? 6.4 : 9.2, [1290, 872], [RX, G3]); // its foot (picture row 872) stands on the street
-  for (const [n, b] of [["raddavarfruberga's name", [20, 180, 1000, 480]], ["raddavarfruberga's preschool", [860, 230, 1535, 872]], ["raddavarfruberga's banner", [77, 520, 842, 775]]]) RVP.protect(n, b);
-  let RVF_TAGS, RVF_PAINT; // the stack as tags round the piece; the banner's words sprayed on (k: 0 to 1)
-  const RVF_BOX = [77, 520, 842, 775], RVF_GLOW = () => makeGlow("assets/rvf_wall.webp", RVP, RVF_BOX, { rect: true, colour: "#ffe9a8", fill: 0, hole: 1 }); // the banner: the link's tap area and its glow
+  const RVP = paintOn("assets/rvf_wall.webp", NARROW ? 8 : 9.6, [1186, 905], [RX, G3]); // one painting (Tom 11-25): the piece at .8 inside its own dark backdrop, whose foot (row 905) stands on the street
+  const RVM = ([u0, v0, u1, v1]) => [u0 * .8 + 154, v0 * .8 + 110, u1 * .8 + 154, v1 * .8 + 110]; // the piece's old picture boxes, in the new picture
+  for (const [n, b] of [["raddavarfruberga's name", [20, 180, 1000, 480]], ["raddavarfruberga's preschool", [860, 230, 1535, 872]], ["raddavarfruberga's banner", [77, 520, 842, 775]]]) RVP.protect(n, RVM(b));
+  let RVF_TAGS, RVF_PAINT; // the stack is painted into the picture now (Tom 11-25); the banner's words sprayed on (k: 0 to 1)
+  const RVF_BOX = RVM([77, 520, 842, 775]), RVF_GLOW = () => makeGlow("assets/rvf_wall.webp", RVP, RVF_BOX, { cloth: true, colour: "#ffe9a8", fill: 0, hole: 1 }); // the banner: the link's tap area and its glow, round the cloth's own edge
   { // the banner's words, drawn once and sprayed on left to right; then the stack: each tool its own small tag round the piece, in its colours
-    const BB = RVF_BOX, tl = RVP.at(BB[0] + 45, BB[1] + 40), br = RVP.at(BB[2] - 45, BB[3] - 22), TW = br.x - tl.x, TH = tl.y - br.y, CW = 1400, CH = Math.round(CW * TH / TW);
+    const BB = RVF_BOX, tl = RVP.at(BB[0] + 16, BB[1] + 18), br = RVP.at(BB[2] - 16, BB[3] - 10), TW = br.x - tl.x, TH = tl.y - br.y, CW = 1400, CH = Math.round(CW * TH / TW);
     const full = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), show = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), bt = new THREE.CanvasTexture(show);
     bt.encoding = THREE.sRGBEncoding; bt.anisotropy = maxAniso;
-    const words = () => { const g = full.getContext("2d"), RED = "#b0231c", lines = ["Don't kick", "our kids out"]; g.clearRect(0, 0, CW, CH); g.textAlign = "center"; g.textBaseline = "alphabetic"; g.fillStyle = RED;
-      let fs = CH * .46; g.font = `${fs}px "Sedgwick Ave Display", cursive`; const wmax = Math.max(...lines.map(t => g.measureText(t).width)); fs = Math.min(fs, fs * CW * .94 / wmax);
-      lines.forEach((t, i) => { g.font = `${fs}px "Sedgwick Ave Display", cursive`; const x = CW / 2 + (i ? 14 : -18), y = CH * (i ? .9 : .45);
-        g.globalAlpha = .92; g.fillText(t, x, y); g.globalAlpha = .35; g.fillText(t, x + 3, y - 2); g.globalAlpha = 1; // a brush goes over twice
-        const w = g.measureText(t).width; for (let d = 0; d < 4; d++) { const dx = x - w / 2 + w * (.08 + Math.random() * .84), L = 10 + Math.random() * fs * .22, dw = 3 + Math.random() * 4; // paint that ran
-          g.beginPath(); g.moveTo(dx - dw / 2, y - 8); g.lineTo(dx - dw / 2.6, y + L); g.arc(dx, y + L, dw / 2.2, Math.PI, 0, true); g.lineTo(dx + dw / 2, y - 8); g.fill(); } });
-      shown = -1; };
-    let shown = -1; document.fonts.load('100px "Sedgwick Ave Display"').then(words, words);
+    const banWords = new Image(); // "Don't kick / our kids out" in the stack's street-tag hand (Tom 11-25), a mask painted red
+    const words = () => { const g = full.getContext("2d"); g.clearRect(0, 0, CW, CH); g.globalAlpha = .93; g.drawImage(banWords, 0, 0, CW, CH); g.globalAlpha = 1;
+      g.globalCompositeOperation = "source-in"; g.fillStyle = "#b0231c"; g.fillRect(0, 0, CW, CH); g.globalCompositeOperation = "source-over"; shown = -1; };
+    let shown = -1; banWords.onload = words; banWords.src = "assets/rvf_banner.webp";
     const ban = new THREE.Mesh(new THREE.PlaneGeometry(TW, TH), new THREE.MeshStandardMaterial({ map: bt, transparent: true, depthWrite: false, roughness: .7, polygonOffset: true, polygonOffsetFactor: -3 }));
     ban.position.set(tl.x + TW / 2, br.y + TH / 2, .005); ban.renderOrder = 2; scene.add(ban); // after the painting: both are see-through layers on the wall
     RVF_PAINT = k => { k = Math.round(k * 60) / 60; if (k === shown) return; shown = k; const g = show.getContext("2d"); g.clearRect(0, 0, CW, CH); if (k <= 0) { bt.needsUpdate = true; return; }
       const x = k * CW * 1.1; g.drawImage(full, 0, 0); g.globalCompositeOperation = "destination-in"; const gr = g.createLinearGradient(x - CW * .1, 0, x, 0); gr.addColorStop(0, "#000"); gr.addColorStop(1, "rgba(0,0,0,0)");
       g.fillStyle = gr; g.fillRect(0, 0, CW, CH); g.globalCompositeOperation = "source-over"; bt.needsUpdate = true; }; // left to right, a soft front like a can moving along
     const R = ([u0, v0, u1, v1]) => [RVP.at(u0, 0).x, RVP.at(0, v1).y, RVP.at(u1, 0).x, RVP.at(0, v0).y];
-    RVF_TAGS = [["Next.js", [60, 70, 420, 180], "#ffd23a"], ["TypeScript", [470, 75, 930, 185], "#4fb6ee"], ["Supabase", [1010, 95, 1400, 205], "#ffd23a"], ["Resend", [90, 785, 420, 872], "#4fb6ee"], ["Vercel", [500, 785, 800, 872], "#ffd23a"]]
-      .map(([t, b, c], i) => makeSpray({ key: "rvfTag" + i, name: "raddavarfruberga's tag " + t, colour: c, stack: [t], row: true, fill: .62, rect: R(b) }));
+    RVF_TAGS = []; // the stack is in the painting
   }
   const lamp3 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp3.position.set(RX - 9, 3.8 - 2 * DROP, 4.4); lamp3.target.position.set(RX - 1.6, .3 - 2 * DROP, 0); lamp3.castShadow = false; scene.add(lamp3, lamp3.target);
   document.querySelector(".hud").insertAdjacentHTML("beforeend", '<a class="hot" id="hot3" href="https://raddavarfruberga.se" target="_blank" rel="noopener" aria-label="Open the site" tabindex="-1"></a>'
     + '<div class="tag facts" id="tagRvf"><b>raddavarfruberga.se</b>A site to collect signatures so 20 children keep their preschool places.</div>');
   const hot3 = document.getElementById("hot3"), tagRvf = document.getElementById("tagRvf");
   svg.insertAdjacentHTML("beforeend", '<line id="l7"/><circle id="c7" r="4"/>'); const l7 = svg.querySelector("#l7"), c7 = svg.querySelector("#c7");
-  let rvfStart = 0; const RVF_END = 1.8; // the label comes once the banner's words are on
+  let rvfStart = 0; const RVF_END = 1.1; // the label comes once the banner's words are on
   let endK = 0; // how far the camera has left raddavarfruberga for the manhole
   function rvfAt(now, walk3, end3) {
     lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3));
-    if (introOver && walk3 > .5 && !rvfStart) rvfStart = now; // once per visit
+    if (introOver && walk3 > .3 && !rvfStart) rvfStart = now; // once per visit, while the camera is still coming in, so the cloth is never seen empty (Tom 11-25)
     const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1;
     const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0);
-    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - .84, G3 + .1, .3) : RVP.at(1300, 872), NARROW ? 14 : 8, NARROW ? 70 : 34); // below the painting's foot, on the dark street, where the neon box has room
-    RVF_PAINT(REDUCED ? 1 : sec < 0 ? 0 : cl((sec - .3) / 1.6)); RVF_TAGS.forEach((t, i) => t.fade(showL && sec > RVF_END + .2 + i * .3));
+    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - .84, G3 + .1, .3) : RVP.at(1194, 905), NARROW ? 14 : 8, NARROW ? 70 : 34); // below the painting's foot, on the dark street, where the neon box has room
+    RVF_PAINT(REDUCED ? 1 : sec < 0 ? 0 : cl(sec / .9)); RVF_TAGS.forEach((t, i) => t.fade(showL && sec > RVF_END + .2 + i * .3));
     placeHots([hot3], [RVF_BOX], RVP, sec >= .3 && walk3 > .5 && endK < .5); } // the banner is the link, once the camera is at the wall
 
   // ---- the ending (storyboard 11-16): past raddavarfruberga a hatch in the pavement, steps down along the wall into a workshop under the street.
@@ -1334,13 +1427,13 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const XW0 = CX1 - .3, XW1 = END_X, XWT = G3 + WH;
   WALL_ADD(XW0, XW1, G3 - .6, XWT, SEAM_D); // R3: full height now, its concrete the bare stretch's by the visitors' wall, moved by SEAM_D
   // the sky over the last wall, the city's roofs against it; by day it is the day sky (the clock), so it never shows as a dark block over a wall
-  const skyU = { uDay: { value: 0 }, uBg: { value: new THREE.Color() } };
+  const skyU = { uDay: { value: 0 }, uBg: { value: new THREE.Color() }, uVeil: { value: 0 } }; // uVeil: black until the start's paint shows the wall
   const skyMesh = new THREE.Mesh(new THREE.PlaneGeometry(220, 110), new THREE.ShaderMaterial({ uniforms: skyU, depthWrite: false, fog: false,
     vertexShader: "varying vec3 vP; void main(){ vP = (modelMatrix * vec4(position, 1.)).xyz; gl_Position = projectionMatrix * viewMatrix * vec4(vP, 1.); }",
-    fragmentShader: `varying vec3 vP; uniform float uDay; uniform vec3 uBg;
+    fragmentShader: `varying vec3 vP; uniform float uDay, uVeil; uniform vec3 uBg;
       void main(){ float h = clamp((vP.y - ${(G3 + 1).toFixed(2)}) / 36., 0., 1.);
         vec3 night = mix(vec3(.012, .015, .026), vec3(.003, .004, .009), h);
-        gl_FragColor = vec4(mix(night, uBg, uDay), 1.); }` }));
+        gl_FragColor = vec4(mix(night, uBg, uDay) * uVeil, 1.); }` }));
   skyMesh.position.set(103, G3 + 30, -80); scene.add(skyMesh);
   // the city against the sky: a hazy far row and a dark near row of roofs, a few windows still lit
   const roofs = (col, hMin, hMax, lit) => { const c = document.createElement("canvas"); c.width = 2048; c.height = 410; const g = c.getContext("2d"); let x = 0;
@@ -1566,21 +1659,27 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // ---- hover on every painted link (Tom 11-19): the mark's shape lights up with a soft outline glow in its own colour, the cursor is a spray can, a small label
   // says what it does; keyboard focus shows the same; on a phone the mark pulses once, faintly, when it first comes into view
   function makeGlow(file, B, [x0, y0, x1, y1], o = {}) { const g = { op: 0, pulse: -1, pulsed: false, started: false, mesh: null };
-    g.build = () => { if (g.started) return; g.started = true; const img = new Image(); img.onload = () => {
-      const M = 26, bw = x1 - x0, bh = y1 - y0, GW = bw + 2 * M, GH = bh + 2 * M, mk = () => Object.assign(document.createElement("canvas"), { width: GW, height: GH });
-      const src = mk(), sg = src.getContext("2d", { willReadFrequently: true }); sg.drawImage(img, x0 - M, y0 - M, GW, GH, 0, 0, GW, GH); const px = sg.getImageData(0, 0, GW, GH).data;
+    // Built over a few frames, the picture decoded and cut out off the main thread: in one go, as its wall came into view, it cost one 50-70 ms frame.
+    // file: a picture's path, or a function giving a canvas (nothing while it isn't painted yet).
+    g.build = () => { if (g.started) return; g.started = true; const M = 26, bw = x1 - x0, bh = y1 - y0, GW = bw + 2 * M, GH = bh + 2 * M, frame = () => new Promise(requestAnimationFrame);
+      // cut from the file's own bytes: an <img> cut with createImageBitmap is decoded a second time, on the main thread (23 ms a picture, traced 11-25)
+      const from = typeof file === "function" ? file() : file; if (!from) { g.started = false; return; } // a canvas not painted yet: try again on a later frame
+      (typeof from === "string" ? fetch(from).then(r => r.blob()) : Promise.resolve(from)).then(b => createImageBitmap(b, x0 - M, y0 - M, GW, GH)).then(async bmp => { await frame();
+      const mk = () => Object.assign(document.createElement("canvas"), { width: GW, height: GH });
+      const src = mk(), sg = src.getContext("2d", { willReadFrequently: true }); sg.drawImage(bmp, 0, 0); bmp.close(); const px = sg.getImageData(0, 0, GW, GH).data;
       const mask = mk(), mg = mask.getContext("2d"), md = mg.createImageData(GW, GH), ch = [];
-      for (let y = M; y < M + bh; y++) for (let x = M; x < M + bw; x++) { const i = (y * GW + x) * 4; if (o.rect || px[i + 3] > 140) { md.data.set([255, 255, 255, 255], i); ch.push([Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]), px[i], px[i + 1], px[i + 2]]); } }
+      for (let y = M; y < M + bh; y++) for (let x = M; x < M + bw; x++) { const i = (y * GW + x) * 4; if (o.rect || (o.cloth ? Math.min(px[i], px[i + 1], px[i + 2]) > 165 && Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]) < 45 : px[i + 3] > 140)) { /* cloth: the painting's white fabric, not its box */ md.data.set([255, 255, 255, 255], i); ch.push([Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]), px[i], px[i + 1], px[i + 2]]); } }
       mg.putImageData(md, 0, 0); let col = o.colour;
       if (!col) { ch.sort((a, b) => b[0] - a[0]); const top = ch.slice(0, Math.max(1, ch.length >> 2)), m = [1, 2, 3].map(j => top.reduce((s, c) => s + c[j], 0) / top.length);
         col = top.length && top[0][0] > 40 ? `rgb(${m.map(v => Math.min(255, Math.round(v * .55 + 130))).join(",")})` : "#ffffff"; } // its own colour, lifted so it glows
+      await frame();
       const out = mk(), og = out.getContext("2d"); og.shadowColor = col; og.shadowBlur = 22; og.shadowOffsetX = 4000; for (let i = 0; i < 5; i++) og.drawImage(mask, -4000, 0);
       og.shadowColor = "transparent"; og.shadowOffsetX = 0; og.globalCompositeOperation = "destination-out"; og.globalAlpha = o.hole ?? .6; og.drawImage(mask, 0, 0); og.globalCompositeOperation = "source-over"; // the glow round the shape; the shape itself only a little lighter, so its words stay readable
       const tint = mk(), tg = tint.getContext("2d"); tg.fillStyle = col; tg.fillRect(0, 0, GW, GH); tg.globalCompositeOperation = "destination-in"; tg.drawImage(mask, 0, 0); og.globalAlpha = o.fill ?? .14; og.drawImage(tint, 0, 0);
       const map = new THREE.CanvasTexture(out), cu = (x0 + x1) / 2, cv = (y0 + y1) / 2; map.encoding = THREE.sRGBEncoding;
       g.mesh = new THREE.Mesh(new THREE.PlaneGeometry(GW * B.k, GH * (B.kv || B.k) * (o.floor ? EFLOOR : 1)), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false, toneMapped: false }));
       if (o.floor) { g.mesh.rotation.x = -Math.PI / 2; g.mesh.position.copy(eFlat(cu, cv)).y += .012; } else if (B.flat) { g.mesh.rotation.x = -Math.PI / 2; g.mesh.position.copy(B.at(cu, cv)).y += .012; } else g.mesh.position.copy(B.at(cu, cv)).z += .012;
-      g.mesh.visible = false; scene.add(g.mesh); }; img.src = typeof file === "function" ? file() : file; };
+      g.mesh.visible = false; scene.add(g.mesh); }).catch(() => {}); }; // a picture that never loads: no glow, as before
     return g; }
   const hlEl = document.createElement("div"); hlEl.className = "hl"; hlEl.setAttribute("aria-hidden", "true"); document.querySelector(".hud").append(hlEl);
   const HOTL = [], PULSE = NARROW || matchMedia("(pointer: coarse)").matches, hostOf = h => h.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
@@ -1596,7 +1695,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // low in the street light, in the front's blue, and a can standing at the wall's foot beside it; both open the tag tool, as the can at the flyer does.
   // Gone once this browser has a tag of its own (it shows instead) and by day (the flyer has its own Leave your tag beside it).
   const VW = { x0: -14.3, y1: 1.9, k: 4.9 / 1024 }, VB = { at: (u, v) => V(VW.x0 + u * VW.k, VW.y1 - v * VW.k, 0), k: VW.k }, VCAN = V(-11.2, GROUND, .7);
-  const vCan = Object.assign(document.createElement("canvas"), { width: 1024, height: 200 }); let vFile = "";
+  const vCan = Object.assign(document.createElement("canvas"), { width: 1024, height: 200 }); let vFile = false; // true once the words are painted
   const vTex = new THREE.CanvasTexture(vCan); vTex.encoding = THREE.sRGBEncoding; vTex.anisotropy = maxAniso;
   const vWords = new THREE.Mesh(new THREE.PlaneGeometry(1024 * VW.k, 200 * VW.k), new THREE.MeshStandardMaterial({ map: vTex, transparent: true, depthWrite: false, roughness: .6, polygonOffset: true, polygonOffsetFactor: -2 }));
   vWords.position.copy(VB.at(512, 100)).z += .004; vWords.visible = false; scene.add(vWords);
@@ -1604,10 +1703,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   document.fonts.load('700 100px "Clash Display"').catch(() => {}).then(() => { const g = vCan.getContext("2d");
     g.font = '700 118px "Clash Display", sans-serif'; g.textBaseline = "middle"; g.fillStyle = PAINT_HEX; g.translate(18, 104); g.rotate(-.02);
     g.shadowColor = PAINT_HEX; g.shadowBlur = 16; g.globalAlpha = .4; g.fillText("Leave your tag", 0, 0); g.shadowBlur = 0; g.globalAlpha = .95; g.fillText("Leave your tag", 0, 0); // a soft overspray under a firm core, like the flyer wall's
-    vTex.needsUpdate = true; vFile = vCan.toDataURL(); });
+    vTex.needsUpdate = true; vFile = true; });
   const leaveUp = document.createElement("button"); Object.assign(leaveUp, { type: "button", className: "hot", id: "leaveUp", tabIndex: -1 }); leaveUp.setAttribute("aria-label", "Leave your tag"); leaveUp.style.display = "none";
   document.querySelector(".hud").append(leaveUp); leaveUp.addEventListener("click", e => { e.preventDefault(); pickNear = [-12, 3.6]; document.getElementById("leave").click(); });
-  hotOn(leaveUp, "", makeGlow(() => vFile, VB, [0, 0, 1024, 200], { colour: "#ffffff", hole: 1, fill: 0 })); // a light glow round the blue words, none over them: they stay sharp
+  hotOn(leaveUp, "", makeGlow(() => vFile && vCan, VB, [0, 0, 1024, 200], { colour: "#ffffff", hole: 1, fill: 0 })); // a light glow round the blue words, none over them: they stay sharp
   const ECAN = V(PW / 2 - .3, GROUND, .8), eCan3 = can.clone(); eCan3.position.copy(ECAN); eCan3.rotation.y = .5; eCan3.visible = false; scene.add(eCan3); // the end's Leave your tag: a can at the foot of the mural's right end, between it and the flyer, where a hand would reach (a phone sees it beside its narrower mural)
   const visitOn = () => !document.getElementById("leave").hidden && !endS.show;
   function visitPlace(lft) { const on = visitOn(); vWords.visible = vCan3.visible = on; // the words and the can, one tap area round both
@@ -2032,7 +2131,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       sky.color.copy(SKY0); sky.groundColor.copy(GND0); sky.intensity = .35; sun.intensity = 0; scene.background.copy(BG0); scene.fog.color.copy(FOG0); lens.uniforms.uAper.value = 1; cityFar.material.color.setScalar(.25);
       if (sv >= SV_MAX - 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, 8); // the loop: the page's top shows the same wall, then the pole, the start
       clockLight(dayNow()); }
-    else { endVisit = 0; sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); clockLight(dayNow() * Math.max(1 - sm(cl((sv - 470) / 70)), sm(cl((sv - 1060) / 40)))); } // the street up to the manhole is in the clock's light; under it, the walk's own; out past EDGE the clock's again
+    else { endVisit = 0; sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); clockLight(dayNow() * startDay * Math.max(1 - sm(cl((sv - 470) / 70)), sm(cl((sv - 1060) / 40)))); } // by day the sun comes up only as the start's paint shows the wall // the street up to the manhole is in the clock's light; under it, the walk's own; out past EDGE the clock's again
     endReady = false; // no end landing any more (Tom 11-23): Leave your tag lives on the visitors' wall
     if (document.documentElement.dataset.endReady !== (endReady ? "1" : "0")) document.documentElement.dataset.endReady = endReady ? "1" : "0"; // the checks wait for it
     endWallState(now, false); }
@@ -2193,7 +2292,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     // aimed at the middle of the view (step 5): the words, the can and the tags all stand in it, on a laptop and a phone
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = (1 - inShaft(cp)) * (1 - pick.k) * (1 - poleK); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    progPlace(); camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(Math.max(lft, endVisit)); endPlace(now); bombPlace();
+    progPlace(); camera.lookAt(cl_); startTick(now, ic); /* the start is placed from this frame's camera: before it, the first frame saw the default camera */ pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(Math.max(lft, endVisit)); endPlace(now); bombPlace();
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);
