@@ -70,3 +70,13 @@ test("each script part is whole statements, so no seam falls inside a function o
   });
   assert.doesNotThrow(() => new Function(js.replace(/__[A-Z_]{3,}__/g, "0")));
 });
+
+// 11-26: #92 put `else warmStep();` after a // comment on its line, so the shader warm-up never ran (S23 stalls came back).
+// A call that matters must be code, not comment: every part's calls to warmStep/warmUp survive with // comments stripped.
+test("the shader warm-up is called in code, not inside a comment", () => {
+  const src = readFileSync(new URL("../../pitch/paint/20-intro.js", import.meta.url), "utf8")
+    .split("\n")
+    .map((l) => l.replace(/\/\/.*$/, ""))
+    .join("\n");
+  assert.match(src, /else warmStep\(\);/);
+});
