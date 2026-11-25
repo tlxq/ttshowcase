@@ -8,6 +8,9 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   await page.route('https://api.github.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' })); // GitHub allows 60 asks an hour: no number is drawn, as when it fails
   await page.addInitScript(() => document.addEventListener('securitypolicyviolation', e => console.error('blocked by the script rule: ' + e.blockedURI + ' ' + e.violatedDirective)));
   await page.goto('__URL__'); await page.waitForTimeout(2500);
+  // the page names its icon (audit 4a, 11-25): without one a browser asks for /favicon.ico, which is a 404 and a console error
+  res.icon = await page.evaluate(async () => { const l = document.querySelector('link[rel~="icon"]'); return l ? (await fetch(l.href)).status : 0; });
+  if (res.icon !== 200) errs.push('the page names no icon that loads (a browser then asks for /favicon.ico, a 404): ' + res.icon);
   const H = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
   for (let y = 0; ; y = Math.min(H, y + Math.round(page.viewportSize().height * 0.6))) {
     await page.evaluate(y => scrollTo(0, y), y); await page.waitForTimeout(700); res.steps++;
