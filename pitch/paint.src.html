@@ -848,7 +848,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const workAt = { x: LEDGE.x + .1, y: WALL_TOP + .2 };
   const work = new THREE.SpotLight(0xffe6cc, 0, 14, .2, .8, 1.4); scene.add(work, work.target);
   work.position.set(LEDGE.x + .9, WALL_TOP + 4.2, 1.6); work.target.position.set(LEDGE.x + .1, WALL_TOP + .2, -.17);
-  const INTRO = NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x + .05, WALL_TOP + 2.2, 2.9), V(LEDGE.x - .5, WALL_TOP + .25, -.17)]; // laptop: the bucket right of centre, Tom's photo on the left
+  const INTRO = NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x - .2, WALL_TOP + 2.4, 3.9), V(LEDGE.x - 1.3, WALL_TOP + .75, -.17)]; // laptop (Tom 11-25): the bucket low in the bottom-right corner, Tom's photo on the left, the name across the top // laptop: the bucket right of centre, Tom's photo on the left
   const CAM_IN = [.4, 0], FREE_AT = 3.2; // camera starts moving, finishes (set when the pour is known); FREE_AT: on the pour clock the scroll is free here, ~4 s after the tap, while the paint still runs
   // the visitor tips the bucket: one click or tap, or Enter/Space. Until then it waits, rocking a little now and then.
   let goAt = 0, level = 0, skipped = false, introOver = false, coatMax = 0, readyAt = 0, tilt = 0, tiltV = 0, tilt0 = 0, slosh = 0, sloshV = 0, rocks = 0;
@@ -867,7 +867,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   addEventListener("pageshow", () => { if (!introOver) scrollTo(0, upPx()); });
   const root = document.documentElement; root.style.overflow = "hidden"; root.style.touchAction = "none";
   const go = () => { if (!goAt) { goAt = performance.now(); tilt0 = tilt; tagBucket.tabIndex = -1; tagBucket.removeAttribute("role"); tagBucket.blur(); } };
-  addEventListener("pointerdown", () => { if (goAt && !introOver) skipped = true; else if (readyAt) go(); });
+  addEventListener("pointerdown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && onBucket(e)) go(); }); // only the bucket tips it (Tom 11-25); a tap anywhere still skips the camera's ride
+  addEventListener("pointermove", e => { const c = readyAt && !goAt && onBucket(e) ? "pointer" : ""; if (document.body.style.cursor !== c) document.body.style.cursor = c; }, { passive: true });
   addEventListener("keydown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && !goAt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } }); // only while the bucket waits: later Enter and Space belong to the form and its links
   addEventListener("wheel", () => { if (goAt && !introOver) skipped = true; }, { passive: true });
   const tagBucket = document.getElementById("tagBucket"); let tagText = "";
@@ -890,7 +891,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     tf(stNm, "n.transform", `translate(${(-stPx * 6).toFixed(0)}px, ${(-stPy * 4).toFixed(0)}px)`); tf(stWd, "w.transform", stNm.style.transform);
     const sp = (REDUCED ? 112 : -12 + 124 * Math.min(1, level / .9)).toFixed(0) + "%"; const wm = stW.get(stWd) || stW.set(stWd, {}).get(stWd); if (wm.p !== sp) { wm.p = sp; stWd.style.setProperty("--p", sp); } // sprayed on as the bucket fills, whole a little before it is full
     stShown = Math.max(stShown, Math.round(level * 100)); tf(stNum, "u.textContent", String(stShown)) /* never counts down */; tf(stNum, "u.opacity", readyAt ? "0" : "1"); tf(stGo, "g.opacity", readyAt && !goAt ? "1" : "0"); }
-  const stW = new Map(); let stShown = 0;
+  const stW = new Map(); let stShown = 0, stBox = [0, 0, 0, 0];
+  const onBucket = e => e.clientX >= stBox[0] && e.clientX <= stBox[2] && e.clientY >= stBox[1] && e.clientY <= stBox[3];
+  window.bucketAt = () => ({ x: (stBox[0] + stBox[2]) / 2, y: (stBox[1] + stBox[3]) / 2 }); // the checks click the bucket, not the middle
   function startLayout(W, H, gu) { bucketHome.updateWorldMatrix(true, false); camera.updateMatrixWorld(); // placed now, not as of the last render: the first frames come before it
     const P = q => { const v = bucketHome.localToWorld(q).project(camera); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
     const [cx] = P(V(0, BK.h * .5, 0)), [ex] = P(V(BK.r1 + .06, BK.h * .5, 0)), [, ty] = P(V(0, BK.h + .12, 0)), [, by] = P(V(0, -.05, 0)), room = cx - Math.abs(ex - cx) - gu, AR = .73;
@@ -902,6 +905,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       const lw = fs / nameEm(), ww = lw * .46; // the word left of TOM, level with it
       set(stWd, { left: "auto", right: gu + lw * tomR + lw * .025, top: H * .06 + fs * .22 - ww * 369 / 900 / 2, bottom: "auto", width: ww });
       for (const e of [stNum, stGo]) set(e, { left: "auto", right: gu }); set(stNum, { fontSize: Math.min(W * .09, H * .17) });
+      { const nt = H * .06 + fs * .84 * 2 + gu; set(stNum, { top: nt, bottom: "auto" }); set(stGo, { right: W - (cx - Math.abs(ex - cx)) + gu, top: (ty + by) / 2, bottom: "auto" }); } // the bucket has the bottom: the number goes under the name, the line beside the bucket
     } else { // stacked: the photo above the bucket, the name low, clear of the paint's fall
       const ph = Math.max(0, ty - H * .03), fs = (W - gu * 2) * nameEm();
       set(stIm, { left: "50%", top: H * .02, height: ph, translate: "-50% 0" });
@@ -909,6 +913,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       const lw = W - gu * 2, wl = gu + lw * tomR + lw * .06; // the word right of TOM, on its line
       set(stWd, { left: wl, right: "auto", top: "auto", bottom: nb + fs * .84 + fs * .1, width: W - gu - wl });
       for (const e of [stNum, stGo]) set(e, { left: gu, right: "auto" }); set(stNum, { fontSize: W * .2 }); }
+    const hw = Math.abs(ex - cx), pad = Math.max(16, hw * .25); stBox = [cx - hw - pad, ty - pad, cx + hw + pad, by + pad]; // where a click tips it
     if (!START_T) { START_T = performance.now(); startEl.classList.add("placed"); } } // the lamp warms up from the moment the start shows
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
@@ -926,7 +931,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     if (pourReady && !CAM_IN[1]) CAM_IN[1] = Math.min(FREE_AT - .3, Math.max(CAM_IN[0] + 1.5, pourDone - .7));
     if (!introOver && (scrollX || Math.abs(scrollY - upPx()) > 1)) scrollTo(0, upPx());
     if (!introOver && ic > Math.min(pourDone + .3, FREE_AT)) { scrollTo(0, upPx()); introOver = true; root.style.overflow = ""; root.style.touchAction = ""; document.body.style.cursor = "";  if (RESUME !== null) scrollTo(0, upPx() + RESUME * Math.max(0, root.scrollHeight - innerHeight - upPx()));}
-    if (!goAt) document.body.style.cursor = readyAt ? "pointer" : "";
+    if (goAt && document.body.style.cursor === "pointer") document.body.style.cursor = ""; // the hand is only over the bucket (pointermove), and gone once it tips
     // the bucket fills
     const fillL = goAt ? Math.max(.03, left(ic)) : level; coatMax = Math.max(coatMax, fillL);
     const inflowOn = !readyAt && !goAt, sy = fillL * FULL, sr = BK.r0 + (BK.r1 - BK.r0) * sy / BK.h - .006;

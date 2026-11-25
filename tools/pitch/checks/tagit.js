@@ -4,7 +4,7 @@
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   const toForm = async () => {
-    await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
+    await page.waitForTimeout(3500); await page.evaluate(() => window.bucketAt()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
     await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(2500); // Leave your tag lives on the visitors' wall (Tom 11-23: no end landing)
     let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('leaveUp').style.display === 'block'); if (!on) await page.waitForTimeout(200); }
