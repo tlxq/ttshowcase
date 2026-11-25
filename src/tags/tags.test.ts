@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { readParts } from "../../tools/pitch/paint-parts.mjs";
 import {
   handlers,
   overlaps,
@@ -127,7 +128,7 @@ test("bad tags are refused with the field that is wrong", () => {
 });
 
 test("the tool ids the pitch draws with are the ones the store takes", () => {
-  const page = readFileSync("pitch/paint.src.html", "utf8");
+  const page = readParts("pitch/paint").js; // the pitch's script, its parts joined
   const ids = [...page.matchAll(/\{ id: "(\w+)", name: "[^"]+", note:/g)].map((m) => m[1]);
   assert.deepEqual(ids, TAG_LIMITS.tools);
   assert.ok(page.includes("__TAG_LIMITS__"), "the pitch gets its limits from the build");

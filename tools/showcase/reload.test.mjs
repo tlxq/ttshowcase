@@ -15,6 +15,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 test("only real source changes rebuild", () => {
   assert.equal(relevant("paint.src.html"), true);
   assert.equal(relevant("assets/wall/a.jpg"), true);
+  assert.equal(relevant("paint/60-pick.js"), true); // the pitch's parts rebuild it too
+  assert.equal(relevant("paint/style.css"), true);
   assert.equal(relevant(null), true);
   assert.equal(relevant(".paint.src.html.swp"), false);
   assert.equal(relevant("paint.src.html~"), false);

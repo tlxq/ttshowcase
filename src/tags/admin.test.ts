@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { readParts } from "../../tools/pitch/paint-parts.mjs";
 import { ADMIN_Y_MIN, handlers, VISITOR_Y_MIN, WALL_GROUND, WALL_PATH } from "../../api/tags.ts";
 import { admin, adminHash } from "../../api/admin.ts";
 import {
@@ -401,7 +402,7 @@ test("a visitor's tag may sit as low as the visitor area goes, Tom's as low as t
 });
 
 test("the visitor floor follows the pitch's own wall", () => {
-  const pitch = readFileSync(new URL("../../pitch/paint.src.html", import.meta.url), "utf8");
+  const pitch = readParts(fileURLToPath(new URL("../../pitch/paint", import.meta.url))).js;
   const ground = Number(pitch.match(/GROUND = (-?[\d.]+)/)![1]);
   assert.equal(ground, WALL_GROUND);
   assert.match(pitch, /AREA = \{[^}]*y0: GROUND \+ \.4/);
