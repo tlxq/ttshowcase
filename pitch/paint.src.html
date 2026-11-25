@@ -1382,7 +1382,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the room: 1.5 m of ground above it, plain walls round it; the shafts cut through (MANHOLE_CUT)
   { const ceil = conc(CX1 - HX0, RZ, HX0, 0, 0x55575b); ceil.emissive = new THREE.Color(0x0b0c0f);
     ceil.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.)).xyz;");
-      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <map_fragment>", "#include <map_fragment>\n" + MANHOLE_CUT); };
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <map_fragment>", "#include <map_fragment>\n" + MANHOLE_CUT)
+        // F-81-4: the tubes hang just under the ceiling, so they light it round them; unlit, a phone's tall view showed it as a black band over every piece
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\nif (vWP.y < " + (DY + .02).toFixed(2) + ") { float g = 0.;" + TUBES.map(x => ` g += exp(-pow(vWP.x - ${x.toFixed(2)}, 2.) / 5. - pow(vWP.z - 1.1, 2.) / 14.);`).join("") + " totalEmissiveRadiance += vec3(.87, .91, 1.) * " + CEIL_GLOW.toFixed(2) + " * g * (.6 + 2. * diffuseColor.rgb); }"); };
     slab(HX0, CX1, DY, G3 - .01, 0, RZ + .3, ceil);
     const side = conc(RZ, G3 - WF, 0, WF, 0x8d8f93), h = G3 - WF;
     for (const [x, ry] of [[HX0, Math.PI / 2], [CX1, -Math.PI / 2]]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(RZ + .3, h), side); m.rotation.y = ry; m.position.set(x, WF + h / 2, (RZ + .3) / 2); scene.add(m); }
@@ -1413,7 +1415,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     manL.intensity = 9 * (1 - sm(cl((d - 1.5) / 5))) * down * (introOver ? 1 : 0); }
   // tube lights under the ceiling, close to the wall; one of them flickers
   const fixM = new THREE.MeshStandardMaterial({ color: 0x2a2c2f, metalness: .5, roughness: .5 }), tubeM = new THREE.MeshStandardMaterial({ color: 0, emissive: 0xdfe9ff, emissiveIntensity: 2.4 }), tubeBad = tubeM.clone();
-  const TUBES = [38.6, 44.5, 50.5, 56.5, 61.6];
+  const TUBES = [38.6, 44.5, 50.5, 56.5, 61.6], CEIL_GLOW = .22; // CEIL_GLOW: how bright the ceiling is right round a tube (F-81-4)
   TUBES.forEach((x, i) => { const f = new THREE.Mesh(new THREE.BoxGeometry(1.3, .05, .13), fixM); f.position.set(x, DY - .03, 1.1); const t = new THREE.Mesh(new THREE.BoxGeometry(1.18, .026, .06), i === 3 ? tubeBad : tubeM); t.position.set(x, DY - .066, 1.1); scene.add(f, t); });
   const tubeLight = new THREE.SpotLight(0xdce8ff, 0, 10, 1.15, .75, 1.6); scene.add(tubeLight, tubeLight.target);
   const roomFill = new THREE.PointLight(0xdce8ff, 0, 11, 1.6); scene.add(roomFill); // the tubes ahead light the room, so the steps and the floor show on the way down and up
@@ -2154,14 +2156,13 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // the stop-motion stencil (Tom 11-24, card B of the front-turn round): his head turn, 22 frames sprayed in three layers (cream, blue, night), on the bare
   // wall left of the visitors' lamp post: the page's top, and its twin past EDGE that the walk ends on (one material, so both always show the same frame).
   // 8 frames a second with a small wobble; it looks where the pointer is, and without one it looks round by itself. The frames are made from Tom's own
-  // photos, so they live outside git (media/, the local pitch only): where they don't load, nothing is drawn.
-  const HAS_MEDIA = true; // the build sets it false where media/ isn't there (/next, a PC without the frames): no requests for pictures that can't come
+  // photos; Tom said 11-24 they may be published (assets/stencil). Where they don't load, nothing is drawn.
   const STEN = { n: 22, h: NARROW ? 2.5 : 3, x: NARROW ? BARE[1].x - .7 : BARE[1].x - 1.2, y: GROUND + 4.3, frames: [], f: 11, dir: 1, step: -1, at: -1e9 };
   { const w = STEN.h * 512 / 543, mat = wallBump(new THREE.MeshStandardMaterial({ transparent: true, depthWrite: false, roughness: .6, polygonOffset: true, polygonOffsetFactor: -2, visible: false,
       normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, STEN.h / TILE, (STEN.x - w / 2 - (WX - WW / 2)) / TILE, (STEN.y - STEN.h / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.4, .4) }));
     STEN.mat = mat; STEN.meshes = [V(), SEAM_D].map(d => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, STEN.h), mat); m.position.set(STEN.x + d.x, STEN.y + d.y, .002); scene.add(m); return m; });
     const tl2 = new THREE.TextureLoader(); let got = 0, lost = 0;
-    if (HAS_MEDIA) for (let i = 0; i < STEN.n; i++) tl2.load(`media/stencil/s${String(i).padStart(2, "0")}.webp`, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; STEN.frames[i] = t;
+    for (let i = 0; i < STEN.n; i++) tl2.load(`assets/stencil/s${String(i).padStart(2, "0")}.webp`, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; STEN.frames[i] = t;
       if (++got === STEN.n) { mat.map = STEN.frames[STEN.f]; mat.visible = true; mat.needsUpdate = true; STEN.frames.forEach(f => renderer.initTexture(f)); } }, undefined, () => { if (!lost++) console.info("The stencil is off: a frame in media/stencil didn't load."); }); }
   addEventListener("pointermove", () => STEN.at = performance.now());
   function stencilTick(now, cp) { if (!STEN.mat.visible) return; const near = cp.x < -8 || cp.x > 80; STEN.meshes.forEach(m => m.visible = near); if (!near) return;

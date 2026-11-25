@@ -23,6 +23,7 @@ The paint pitch (pitch/):
   stable-diffusion.cpp (MIT) and the Z-Image Turbo model (Apache 2.0). The concrete round each is keyed
   out to transparency. The link mark over EDGE's painting (pitch/assets/edge_banner.webp) is drawn by hand in code, and
   all its text is set by hand (Nimbus Sans and URW Gothic from the URW base-35 fonts).
+  The stencil (pitch/assets/stencil/) is Tom's head turn, made from his own studio photos (11-22) on his own computer.
   The end wall painting (pitch/assets/end_wall.webp) was made by Tom the same way. The two stencils on it are the GitHub and
   LinkedIn marks, drawn from the vector shapes in Simple Icons (CC0 1.0): they are the companies' own
   marks, used only to link to them, and stay their owners' trademarks. The concrete round the

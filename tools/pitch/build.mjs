@@ -175,14 +175,7 @@ function withScriptRule(html) {
     throw new Error('pitch/paint.src.html lost its <meta charset="utf-8"> line');
   return html.replace(at, `${at}<meta http-equiv="Content-Security-Policy" content="${rule}">\n`);
 }
-// the stencil's frames (media/, below) exist only on a PC that has them; elsewhere the page asks for none
-const noMedia = (p) => {
-  if (!p.includes("const HAS_MEDIA = true;"))
-    throw new Error("Couldn't find HAS_MEDIA in pitch/paint.src.html");
-  return p.replace("const HAS_MEDIA = true;", "const HAS_MEDIA = false;");
-};
-const hasMedia = existsSync(join(root, ".cache/pitch-media/stencil"));
-writeFileSync(join(out, "paint.html"), withScriptRule(withBotId(hasMedia ? page : noMedia(page))));
+writeFileSync(join(out, "paint.html"), withScriptRule(withBotId(page)));
 
 // The front page (pitch, 11-20, landonorris.com's techniques): the same fonts and tokens, no 3D. /next/front on the
 // site. GSAP (ScrollTrigger) and Lenis go into the page from node_modules as inline scripts, so the script rule
@@ -214,9 +207,8 @@ rmSync(assets, { force: true, recursive: true });
 mkdirSync(assets);
 for (const name of readdirSync(join(root, "pitch/assets")))
   symlinkSync(join(root, "pitch/assets", name), join(assets, name));
-// Tom's own photos and what is made from them (the stencil of his head turn) stay out of git and off the site until
-// he says otherwise: they live in .cache/pitch-media and show only in the local pitch, as media/. The page draws
-// nothing where one is missing, so /next simply has no stencil.
+// Tom's own photos stay out of git and off the site until he says otherwise: they live in .cache/pitch-media and
+// show only in the local pitch, as media/. (The stencil of his head turn left it 11-24: Tom said publish, assets/stencil.)
 const media = join(out, "media");
 rmSync(media, { force: true, recursive: true });
 if (existsSync(join(root, ".cache/pitch-media")))
@@ -228,7 +220,7 @@ if (process.argv.includes("--site")) {
   if (!existsSync(join(site, "index.html")))
     throw new Error("Couldn't find the built site in out/. Run: npm run build");
   // the page is /next (no trailing slash), so its relative "assets/…" would point at /assets/: make them /next/assets/
-  const nextPage = noMedia(page).replace(/(["'`])assets\//g, "$1/next/assets/"); // media/ never goes to the site
+  const nextPage = page.replace(/(["'`])assets\//g, "$1/next/assets/"); // media/ never goes to the site
   // an unquoted CSS url(assets/…) is not rewritten and 404s on /next (the flyer's cover, 11-23): quote the path
   const unquoted = nextPage.match(/url\(\s*assets\/[^)]*\)/g);
   if (unquoted)
