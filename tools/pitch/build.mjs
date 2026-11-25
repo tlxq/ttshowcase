@@ -180,6 +180,9 @@ writeFileSync(join(out, "front.html"), withScriptRule(front)); // the site copy 
 // its product screens: /projects/ on the site (public/projects); the same path in the local pitch folder
 rmSync(join(out, "projects"), { force: true, recursive: true });
 symlinkSync(join(root, "public/projects"), join(out, "projects"));
+// the pages' icon: /icon.svg on the site (app/icon.svg); the same path in the local pitch folder
+rmSync(join(out, "icon.svg"), { force: true });
+symlinkSync(join(root, "app/icon.svg"), join(out, "icon.svg"));
 
 // Pictures: pitch/assets holds only what is free to publish (CC0, or from a public repo).
 const assets = join(out, "assets");
