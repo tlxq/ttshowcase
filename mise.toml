@@ -8,6 +8,8 @@ gitleaks = "8.30.1"
 lefthook = "2.2.2"
 # tools/osv-gate needs it
 "aqua:google/osv-scanner" = "2.7.1"
+# tools/opengrep-gate needs it (code scanning: injection, eval, keys in code)
+"aqua:opengrep/opengrep" = "1.33.1"
 
 # `showcase` (bin/showcase) works anywhere inside the repo
 [env]
@@ -89,14 +91,14 @@ description = "Build the paint pitch and walk it at 1440 x 900 and on a phone: t
 run = "tools/passes/build-first.sh pitch pitch:build tools/pitch/run.sh"
 
 [tasks.check]
-description = "The whole check (GitHub runs it on every PR): typecheck, lint, unit tests, build, /next closed without its key, no high/critical holes in shipped packages. Skipped when it already passed on this commit; --force runs it anyway"
+description = "The whole check (GitHub runs it on every PR): typecheck, lint, unit tests, build, /next closed without its key, no high/critical holes in shipped packages, no serious finding in the code (opengrep). Skipped when it already passed on this commit; --force runs it anyway"
 run = "tools/check.sh"
 
 [tasks."check:steps"]
 description = "The steps of the check, without the saved-pass skip"
 hide = true
 depends = ["install"]
-run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts' 'tools/showcase/*.test.mjs' 'tools/passes/*.test.mjs'", "npm run lint", "npm run build", "tools/next-check.sh", "tools/header-check.sh", "tools/fn-check.sh", "tools/osv-gate"]
+run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts' 'tools/showcase/*.test.mjs' 'tools/passes/*.test.mjs'", "npm run lint", "npm run build", "tools/next-check.sh", "tools/header-check.sh", "tools/fn-check.sh", "tools/osv-gate", "tools/opengrep-gate"]
 
 [tasks.next]
 description = "Open the new site behind its secret link: live (default) or dev (this PC's Tailscale dev server); --print prints it for the phone; preview [PR#] prints a PR's preview link with a QR"
