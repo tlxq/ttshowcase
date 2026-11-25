@@ -5,7 +5,7 @@
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   await page.goto('__URL__?tags=full'); await page.waitForTimeout(3500);
-  await page.mouse.click(W / 2, H / 2);
+  await page.evaluate(() => window.bucketAt()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   await page.waitForTimeout(1500);
   const at = () => page.evaluate(() => ({ y: Math.round(scrollY), park: Math.round(svY(0)), label: document.getElementById('tagUp') ? 1 : 0, over: getComputedStyle(document.documentElement).overscrollBehaviorY })); // label: what the page sets
