@@ -18,14 +18,14 @@
   let svKeep = -1, svKeepH = 0; // the walk's place, kept across resizes
   const START = 1600, t0 = performance.now(); let last = t0, si = 0, cmx = 0, cmy = 0;
   if (!WL.want) document.documentElement.dataset.wallAt = 1; // no tags on the wall: nothing to wait for (the checks read 0 as never)
-  const PARK = V(EX - EW / 2 - 1, G2, 1.9), canPos = PARK.clone(), canAim = V(); let canOn = 0;
+  const PARK = V(EX - EW / 2 - 1, G2, 1.9), canPos = PARK.clone(), canAim = V();
   renderer.setAnimationLoop(now => {
     const raw = now - last, dt = Math.min(.05, raw / 1000); last = now; const t = now - t0 - START;
     autoRes(raw);
     if (introOver && svKeep >= 0 && svKeepH !== document.documentElement.scrollHeight) { scrollTo(0, svY(svKeep)); svKeepH = document.documentElement.scrollHeight; } // a resize or a turned phone: the walk stays where it was (the page goes on past the end now, so a pixel scroll would land in the dusk)
     if (introOver && up0 && upPx() !== up0 && Math.abs(scrollY - up0) < 2) scrollTo(0, upPx()); // a resize or a turned phone while parked: stay parked, not half turned
     const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? paceOf(cl((scrollY - up) / H2) * WALK, 1, 0) : 0,
-      tp = topPx(), lft = introOver && up > tp ? cl(1 - (scrollY - tp) / (up - tp)) : 0, lookL = sm(cl(lft / .6)), goL = sm(cl((lft - .25) / .75)), // up the page: the head turns first, then the camera walks left
+      tp = topPx(), lft = introOver && up > tp ? cl(1 - (scrollY - tp) / (up - tp)) : 0, // how far up the page, past the visitors' wall
       pAll = cl(sv / 540), p = cl(sv / 320); // sv: the walk's own count below the park (PACE turns the page's scroll into it); the first three scenes keep the scroll they had
     if (introOver && svKeepH === document.documentElement.scrollHeight) svKeep = sv; else if (svKeep < 0) { svKeep = sv; svKeepH = document.documentElement.scrollHeight; }
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
@@ -61,7 +61,7 @@
     const done = si >= samples.length;
     if (stencilOn) canAim.set(EX - EW / 2 - (NARROW ? .5 : .8), G2, 1.6); // set down on the floor left of the painting
     if (stencilOn) {}
-    else if (pen) { canAim.copy(pen).add(V(0, 0, REACH)).sub(NOZZLE); canOn = 1; }
+    else if (pen) { canAim.copy(pen).add(V(0, 0, REACH)).sub(NOZZLE); }
     else if (done) canAim.copy(PARK);
     else if (t < 0) canAim.set(3.6, -1.4, 2.2);
     canPos.lerp(canAim, Math.min(1, (pen && !stencilOn ? 21 : 2.4) * dt)); // per second, so the can moves the same on 60 and 120 Hz screens
