@@ -9,7 +9,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
       if (!T.free && document.documentElement.style.overflow === '') T.free = n;
       [['hot0', sh], ['hot1', sh], ['hot3', sh], ['tagFacts', op], ['tagRvf', op]].forEach(([id, fn]) => { if (!T[id] && fn(id)) T[id] = n; });
       requestAnimationFrame(f); })(); });
-  await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
+  await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && (b.x > 0 ? b : matchMedia("(prefers-reduced-motion: reduce)").matches && getComputedStyle(document.querySelector(".start")).display === "none" && b); /* reduced motion: no start screen, nothing to tip */ }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (let i = 0; i < 40 && !(await page.evaluate(() => window.__T.free)); i++) await page.waitForTimeout(250);
   const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
   const a2 = await page.evaluate(y => { scrollTo(0, y); return performance.now(); }, await page.evaluate(sv => Math.round(svY(sv)), 128));
