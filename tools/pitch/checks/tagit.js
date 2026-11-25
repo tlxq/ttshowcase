@@ -53,7 +53,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (res.undone !== 3) errs.push('Undo left ' + res.undone + ' strokes, not 3');
   await page.click('#tagDone'); await page.waitForTimeout(200); res.done = await st();
   if (res.done.stage !== 'send' || !res.done.playing || res.done.send) errs.push('Done did not start the replay: ' + JSON.stringify(res.done));
-  await page.waitForTimeout(4800); res.played = await st();
+  for (let i = 0; i < 75; i++) { await page.waitForTimeout(200); res.played = await st(); if (!res.played.playing && res.played.send) break; } // the replay's own end, not a fixed 4.8 s: a busy GPU replays slower (11-25)
   if (res.played.playing || !res.played.send) errs.push('after the replay the name and Put it on the wall did not show: ' + JSON.stringify(res.played));
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-send.png' });
   await page.fill('#tagName', 'Walker'); await page.click('#tagPut'); await page.waitForTimeout(2200);
