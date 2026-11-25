@@ -251,7 +251,7 @@
     // while it fills: the paint level as a number (nothing in the first second); when full: what to do (signum L1, L2)
     const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000);
     const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
-    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>Tom Larsson &middot; Product engineer</b>${txt}`; }
+    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>Tom Larsson &middot; Product engineer</b>${txt}`; } // fixed text: the label's own words and a number, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
@@ -343,7 +343,7 @@
 
   // labels pinned to the can and to the writing, with real facts from the hand file
   const tagCan = document.getElementById("tagCan"), tagHand = document.getElementById("tagHand"), svg = document.getElementById("lines");
-  tagCan.innerHTML = `<b>${HAND.pen}</b>written ${HAND.written}`;
+  tagCan.innerHTML = `<b>${HAND.pen}</b>written ${HAND.written}`; // fixed text: HAND is built at build time from the repo's own words, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
   tagHand.innerHTML = "<b>Tom Larsson</b>Product engineer";
   svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/><line id="l2"/><circle id="c2" r="4"/>');
   const proj = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight, p.z < 1]; };
