@@ -1078,16 +1078,20 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   }
 
   // ---- moment 2: epaRadar, one finished production wall (Tom 11-18): big letters, the real car from epaRadar's own photo inside
-  // the painting, cut off by a concrete pillar; the exit sign and the car's number plate are the links. Painted on the desk's graphics card (CREDITS.txt),
-  // the bare concrete around it keyed out so the wall shows through. 1536 x 960 px; the paint ends 35 px above its foot, on the floor.
-  const EX = 13, EW = 7.6, EH = EW * 960 / 1536, EY = G2 - EH * 35 / 960 + EH / 2;
+  // the painting, cut off by a concrete pillar; the exit sign and the car's number plate are the links. Painted on the desk's graphics card (CREDITS.txt).
+  // One painting (Tom 11-25, like raddavarfruberga): the piece inside its own charcoal-brown backdrop with an orange rim, the stack handwritten on it,
+  // nothing of the old background left. The whole painting fills the old piece's place (EX/EW/EH/EY), so the camera's stops still frame it; inside
+  // the picture the old piece sits at EPA_K (.84) from (EPA_OX, EPA_OY): the old link marks are mapped with toEPAN.
+  const EX = 13, EW = 7.6, EH = EW * 960 / 1536, EY = G2 - EH * 35 / 960 + EH / 2, EPA_K = .84, EPA_OX = 246, EPA_OY = 154;
+  const EPN_K = EW / 1536, EPN_L = EX - EW / 2, EPN_T = EY + EH / 2, EPN_W = EW, EPN_H = EH;
   const pieceMap = tex("assets/epa_wall.webp", true, 1, 1); pieceMap.wrapS = pieceMap.wrapT = THREE.ClampToEdgeWrapping;
-  const piece = new THREE.Mesh(new THREE.PlaneGeometry(EW, EH), wallBump(new THREE.MeshStandardMaterial({ map: pieceMap, transparent: true, depthWrite: false, roughness: .55,
-    normalMap: tex("assets/wall4_nor_gl.jpg", false, EW / TILE, EH / TILE, (EX - EW / 2 - (WX - WW / 2)) / TILE, (EY - EH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.4, .4), polygonOffset: true, polygonOffsetFactor: -2 })));
-  piece.position.set(EX, EY, .002); scene.add(piece); PROT.push(["epaRadar's painting", V(EX - EW / 2, EY + EH / 2 - 924 / 960 * EH, 0), V(EX + EW / 2, EY + EH / 2 - 98 / 960 * EH, 0)]); // the painted rows 98 to 924 of its 960: the rest is bare concrete
+  const piece = new THREE.Mesh(new THREE.PlaneGeometry(EPN_W, EPN_H), wallBump(new THREE.MeshStandardMaterial({ map: pieceMap, transparent: true, depthWrite: false, roughness: .55,
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, EPN_W / TILE, EPN_H / TILE, (EPN_L - (WX - WW / 2)) / TILE, (EPN_T - EPN_H - GROUND) / TILE), normalScale: new THREE.Vector2(.4, .4), polygonOffset: true, polygonOffsetFactor: -2 })));
+  piece.position.set(EPN_L + EPN_W / 2, EPN_T - EPN_H / 2, .002); scene.add(piece); PROT.push(["epaRadar's painting", V(EPN_L, EPN_T - EPN_H, 0), V(EPN_L + EPN_W, EPN_T, 0)]); // the whole painting, backdrop included
   // the two link marks, in the picture's pixels (left, top, right, bottom): a green motorway exit sign "Open the site" on its pole by the road, and the car's own
   // rear number plate "CODE" (Tom 11-19: marks that belong to the wall's story, not the blue street signs every wall had)
-  const EPAB = { at: (u, v) => V(EX - EW / 2 + u / 1536 * EW, EY + EH / 2 - v / 960 * EH, 0), k: EW / 1536 }, EPA_MARKS = [[114, 556, 502, 674], [949, 669, 1081, 707]];
+  const EPAN = { at: (u, v) => V(EPN_L + u * EPN_K, EPN_T - v * EPN_K, 0), k: EPN_K }, toEPAN = b => b.map((q, i) => Math.round(q * EPA_K + (i % 2 ? EPA_OY : EPA_OX))); // the picture's pixels
+  const EPA_MARKS = [[114, 556, 502, 674], [949, 669, 1081, 707]].map(toEPAN), EPAB = EPAN; // marks drawn in the old piece's pixels, mapped into the painting
   // The other six paintings (Tom 11-19, one artist per wall) go on their walls the same way: painted on the desk's graphics card (CREDITS.txt), the bare
   // concrete keyed out so the wall shows through, 1536 x 960 px each. paintOn puts picture pixel (px, py) at the wall point (wx, wy), the picture w m wide.
   // at(u, v) is any picture pixel in the wall's own space; the link marks and the painted areas are in picture pixels. The wall's own hole (moment 3) cuts through it too.
@@ -1134,6 +1138,9 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // a sprayed text on a wall: canvas drawn at runtime (a soft overspray halo, a speckle round the edges, a few drips), laid on the wall like a painting.
   // o: key (LIVE's), colour, stack (words), rect (wall space: x0, y0, x1, y1), row (stats side by side, else one under the other), name (for the plates check)
   const SPRAY_FONT = '"Saira Stencil One", sans-serif';
+  // painted glyphs for live numbers (Tom 11-25): the digits and words in the tag hand, one picture; [x, y, w, h] each, all 160 px tall
+  const GLYPH = new Image(), GLYPH_AT = {"0":[0,0,105,160],"1":[113,0,95,160],"2":[216,0,134,160],"3":[358,0,123,160],"4":[489,0,136,160],"5":[633,0,136,160],"6":[777,0,109,160],"7":[894,0,121,160],"8":[1023,0,109,160],"9":[1140,0,100,160],"commits":[1248,0,614,160],"merged":[0,168,406,160],"pull requests":[414,168,616,160]};
+  GLYPH.src = "assets/epa_glyphs.webp"; const glyphsReady = GLYPH.decode().catch(() => {});
   function makeSpray(o) { const FONT = o.font || SPRAY_FONT, WT = o.weight || "", [x0, y0, x1, y1] = o.rect, w = x1 - x0, h = y1 - y0, PPM = 400, W = Math.round(w * PPM), H = Math.round(h * PPM);
     const mk = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return c; }, out = mk(), og = out.getContext("2d", { willReadFrequently: true });
     const map = new THREE.CanvasTexture(out); map.encoding = THREE.sRGBEncoding; map.anisotropy = maxAniso;
@@ -1165,6 +1172,12 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
         for (const [n, wd] of items) { parts.push([n, nfs, pad, y, "left"], [wd, Math.min(wfs, fit(wd, 1000, W - 2 * pad)), pad, y + nfs * 1.02, "left"]); y += nfs + wfs * 1.6 + H * .02; }
         y += items.length ? H * .03 : 0;
         for (const t of stack) { parts.push([t, sfs, pad, y, "left"]); y += sfs * 1.3; } }
+      if (o.glyphs) { parts.length = 0; const s = LIVE[o.key]?.[o.only]; if (s && s.n != null && GLYPH.naturalWidth) { // the number from painted digits, its words beside it (one or two lines)
+        const digits = String(s.n).split(""), lines = o.glyphs.words, gap = 26, lineH = lines.length > 1 ? .5 : .62; // a small gap between thousands, no comma glyph
+        let nw = 0; digits.forEach((d, i) => nw += GLYPH_AT[d][2] * .92 + ((digits.length - 1 - i) % 3 === 0 && i < digits.length - 1 ? gap : 0));
+        const ww = Math.max(...lines.map(l => l.reduce((a, g) => a + GLYPH_AT[g][2], 0))) * lineH, k = Math.min((H * .9) / 160, (W - 2 * pad) / (nw + 30 + ww));
+        let x = pad, y = (H - 160 * k) / 2; digits.forEach((d, i) => { const [gx, gy, gw, gh] = GLYPH_AT[d]; mg.drawImage(GLYPH, gx, gy, gw, gh, x, y, gw * k, gh * k); x += gw * k * .92 + ((digits.length - 1 - i) % 3 === 0 && i < digits.length - 1 ? gap * k : 0); });
+        x += 30 * k; let ly = y + 160 * k - lines.length * 160 * k * lineH; for (const l of lines) { let lx = x; for (const g of l) { const [gx, gy, gw, gh] = GLYPH_AT[g]; mg.drawImage(GLYPH, gx, gy, gw, gh, lx, ly, gw * k * lineH, gh * k * lineH); lx += gw * k * lineH; } ly += 160 * k * lineH; } } }
       for (const [t, px, x, y, al] of parts) { mg.font = `${WT} ${px}px ${FONT}`; mg.textAlign = al; mg.fillText(t, x, y); }
       if (o.piece) { // (Tom 11-19) painted like the piece's own letters: a thick black outline, a drop shadow in the piece's colour, the fill, overspray in the shadow colour
         const ol = mk(), lg = ol.getContext("2d"); lg.lineJoin = "round"; lg.strokeStyle = lg.fillStyle = "#15110d"; lg.textBaseline = "top";
@@ -1191,15 +1204,13 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
         if (y < 4 || y + len > H - 3) continue; og.globalAlpha = .9; og.lineWidth = lw; og.beginPath(); og.moveTo(x, y - 2); og.lineTo(x, y + len); og.stroke(); og.beginPath(); og.arc(x, y + len, lw * .85, 0, 6.3); og.fillStyle = o.colour; og.fill(); }
       og.globalAlpha = 1; map.needsUpdate = true; },
       fade(on) { const now = performance.now(), dt = Math.min(.1, (now - sp.at) / 1000 || 0); sp.at = now; sp.op = cl(sp.op + (on ? dt / .6 : -dt / .6)); sp.mesh.visible = sp.op > .01; sp.mesh.material.opacity = sp.op; } };
-    (SPRAYS[o.key] ||= []).push(sp); document.fonts.load(`${WT} 40px ${FONT}`).then(() => sp.draw(), () => sp.draw()); return sp; }
+    (SPRAYS[o.key] ||= []).push(sp); (o.glyphs ? glyphsReady : document.fonts.load(`${WT} 40px ${FONT}`)).then(() => sp.draw(), () => sp.draw()); return sp; }
   // epaRadar: above the painting
-  { const yT = EY + EH / 2 - 98 / 960 * EH, x0 = NARROW ? EX - EW / 2 + .9 : EX - EW / 2 + 1.2;
-    // (Tom 11-19) the numbers painted big in the piece's own style, one each side above the skyline; each tool its own small tag round them; sprayed in one after another
-    const R = ([u0, v0, u1, v1]) => [EPAB.at(u0, 0).x, EPAB.at(0, v1).y, EPAB.at(u1, 0).x, EPAB.at(0, v0).y];
-    var EPA_PARTS = [makeSpray({ key: "epa", only: 0, name: "epaRadar's commits", colour: "#f3ead8", piece: "#f0902a", font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, inline: NARROW, rect: R([40, -200, 520, 70]) }),
-      makeSpray({ key: "epa", only: 1, name: "epaRadar's merged pull requests", colour: "#f3ead8", piece: "#f0902a", font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, inline: NARROW, rect: R([800, -200, 1440, 70]) }),
-      ...[["React Native", [560, -300, 860, -215]], ["Supabase", [560, -40, 860, 45]], ["Postgres", [1250, 70, 1480, 150]], ["pgTAP", [0, 80, 210, 160]], ["Expo", [0, 290, 140, 380]]]
-        .map(([t, b], i) => makeSpray({ key: "epaTag" + i, name: "epaRadar's tag " + t, colour: i % 2 ? "#f3ead8" : "#ffb03a", stack: [t], row: true, fill: .62, rect: R(b) }))]; }
+  { // (Tom 11-25) the live numbers in the tag hand, in the backdrop's empty top corners: painted digits and words (assets/epa_glyphs.webp), put
+    // together on every load from GitHub's count; sprayed in one after another. The stack is in the painting itself.
+    const R = ([u0, v0, u1, v1]) => [EPAN.at(u0, 0).x, EPAN.at(0, v1).y, EPAN.at(u1, 0).x, EPAN.at(0, v0).y];
+    var EPA_PARTS = [makeSpray({ key: "epa", only: 0, name: "epaRadar's commits", colour: "#ffb03a", glyphs: { words: [["commits"]] }, stack: [], rect: R([80, 28, 650, 178]) }),
+      makeSpray({ key: "epa", only: 1, name: "epaRadar's merged pull requests", colour: "#ffb03a", glyphs: { words: [["merged"], ["pull requests"]] }, stack: [], rect: R([950, 22, 1500, 182]) })]; }
   // the underpass (Tom 11-18): the street goes down its second flight under a bridge, from the painting's right edge to just short of
   // raddavarfruberga. The deck rests on its abutment, a wall that stands forward of the street wall: the car drives in behind its corner.
   const UP0 = EX + EW / 2 - .05, UP1 = 22.9, UD = .22, DECK = G2 + 3.8, DECK_Z = 30;
@@ -1683,7 +1694,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const HOTL = [], PULSE = NARROW || matchMedia("(pointer: coarse)").matches, hostOf = h => h.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
   const labelOf = el => el.protocol === "mailto:" ? "Opens your email" : el.hostname === "github.com" ? "Opens GitHub" : el.hostname.includes("linkedin") ? "Opens LinkedIn" : "Opens " + hostOf(el.href);
   const hotOn = (el, label, glow) => { el.dataset.hl = label; HOTL.push({ el, label, glow }); };
-  { EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAB, b, i ? { rect: true, colour: "#ffffff", fill: 0, hole: 1 } : {})));
+  { EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAN, b, i ? { rect: true, colour: "#ffffff", fill: 0, hole: 1 } : { rect: true })));
     hotOn(hot3, labelOf(hot3), RVF_GLOW());
     U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}))));
     const leaveHot = document.getElementById("leave");
