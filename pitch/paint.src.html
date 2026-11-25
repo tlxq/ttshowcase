@@ -193,10 +193,25 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 #sheet .tab { position: absolute; display: block; opacity: 0; }
 #sheet .tab:focus-visible { opacity: 1; outline: 2px solid var(--look-dark); outline-offset: -4px; }
 #sheet.open .x { opacity: 1; }
+.stu { position: fixed; inset: 0; z-index: 4; pointer-events: none; display: none; }
+.stu-on .stu { display: block; }
+.stu-on #tagBucket, .stu-on #l5, .stu-on #c5 { opacity: 0 !important; }
+.stu img { position: absolute; left: 1.5vw; bottom: 0; height: 94svh; width: auto; -webkit-mask-image: linear-gradient(#000 78%, transparent); mask-image: linear-gradient(#000 78%, transparent); will-change: transform; }
+.stu h2 { position: absolute; right: 4vw; top: 6svh; margin: 0; text-align: right; font: 900 min(7.4vw, 15svh)/.84 "Archivo", "Arial Black", sans-serif; font-stretch: 125%; letter-spacing: -.04em; text-transform: uppercase; color: var(--look-cream); }
+.stu h2 span { display: block; color: var(--front-spray); }
+.stu .num { position: absolute; right: 4vw; bottom: 4svh; font: 900 min(9vw, 17svh)/.8 "Archivo", "Arial Black", sans-serif; font-stretch: 125%; letter-spacing: -.04em; color: var(--front-spray); font-variant-numeric: tabular-nums; }
+.stu .go { position: absolute; right: 4vw; bottom: 5svh; font: 700 15px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .02em; color: var(--look-cream); opacity: 0; transition: opacity .4s; }
+@media (max-aspect-ratio: 4/5) {
+  .stu img { left: 50%; translate: -50% 0; top: 2svh; bottom: auto; height: 36svh; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+  .stu h2 { left: 6vw; right: auto; top: 63svh; text-align: left; font-size: 13.2vw; }
+  .stu .num { left: 6vw; right: auto; bottom: 3svh; font-size: 20vw; }
+  .stu .go { left: 6vw; right: auto; bottom: 4svh; font-size: 13px; }
+}
 </style>
 <svg class="pitch-svg" aria-hidden="true"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></svg>
 
 <canvas id="c"></canvas>
+<div class="stu" aria-hidden="true"><img src="assets/start/studio.webp" alt=""><h2>Tom<span>Larsson</span></h2><div class="num">0</div><div class="go">Tip the bucket to enter</div></div>
 <div class="track"></div>
 <div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map that only friends can see. Degree project, built alone.</div></div>
 <div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div id="admFrames" hidden></div><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="tagMoveB" hidden>Move it</button><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"><i class="hs" id="admSize" hidden aria-hidden="true"></i><i class="ht" id="admTurn" hidden aria-hidden="true"></i></div><div class="menu" id="tagTools" role="group" aria-label="Tool" hidden></div><div class="menu cols" id="tagCols" role="group" aria-label="Colour" hidden></div><div class="bar" id="admSel" hidden><button type="button" class="go" id="admApprove" hidden>Approve</button><button type="button" id="admRemove" hidden>Remove</button><button type="button" id="admUndo" hidden>Undo</button><button type="button" id="admDone">Done</button></div><div class="bar" id="tagBar" hidden><button type="button" id="tagTool" aria-expanded="false" aria-controls="tagTools"><span class="ic"></span><span class="nm"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagCol" aria-expanded="false" aria-controls="tagCols" aria-label="Colour"><span class="dot"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagUndo" aria-label="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="go" id="tagDone" disabled>Done</button></div><div class="bar" id="tagSend" hidden><input id="tagName" maxlength="24" placeholder="Your name (optional)" aria-label="Your name, optional" autocomplete="nickname" enterkeyhint="done" spellcheck="false"><button type="button" id="tagBack">Back</button><a class="pv" href="/privacy" target="_blank" rel="noopener">privacy</a><button type="button" class="go" id="tagPut">Put it on the wall</button></div></div>
@@ -217,6 +232,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // The opening: a real concrete wall at night, one street light grazing it, and Tom's line poured down the wall
   // as the light comes on. (The hand-written tag code stays but is off: no pen samples.)
   const HAND = __HAND__;
+  const STU = new URLSearchParams(location.search).get("start") === "S"; // PITCH start-studio: dark until the tap, the paint shows the wall, the studio photo on the left
   const SV = (q => ["A", "B", "C"].includes(q) ? q : null)(new URLSearchParams(location.search).get("start")); // PITCH start-poster: A painted, B the pour fills the name, C pasted up
   const NARROW = innerWidth / innerHeight < .8, narrowNow = () => innerWidth / innerHeight < .8; // NARROW shapes the scene once, at load; the end wall asks again every frame, so a phone turned mid-walk gets the end wall for its new shape
   const PROT = []; // what a plate must never cover: [name, one corner, the other corner (in the wall's own space), which plates ("" = all)]; the plates check reads them
@@ -822,6 +838,17 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const capNor = tex("assets/wall4_nor_gl.jpg", false, WW / TILE, .5 / TILE);
   const cap2 = new THREE.Mesh(new THREE.BoxGeometry(WW, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, normalMap: capNor, envMapIntensity: .3 }));
   cap2.position.set(WX, WALL_TOP - .02, -.17); scene.add(cap2);
+  const veilU = STU ? { uIc: { value: -9 }, uAll: { value: 0 } } : null; // PITCH start-studio: the wall shows only where the paint has been, until the camera leaves
+  if (STU) for (const m of [wall.material, cap2.material]) { const prev = m.onBeforeCompile; m.onBeforeCompile = (sh, rr) => { if (prev) prev(sh, rr); Object.assign(sh.uniforms, veilU);
+    sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW;").replace("#include <project_vertex>", "#include <project_vertex>\nvVW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW; uniform float uIc, uAll;").replace("#include <dithering_fragment>", `
+      float arrive = ${(LEDGE.tip + .05).toFixed(3)} + max(0., vVW.x - ${LEDGE.x0.toFixed(3)}) / ${LEDGE.spread.toFixed(3)};
+      float xi = vVW.x * 2.6, i0 = floor(xi), h0 = fract(sin(i0 * 91.7) * 4375.5), h1 = fract(sin((i0 + 1.) * 91.7) * 4375.5), col = mix(h0, h1, smoothstep(0., 1., fract(xi))), age = uIc - arrive - .1;
+      float depth = age * ${(LEDGE.run * 1.6).toFixed(2)} * (.35 + col * col), below = ${WALL_TOP.toFixed(3)} - vVW.y;
+      float wet = vVW.x > ${(LEDGE.x - .2).toFixed(3)} && age > 0. ? smoothstep(-1.1, .25, depth - below) : 0.;
+      float spot = exp(-pow((vVW.x - ${(LEDGE.x + .1).toFixed(3)}) / 1.1, 2.) - pow(max(0., below) / .18, 2.));
+      gl_FragColor.rgb *= clamp(max(max(wet, spot), uAll), 0., 1.);
+      #include <dithering_fragment>`); }; }
   const sheetU = { uFrom: { value: 99 }, uTo: { value: 99 }, uC: { value: PAINT } };
   const sheetMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .1, clearcoat: 1, clearcoatRoughness: .05, polygonOffset: true, polygonOffsetFactor: -2 });
   sheetMat.defines = { USE_UV: "" };
@@ -848,7 +875,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const workAt = { x: LEDGE.x + .1, y: WALL_TOP + .2 };
   const work = new THREE.SpotLight(0xffe6cc, 0, 14, .2, .8, 1.4); scene.add(work, work.target);
   work.position.set(LEDGE.x + .9, WALL_TOP + 4.2, 1.6); work.target.position.set(LEDGE.x + .1, WALL_TOP + .2, -.17);
-  const INTRO = SV ? [V(PL.frame[0], PL.frame[1], PL.frame[2] / 2 / Math.tan(FOV0 * Math.PI / 360)), V(PL.frame[0], PL.frame[1], 0)] : NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x + .8, WALL_TOP + 2.2, 2.9), V(LEDGE.x + .25, WALL_TOP + .25, -.17)];
+  const INTRO = STU && !NARROW ? [V(LEDGE.x + .8 - .75, WALL_TOP + 2.2, 2.9), V(LEDGE.x + .25 - .75, WALL_TOP + .25, -.17)] : SV ? [V(PL.frame[0], PL.frame[1], PL.frame[2] / 2 / Math.tan(FOV0 * Math.PI / 360)), V(PL.frame[0], PL.frame[1], 0)] : NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x + .8, WALL_TOP + 2.2, 2.9), V(LEDGE.x + .25, WALL_TOP + .25, -.17)];
   const CAM_IN = [SV ? (SV === "B" ? 2.7 : 1.8) : .4, 0], FREE_AT = SV ? 4.8 : 3.2; // PITCH: with the poster the camera holds while the pour runs through it (B: until LARSSON is full) // camera starts moving, finishes (set when the pour is known); FREE_AT: on the pour clock the scroll is free here, ~4 s after the tap, while the paint still runs
   // the visitor tips the bucket: one click or tap, or Enter/Space. Until then it waits, rocking a little now and then.
   let goAt = 0, level = 0, skipped = false, introOver = false, coatMax = 0, readyAt = 0, tilt = 0, tiltV = 0, tilt0 = 0, slosh = 0, sloshV = 0, rocks = 0;
@@ -861,6 +888,14 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   addEventListener("keydown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && !goAt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } }); // only while the bucket waits: later Enter and Space belong to the form and its links
   addEventListener("wheel", () => { if (goAt && !introOver) skipped = true; }, { passive: true });
   const tagBucket = document.getElementById("tagBucket"); let tagText = "";
+  let stuTick = () => {};
+  if (STU) { document.documentElement.classList.add("stu-on"); const o = document.querySelector(".stu"), im = o.querySelector("img"), nm = o.querySelector("h2"), num = o.querySelector(".num"), gl = o.querySelector(".go"); let px = 0, py = 0, tx = 0, ty = 0;
+    addEventListener("pointermove", e => { tx = e.clientX / innerWidth - .5; ty = e.clientY / innerHeight - .5; }, { passive: true });
+    addEventListener("deviceorientation", e => { if (e.gamma == null) return; tx = Math.max(-.5, Math.min(.5, e.gamma / 50)); ty = Math.max(-.5, Math.min(.5, (e.beta - 50) / 80)); }, { passive: true });
+    stuTick = ic => { px += (tx - px) * .06; py += (ty - py) * .06; const f = ic < 0 ? 0 : sm(cl((ic - .5) / 1.4));
+      o.style.opacity = 1 - f; o.style.filter = f > 0 ? `blur(${(f * 8).toFixed(1)}px)` : "none"; if (f >= 1) o.style.display = "none";
+      im.style.transform = `translate(${(-px * 14).toFixed(1)}px, ${(-py * 8).toFixed(1)}px)`; nm.style.transform = `translate(${(-px * 6).toFixed(1)}px, ${(-py * 4).toFixed(1)}px)`;
+      num.textContent = Math.round(level * 100); num.style.opacity = readyAt ? 0 : 1; gl.style.opacity = readyAt && !goAt ? 1 : 0; }; }
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
   function intro(now, dt) {
@@ -913,6 +948,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
+    if (STU) { veilU.uIc.value = ic < 0 ? -9 : ic; veilU.uAll.value = sm(cl((ic - 1.1) / 1.5)); stuTick(ic); }
     const lk = ic < 0 ? 0 : sm(cl((ic - .6) / 1.1)), flick = lk > 0 && lk < .6 && Math.random() < .3 ? .2 : 1;
     lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2)))); if (posterL) posterL.intensity = 1.3 * (1 - .4 * lk);
     // after the tip the work light widens and follows the paint's front along the top, so the sheet is seen coming down
