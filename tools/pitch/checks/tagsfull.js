@@ -16,7 +16,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     for (let i = 0; i < 60 && !(await page.evaluate(([early, store]) => document.documentElement.dataset.readyAt && (early || document.documentElement.dataset.wallAt && (!store || document.documentElement.dataset.storeAt)), [early, store])); i++) await page.waitForTimeout(early ? 20 : 250);
     const before = await at();
     await page.evaluate(() => { const F = window.__F = [], L = window.__L = []; new PerformanceObserver(l => { for (const e of l.getEntries()) { for (const x of e.scripts) if (x.invokerType !== 'user-callback' && x.duration > 30) L.push(Math.round(x.duration) + ' ms (' + x.invoker + ')'); } }).observe({ type: 'long-animation-frame' }); let last = 0; (function f(now) { if (last) F.push(now - last); last = now; requestAnimationFrame(f); })(); });
-    await page.evaluate(() => window.bucketAt()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
+    await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
     await page.waitForTimeout(1500);
     const go = sv => page.evaluate(sv => scrollTo(0, svY(sv)), sv);
