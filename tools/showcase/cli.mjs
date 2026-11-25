@@ -8,8 +8,10 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
+import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,13 +20,23 @@ import {
   BASH_COMPLETION,
   COMMANDS,
   HELP,
+  LOOK_PREFIX,
   NAMES,
   SERVERS,
   colorOn,
   complete,
+  freePort,
+  lookItems,
+  lookName,
+  lookRow,
   misePins,
   painter,
   parseArgs,
+  parseBranchInfo,
+  parsePrs,
+  parseWorktrees,
+  pickLook,
+  worktreeFolder,
   suggest,
   tick,
   took,
@@ -65,14 +77,14 @@ function shAsync(cmd, args, timeout = 6000) {
 const has = (cmd) => sh("bash", ["-c", `command -v ${cmd}`]).code === 0;
 
 // A step with a live "… name  12 s" line on a terminal; output goes to a log, its tail is shown when it fails.
-function step(name, cmd, args, { log, env } = {}) {
+function step(name, cmd, args, { log, env, cwd } = {}) {
   return new Promise((res) => {
     mkdirSync(runDir, { recursive: true });
     const logPath = join(runDir, `${log ?? name}.log`);
     const fd = openSync(logPath, "w");
     const t0 = Date.now();
     const child = spawn(cmd, args, {
-      cwd: root,
+      cwd: cwd ?? root,
       stdio: ["ignore", fd, fd],
       env: env ?? process.env,
     });
@@ -101,7 +113,28 @@ function showFailure(r) {
 }
 
 // ---------- background servers ----------
-const recordPath = (name) => join(runDir, `${name}.json`);
+// Look servers (one branch's pitch, served from its worktree) keep their records in the main checkout, so
+// `showcase stop` finds them from any worktree.
+let sharedRun = null;
+function dirFor(name) {
+  if (!name.startsWith(LOOK_PREFIX)) return runDir;
+  sharedRun ??= join(
+    dirname(sh("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"]).stdout),
+    ".cache/run",
+  );
+  return sharedRun;
+}
+const recordPath = (name) => join(dirFor(name), `${name}.json`);
+// Every server showcase may have started: dev, pitch, and one per looked-at branch.
+function allServers() {
+  let looks = [];
+  try {
+    looks = readdirSync(dirFor(LOOK_PREFIX))
+      .filter((f) => f.startsWith(LOOK_PREFIX) && f.endsWith(".json"))
+      .map((f) => f.slice(0, -5));
+  } catch {}
+  return [...Object.keys(SERVERS), ...looks];
+}
 // Process start time (field 22 of /proc/<pid>/stat): a pid the system reused for something else won't match.
 function startTime(pid) {
   try {
@@ -155,20 +188,42 @@ async function waitFor(url, pid, name, limitMs) {
   return { ok: false, ms: Date.now() - t0, slow: true };
 }
 
-async function install() {
-  if (existsSync(join(root, "node_modules")))
-    return say(tick(c, "ok", "packages", "already installed"));
-  const r = await step("packages", "npm", ["ci"]);
+// dir: another worktree; there the packages are also installed again when its package-lock.json changed since the last install.
+async function install(dir = root) {
+  const lock = join(dir, "package-lock.json");
+  const stamp = join(dir, "node_modules/.showcase-lock");
+  const hash = () => createHash("sha256").update(readFileSync(lock)).digest("hex");
+  if (existsSync(join(dir, "node_modules"))) {
+    if (dir === root) return say(tick(c, "ok", "packages", "already installed"));
+    let same;
+    try {
+      same = readFileSync(stamp, "utf8").trim() === hash();
+    } catch {
+      // no stamp yet: npm's own copy of the lock is the record
+      try {
+        same =
+          statSync(join(dir, "node_modules/.package-lock.json")).mtimeMs >= statSync(lock).mtimeMs;
+      } catch {
+        same = false;
+      }
+    }
+    if (same) return say(tick(c, "ok", "packages", "already installed"));
+  }
+  const r = await step("packages", "npm", ["ci"], { cwd: dir });
   if (r.code !== 0) {
     say(tick(c, "bad", "packages", "Couldn't install them. See the log"));
     showFailure(r);
     return false;
   }
+  if (dir !== root) writeFileSync(stamp, hash() + "\n");
   say(tick(c, "ok", "packages", `installed in ${took(r.ms)}`));
 }
 
-async function startServer(name, { cmd, args = [], env, page = "", limitMs }) {
-  const port = Number(process.env.PORT || SERVERS[name]);
+async function startServer(
+  name,
+  { cmd, args = [], env, page = "", limitMs, cwd = root, port: wanted },
+) {
+  const port = wanted ?? Number(process.env.PORT || SERVERS[name]);
   const ts = tailscale();
   const link = `http://${ts.name ?? ts.ip}:${port}/${page}`;
   const have = running(name);
@@ -198,12 +253,12 @@ async function startServer(name, { cmd, args = [], env, page = "", limitMs }) {
     );
     return 1;
   }
-  mkdirSync(runDir, { recursive: true });
-  const logPath = join(runDir, `${name}.log`);
+  mkdirSync(dirFor(name), { recursive: true });
+  const logPath = join(dirFor(name), `${name}.log`);
   const fd = openSync(logPath, "w");
   // its own process group, so stop ends the server and everything it started, and nothing else
   const child = spawn(cmd, args, {
-    cwd: root,
+    cwd,
     detached: true,
     stdio: ["ignore", fd, fd],
     env: { ...process.env, ...env, PORT: String(port) },
@@ -261,7 +316,7 @@ async function stopOne(name, quiet = false) {
   if (!r) {
     if (quiet) return 0;
     say(tick(c, "skip", name, "wasn't running"));
-    const who = listener(SERVERS[name]);
+    const who = SERVERS[name] && listener(SERVERS[name]);
     if (who) {
       say(
         tick(
@@ -350,7 +405,7 @@ async function status({ header = false } = {}) {
   const since = release.startsWith("v")
     ? sh("git", ["rev-list", "--count", "--first-parent", `${release}..origin/master`]).stdout
     : "";
-  const servers = Object.keys(SERVERS)
+  const servers = allServers()
     .map((n) => [n, running(n)])
     .filter(([, r]) => r);
   const passes = savedPasses();
@@ -707,12 +762,155 @@ async function home() {
   return run(pick.name, { ...parseArgs([]), command: pick.name, words });
 }
 
+// ---------- look ----------
+function gatherLook({ prsOnly = false } = {}) {
+  const g = sh(
+    "gh",
+    ["pr", "list", "--limit", "50", "--json", "number,title,headRefName,isDraft,updatedAt"],
+    {
+      timeout: 30000,
+    },
+  );
+  if (g.code !== 0)
+    say(tick(c, "warn", "GitHub", "Couldn't list the open PRs. Not signed in, or offline"));
+  const prs = parsePrs(g.code === 0 ? g.stdout : "[]");
+  if (prsOnly) return prs;
+  sh("git", ["fetch", "-q", "origin", "master"], { timeout: 20000 });
+  const worktrees = parseWorktrees(sh("git", ["worktree", "list", "--porcelain"]).stdout);
+  const info = {};
+  for (const w of worktrees) {
+    const n = sh("git", ["rev-list", "--count", `origin/master..${w.branch}`]).stdout;
+    const log = sh("git", ["log", "-1", "--format=%ct%x09%s", w.branch]).stdout;
+    info[w.branch] = parseBranchInfo(`${n}\t${log}`);
+  }
+  return lookItems({ prs, worktrees, info });
+}
+
+function openBrowser(url) {
+  if (!has("xdg-open"))
+    return say(c.dim("Couldn't open the browser: xdg-open is missing. Open the link above"));
+  spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
+}
+
+// The picker (or --list, or one word). Every pick is served here, from its own folder, with live reload.
+// vercel: for `next preview` with no PR named: a pick list of the open PRs that opens the Vercel preview instead.
+async function look(f, { vercel = false } = {}) {
+  const items = gatherLook({ prsOnly: vercel });
+  const cols = process.stdout.columns || 100;
+  const rows = items.map((it) => ({ ...lookRow(it, Date.now(), cols), it }));
+  const open = (it) => (vercel ? openPreview(it) : openLook(it));
+  if (f.words[0]) {
+    const it = pickLook(items, f.words[0]);
+    if (!it)
+      throw new Usage(
+        `Couldn't find ${f.words[0]} in the work in progress. See: showcase look --list`,
+      );
+    return open(it);
+  }
+  if (!items.length) {
+    say(
+      tick(
+        c,
+        "skip",
+        "look",
+        vercel ? "No open PRs" : "Nothing in progress: no open PRs, no branch ahead of master",
+      ),
+    );
+    return 0;
+  }
+  if (f.list || !(tty && process.stdin.isTTY)) {
+    rows.forEach((r) => say(`${r.name}  ${c.dim(r.about)}`));
+    return 0;
+  }
+  say(`${c.cyan("?")} Which one ${c.dim("(↑↓ to move, Enter to open, q to quit)")}`);
+  const pick = await menu(rows);
+  if (!pick) return 0;
+  say("");
+  return open(pick.it);
+}
+
+// The Vercel preview: next.sh prints the link (it holds the /next key) and the QR; the link is opened here, never written to a file.
+function openPreview(it) {
+  const r = sh("tools/next.sh", ["preview", String(it.number)], { timeout: 90000 });
+  say(r.out);
+  if (r.code !== 0) return r.code;
+  const url = r.stdout.split("\n").find((l) => l.startsWith("https://"));
+  if (url) openBrowser(url);
+  return 0;
+}
+
+// The folder a PR's branch is worked in: the worktree it already has, or a new one under .claude/worktrees.
+function worktreeFor(it) {
+  if (it.path) return it.path;
+  const main = dirname(dirname(dirFor(LOOK_PREFIX)));
+  const path = join(main, ".claude/worktrees", worktreeFolder(it.branch));
+  const f = sh("git", ["fetch", "-q", "origin", it.branch], { timeout: 60000 });
+  if (f.code !== 0) throw new Usage(`Couldn't fetch ${it.branch} from GitHub. ${f.out}`);
+  const add = sh(
+    "git",
+    ["worktree", "add", "--track", "-b", it.branch, path, `origin/${it.branch}`],
+    {
+      timeout: 120000,
+    },
+  );
+  if (add.code !== 0) throw new Usage(`Couldn't make a folder for ${it.branch}. ${add.out}`);
+  say(tick(c, "ok", "folder", `${path} ${c.dim(`(new, from origin/${it.branch})`)}`));
+  return path;
+}
+
+const PITCH_ENV = {
+  SERVE_DIR: ".cache/pitch",
+  SERVE_PAGE: "paint.html",
+  SERVE_BUILD: "pitch:build",
+  SERVE_TAGS: "1",
+  SERVE_WATCH: "1", // tools/pitch/watch.mjs: a saved file rebuilds, and the open pages reload
+};
+
+async function openLook(it) {
+  const wt = worktreeFor(it);
+  if ((await install(wt)) === false) return 1;
+  const b = await step("pitch build", "node", ["tools/pitch/build.mjs"], {
+    log: `${lookName(it.branch)}-build`,
+    cwd: wt,
+  });
+  if (b.code !== 0) {
+    say(tick(c, "bad", "pitch build", "Failed. See the log"));
+    showFailure(b);
+    return 1;
+  }
+  say(tick(c, "ok", "pitch build", `${wt}/.cache/pitch ${c.dim(took(b.ms))}`));
+  const name = lookName(it.branch);
+  const taken = allServers()
+    .filter((n) => n.startsWith(LOOK_PREFIX) && running(n))
+    .map((n) => running(n).port);
+  let port = freePort(taken);
+  while (listener(port)) port = freePort([...taken, port]);
+  const code = await startServer(name, {
+    cmd: join(root, "tools/serve.sh"), // this checkout's tools: the branch may be older and have no live reload
+    args: ["tailscale"],
+    env: { ...PITCH_ENV, SERVE_ROOT: wt },
+    page: "paint.html",
+    limitMs: 30000,
+    cwd: wt,
+    port,
+  });
+  if (code === 0) {
+    say(
+      c.dim(
+        "Saving a file in pitch/ rebuilds it and reloads the open pages. A failed build keeps the last page; the log says why",
+      ),
+    );
+    openBrowser(running(name).url);
+  }
+  return code;
+}
+
 // ---------- help ----------
 function help(cmd) {
   if (cmd && HELP[cmd]) {
     const [about, ...ex] = HELP[cmd];
     say(
-      `${c.bold("Usage")}  showcase ${cmd} ${{ next: "[live|dev|preview [PR#]] [--print]", check: "[code|walk|pitch] [name] [--quick] [--force]", stop: "[dev|pitch]", release: "major|minor|patch|vX.Y.Z [--dry-run] [--yes]" }[cmd] ?? ""}`.trimEnd(),
+      `${c.bold("Usage")}  showcase ${cmd} ${{ look: "[--list | PR# | branch]", next: "[live|dev|preview [PR#]] [--print]", check: "[code|walk|pitch] [name] [--quick] [--force]", stop: "[dev|pitch]", release: "major|minor|patch|vX.Y.Z [--dry-run] [--yes]" }[cmd] ?? ""}`.trimEnd(),
     );
     say("");
     say(about);
@@ -749,6 +947,8 @@ async function run(cmd, f) {
     case "dev":
       if ((await install()) === false) return 1;
       return startServer("dev", { cmd: "tools/dev.sh", limitMs: 120000 });
+    case "look":
+      return look(f);
     case "pitch": {
       if ((await install()) === false) return 1;
       const b = await step("pitch build", "node", ["tools/pitch/build.mjs"], {
@@ -760,12 +960,7 @@ async function run(cmd, f) {
         return 1;
       }
       say(tick(c, "ok", "pitch build", `.cache/pitch ${c.dim(took(b.ms))}`));
-      const env = {
-        SERVE_DIR: ".cache/pitch",
-        SERVE_PAGE: "paint.html",
-        SERVE_BUILD: "pitch:build",
-        SERVE_TAGS: "1",
-      };
+      const env = PITCH_ENV;
       const code = await startServer("pitch", {
         cmd: "tools/serve.sh",
         args: ["tailscale"],
@@ -776,7 +971,7 @@ async function run(cmd, f) {
       if (code === 0)
         say(
           c.dim(
-            "Tags you leave here stay on this PC and are gone on stop. The live store: showcase next",
+            "Tags you leave here stay on this PC and are gone on stop. Saving a file in pitch/ rebuilds the page and reloads it. The live store: showcase next",
           ),
         );
       return code;
@@ -786,15 +981,27 @@ async function run(cmd, f) {
       if (!["live", "dev", "preview"].includes(words[0]))
         throw new Usage(`Unknown place ${words[0]}. Use live, dev or preview [PR#]`);
       if (f.print && words[0] !== "preview") words.push("--print");
+      // no PR named and none on this branch (e.g. on master): pick one from the open PRs
+      if (
+        words[0] === "preview" &&
+        !words[1] &&
+        sh("gh", ["pr", "view", "--json", "number"]).code !== 0
+      )
+        return look({ ...f, words: [] }, { vercel: true });
       return spawnSync("tools/next.sh", words, { cwd: root, stdio: "inherit" }).status ?? 1;
     }
     case "check":
       return check(f);
     case "stop": {
-      const names = f.words.length ? f.words : Object.keys(SERVERS);
+      const looks = allServers().filter((n) => n.startsWith(LOOK_PREFIX));
+      const names = f.words.length
+        ? f.words.flatMap((n) => (n === "look" ? looks : [n]))
+        : allServers();
       for (const n of names)
-        if (!(n in SERVERS))
-          throw new Usage(`Unknown server ${n}. Use ${Object.keys(SERVERS).join(" or ")}`);
+        if (!(n in SERVERS) && !looks.includes(n))
+          throw new Usage(
+            `Unknown server ${n}. Use ${[...Object.keys(SERVERS), "look"].join(", ")}`,
+          );
       for (const n of names) await stopOne(n);
       return 0;
     }

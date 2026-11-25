@@ -5,7 +5,9 @@
 #   localhost  this PC only
 # The port comes from PORT (default 8123). The address is looked up each time, so it works on both PCs.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+# SERVE_ROOT: showcase look serves another worktree with these tools (its own branch may be older and have no live reload)
+tools="$(cd "$(dirname "$0")" && pwd)"
+cd "${SERVE_ROOT:-$tools/..}"
 
 dir="${SERVE_DIR:-out}"
 page="${SERVE_PAGE:-}"
@@ -30,6 +32,15 @@ echo "Serving $dir/ at $url (Ctrl+C to stop)"
 if [ "${2:-}" = "--open" ]; then
   (sleep 1; xdg-open "$url" >/dev/null 2>&1) &
 fi
+# Live reload of the pitch on this PC (SERVE_WATCH=1): tools/pitch/watch.mjs rebuilds on every save, serve.py makes the open pages reload
+if [ -n "${SERVE_WATCH:-}" ]; then
+  SERVE_RELOAD_FILE="$PWD/.cache/reload.version"
+  export SERVE_RELOAD_FILE
+  date +%s%N >"$SERVE_RELOAD_FILE"
+  node "$tools/pitch/watch.mjs" &
+  watcher=$!
+  trap 'kill "$watcher" 2>/dev/null' EXIT
+fi
 # The pitch's own tag store (SERVE_TAGS=1): api/tags.ts in memory on this PC, behind serve.py's /api/tags
 if [ -n "${SERVE_TAGS:-}" ]; then
   TAGS_PORT=$(python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')
@@ -38,6 +49,6 @@ if [ -n "${SERVE_TAGS:-}" ]; then
   # Tailscale address, so the real key never goes in.
   node tools/tags/local.mjs "$TAGS_PORT" &
   tags=$!
-  trap 'kill "$tags" 2>/dev/null' EXIT
+  trap 'kill "$tags" ${watcher:-} 2>/dev/null' EXIT
 fi
-python3 -I tools/serve.py "$host" "$port"
+python3 -I "$tools/serve.py" "$host" "$port"

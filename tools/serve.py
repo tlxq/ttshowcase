@@ -3,6 +3,8 @@
 cookie, without it /next is the site's 404 page. No PREVIEW_KEY: /next is closed.
 The response headers in vercel.json (security rules, noindex) are sent here too, so the checks run under them.
 /api/tags and /api/admin go to the local tag store (tools/tags/local.mjs) when TAGS_PORT is set (the pitch); /api/tags-local only from this PC.
+SERVE_RELOAD_FILE (the local pitch only, set by serve.sh when SERVE_WATCH is): pages get tools/pitch/reload.js, which waits on /__reload
+until tools/pitch/watch.mjs writes a new version into that file. Without it none of this exists, and nothing is ever added to a build.
 Usage: serve.py <host> <port>"""
 
 import functools
@@ -15,12 +17,15 @@ import os
 import re
 import posixpath
 import sys
+import time
 import urllib.parse
 
 COOKIE = "next_key"
 KEY = os.environ.get("PREVIEW_KEY", "")
 DIR = os.environ.get("SERVE_DIR", "out")
 TAGS_PORT = int(os.environ.get("TAGS_PORT") or 0)
+RELOAD_FILE = os.environ.get("SERVE_RELOAD_FILE", "")
+RELOAD_JS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pitch", "reload.js")
 
 # vercel.json's header blocks; a block that depends on the host ("has"/"missing") is Vercel's own and left out here
 with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "vercel.json"), encoding="utf-8") as f:
@@ -144,12 +149,74 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(data)
         return True
 
+    def version(self):
+        try:
+            with open(RELOAD_FILE, encoding="utf-8") as f:
+                return f.read().strip()
+        except OSError:
+            return ""
+
+    def reload(self):
+        """True when the request was for the live reload's script or its wait, and is answered here."""
+        url = urllib.parse.urlsplit(self.path)
+        if url.path == "/__reload.js":
+            with open(RELOAD_JS, "rb") as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/javascript; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return True
+        if url.path != "/__reload":
+            return False
+        seen = urllib.parse.parse_qs(url.query).get("v", [""])[0]
+        end = time.time() + 20
+        try:
+            while time.time() < end:
+                now = self.version()
+                if now != seen:
+                    body = (now + "\n").encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/plain; charset=utf-8")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                    return True
+                time.sleep(0.25)
+            self.send_response(204)  # nothing new yet: the page asks again
+            self.end_headers()
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # the page was closed while it waited
+        return True
+
+    def reload_page(self):
+        """True when this was an html page and it went out with the reload script added."""
+        local = self.translate_path(self.path)
+        if os.path.isdir(local):
+            local = os.path.join(local, "index.html")
+        if not (local.endswith(".html") and os.path.isfile(local)):
+            return False
+        with open(local, "rb") as f:
+            body = f.read()
+        tag = f'<script src="/__reload.js?v={urllib.parse.quote(self.version())}"></script>'.encode()
+        end = body.rfind(b"</body>")
+        body = body[:end] + tag + body[end:] if end >= 0 else body + tag
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        return True
+
     def do_POST(self):
         if not self.tags():
             self.send_error(405)
 
     def do_GET(self):
         if self.tags():
+            return
+        if RELOAD_FILE and self.reload():
             return
         if BOTID.fullmatch(urllib.parse.urlsplit(self.path).path):
             # Vercel BotID's checker lives only on Vercel (vercel.json's rewrites). Here a stand-in hands the page a
@@ -166,6 +233,8 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             return
         if self.gate():
+            if RELOAD_FILE and self.reload_page():
+                return
             super().do_GET()
 
     def do_HEAD(self):
