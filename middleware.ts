@@ -6,6 +6,11 @@
  *
  * Vercel runs this file as Routing Middleware in front of the static site; `next dev` runs it as its proxy. It has
  * no imports on purpose: Vercel loads it as plain Node ESM (needs ".js" paths), Next's dev server can't resolve those.
+ *
+ * It also sends every page's Content-Security-Policy. The build (tools/csp/manifest.mjs) hashes each page's inline
+ * scripts into /csp-manifest.json, so the header names them and the site needs no 'unsafe-inline'. The manifest is
+ * the site's own file, fetched once per instance (a deployment never changes). No manifest: the strictest policy
+ * (no inline scripts), never a loose one.
  * Tests: src/release/middleware.test.ts.
  */
 export const COOKIE = "next_key";
@@ -84,6 +89,38 @@ export function gate(url: URL, cookieHeader: string | null, key: string | undefi
   return cookie !== null && sameKey(cookie, key) ? { kind: "pass" } : { kind: "not-found" };
 }
 
+export type Manifest = Record<string, string>;
+
+/** Used when the manifest can't be read: nothing inline runs, nothing is framed. */
+export const STRICT_CSP =
+  "default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
+/** The policy for an address: its page's own, or the 404 page's ("default") when it has no page. */
+export function policyFor(pathname: string, manifest: Manifest | null): string {
+  if (!manifest) return STRICT_CSP;
+  const path = cleanPath(pathname);
+  const key = path.length > 1 ? path.replace(/\/+$/, "") : path;
+  const own = Object.hasOwn(manifest, key) && key !== "default" ? manifest[key] : undefined;
+  return own ?? manifest.default ?? STRICT_CSP;
+}
+
+let manifestOnce: Promise<Manifest | null> | undefined;
+
+/** The manifest from this deployment; kept after it loads, tried again after a failure. */
+function loadManifest(url: URL, headers: Headers): Promise<Manifest | null> {
+  manifestOnce ??= fetch(new URL("/csp-manifest.json", url), {
+    headers,
+    signal: AbortSignal.timeout(3000),
+  })
+    .then(async (r) => (r.ok ? ((await r.json()) as Manifest) : null))
+    .catch(() => null)
+    .then((m) => {
+      if (!m) manifestOnce = undefined;
+      return m;
+    });
+  return manifestOnce;
+}
+
 // Every request but plain assets: an encoded address (/%6Eext) can't be listed here, so the gate decodes it itself.
 export const config = {
   matcher: [
@@ -94,7 +131,20 @@ export const config = {
 export default async function middleware(request: Request): Promise<Response | undefined> {
   const url = new URL(request.url);
   const g = gate(url, request.headers.get("cookie"), process.env.PREVIEW_KEY);
-  if (g.kind === "pass") return undefined;
+  // the visitor's own cookies and bypass header go along, so a protected Vercel preview answers too
+  const pass = new Headers();
+  for (const h of ["cookie", "x-vercel-protection-bypass"]) {
+    const v = request.headers.get(h);
+    if (v) pass.set(h, v);
+  }
+  if (g.kind === "pass") {
+    if (process.env.NODE_ENV === "development") return undefined; // `next dev` has no build, no manifest
+    // "go on to the file", with the page's policy added to what comes back
+    const csp = policyFor(url.pathname, await loadManifest(url, pass));
+    return new Response(null, {
+      headers: { "x-middleware-next": "1", "Content-Security-Policy": csp },
+    });
+  }
   if (g.kind === "redirect") {
     return new Response(null, {
       status: 303,
@@ -105,14 +155,13 @@ export default async function middleware(request: Request): Promise<Response | u
       },
     });
   }
-  // the site's own 404 page, with a 404 status
-  // the visitor's own cookies and bypass header go along, so a protected Vercel preview answers too
-  const pass = new Headers();
-  for (const h of ["cookie", "x-vercel-protection-bypass"]) {
-    const v = request.headers.get(h);
-    if (v) pass.set(h, v);
-  }
-  const html = { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" };
+  // the site's own 404 page, with a 404 status and its own policy
+  const csp = policyFor("/404", await loadManifest(url, pass));
+  const html = {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-store",
+    "Content-Security-Policy": csp,
+  };
   try {
     const page = await fetch(new URL("/404", url), {
       headers: pass,
