@@ -21,7 +21,10 @@ import { TAG_LIMITS } from "../../api/tags.ts";
 
 const root = resolve(import.meta.dirname, "../..");
 const fonts = join(root, ".cache/fonts");
-const out = join(root, ".cache/pitch");
+// PITCH_OUT: tools/pitch/watch.mjs builds into a folder beside it and swaps it in only when the build worked
+const out = process.env.PITCH_OUT
+  ? resolve(root, process.env.PITCH_OUT)
+  : join(root, ".cache/pitch");
 const hand = (name) => readFileSync(join(root, "src/content/hand", name + ".json"), "utf8").trim();
 
 async function get(url, what) {

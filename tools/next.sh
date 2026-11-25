@@ -14,7 +14,7 @@ if [ "${1:-}" = preview ]; then
   command -v gh >/dev/null && command -v vercel >/dev/null || { echo "Couldn't find gh and vercel. Run: mise install" >&2; exit 1; }
   if [ -n "${2:-}" ]; then branch=$(gh pr view "$2" --json headRefName --jq .headRefName)
   else branch=$(gh pr view --json headRefName --jq .headRefName 2>/dev/null || true); fi
-  [ -n "$branch" ] || { echo "Couldn't find the PR's branch. Name the PR: mise run next preview 44" >&2; exit 1; }
+  [ -n "$branch" ] || { echo "Couldn't find the PR's branch. Name the PR: mise run next preview 44, or run showcase look" >&2; exit 1; }
   # the Vercel link lives in the main checkout's .vercel (a worktree has none)
   repo=$(cd "$(dirname "$0")/.." && cd "$(git rev-parse --git-common-dir)/.." && pwd)
   link="$repo/.vercel/project.json"

@@ -4,6 +4,11 @@ import { readFileSync } from "node:fs";
 
 // One line each: the menu, --help and the completion all read this list.
 export const COMMANDS = [
+  {
+    name: "look",
+    about: "the work in progress: open PRs and branches in worktrees, open one",
+    menu: true,
+  },
   { name: "dev", about: "live editing on Tailscale, link + QR", menu: true },
   { name: "pitch", about: "the paint walk with your own local tag wall", menu: true },
   { name: "next", about: "open /next: live, dev, or preview [PR]", menu: true },
@@ -18,15 +23,26 @@ export const NAMES = COMMANDS.map((c) => c.name);
 // The servers showcase starts in the background, and the ports they use.
 export const SERVERS = { dev: 3000, pitch: 8124 };
 
+// A look server is one branch's pitch, served from its worktree: its own record name and port range.
+export const LOOK_PREFIX = "look-";
+export const LOOK_PORT_FROM = 8130;
+
 // --help per command: what it does, then real examples.
 export const HELP = {
+  look: [
+    "Lists the work in progress, newest first: open PRs (draft marked) and branches in a worktree that are ahead of master and have no PR. Pick one to serve its pitch from its own folder on Tailscale (a PR's branch gets a folder under .claude/worktrees if it has none) and open it in the browser. Saving a file in pitch/ rebuilds it and reloads the open pages, on the phone too.",
+    "showcase look",
+    "showcase look --list",
+    "showcase look 95",
+    "showcase look feat/epa-painted",
+  ],
   dev: [
     "Starts the dev server in the background on this PC's Tailscale address and prints the link and a QR.",
     "showcase dev",
     "PORT=3001 showcase dev",
   ],
   pitch: [
-    "Builds the paint walk and serves it in the background with a local tag store (tags stay on this PC).",
+    "Builds the paint walk and serves it in the background with a local tag store (tags stay on this PC). Saving a file in pitch/ rebuilds it and reloads the open pages, on the phone too.",
     "showcase pitch",
   ],
   next: [
@@ -75,6 +91,7 @@ export function parseArgs(argv) {
     yes: false,
     print: false,
     dryRun: false,
+    list: false,
   };
   for (const a of argv) {
     if (a === "-h" || a === "--help") out.help = true;
@@ -84,6 +101,7 @@ export function parseArgs(argv) {
     else if (a === "--quick") out.quick = true;
     else if (a === "--yes" || a === "-y") out.yes = true;
     else if (a === "--print") out.print = true;
+    else if (a === "--list") out.list = true;
     else if (a === "--dry-run") out.dryRun = true;
     else if (a.startsWith("-")) out.unknown = a;
     else if (!out.command) out.command = a;
@@ -169,8 +187,10 @@ export function complete(words, root) {
       return pick(["--force"]);
     case "next":
       return before.length === 0 ? pick(["live", "dev", "preview", "--print"]) : pick(["--print"]);
+    case "look":
+      return before.length === 0 ? pick(["--list"]) : [];
     case "stop":
-      return before.length === 0 ? pick(Object.keys(SERVERS)) : [];
+      return before.length === 0 ? pick([...Object.keys(SERVERS), "look"]) : [];
     case "release":
       return before.length === 0
         ? pick(["major", "minor", "patch", "--dry-run"])
@@ -206,4 +226,124 @@ export function versionIn(text) {
 // A failed log line can be megabytes (inlined font data): print at most `max` characters, with a visible marker.
 export function cutLine(line, max = 300) {
   return line.length > max ? line.slice(0, max) + "…" : line;
+}
+
+// ---------- look: the work in progress ----------
+// `git worktree list --porcelain` -> [{ path, branch }]; detached, bare and master worktrees are left out.
+export function parseWorktrees(text) {
+  const out = [];
+  for (const block of String(text).split(/\n\s*\n/)) {
+    let path = null,
+      branch = null,
+      bare = false;
+    for (const l of block.split("\n")) {
+      if (l.startsWith("worktree ")) path = l.slice(9);
+      else if (l.startsWith("branch ")) branch = l.slice(7).replace(/^refs\/heads\//, "");
+      else if (l === "bare") bare = true;
+    }
+    if (path && branch && !bare && branch !== "master") out.push({ path, branch });
+  }
+  return out;
+}
+
+// `gh pr list --json number,title,headRefName,isDraft,updatedAt` -> items
+export function parsePrs(json) {
+  let rows;
+  try {
+    rows = JSON.parse(json);
+  } catch {
+    return [];
+  }
+  return rows.map((r) => ({
+    kind: "pr",
+    number: r.number,
+    title: r.title,
+    branch: r.headRefName,
+    draft: Boolean(r.isDraft),
+    time: Date.parse(r.updatedAt) || 0,
+  }));
+}
+
+// One line "<ahead>\t<unix seconds>\t<subject>" per branch (cli.mjs builds it from git) -> { ahead, time, subject }
+export function parseBranchInfo(line) {
+  const [ahead, secs, ...subject] = String(line).trim().split("\t");
+  return {
+    ahead: Number(ahead) || 0,
+    time: (Number(secs) || 0) * 1000,
+    subject: subject.join("\t"),
+  };
+}
+
+// PRs, then the worktree branches that are ahead of master and have no open PR; newest first.
+// info: { [branch]: { ahead, time, subject } }
+export function lookItems({ prs, worktrees, info }) {
+  const withPr = new Set(prs.map((p) => p.branch));
+  const branches = worktrees
+    .filter((w) => !withPr.has(w.branch) && info[w.branch]?.ahead > 0)
+    .map((w) => ({ kind: "branch", branch: w.branch, path: w.path, ...info[w.branch] }));
+  // a PR whose branch is checked out in a worktree knows where (the one it is served from)
+  const withPath = prs.map((p) => ({
+    ...p,
+    path: worktrees.find((w) => w.branch === p.branch)?.path ?? null,
+  }));
+  return [...withPath, ...branches].sort((a, b) => b.time - a.time);
+}
+
+// "just now", "12 min ago" (the last hour), then "3 h ago", "2 days ago"
+export function ago(ms, now = Date.now()) {
+  const min = Math.floor((now - ms) / 60000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min} min ago`;
+  if (min < 1440) return `${Math.floor(min / 60)} h ago`;
+  const d = Math.floor(min / 1440);
+  return `${d} ${d === 1 ? "day" : "days"} ago`;
+}
+
+// The menu row for one item: what it is leads (PR title, last commit subject); number, branch and time are dim after it.
+export function lookRow(it, now = Date.now(), cols = 100) {
+  const cut = (t, n) => (t.length > n ? t.slice(0, n - 1) + "…" : t);
+  const name = cut(
+    it.kind === "pr" ? it.title : it.subject || it.branch,
+    Math.max(24, Math.floor(cols * 0.5)),
+  );
+  const about = [
+    it.kind === "pr" ? `#${it.number}${it.draft ? " draft" : ""}` : "no PR",
+    it.branch,
+    ago(it.time, now),
+  ].join(" · ");
+  return { name, about };
+}
+
+// `showcase look <word>`: "95" or "#95" is a PR, anything else a branch or its worktree folder. null when none fits.
+export function pickLook(items, word) {
+  const num = /^#?(\d+)$/.exec(word);
+  if (num) return items.find((x) => x.kind === "pr" && x.number === Number(num[1])) ?? null;
+  return (
+    items.find((x) => x.branch === word) ??
+    items.find((x) => x.kind === "branch" && x.path.split("/").pop() === word) ??
+    null
+  );
+}
+
+// The server's record name for a branch: "feat/epa-painted" -> "look-feat-epa-painted"
+export function lookName(branch) {
+  return (
+    LOOK_PREFIX +
+    branch
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+  );
+}
+
+// Where a branch's folder goes: .claude/worktrees/<branch, slashes as dashes>
+export function worktreeFolder(branch) {
+  return branch.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+// The first port from `from` that is not in `taken`.
+export function freePort(taken, from = LOOK_PORT_FROM) {
+  let p = from;
+  while (taken.includes(p)) p++;
+  return p;
 }
