@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Proves the security rules are on the built site (out/), served by tools/serve.py with vercel.json's headers: the page
-# rules (CSP: no framing, no plugins, scripts only from here and pinned three), Permissions-Policy, nosniff; /next's own
+# rules (CSP: no framing, no plugins, scripts only from here and pinned three, and every inline script by its hash, never 'unsafe-inline'), Permissions-Policy, nosniff; /next's own
 # script rule matches its inline script by hash; security.txt is there and not out of date. Part of `mise run check`.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -31,6 +31,53 @@ for p in / /admin /no-such-page /next; do
   grep -qi '^x-frame-options: DENY' <<<"$h" || no "$p can be framed (no X-Frame-Options: DENY)"
 done
 
+# every page's header CSP: no 'unsafe-inline' for scripts, and the hash of every inline script it carries (the build's
+# manifest is not trusted: the hashes are worked out again here from the page itself)
+python3 -I - out "$base" "$key" <<'PY' || fail=1
+import base64, hashlib, pathlib, re, sys, urllib.request
+out, base, key = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+bad = []
+def head(path):
+    req = urllib.request.Request(base + path, headers={"Cookie": "next_key=" + key})
+    try:
+        r = urllib.request.urlopen(req)
+    except urllib.error.HTTPError as e:
+        r = e
+    return r.headers.get("Content-Security-Policy", "")
+def script_src(csp):
+    m = re.search(r"(?:^|;)\s*script-src ([^;]*)", csp)
+    return m.group(1) if m else None
+pages = sorted(out.rglob("*.html"))
+for f in pages:
+    rel = f.relative_to(out).as_posix()[:-5]
+    path = "/" if rel == "index" else "/" + re.sub(r"/index$", "", rel)
+    page = f.read_text(encoding="utf-8")
+    want = set()
+    for attrs, body in re.findall(r"<script\b([^>]*)>([\s\S]*?)</script>", page, re.I):
+        kind = re.search(r"\stype\s*=\s*[\"']?([^\"'\s>]*)", attrs, re.I)
+        runs = not kind or re.fullmatch(r"|module|(?:text|application)/(?:x-)?javascript", kind.group(1), re.I)
+        if re.search(r"\ssrc\s*=", attrs) or not runs:
+            continue
+        want.add("sha256-" + base64.b64encode(hashlib.sha256(body.encode()).digest()).decode())
+    src = script_src(head(path))
+    if src is None:
+        bad.append(f"{path}: no script-src in its CSP")
+        continue
+    if "'unsafe-inline'" in src or "'unsafe-eval'" in src:
+        bad.append(f"{path}: script-src allows any inline script")
+    named = set(re.findall(r"'(sha256-[^']+)'", src))
+    if want - named:
+        bad.append(f"{path}: {len(want - named)} of its {len(want)} inline scripts have no hash in the CSP")
+for path in ("/no-such-page", "/no/such/page/"):
+    src = script_src(head(path)) or ""
+    if not src or "'unsafe-inline'" in src:
+        bad.append(f"{path}: the CSP of an unknown address allows inline scripts or is missing")
+if not pages:
+    bad.append("no pages in out/")
+if bad:
+    sys.exit("header-check: " + "\n".join(bad))
+PY
+
 # /next: its meta rule names the hash of exactly the inline script it carries
 python3 -I - out/next.html <<'PY' || fail=1
 import base64, hashlib, re, sys
@@ -42,8 +89,9 @@ named = set(re.findall(r"'(sha256-[^']+)'", rule.group(1)))
 inline = {"sha256-" + base64.b64encode(hashlib.sha256(s.encode()).digest()).decode() for s in re.findall(r"<script>([\s\S]*?)</script>", page)}
 if not inline or named != inline:
     sys.exit("header-check: /next's script rule doesn't match its inline scripts (tools/pitch/build.mjs)")
-if "url(data:font" in page and not re.search(r"font-src [^;]*data:", open("vercel.json", encoding="utf-8").read()):
-    sys.exit("header-check: /next embeds its fonts as data:, but the site's font-src doesn't allow data: (vercel.json)")
+import json
+if "url(data:font" in page and not re.search(r"font-src [^;]*data:", json.load(open("out/csp-manifest.json", encoding="utf-8"))["/next"]):
+    sys.exit("header-check: /next embeds its fonts as data:, but the site's font-src doesn't allow data: (tools/csp/manifest.mjs)")
 if "'unsafe-inline'" in rule.group(1) or "'unsafe-eval'" in rule.group(1):
     sys.exit("header-check: /next's script rule allows any inline script")
 PY
