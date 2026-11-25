@@ -889,7 +889,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   function startLayout(W, H, gu) { bucketHome.updateWorldMatrix(true, false); camera.updateMatrixWorld(); // placed now, not as of the last render: the first frames come before it
     const P = q => { const v = bucketHome.localToWorld(q).project(camera); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
     const [cx] = P(V(0, BK.h * .5, 0)), [ex] = P(V(BK.r1 + .06, BK.h * .5, 0)), [, ty] = P(V(0, BK.h + .12, 0)), [, by] = P(V(0, -.05, 0)), room = cx - Math.abs(ex - cx) - gu, AR = .73;
-    const set = (e, o) => { const m = stW.get(e) || stW.set(e, {}).get(e); for (const k in o) { const v = typeof o[k] === "number" ? o[k].toFixed(1) + "px" : o[k]; if (m[k] !== v) { m[k] = v; e.style[k] = v; } } };
+    const set = (e, o) => { const m = stW.get(e) || stW.set(e, {}).get(e); for (const k in o) { const v = typeof o[k] === "number" ? o[k].toFixed(0) + "px" : o[k]; if (m[k] !== v) { m[k] = v; e.style[k] = v; } } };
     if (room > W * .3) { // beside: the photo fills the room left of the bucket, his chest level with it; the name top right
       const ph = Math.min(H * .94, (room - gu) / AR), fs = Math.min(H * .15, (W - gu * 3 - ph * AR) * nameEm()); // the room right of the photo
       set(stIm, { left: gu, top: Math.max(H * .03, Math.min(H - ph, (ty + by) / 2 - ph * .42)), height: ph, translate: "0 0" });
@@ -953,7 +953,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
-    veilU.uIc.value = ic < 0 ? -9 : ic; veilU.uAll.value = startDay = sm(cl((ic - 1.1) / 1.5)); skyU.uVeil.value = startDay; cityFar.material.opacity = startDay; startTick(now, ic);
+    veilU.uIc.value = ic < 0 ? -9 : ic; veilU.uAll.value = startDay = sm(cl((ic - 1.1) / 1.5)); skyU.uVeil.value = startDay; cityFar.material.opacity = startDay;
     const lk = ic < 0 ? 0 : sm(cl((ic - .6) / 1.1)), flick = lk > 0 && lk < .6 && Math.random() < .3 ? .2 : 1;
     lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * lampOn * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2))));
     // after the tip the work light widens and follows the paint's front along the top, so the sheet is seen coming down
@@ -2263,7 +2263,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     // aimed at the middle of the view (step 5): the words, the can and the tags all stand in it, on a laptop and a phone
     if (!introOver) { const k = ic < 0 || !CAM_IN[1] ? 0 : sm(cl((ic - CAM_IN[0]) / (CAM_IN[1] - CAM_IN[0]))); cp.lerpVectors(INTRO[0], cp, k); cl_.lerpVectors(INTRO[1], cl_, k); }
     const hand = (1 - inShaft(cp)) * (1 - pick.k) * (1 - poleK); /* close to the wall the frame must sit still under the finger */ camera.position.set(cp.x + hand * (cmx * .5 + Math.sin(drift * .31) * .06), cp.y - hand * cmy * .3 + Math.sin(drift * .43) * .04, cp.z);
-    progPlace(); camera.lookAt(cl_); pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(Math.max(lft, endVisit)); endPlace(now); bombPlace();
+    progPlace(); camera.lookAt(cl_); startTick(now, ic); /* the start is placed from this frame's camera: before it, the first frame saw the default camera */ pickPlace(); if (adm.on) admPlace(); tagTick(now); visitPlace(Math.max(lft, endVisit)); endPlace(now); bombPlace();
     lens.uniforms.uFocus.value = camera.position.distanceTo(cl_); lens.uniforms.uTime.value = drift; lens.uniforms.tDepth.value = composer.readBuffer.depthTexture;
     // shadow from the can's bottom to its top, as the light throws it on the wall
     const LL = can.position.x > 6 ? lamp2 : lamp, sa = onWall(can.localToWorld(V(0, .1, 0)), LL.position), sb = onWall(can.localToWorld(V(0, 1.25, 0)), LL.position), sl = sa.distanceTo(sb);
