@@ -17,7 +17,7 @@ root="$PWD"
 mkdir -p .cache/shots .cache/walk
 . tools/walk/graphics.sh || exit 1
 
-names="tour waits endwaits replay2 reduced contrast plates framed tagsfull scrollup pickspot space tagit tagstore admin nogl startkey startclick startload shape front frontstill" # front*: the front page (front.html)
+names="tour waits endwaits replay2 reduced contrast plates framed tagsfull scrollup pickspot space tagit tagstore admin nogl startkey startclick startload shape pageinfo front frontstill" # front*: the front page (front.html)
 FRAME_CHECKS=" waits endwaits tagsfull "
 JOBS="${JOBS:-4}"
 out=$(mktemp -d)
