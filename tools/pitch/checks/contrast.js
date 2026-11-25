@@ -30,7 +30,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const all = [];
   for (const [hour, at] of [['23', ', night'], ['12', ', noon']]) { // the clock light: the start wall and the end at night and by day
     await page.goto('__URL__'.replace('hour=23', 'hour=' + hour)); await page.waitForTimeout(3500); all.push(...await look('loading' + at));
-    await page.mouse.click(W / 2, H / 2);
+    await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
     all.push(...await look('opening' + at));
     const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
