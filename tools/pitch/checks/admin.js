@@ -9,7 +9,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const rows = async () => (await api('/api/tags-local/rows')).j;
   const state = () => page.evaluate(() => window.admTest.state());
   const settle = async (want, n) => { for (let i = 0; i < (n || 60); i++) { const s = await state(); if (want(s)) return s; await page.waitForTimeout(150); } return state(); };
-  const start = async () => { await page.goto('__URL__'); await page.waitForTimeout(3500); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
+  const start = async () => { await page.goto('__URL__'); await page.waitForTimeout(3500); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && (b.x > 0 ? b : matchMedia("(prefers-reduced-motion: reduce)").matches && getComputedStyle(document.querySelector(".start")).display === "none" && b); /* reduced motion: no start screen, nothing to tip */ }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250); await page.waitForTimeout(600); };
   const ours = { 'X-Admin': '1' }; // Origin is added by the browser
   const stroke = { tool: 'fat', col: '#ff4f1a', seed: 5, pts: [60, 80, 0, .5, 300, 200, 50, .5, 600, 120, 100, .5], dr: [] };
