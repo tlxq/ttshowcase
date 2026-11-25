@@ -11,7 +11,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
       for (const p of pics) { if (p.only && !e.matches(p.only)) continue; const w = Math.min(r.right, p.r) - Math.max(r.left, p.l), h = Math.min(r.bottom, p.b) - Math.max(r.top, p.t);
         if (w > 6 && h > 6) bad.push(name + ' covers ' + p.name + ' by ' + Math.round(w) + ' x ' + Math.round(h) + ' px (' + where + ')'); } }
     return { plates: plates.length, pictures: pics.length, bad }; }, where);
-  await page.goto('__URL__'); await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
+  await page.goto('__URL__'); await page.waitForTimeout(3500); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   const bad = new Set();
   for (const sv of [100, 128, 200, 300, 432, 500, 540, 600, 700, 770, 840, 910, 1045, 1180]) {

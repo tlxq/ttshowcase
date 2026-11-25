@@ -2,7 +2,7 @@
 // must show at once (each wall paints once per visit). Fails when one never shows within 6 s.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  await page.goto('__URL__'); await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
+  await page.goto('__URL__'); await page.waitForTimeout(3500); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   const go = sv => page.evaluate(sv => { scrollTo(0, svY(sv)); return performance.now(); }, sv);
   const state = n => page.evaluate(n => ({ plates: [...document.querySelectorAll('.tag.facts')].filter(e => getComputedStyle(e).opacity > .5 && e.textContent.startsWith(n)).length, hots: [...document.querySelectorAll('a.hot')].filter(a => a.style.display === 'block' && ({ ttoolbox: /^Code for ttoolbox$/, dot: /^Code for dot$/, tthermal: /^Code for tthermal$/, 'app-utveckling': /^(app-utveckling\.se|mjukvaruutvecklare\.com)$/, 'Self-hosted platform': /^$/ })[n].test(a.getAttribute('aria-label'))).length }), n);

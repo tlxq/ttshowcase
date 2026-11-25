@@ -4,7 +4,7 @@
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   const toForm = async () => {
-    await page.waitForTimeout(3500); await page.mouse.click(W / 2, H / 2);
+    await page.waitForTimeout(3500); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
     await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(2500); // Leave your tag lives on the visitors' wall (Tom 11-23: no end landing)
     let on = false; for (let i = 0; i < 60 && !on; i++) { on = await page.evaluate(() => document.getElementById('leaveUp').style.display === 'block'); if (!on) await page.waitForTimeout(200); }
@@ -53,7 +53,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (res.undone !== 3) errs.push('Undo left ' + res.undone + ' strokes, not 3');
   await page.click('#tagDone'); await page.waitForTimeout(200); res.done = await st();
   if (res.done.stage !== 'send' || !res.done.playing || res.done.send) errs.push('Done did not start the replay: ' + JSON.stringify(res.done));
-  await page.waitForTimeout(4800); res.played = await st();
+  for (let i = 0; i < 75; i++) { await page.waitForTimeout(200); res.played = await st(); if (!res.played.playing && res.played.send) break; } // the replay's own end, not a fixed 4.8 s: a busy GPU replays slower (11-25)
   if (res.played.playing || !res.played.send) errs.push('after the replay the name and Put it on the wall did not show: ' + JSON.stringify(res.played));
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-send.png' });
   await page.fill('#tagName', 'Walker'); await page.click('#tagPut'); await page.waitForTimeout(2200);
@@ -63,11 +63,11 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-put.png' });
   res.sentTo = await page.evaluate(async () => ({ rows: (await (await fetch('/api/tags-local/rows')).json()).map(r => ({ name: r.name, strokes: r.strokes.map(s => s.tool + ' ' + s.col), device: r.device })), saved: window.tagTest.state() }));
   if (res.sentTo.rows.length !== 1 || res.sentTo.rows[0].name !== 'Walker' || res.sentTo.rows[0].strokes.join() !== 'fat #ff4f1a,fat #ff4f1a,pen #2fa35a' || res.sentTo.saved.sent !== 'yes' || !res.sentTo.saved.id) errs.push('Put it on the wall did not send the tag with each stroke\'s own tool and colour, or the page did not keep the answer: ' + JSON.stringify(res.sentTo));
-  await page.reload(); await page.waitForTimeout(2500); res.again = { ...(await st()), drips: await page.evaluate(() => window.tagTest.drips()) };
+  await page.reload(); await page.waitForFunction(() => window.tagTest, null, { timeout: 20000 }); await page.waitForTimeout(2500); /* the page's script first: a fixed wait alone sometimes ran before it (11-25) */ res.again = { ...(await st()), drips: await page.evaluate(() => window.tagTest.drips()) };
   if (!res.again.shown || res.again.leave || res.again.name !== 'Walker' || res.again.strokes !== 3 || !res.again.drips) errs.push('after a reload the own tag is not on the wall, or Leave your tag is back: ' + JSON.stringify(res.again));
   for (const [k, bad] of [['x', o => { o.x = 'a'; }], ['drip', o => { o.strokes[0].dr = [[0, '3', null]]; }]]) {
     await page.evaluate(k => { const o = JSON.parse(localStorage.getItem('ttshowcase.tag.good') || localStorage.getItem('ttshowcase.tag')); localStorage.setItem('ttshowcase.tag.good', JSON.stringify(o)); }, k);
     await page.evaluate(f => { const o = JSON.parse(localStorage.getItem('ttshowcase.tag.good')); (0, eval)('(' + f + ')')(o); localStorage.setItem('ttshowcase.tag', JSON.stringify(o)); }, bad.toString());
-    await page.reload(); await page.waitForTimeout(2500); res['bad_' + k] = await st();
+    await page.reload(); await page.waitForFunction(() => window.tagTest, null, { timeout: 20000 }); await page.waitForTimeout(2500); /* the page's script first: a fixed wait alone sometimes ran before it (11-25) */ res['bad_' + k] = await st();
     if (res['bad_' + k].shown || !res['bad_' + k].leave) errs.push('a saved tag with a broken ' + k + ' was shown, or Leave your tag stayed away: ' + JSON.stringify(res['bad_' + k])); }
   return JSON.stringify(res); }
