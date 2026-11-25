@@ -5,7 +5,7 @@
 async page => { const W0 = page.viewportSize().width, H0 = page.viewportSize().height, errs = [], res = { errs, sizes: [] };
   page.on('pageerror', e => errs.push(String(e)));
   const sizes = W0 > 600 ? [[1440, 900], [862, 960], [1000, 1100]] : [[W0, H0], [360, 800]];
-  await page.goto('__URL__'); await page.waitForTimeout(3500); await page.evaluate(() => window.bucketAt()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
+  await page.goto('__URL__'); await page.waitForTimeout(3500); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   for (const [w, h] of sizes) { await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(800); const seen = [];
     for (const sv of [128, 432, 700, 770, 840, 910, 1045]) {

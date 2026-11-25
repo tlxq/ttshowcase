@@ -1661,21 +1661,27 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // ---- hover on every painted link (Tom 11-19): the mark's shape lights up with a soft outline glow in its own colour, the cursor is a spray can, a small label
   // says what it does; keyboard focus shows the same; on a phone the mark pulses once, faintly, when it first comes into view
   function makeGlow(file, B, [x0, y0, x1, y1], o = {}) { const g = { op: 0, pulse: -1, pulsed: false, started: false, mesh: null };
-    g.build = () => { if (g.started) return; g.started = true; const img = new Image(); img.onload = () => {
-      const M = 26, bw = x1 - x0, bh = y1 - y0, GW = bw + 2 * M, GH = bh + 2 * M, mk = () => Object.assign(document.createElement("canvas"), { width: GW, height: GH });
-      const src = mk(), sg = src.getContext("2d", { willReadFrequently: true }); sg.drawImage(img, x0 - M, y0 - M, GW, GH, 0, 0, GW, GH); const px = sg.getImageData(0, 0, GW, GH).data;
+    // Built over a few frames, the picture decoded and cut out off the main thread: in one go, as its wall came into view, it cost one 50-70 ms frame.
+    // file: a picture's path, or a function giving a canvas (nothing while it isn't painted yet).
+    g.build = () => { if (g.started) return; g.started = true; const M = 26, bw = x1 - x0, bh = y1 - y0, GW = bw + 2 * M, GH = bh + 2 * M, frame = () => new Promise(requestAnimationFrame);
+      // cut from the file's own bytes: an <img> cut with createImageBitmap is decoded a second time, on the main thread (23 ms a picture, traced 11-25)
+      const from = typeof file === "function" ? file() : file; if (!from) { g.started = false; return; } // a canvas not painted yet: try again on a later frame
+      (typeof from === "string" ? fetch(from).then(r => r.blob()) : Promise.resolve(from)).then(b => createImageBitmap(b, x0 - M, y0 - M, GW, GH)).then(async bmp => { await frame();
+      const mk = () => Object.assign(document.createElement("canvas"), { width: GW, height: GH });
+      const src = mk(), sg = src.getContext("2d", { willReadFrequently: true }); sg.drawImage(bmp, 0, 0); bmp.close(); const px = sg.getImageData(0, 0, GW, GH).data;
       const mask = mk(), mg = mask.getContext("2d"), md = mg.createImageData(GW, GH), ch = [];
       for (let y = M; y < M + bh; y++) for (let x = M; x < M + bw; x++) { const i = (y * GW + x) * 4; if (o.rect || px[i + 3] > 140) { md.data.set([255, 255, 255, 255], i); ch.push([Math.max(px[i], px[i + 1], px[i + 2]) - Math.min(px[i], px[i + 1], px[i + 2]), px[i], px[i + 1], px[i + 2]]); } }
       mg.putImageData(md, 0, 0); let col = o.colour;
       if (!col) { ch.sort((a, b) => b[0] - a[0]); const top = ch.slice(0, Math.max(1, ch.length >> 2)), m = [1, 2, 3].map(j => top.reduce((s, c) => s + c[j], 0) / top.length);
         col = top.length && top[0][0] > 40 ? `rgb(${m.map(v => Math.min(255, Math.round(v * .55 + 130))).join(",")})` : "#ffffff"; } // its own colour, lifted so it glows
+      await frame();
       const out = mk(), og = out.getContext("2d"); og.shadowColor = col; og.shadowBlur = 22; og.shadowOffsetX = 4000; for (let i = 0; i < 5; i++) og.drawImage(mask, -4000, 0);
       og.shadowColor = "transparent"; og.shadowOffsetX = 0; og.globalCompositeOperation = "destination-out"; og.globalAlpha = o.hole ?? .6; og.drawImage(mask, 0, 0); og.globalCompositeOperation = "source-over"; // the glow round the shape; the shape itself only a little lighter, so its words stay readable
       const tint = mk(), tg = tint.getContext("2d"); tg.fillStyle = col; tg.fillRect(0, 0, GW, GH); tg.globalCompositeOperation = "destination-in"; tg.drawImage(mask, 0, 0); og.globalAlpha = o.fill ?? .14; og.drawImage(tint, 0, 0);
       const map = new THREE.CanvasTexture(out), cu = (x0 + x1) / 2, cv = (y0 + y1) / 2; map.encoding = THREE.sRGBEncoding;
       g.mesh = new THREE.Mesh(new THREE.PlaneGeometry(GW * B.k, GH * (B.kv || B.k) * (o.floor ? EFLOOR : 1)), new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false, toneMapped: false }));
       if (o.floor) { g.mesh.rotation.x = -Math.PI / 2; g.mesh.position.copy(eFlat(cu, cv)).y += .012; } else if (B.flat) { g.mesh.rotation.x = -Math.PI / 2; g.mesh.position.copy(B.at(cu, cv)).y += .012; } else g.mesh.position.copy(B.at(cu, cv)).z += .012;
-      g.mesh.visible = false; scene.add(g.mesh); }; img.src = typeof file === "function" ? file() : file; };
+      g.mesh.visible = false; scene.add(g.mesh); }).catch(() => {}); }; // a picture that never loads: no glow, as before
     return g; }
   const hlEl = document.createElement("div"); hlEl.className = "hl"; hlEl.setAttribute("aria-hidden", "true"); document.querySelector(".hud").append(hlEl);
   const HOTL = [], PULSE = NARROW || matchMedia("(pointer: coarse)").matches, hostOf = h => h.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
@@ -1691,7 +1697,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   // low in the street light, in the front's blue, and a can standing at the wall's foot beside it; both open the tag tool, as the can at the flyer does.
   // Gone once this browser has a tag of its own (it shows instead) and by day (the flyer has its own Leave your tag beside it).
   const VW = { x0: -14.3, y1: 1.9, k: 4.9 / 1024 }, VB = { at: (u, v) => V(VW.x0 + u * VW.k, VW.y1 - v * VW.k, 0), k: VW.k }, VCAN = V(-11.2, GROUND, .7);
-  const vCan = Object.assign(document.createElement("canvas"), { width: 1024, height: 200 }); let vFile = "";
+  const vCan = Object.assign(document.createElement("canvas"), { width: 1024, height: 200 }); let vFile = false; // true once the words are painted
   const vTex = new THREE.CanvasTexture(vCan); vTex.encoding = THREE.sRGBEncoding; vTex.anisotropy = maxAniso;
   const vWords = new THREE.Mesh(new THREE.PlaneGeometry(1024 * VW.k, 200 * VW.k), new THREE.MeshStandardMaterial({ map: vTex, transparent: true, depthWrite: false, roughness: .6, polygonOffset: true, polygonOffsetFactor: -2 }));
   vWords.position.copy(VB.at(512, 100)).z += .004; vWords.visible = false; scene.add(vWords);
@@ -1699,10 +1705,10 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   document.fonts.load('700 100px "Clash Display"').catch(() => {}).then(() => { const g = vCan.getContext("2d");
     g.font = '700 118px "Clash Display", sans-serif'; g.textBaseline = "middle"; g.fillStyle = PAINT_HEX; g.translate(18, 104); g.rotate(-.02);
     g.shadowColor = PAINT_HEX; g.shadowBlur = 16; g.globalAlpha = .4; g.fillText("Leave your tag", 0, 0); g.shadowBlur = 0; g.globalAlpha = .95; g.fillText("Leave your tag", 0, 0); // a soft overspray under a firm core, like the flyer wall's
-    vTex.needsUpdate = true; vFile = vCan.toDataURL(); });
+    vTex.needsUpdate = true; vFile = true; });
   const leaveUp = document.createElement("button"); Object.assign(leaveUp, { type: "button", className: "hot", id: "leaveUp", tabIndex: -1 }); leaveUp.setAttribute("aria-label", "Leave your tag"); leaveUp.style.display = "none";
   document.querySelector(".hud").append(leaveUp); leaveUp.addEventListener("click", e => { e.preventDefault(); pickNear = [-12, 3.6]; document.getElementById("leave").click(); });
-  hotOn(leaveUp, "", makeGlow(() => vFile, VB, [0, 0, 1024, 200], { colour: "#ffffff", hole: 1, fill: 0 })); // a light glow round the blue words, none over them: they stay sharp
+  hotOn(leaveUp, "", makeGlow(() => vFile && vCan, VB, [0, 0, 1024, 200], { colour: "#ffffff", hole: 1, fill: 0 })); // a light glow round the blue words, none over them: they stay sharp
   const ECAN = V(PW / 2 - .3, GROUND, .8), eCan3 = can.clone(); eCan3.position.copy(ECAN); eCan3.rotation.y = .5; eCan3.visible = false; scene.add(eCan3); // the end's Leave your tag: a can at the foot of the mural's right end, between it and the flyer, where a hand would reach (a phone sees it beside its narrower mural)
   const visitOn = () => !document.getElementById("leave").hidden && !endS.show;
   function visitPlace(lft) { const on = visitOn(); vWords.visible = vCan3.visible = on; // the words and the can, one tap area round both
