@@ -200,13 +200,17 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 .start img { position: absolute; width: auto; -webkit-mask-image: linear-gradient(#000 78%, transparent); mask-image: linear-gradient(#000 78%, transparent); will-change: transform, filter; }
 .start h2 { position: absolute; margin: 0; white-space: nowrap; font: 900 7vw/.84 "Archivo", "Arial Black", sans-serif; font-stretch: 125%; letter-spacing: -.04em; text-transform: uppercase; color: var(--look-cream); }
 .start h2 span { display: block; }
+/* "portfolio" sprayed by the name (Tom 11-25, generated try B): the paint's blue through the marker's shape, sprayed on left to right as the bucket fills (--p) */
+.start .word { position: absolute; aspect-ratio: 900 / 369; background: var(--front-spray); /* its tilt is in the picture: a rotated masked box shows its edges in Chrome */ --p: -12%;
+  -webkit-mask: url("assets/start/portfolio.webp") center / 100% 100% no-repeat, linear-gradient(90deg, #000 var(--p), transparent calc(var(--p) + 12%)); -webkit-mask-composite: source-in;
+  mask: url("assets/start/portfolio.webp") center / 100% 100% no-repeat, linear-gradient(90deg, #000 var(--p), transparent calc(var(--p) + 12%)); mask-composite: intersect; }
 .start .num { position: absolute; bottom: 4svh; font: 900 min(9vw, 17svh)/.8 "Archivo", "Arial Black", sans-serif; font-stretch: 125%; letter-spacing: -.04em; color: var(--front-spray); font-variant-numeric: tabular-nums; }
 .start .go { position: absolute; bottom: 5svh; font: 700 15px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .02em; color: var(--look-cream); opacity: 0; transition: opacity .4s; }
 </style>
 <svg class="pitch-svg" aria-hidden="true"><filter id="rough" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/></filter></svg>
 
 <canvas id="c"></canvas>
-<div class="start" aria-hidden="true"><img src="assets/start/studio.webp" alt=""><h2>Tom<span>Larsson</span></h2><div class="num">0</div><div class="go">Tip the bucket to enter</div></div>
+<div class="start" aria-hidden="true"><img src="assets/start/studio.webp" alt=""><h2>Tom<span>Larsson</span></h2><i class="word"></i><div class="num">0</div><div class="go">Tip the bucket to enter</div></div>
 <div class="track"></div>
 <div class="hud"><svg id="lines"></svg><div class="tag" id="tagBucket"></div><div class="tag" id="tagCan"></div><div class="tag" id="tagHand"></div><div class="tag facts" id="tagFacts"><b>epaRadar</b>Friends on a live map that only friends can see. Degree project, built alone.</div></div>
 <div class="pick" id="pick" aria-hidden="true" inert><div class="dim"></div><svg class="ov" aria-hidden="true"><path fill-rule="evenodd"/><path/></svg><div id="admFrames" hidden></div><div class="top"><p class="hint" id="pickHint" role="status"></p><button type="button" id="tagMoveB" hidden>Move it</button><button type="button" id="pickCancel">Cancel</button></div><div class="frame" id="pickFrame" tabindex="-1" role="slider" aria-label="Your spot, move it with the arrow keys, Enter to go close" aria-valuetext="free"><i class="hs" id="admSize" hidden aria-hidden="true"></i><i class="ht" id="admTurn" hidden aria-hidden="true"></i></div><div class="menu" id="tagTools" role="group" aria-label="Tool" hidden></div><div class="menu cols" id="tagCols" role="group" aria-label="Colour" hidden></div><div class="bar" id="admSel" hidden><button type="button" class="go" id="admApprove" hidden>Approve</button><button type="button" id="admRemove" hidden>Remove</button><button type="button" id="admUndo" hidden>Undo</button><button type="button" id="admDone">Done</button></div><div class="bar" id="tagBar" hidden><button type="button" id="tagTool" aria-expanded="false" aria-controls="tagTools"><span class="ic"></span><span class="nm"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagCol" aria-expanded="false" aria-controls="tagCols" aria-label="Colour"><span class="dot"></span><span class="chev" aria-hidden="true">&#9662;</span></button><button type="button" id="tagUndo" aria-label="Undo" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button><button type="button" class="go" id="tagDone" disabled>Done</button></div><div class="bar" id="tagSend" hidden><input id="tagName" maxlength="24" placeholder="Your name (optional)" aria-label="Your name, optional" autocomplete="nickname" enterkeyhint="done" spellcheck="false"><button type="button" id="tagBack">Back</button><a class="pv" href="/privacy" target="_blank" rel="noopener">privacy</a><button type="button" class="go" id="tagPut">Put it on the wall</button></div></div>
@@ -869,11 +873,11 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   const tagBucket = document.getElementById("tagBucket"); let tagText = "";
   // the start's page layer: the photo beside the bucket (a phone: above it), the name, the loading number. Measured from where the bucket is on screen.
   // The photo is lit with the bucket: the work light warms up on both (lampOn), and both lean a little with the mouse or the phone's tilt.
-  let startDay = 0, START_T = 0; const startEl = document.querySelector(".start"), stIm = startEl.querySelector("img"), stNm = startEl.querySelector("h2"), stNum = startEl.querySelector(".num"), stGo = startEl.querySelector(".go");
+  let startDay = 0, START_T = 0; const startEl = document.querySelector(".start"), stIm = startEl.querySelector("img"), stNm = startEl.querySelector("h2"), stNum = startEl.querySelector(".num"), stGo = startEl.querySelector(".go"), stWd = startEl.querySelector(".word");
   let stPx = 0, stPy = 0, stTx = 0, stTy = 0, lampOn = 0;
   addEventListener("pointermove", e => { stTx = e.clientX / innerWidth - .5; stTy = e.clientY / innerHeight - .5; }, { passive: true });
   addEventListener("deviceorientation", e => { if (e.gamma == null) return; stTx = Math.max(-.5, Math.min(.5, e.gamma / 50)); stTy = Math.max(-.5, Math.min(.5, (e.beta - 50) / 80)); }, { passive: true });
-  let nameW = 0; const nameEm = () => { if (!nameW) { stNm.style.fontSize = "100px"; nameW = stNm.getBoundingClientRect().width / 100; } return 1 / nameW; }; // font size per px of width: LARSSON's real width
+  let nameW = 0, tomR = .45; const nameEm = () => { if (!nameW) { stNm.style.fontSize = "100px"; nameW = stNm.getBoundingClientRect().width / 100; const rg = document.createRange(); rg.selectNodeContents(stNm.firstChild); tomR = rg.getBoundingClientRect().width / 100 / nameW; } return 1 / nameW; }; // and TOM's width as a share of LARSSON's, for the word beside it // font size per px of width: LARSSON's real width
   document.fonts.load('900 100px "Archivo"').then(() => { nameW = 0; }, () => {});
   function startTick(now, ic) { const wt = START_T ? (now - START_T) / 1000 : 0; // the lamp warms up: off, two flickers, on
     lampOn = REDUCED ? 1 : wt < .3 ? 0 : wt < 1.3 ? sm(cl((wt - .3) / .9)) * (Math.random() < .3 ? .25 : 1) : 1;
@@ -883,7 +887,8 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
     startLayout(innerWidth, innerHeight, Math.max(16, innerWidth * .03)); // measured every frame (cheap): the bucket's place can change while the page loads; styles are written only when they change
     const tf = (e, k, v) => { const m = stW.get(e) || stW.set(e, {}).get(e), kk = k.slice(2); if (m[kk] !== v) { m[kk] = v; if (kk === "textContent") e.textContent = v; else e.style[kk] = v; } }; // each style written only when it changes: no per-frame style work on a phone
     tf(stIm, "i.transform", `translate(${(-stPx * 14).toFixed(0)}px, ${(-stPy * 8).toFixed(0)}px)`); tf(stIm, "i.filter", lampOn < 1 ? `brightness(${(.15 + .85 * lampOn).toFixed(2)})` : "none");
-    tf(stNm, "n.transform", `translate(${(-stPx * 6).toFixed(0)}px, ${(-stPy * 4).toFixed(0)}px)`);
+    tf(stNm, "n.transform", `translate(${(-stPx * 6).toFixed(0)}px, ${(-stPy * 4).toFixed(0)}px)`); tf(stWd, "w.transform", stNm.style.transform);
+    const sp = (REDUCED ? 112 : -12 + 124 * Math.min(1, level / .9)).toFixed(0) + "%"; const wm = stW.get(stWd) || stW.set(stWd, {}).get(stWd); if (wm.p !== sp) { wm.p = sp; stWd.style.setProperty("--p", sp); } // sprayed on as the bucket fills, whole a little before it is full
     stShown = Math.max(stShown, Math.round(level * 100)); tf(stNum, "u.textContent", String(stShown)) /* never counts down */; tf(stNum, "u.opacity", readyAt ? "0" : "1"); tf(stGo, "g.opacity", readyAt && !goAt ? "1" : "0"); }
   const stW = new Map(); let stShown = 0;
   function startLayout(W, H, gu) { bucketHome.updateWorldMatrix(true, false); camera.updateMatrixWorld(); // placed now, not as of the last render: the first frames come before it
@@ -894,11 +899,15 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
       const ph = Math.min(H * .94, (room - gu) / AR), fs = Math.min(H * .15, (W - gu * 3 - ph * AR) * nameEm()); // the room right of the photo
       set(stIm, { left: gu, top: Math.max(H * .03, Math.min(H - ph, (ty + by) / 2 - ph * .42)), height: ph, translate: "0 0" });
       set(stNm, { left: "auto", right: gu, top: H * .06, bottom: "auto", textAlign: "right", fontSize: fs });
+      const lw = fs / nameEm(), ww = lw * .46; // the word left of TOM, level with it
+      set(stWd, { left: "auto", right: gu + lw * tomR + lw * .025, top: H * .06 + fs * .22 - ww * 369 / 900 / 2, bottom: "auto", width: ww });
       for (const e of [stNum, stGo]) set(e, { left: "auto", right: gu }); set(stNum, { fontSize: Math.min(W * .09, H * .17) });
     } else { // stacked: the photo above the bucket, the name low, clear of the paint's fall
       const ph = Math.max(0, ty - H * .03), fs = (W - gu * 2) * nameEm();
       set(stIm, { left: "50%", top: H * .02, height: ph, translate: "-50% 0" });
-      set(stNm, { left: gu, right: "auto", top: "auto", bottom: H * .04 + W * .2 * .8 + gu, textAlign: "left", fontSize: fs }); // above the number
+      const nb = H * .04 + W * .2 * .8 + gu; set(stNm, { left: gu, right: "auto", top: "auto", bottom: nb, textAlign: "left", fontSize: fs }); // above the number
+      const lw = W - gu * 2, wl = gu + lw * tomR + lw * .06; // the word right of TOM, on its line
+      set(stWd, { left: wl, right: "auto", top: "auto", bottom: nb + fs * .84 + fs * .1, width: W - gu - wl });
       for (const e of [stNum, stGo]) set(e, { left: gu, right: "auto" }); set(stNum, { fontSize: W * .2 }); }
     if (!START_T) { START_T = performance.now(); startEl.classList.add("placed"); } } // the lamp warms up from the moment the start shows
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
