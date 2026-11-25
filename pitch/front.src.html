@@ -587,13 +587,13 @@ __LIBS__
 
   // the form: the same fields and words as the live site's, sent by the server (api/contact.ts); signum W3, W5, W6
   { const mail = document.getElementById("mail"), err = mail.querySelector(".err"), btn = mail.querySelector("button");
-    const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters.", robot: "The browser check didn't pass. Reload the page, then try again.", "too-many": "This address has sent all its messages for today. Try again tomorrow." };
+    const MAIL = __MAIL_WORDS__; // the words: src/content/mailWords.json, one source (tools/pitch/build.mjs fills it in)
     mail.addEventListener("submit", async (e) => { e.preventDefault(); btn.disabled = true; btn.textContent = "Sending\u2026"; err.hidden = true; let why;
       try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
         if (a.ok) { const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.tabIndex = -1; sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.replaceChildren(sent); sent.focus(); return; } // focus moves to the answer: the button it was on is gone
-        const code = ((await a.json().catch(() => ({}))).error) || ""; why = WHY[code] || "The mail service didn't answer.";
-        const field = WHY[code] && mail.elements[code]; if (field) { field.setAttribute("aria-invalid", "true"); field.setAttribute("aria-describedby", err.id); } } catch (_) { why = "The page couldn't reach the server."; }
-      err.textContent = "Couldn't send your message. " + why; err.hidden = false; btn.disabled = false; btn.textContent = "Try again"; });
+        const code = ((await a.json().catch(() => ({}))).error) || ""; why = MAIL.why[code] || MAIL.other;
+        const field = MAIL.why[code] && mail.elements[code]; if (field) { field.setAttribute("aria-invalid", "true"); field.setAttribute("aria-describedby", err.id); } } catch (_) { why = MAIL.offline; }
+      err.textContent = MAIL.lead + why; err.hidden = false; btn.disabled = false; btn.textContent = "Try again"; });
     mail.addEventListener("input", (e) => { if (e.target.getAttribute("aria-invalid")) { e.target.removeAttribute("aria-invalid"); e.target.removeAttribute("aria-describedby"); } }); }
   const endPull = { p: 0 }; // moment 5: how far the last wash has become the form's lines (0 -> 1)
   const inkHand = { q: 0 }; // moment 3 -> 4: how far the ink behind RUN has become epaRadar's wash (0 -> 1)

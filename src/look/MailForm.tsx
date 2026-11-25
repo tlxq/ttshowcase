@@ -2,6 +2,8 @@
 
 import { useRef, useState, type FormEvent } from "react";
 
+import mail from "@/content/mailWords.json";
+
 type State = "writing" | "sending" | "sent" | "failed";
 
 /** The longest message (api/contact.ts says the same). */
@@ -9,13 +11,8 @@ const LONGEST = 4000;
 /** "312 left" shows from this close to the longest message. */
 const SHOW_LEFT = 400;
 
-/** Why sending failed, in the visitor's words (signum W6: what, why, Try again). */
-const WHY: Record<string, string> = {
-  email: "That email address doesn't look complete.",
-  message: "The message is empty or longer than 4 000 characters.",
-  robot: "The browser check didn't pass. Reload the page, then try again.",
-  "too-many": "This address has sent all its messages for today. Try again tomorrow.",
-};
+/** Why sending failed, in the visitor's words (signum W6: what, why, Try again). One source for the site and both pitch pages: src/content/mailWords.json. */
+const WHY: Record<string, string> = mail.why;
 
 /**
  * The mail form in Questions (Tom 11-11 picked Rows: mono rows, send ↵; 11-15: the only way to
@@ -49,9 +46,9 @@ export function MailForm() {
         return;
       }
       const { error } = (await answer.json().catch(() => ({}))) as { error?: string };
-      setWhy(WHY[error ?? ""] ?? "The mail service didn't answer.");
+      setWhy(WHY[error ?? ""] ?? mail.other);
     } catch {
-      setWhy("The page couldn't reach the server.");
+      setWhy(mail.offline);
     }
     setState("failed");
   }
@@ -130,7 +127,8 @@ export function MailForm() {
       </label>
       {state === "failed" && (
         <p className="lk-mail-error" role="alert">
-          Couldn&apos;t send your message. {why}
+          {mail.lead}
+          {why}
         </p>
       )}
       <div className="lk-mail-foot">

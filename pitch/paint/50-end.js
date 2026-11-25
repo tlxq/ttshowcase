@@ -14,12 +14,12 @@
     <button type="button" class="hot" id="leave" aria-label="Leave your tag" tabindex="-1" style="display: none"></button>
 `);
   const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
-  const WHY = { email: "That email address doesn't look complete.", message: "The message is empty or longer than 4 000 characters.", robot: "The browser check didn't pass. Reload the page, then try again.", "too-many": "This address has sent all its messages for today. Try again tomorrow." };
+  const MAIL = __MAIL_WORDS__; // the words: src/content/mailWords.json, one source (tools/pitch/build.mjs fills it in)
   mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true; let why;
     try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
       if (a.ok) { sheetSent = true; const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
-      why = WHY[((await a.json().catch(() => ({}))).error) || ""] || "The mail service didn't answer."; } catch (_) { why = "The page couldn't reach the server."; }
-    mailErr.textContent = "Couldn't send your message. " + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
+      why = MAIL.why[((await a.json().catch(() => ({}))).error) || ""] || MAIL.other; } catch (_) { why = MAIL.offline; }
+    mailErr.textContent = MAIL.lead + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
   // the end wall (Tom 11-19, try 67): one painting on the graphics card (CREDITS.txt), the bare concrete keyed out so the wall
   // shows through; the can is the Leave your tag button, the form sits in the painted frame, the two sprayed stencils (GitHub's and LinkedIn's own marks, drawn from their vector shapes) are the links to GitHub and
   // LinkedIn. Picture pixels: 1536 x 960; foot: the row
@@ -129,7 +129,6 @@
   bombHot.addEventListener("pointerenter", () => { bombHot.dataset.hover = 1; }); bombHot.addEventListener("pointerleave", () => { delete bombHot.dataset.hover; });
   dim.addEventListener("click", sheetClose); flyX.addEventListener("click", sheetClose); addEventListener("keydown", e => { if (e.key === "Escape" && sheetOpen) sheetClose(); });
   addEventListener("resize", () => { if (sheetOpen && !sheetBusy) { const b = sheetBox(); sheetLay(b); fly.getAnimations().forEach(a => a.cancel()); fly.style.transform = flyAt(null, b); } });
-  window.sheetDbg = () => ({ open: sheetOpen, busy: sheetBusy, pole: wtmRect(), corner: cornerRect() }); // pictures only
   function bombPlace() { // the tap area over the sticker on the pole (when it is big enough to aim at), its lifted corner on hover, and the corner sticker
     const r = !sheetOpen && !pick.mode ? wtmRect() : null, big = r && r.w >= 16;
     if (big) { const w = Math.max(48, r.w), h = Math.max(48, r.h); Object.assign(bombHot.style, { display: "block", left: r.l + r.w / 2 - w / 2 + "px", top: r.t + r.h / 2 - h / 2 + "px", width: w + "px", height: h + "px" }); }
@@ -137,8 +136,6 @@
     if (!sheetOpen && BOMB_WTM) { const want = bombHot.dataset.hover || bombHot.matches(":focus-visible") ? .035 : BOMB_WTM.userData.curl; if (wtmCurl == null) wtmCurl = BOMB_WTM.userData.curl;
       if (Math.abs(want - wtmCurl) > .0005) { wtmCurl += (want - wtmCurl) * (REDUCED ? 1 : .25); wtmCurlT = .5 + (wtmCurl - BOMB_WTM.userData.curl) * 4; BOMB_WTM.userData.bend(wtmCurl, wtmCurlT); } }
     corner.classList.toggle("off", sheetOpen || pick.mode || !introOver); corner.inert = sheetOpen || pick.mode || !introOver; }
-  window.endDbg2 = () => { const out = []; scene.traverse(o => { if (o.isMesh && o.visible) { o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld); if (b.max.y - b.min.y > 3 && b.min.x > -9 && b.max.x < 3) out.push([o.geometry.type, b.min.toArray().map(v => +v.toFixed(1)), b.max.toArray().map(v => +v.toFixed(1))]); } }); return out; };
-  window.endDbg = () => ({ fl: [eFloor.visible, eFloor.material.opacity, eFloor.position.toArray(), eFD], map: eMapF.repeat.toArray(), off: eMapF.offset.toArray() });
   const endS = { day: false, show: false }; let eOp = 0, eLast = 0, eFog = false;
   let endReady = false;
   const DAY_CX = (POST.x - .8 + MURALS.wide.w / 2 + 1.2) / 2; // the morning's laptop view: from the sticker pole to the can past the mural's right end (no flyer, Tom 11-23)
