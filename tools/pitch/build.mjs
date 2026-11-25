@@ -142,13 +142,16 @@ function withBotId(html) {
     out = "export{I as initBotId,M as validateProtectedRoutes};";
   if (!core.includes(dev) || (!core.endsWith(out + "\n") && !core.endsWith(out)))
     throw new Error("botid's client changed shape: check tools/pitch/build.mjs withBotId");
-  core = core.replace(dev, "true").replace(out, `I(${JSON.stringify({ protect: PROTECT })});`);
+  // functions, not strings, as replacements: botid's code holds "$&", which a string replacement expands (11-25)
+  core = core
+    .replace(dev, () => "true")
+    .replace(out, () => `I(${JSON.stringify({ protect: PROTECT })});`);
   const at = '<meta charset="utf-8">\n'; // the script rule's meta goes in right after this line, so it is above this script
   if (!html.includes(at)) throw new Error('a pitch page lost its <meta charset="utf-8"> line');
-  return html.replace(
-    at,
-    `${at}<script>(()=>{${core.replaceAll("</script", "<\\/script")}})()</script>\n`,
-  );
+  const tag = `<script>(()=>{${core.replaceAll("</script", "<\\/script")}})()</script>\n`,
+    done = html.replace(at, () => at + tag);
+  if (!done.includes(tag)) throw new Error("botid's script changed on its way into the page");
+  return done;
 }
 function withScriptRule(html) {
   // every script is either inline with no attributes (hashed here) or loaded by src: anything else would be blocked.
