@@ -5,7 +5,7 @@
 import { randomUUID } from "node:crypto";
 import type { Deps, Status } from "../../api/tags.ts";
 
-export type Row = Parameters<Deps["db"]["insert"]>[0] & {
+type Row = Parameters<Deps["db"]["insert"]>[0] & {
   id: string;
   created_at: string;
   status: Status;

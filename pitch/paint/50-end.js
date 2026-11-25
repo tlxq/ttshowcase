@@ -28,13 +28,13 @@
   const E = { foot: 795, flyer: [816, 130, 1384, 772], form: [846, 330, 1354, 610], tabs: [[822, 650, 1004, 766], [1007, 650, 1193, 766], [1196, 650, 1378, 766]], bbox: [800, 120, 1400, 790] }; E.signs = E.tabs; // a flyer pasted on the concrete (Tom 11-22): WRITE TO ME printed, the form on the paper, tear-off tabs (email, GitHub, LinkedIn)
   const EPW = 9.73, EK = EPW / 1536, EFLOOR = 2.2, ECX = 5, ELIFT = .9; // the ending (Tom 11-23): only the flyer is left on this canvas, 3.6 m wide, pasted on the start wall between the mural and the epaRadar wall (x 5.3..8.9); hung .9 m up, clear of the stair's railing and its lamp
   const eU = u => ECX - EPW / 2 + u * EK, eV = v => GROUND + ELIFT + (E.foot - v) * EK;
-  const eAt = (u, v) => V(eU(u), eV(v), 0), eFlat = (u, v) => V(eU(u), GROUND, (v - E.foot) * EK * EFLOOR), EB = { at: eAt, k: EK };
+  const eFlat = (u, v) => V(eU(u), GROUND, (v - E.foot) * EK * EFLOOR);
   const endMat = extra => new THREE.MeshStandardMaterial(Object.assign({ transparent: true, depthWrite: false, roughness: .55, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }, extra));
   const eHW = E.foot / 960, eHF = 1 - eHW,  eWallH = E.foot * EK, eFD = (960 - E.foot) * EK * EFLOOR;
   // the end wall is painted here, on a canvas, in the front's words and colours (Tom 11-22, walk step 3): WRITE TO ME with the front's blue
   // swipe under WRITE, the address, GitHub and LinkedIn, Leave your tag, and the form's panel (Tom 11-23: only the flyer is left).
   // Dark paint on the day-lit concrete (the front's dark words on cream); words, not logos (Tom 11-22).
-  const eCan = Object.assign(document.createElement("canvas"), { width: 1536, height: 960 }); let eFile = "";
+  const eCan = Object.assign(document.createElement("canvas"), { width: 1536, height: 960 });
   const eTex = () => { const t = new THREE.CanvasTexture(eCan); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
   const eMapW = eTex(), eMapF = eTex(); eMapW.repeat.set(1, eHW); eMapW.offset.set(0, eHF); eMapF.repeat.set(1, eHF);
   function paintEnd(swipe) { const g = eCan.getContext("2d", { willReadFrequently: true }), W = 1536, H = 960, css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -56,8 +56,8 @@
     g.restore();
     if (swipe) { g.save(); g.translate(fx0 - 30, fy0 + 40); g.rotate(-.5); g.globalAlpha = .9; g.drawImage(swipe, -60, -30, 300, 60); g.restore(); } // the last of the bucket's blue: one stroke across the flyer's corner
     const d = g.getImageData(0, 0, W, H), p = d.data; for (let i = 0; i < p.length; i += 4) if (p[i + 3]) { const n = rn(); p[i + 3] = Math.max(0, p[i + 3] - n * 40); const f = 1 - n * .06; p[i] *= f; p[i + 1] *= f; p[i + 2] *= f; } g.putImageData(d, 0, 0); // paint and paper, not print: grain
-    eMapW.needsUpdate = eMapF.needsUpdate = true; eFile = eCan.toDataURL(); }
-  let eSwipe = null; { const sw = new Image(); sw.onload = () => document.fonts.ready.then(() => Promise.all(['700 100px "Clash Display"', '600 40px "Inter"', '700 40px "Inter"'].map(f => document.fonts.load(f).catch(() => {})))).then(() => paintEnd(eSwipe = sw)); sw.onerror = () => paintEnd(null); sw.src = "assets/swipe.webp"; }
+    eMapW.needsUpdate = eMapF.needsUpdate = true; }
+  { const sw = new Image(); sw.onload = () => document.fonts.ready.then(() => Promise.all(['700 100px "Clash Display"', '600 40px "Inter"', '700 40px "Inter"'].map(f => document.fonts.load(f).catch(() => {})))).then(() => paintEnd(sw)); sw.onerror = () => paintEnd(null); sw.src = "assets/swipe.webp"; }
   for (const t of [eMapW, eMapF]) t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
   const eWall = new THREE.Mesh(new THREE.PlaneGeometry(EPW, eWallH), wallBump(endMat({ map: eMapW, normalMap: tex("assets/wall4_nor_gl.jpg", false, EPW / TILE, eWallH / TILE, (ECX - EPW / 2 - (WX - WW / 2)) / TILE, 0), normalScale: new THREE.Vector2(.9, .9) })));
   eWall.position.set(ECX, GROUND + ELIFT + eWallH / 2, .003);
@@ -140,16 +140,9 @@
   window.endDbg2 = () => { const out = []; scene.traverse(o => { if (o.isMesh && o.visible) { o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld); if (b.max.y - b.min.y > 3 && b.min.x > -9 && b.max.x < 3) out.push([o.geometry.type, b.min.toArray().map(v => +v.toFixed(1)), b.max.toArray().map(v => +v.toFixed(1))]); } }); return out; };
   window.endDbg = () => ({ fl: [eFloor.visible, eFloor.material.opacity, eFloor.position.toArray(), eFD], map: eMapF.repeat.toArray(), off: eMapF.offset.toArray() });
   const endS = { day: false, show: false }; let eOp = 0, eLast = 0, eFog = false;
-  // the phone sees one side at a time: the mural and the can, or the flyer; a swipe or the button moves between them
-  let ePan = 0, endReady = false; // a phone lands on the whole flyer (Tom 11-22): WRITE TO ME, the form and the tabs first
+  let endReady = false;
   const DAY_CX = (POST.x - .8 + MURALS.wide.w / 2 + 1.2) / 2; // the morning's laptop view: from the sticker pole to the can past the mural's right end (no flyer, Tom 11-23)
-  // a laptop lands wide (the mural, the can, the flyer: the morning after), then slides in to the flyer once the form shows, so the form reads at
-  // about its own size; the can stays in view, so a laptop needs no button back (Tom 11-23, design review: ~9 px from the wide view); its right edge stops short of the epaRadar wall
-  const DAY_CLOSE = [V(eU(E.flyer[2]) - 4.75, .7, 11.8), V(eU(E.flyer[2]) - 4.75, .45, 0)];
   const endWide = () => [V(DAY_CX + .15, 2, 21.8), V(DAY_CX + .15, 1.9, 20.5), V(DAY_CX + .15, 1.3, 0)]; // the landing, a third wider (Tom 11-23): the tags round the mural and the flyer are in view
-  function endCams() { if (!narrowNow()) { const w = endWide();
-      return [w[0].lerp(DAY_CLOSE[0], ePan), w[1].lerp(DAY_CLOSE[0], ePan), w[2].lerp(DAY_CLOSE[1], ePan)]; }
-    const x = (eU(E.flyer[0]) + eU(E.flyer[2])) / 2 * ePan, z = 24 - 10.7 * ePan, y = 1.2 - .9 * ePan; return [V(x, y + .6, z + 1.2), V(x, y + .55, z), V(x, y, 0)]; }
   function endWallState(now, show) { const dt = Math.min(.1, (now - eLast) / 1000); eLast = now;
     eOp = show ? 1 : Math.max(0, eOp - dt / .7 * (REDUCED ? 99 : 1)); for (const m of [eWall, eFloor]) m.visible = false; // the flyer is not on the wall any more (Tom 11-23): the sticker on the pole holds it
     if (show && !pick.mode) { scene.fog.density = .012; eFog = true; } else if (!show && eFog && !pick.mode) { scene.fog.density = .04; eFog = false; } // the painting is 16 m away: the haze of the opening would wash it out

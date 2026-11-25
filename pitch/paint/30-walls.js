@@ -114,7 +114,7 @@
       fade(on) { const now = performance.now(), dt = Math.min(.1, (now - sp.at) / 1000 || 0); sp.at = now; sp.op = cl(sp.op + (on ? dt / .6 : -dt / .6)); sp.mesh.visible = sp.op > .01; sp.mesh.material.opacity = sp.op; } };
     (SPRAYS[o.key] ||= []).push(sp); document.fonts.load(`${WT} 40px ${FONT}`).then(() => sp.draw(), () => sp.draw()); return sp; }
   // epaRadar: above the painting
-  { const yT = EY + EH / 2 - 98 / 960 * EH, x0 = NARROW ? EX - EW / 2 + .9 : EX - EW / 2 + 1.2;
+  {
     // (Tom 11-19) the numbers painted big in the piece's own style, one each side above the skyline; each tool its own small tag round them; sprayed in one after another
     const R = ([u0, v0, u1, v1]) => [EPAB.at(u0, 0).x, EPAB.at(0, v1).y, EPAB.at(u1, 0).x, EPAB.at(0, v0).y];
     var EPA_PARTS = [makeSpray({ key: "epa", only: 0, name: "epaRadar's commits", colour: "#f3ead8", piece: "#f0902a", font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, inline: NARROW, rect: R([40, -200, 520, 70]) }),

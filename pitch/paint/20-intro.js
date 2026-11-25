@@ -222,7 +222,7 @@
     if (goAt && document.body.style.cursor === "pointer") document.body.style.cursor = ""; // the hand is only over the bucket (pointermove), and gone once it tips
     // the bucket fills
     const fillL = goAt ? Math.max(.03, left(ic)) : level; coatMax = Math.max(coatMax, fillL);
-    const inflowOn = !readyAt && !goAt, sy = fillL * FULL, sr = BK.r0 + (BK.r1 - BK.r0) * sy / BK.h - .006;
+    const inflowOn = !readyAt && !goAt, sy = fillL * FULL;
     inflow.visible = inflowOn;
     if (inflowOn) { const top = bucket.localToWorld(V(.1, sy, .06)), r = .02 * (1 + Math.sin(now / 70) * .08);
       column(inflow, top, top.clone().add(V(0, 9, 0)), Math.max(1e-4, r)); } // no splash while it fills: on the black start the drops drift off as stray dots
@@ -243,8 +243,6 @@
       coatCut.set(V(0, -1, 0), Math.min(lo, lip) + Math.sin(now / 160) * .002); coat.visible = fillL > .02; film.visible = !!goAt; }
 
     sheetU.uFrom.value = LEDGE.x - .1; sheetU.uTo.value = ic < LEDGE.tip ? LEDGE.x - .2 : Math.min(SPAN + .1, LEDGE.x0 + (ic - LEDGE.tip) * LEDGE.spread);
-    let pourFrom = null, pourTo = null, pr = 0;
-    if (ic > .2 && ic < 2.3) { pourFrom = bucket.localToWorld(V(0, BK.h, 0)); pourTo = V(pourFrom.x + .3, WALL_TOP + .05, -.17); pr = .07 * (1 - cl((ic - .2) / 2.1)); }
     if (goAt) fallsAt(ic);
     { const f = ic > .2 ? left(ic) : 0, tail = sm(cl((ic - 2.05) / .45)); outflow.visible = ic > .2 && tail < .98; if (outflow.visible) pourSheet(f, tail, now); lipWet.visible = ic > .15; }
     // the label: shows when the bucket is full, until it tips
@@ -265,7 +263,6 @@
       work.target.position.set(workAt.x, workAt.y, -.17 + .17 * k); work.position.set(workAt.x + .8, WALL_TOP + 4.2, 1.6 + 1.2 * k); work.angle = .2 + .22 * k; }
     return ic;
   }
-  const T_END = 0, lifts = HAND.strokes.length - 1;
   const toWorld = (x, y) => V(-PW / 2 + x / PX, PCY + PH / 2 - y / PX, 0);
   const SPRAY = [1, 3, 5].map(i => parseInt(PAINT_HEX.slice(i, i + 2), 16)).join(","); // from the hex: PAINT holds linear values // Tom's tag in the paint's colour
   function spray(x, y, p, amount) {
@@ -348,7 +345,7 @@
   svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/><line id="l2"/><circle id="c2" r="4"/>');
   const proj = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight, p.z < 1]; };
   function pin(el, line, dot, world, dx, dy) {
-    const [x, y, ok] = proj(world); const tx = x + dx, ty = y + dy;
+    const [x, y] = proj(world); const tx = x + dx, ty = y + dy;
     dot.setAttribute("cx", x); dot.setAttribute("cy", y); line.setAttribute("x1", x); line.setAttribute("y1", y); line.setAttribute("x2", tx); line.setAttribute("y2", ty);
     el.style.left = cl(dx < 0 ? tx - el.offsetWidth - 6 : tx + 6, 12, innerWidth - el.offsetWidth - 12) + "px"; el.style.top = cl(ty - 9, 12, innerHeight - el.offsetHeight - 12) + "px";
   }

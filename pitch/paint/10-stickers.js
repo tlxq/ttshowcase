@@ -33,7 +33,7 @@
     const pts = [V(a - .4, h0 + .9, .3), V(a, h0 + .9, .3), V(b, h1 + .9, .3), V(b + .4, h1 + .9, .3)];
     for (let i = 0; i < 3; i++) { const d = pts[i + 1].clone().sub(pts[i]), r = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, d.length(), 8), postM);
       r.position.copy(pts[i]).addScaledVector(d, .5); r.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize()); scene.add(r); }
-    for (const [px, py] of [[a - .35, h0], [(a + b) / 2, groundAt((a + b) / 2)], [b + .35, h1]]) { const top = py === h0 ? h0 + .9 : py === h1 ? h1 + .9 : groundAt(px) + .9 + 0 * 0;
+    for (const [px, py] of [[a - .35, h0], [(a + b) / 2, groundAt((a + b) / 2)], [b + .35, h1]]) {
       const yTop = px <= a ? h0 + .9 : px >= b ? h1 + .9 : h0 + .9 + (h1 - h0) * (px - a) / (b - a), po = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, yTop - py, 8), postM); po.position.set(px, (yTop + py) / 2, .3); scene.add(po); }
     return { x, y: h1 + 2.4 }; });
   { const L = Math.hypot(RB - RA, RH0 - RH1), cw = new THREE.Mesh(new THREE.BoxGeometry(L + .5, 1.1, .22), new THREE.MeshStandardMaterial({ color: 0x8a8780, roughness: .92,
@@ -174,7 +174,7 @@
     const src = grounds.slice(0, 12).filter(g => !g.big).reduce((b, g) => !b || Math.abs(g.x - GAP_X + .5) < Math.abs(b.x - GAP_X + .5) ? g : b, null); if (!src) return;
     const P = (x, z) => V(x, GROUND + .007, z), gz = CURB_Z + .5;
     const curve = new THREE.CatmullRomCurve3([P(src.x, .3), P(src.x + (GAP_X - src.x) * .25 + .08, 1.05), P(src.x + (GAP_X - src.x) * .7 - .06, 1.9), P(GAP_X - .02, 2.5), P(GAP_X, 2.88), P(GAP_X + .12, gz - .05), P(GAP_X + .45, gz), P(DRAIN_X - .3, gz + .01)], false, "centripetal", .4);
-    const N = 360, HW = .07, pos = [], sd = [], idx = [], L = curve.getLength(), lens = curve.getLengths(N);
+    const N = 360, HW = .07, pos = [], sd = [], idx = [], L = curve.getLength();
     for (let i = 0; i <= N; i++) { const u = i / N, c = curve.getPointAt(u), t = curve.getTangentAt(u), n = V(-t.z, 0, t.x).normalize(), sA = u * L, wob = .012 * Math.sin(sA * 11.);
       for (const sg of [-1, 1]) { pos.push(c.x + n.x * (sg * HW + wob), c.y, c.z + n.z * (sg * HW + wob)); sd.push(sA, sg * HW); }
       if (i < N) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); } }

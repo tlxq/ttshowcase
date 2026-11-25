@@ -8,7 +8,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 export const ADMIN_COOKIE = "admin";
 const YEAR = 60 * 60 * 24 * 365;
 /** A key shorter than this counts as not set: a short key can be guessed. */
-export const KEY_LEAST = 24;
+const KEY_LEAST = 24;
 /** Wrong keys one address may try in a day. */
 export const ADMIN_TRIES = 10;
 

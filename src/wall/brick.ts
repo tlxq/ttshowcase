@@ -59,7 +59,7 @@ function rgb(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
-export interface Brick {
+interface Brick {
   colour: HTMLCanvasElement;
   normal: HTMLCanvasElement;
 }
