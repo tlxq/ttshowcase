@@ -144,6 +144,42 @@ export function Motion() {
       last = performance.now();
       frame = requestAnimationFrame(tick);
     };
+    // A piece of handwriting that is written on the scroll is an empty svg in the page; its strokes
+    // are a file (/hands/<name>.svg, made at build time) put in as it nears the screen, and the rest
+    // once the page has settled, so a quick scroll never finds one missing.
+    const unloaded = new Set(writes.map((w) => w.el).filter((el) => el.dataset.hand));
+    const load = async (el: SVGSVGElement) => {
+      if (!unloaded.delete(el)) return;
+      try {
+        const res = await fetch(`/hands/${el.dataset.hand}.svg`);
+        if (!res.ok) throw new Error(String(res.status));
+        const doc = new DOMParser().parseFromString(await res.text(), "image/svg+xml");
+        for (const node of [...doc.documentElement.childNodes])
+          el.append(document.importNode(node, true));
+        const w = writes.find((p) => p.el === el);
+        if (w) w.strokes = strokesOf(el);
+        wake();
+      } catch {
+        unloaded.add(el);
+      }
+    };
+    const handsNear = new IntersectionObserver(
+      (seen) => {
+        for (const s of seen) {
+          if (!s.isIntersecting) continue;
+          handsNear.unobserve(s.target);
+          void load(s.target as SVGSVGElement);
+        }
+      },
+      { rootMargin: "200% 0px" },
+    );
+    for (const el of unloaded) handsNear.observe(el);
+    const loadRest = () => {
+      for (const el of [...unloaded]) void load(el);
+    };
+    const settle = () => setTimeout(loadRest, 300);
+    if (document.readyState === "complete") settle();
+    else addEventListener("load", settle, { once: true });
     addEventListener("scroll", wake, { passive: true });
     addEventListener("resize", wake);
     // The page can also change height without a scroll (fonts, pictures, the mail form): wake then too.
@@ -156,6 +192,7 @@ export function Motion() {
       removeEventListener("resize", wake);
       grown.disconnect();
       near.disconnect();
+      handsNear.disconnect();
       films.disconnect();
     };
   }, []);
