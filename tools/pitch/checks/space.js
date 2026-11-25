@@ -11,7 +11,7 @@ async page => { const errs = [], res = { errs };
   let G = null; // the grid of frame centres, made from the first read
   const look = async (name, wide) => { await page.waitForTimeout(1500); views[name] = await page.evaluate(([g, w]) => window.pickTest.onScreen(g, w), [G, !!wide]); };
   for (const [w, h, layout] of [[1440, 900, 'laptop'], [412, 915, 'phone']]) {
-    await page.setViewportSize({ width: w, height: h }); await page.goto('__URL__'); await page.waitForTimeout(3500); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
+    await page.setViewportSize({ width: w, height: h }); await page.goto('__URL__'); await page.waitForTimeout(3500); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && (b.x > 0 ? b : matchMedia("(prefers-reduced-motion: reduce)").matches && getComputedStyle(document.querySelector(".start")).display === "none" && b); /* reduced motion: no start screen, nothing to tip */ }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
     await page.waitForFunction(() => !!window.pickTest, null, { timeout: 30000 }); // under a full parallel run the page can be slower than the waits above
     reads.push({ layout, when: 'night', ...(await page.evaluate(() => window.pickTest.space())) });

@@ -4,7 +4,7 @@ async page => { const errs = [], res = { errs }; page.on('pageerror', e => errs.
   const vp = page.viewportSize(), wide = vp.width / vp.height >= .8;
   await page.goto('__URL__');
   for (let i = 0; i < 80 && !(await page.evaluate(() => document.documentElement.dataset.readyAt)); i++) await page.waitForTimeout(250);
-  await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && b.x > 0 && b; }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
+  await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && (b.x > 0 ? b : matchMedia("(prefers-reduced-motion: reduce)").matches && getComputedStyle(document.querySelector(".start")).display === "none" && b); /* reduced motion: no start screen, nothing to tip */ }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   const open = async () => { for (let i = 0; i < 60; i++) { if (await page.evaluate(() => document.documentElement.style.overflow === '')) return true; await page.waitForTimeout(250); } return false; };
   if (!(await open())) errs.push('the walk did not open after the tip');
   const frac = () => page.evaluate(() => { const room = document.documentElement.scrollHeight - innerHeight; return scrollY / room; });
