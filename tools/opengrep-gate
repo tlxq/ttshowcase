@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Repo kit (~/.1dot/kit, copied by `dot kit`; change it there). Stops `mise run check` (so a push) when the code has a
+# serious security finding (rule severity ERROR: injection, unsafe eval, a key in the code), using opengrep (the open
+# fork of Semgrep) with community rules pinned by commit. Warnings are counted, never fatal.
+#   tools/opengrep-gate          scan the files git tracks (JS/TS, PHP, and every file for keys)
+# A finding that is safe on purpose gets `// nosemgrep: <rule id>` on its line, with the reason next to it.
+set -euo pipefail
+
+RULES_SHA=f1d2b562b414783763fd02a6ed2736eaed622efa # github.com/opengrep/opengrep-rules, 2025-01-26
+top=$(git rev-parse --show-toplevel)
+cd "$top"
+command -v opengrep >/dev/null || { echo "opengrep-gate: opengrep missing (mise install)" >&2; exit 2; }
+
+cache=${XDG_CACHE_HOME:-$HOME/.cache}/opengrep-rules/$RULES_SHA
+if [ ! -d "$cache" ]; then
+  tmp=$(mktemp -d)
+  curl -fsSL "https://github.com/opengrep/opengrep-rules/archive/$RULES_SHA.tar.gz" | tar -xz -C "$tmp" --strip-components=1
+  find "$tmp" -name '*.test.*' -delete # the rules' own test files would be read as rules or code
+  mkdir -p "$(dirname "$cache")" && mv "$tmp" "$cache"
+fi
+
+mapfile -t files < <(git ls-files -- '*.js' '*.mjs' '*.cjs' '*.ts' '*.tsx' '*.jsx' '*.php' '*.astro' '*.json' '*.yml' '*.yaml' '*.toml' '*.env*' '*.sh')
+[ "${#files[@]}" -gt 0 ] || { echo "opengrep-gate: nothing to scan"; exit 0; }
+cfg=(--config "$cache/generic/secrets")
+git ls-files -- '*.js' '*.mjs' '*.cjs' '*.jsx' '*.ts' '*.tsx' | grep -q . && cfg+=(--config "$cache/javascript" --config "$cache/typescript")
+git ls-files -- '*.php' | grep -q . && cfg+=(--config "$cache/php")
+
+out=$(mktemp)
+trap 'rm -f "$out"' EXIT
+opengrep scan --quiet --json "${cfg[@]}" "${files[@]}" >"$out" 2>/dev/null || true
+node -e '
+let d; try { d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); } catch { console.error("opengrep-gate: the scan failed (run opengrep by hand to see why)"); process.exit(2); }
+if (!Array.isArray(d.results)) { console.error("opengrep-gate: the scan gave no result"); process.exit(2); }
+const bad = d.results.filter(r => r.extra.severity === "ERROR"), warn = d.results.length - bad.length;
+for (const r of bad) console.error(`${r.path}:${r.start.line}  ${r.check_id.split(".").pop()}  ${r.extra.message.split("\n")[0]}`);
+console.log(`opengrep-gate: ${bad.length} serious, ${warn} warnings (not fatal)`);
+process.exit(bad.length ? 1 : 0);' "$out"
