@@ -129,6 +129,27 @@ if (left)
   );
 // The page's own script rule, on top of the site's header (vercel.json): only its inline scripts, by their hash, and
 // three from jsDelivr at the pinned version run here. Hashed last, after every change to the page's text.
+// Vercel BotID (Tom 11-25): its browser part marks the tag and mail sends as a person's, and api/tags.ts and
+// api/contact.ts refuse the rest. Inlined from node_modules like the libs below, so the script rule hashes it; its
+// checker script comes from this site (vercel.json's rewrites), so the rule also allows 'self'.
+const PROTECT = [
+  { path: "/api/tags", method: "POST" },
+  { path: "/api/contact", method: "POST" },
+];
+function withBotId(html) {
+  let core = readFileSync(join(root, "node_modules/botid/dist/client/core/index.mjs"), "utf8");
+  const dev = 'process.env.NODE_ENV!=="development"',
+    out = "export{I as initBotId,M as validateProtectedRoutes};";
+  if (!core.includes(dev) || (!core.endsWith(out + "\n") && !core.endsWith(out)))
+    throw new Error("botid's client changed shape: check tools/pitch/build.mjs withBotId");
+  core = core.replace(dev, "true").replace(out, `I(${JSON.stringify({ protect: PROTECT })});`);
+  const at = '<meta charset="utf-8">\n'; // the script rule's meta goes in right after this line, so it is above this script
+  if (!html.includes(at)) throw new Error('a pitch page lost its <meta charset="utf-8"> line');
+  return html.replace(
+    at,
+    `${at}<script>(()=>{${core.replaceAll("</script", "<\\/script")}})()</script>\n`,
+  );
+}
 function withScriptRule(html) {
   // every script is either inline with no attributes (hashed here) or loaded by src: anything else would be blocked.
   // Structured data (type="application/ld+json") is never run, so the rule doesn't need it.
@@ -141,7 +162,7 @@ function withScriptRule(html) {
     (m) => `'sha256-${createHash("sha256").update(m[1], "utf8").digest("base64")}'`,
   );
   const rule = [
-    `script-src ${hashes.join(" ")} https://cdn.jsdelivr.net/npm/three@0.147.0/`,
+    `script-src ${hashes.join(" ")} 'self' https://cdn.jsdelivr.net/npm/three@0.147.0/`,
     "worker-src blob:",
     "object-src 'none'",
     "base-uri 'none'",
@@ -158,7 +179,7 @@ const noMedia = (p) => {
   return p.replace("const HAS_MEDIA = true;", "const HAS_MEDIA = false;");
 };
 const hasMedia = existsSync(join(root, ".cache/pitch-media/stencil"));
-writeFileSync(join(out, "paint.html"), withScriptRule(hasMedia ? page : noMedia(page)));
+writeFileSync(join(out, "paint.html"), withScriptRule(withBotId(hasMedia ? page : noMedia(page))));
 
 // The front page (pitch, 11-20, landonorris.com's techniques): the same fonts and tokens, no 3D. /next/front on the
 // site. GSAP (ScrollTrigger) and Lenis go into the page from node_modules as inline scripts, so the script rule
@@ -176,7 +197,7 @@ let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
   .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
 if (/__[A-Z_]{3,}__/.test(front))
   throw new Error("pitch/front.src.html asks for a part the build doesn't fill");
-writeFileSync(join(out, "front.html"), withScriptRule(front)); // the site copy below is changed first, then hashed
+writeFileSync(join(out, "front.html"), withScriptRule(withBotId(front))); // the site copy below is changed first, then hashed
 // its product screens: /projects/ on the site (public/projects); the same path in the local pitch folder
 rmSync(join(out, "projects"), { force: true, recursive: true });
 symlinkSync(join(root, "public/projects"), join(out, "projects"));
@@ -211,7 +232,7 @@ if (process.argv.includes("--site")) {
     throw new Error(
       `Unquoted picture path on /next: ${unquoted.join(", ")}. Write url("assets/…") so the build can point it at /next/assets/.`,
     );
-  writeFileSync(join(site, "next.html"), withScriptRule(nextPage));
+  writeFileSync(join(site, "next.html"), withScriptRule(withBotId(nextPage)));
   const siteAssets = join(site, "next/assets");
   rmSync(siteAssets, { force: true, recursive: true });
   mkdirSync(siteAssets, { recursive: true });
@@ -223,10 +244,12 @@ if (process.argv.includes("--site")) {
   writeFileSync(
     join(site, "next/front.html"),
     withScriptRule(
-      front
-        .replace(/(["'`])assets\//g, "$1/next/assets/")
-        .replace(/(["'`])projects\//g, "$1/projects/")
-        .replace(/(["'`])paint\.html/g, "$1/next"),
+      withBotId(
+        front
+          .replace(/(["'`])assets\//g, "$1/next/assets/")
+          .replace(/(["'`])projects\//g, "$1/projects/")
+          .replace(/(["'`])paint\.html/g, "$1/next"),
+      ),
     ),
   );
   console.log("Put the pitch into out/next.html (/next)");

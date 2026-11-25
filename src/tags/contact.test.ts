@@ -5,7 +5,7 @@ import { contact, mailHash, MAIL_PER_ADDRESS, type ContactDeps } from "../../api
 const SECRET = "x".repeat(40);
 
 /** The handler on an in-memory sends table and a mail box that keeps what was sent. */
-function world(mailWorks = true) {
+function world(mailWorks = true, human?: boolean) {
   const sends: string[] = [];
   const mails: Parameters<ContactDeps["mail"]>[0][] = [];
   const deps: ContactDeps = {
@@ -25,6 +25,7 @@ function world(mailWorks = true) {
       return mailWorks;
     },
   };
+  if (human !== undefined) deps.human = async () => human;
   return { sends, mails, post: contact(() => deps) };
 }
 
@@ -49,6 +50,20 @@ test("the subject is one line: line breaks and hidden characters in the name are
   const w = world();
   await w.post(send({ ...letter, name: "Kas\r\nBcc: x@y.z\u200eper" }));
   assert.equal(w.mails[0]!.subject, "Message from KasBcc: x@y.zper <k@example.com>");
+});
+
+test("a robot (BotID says so) is refused: nothing counted, nothing mailed", async () => {
+  const w = world(true, false);
+  const r = await w.post(send(letter));
+  assert.equal(r.status, 403);
+  assert.deepEqual(await r.json(), { error: "robot" });
+  assert.deepEqual(w.sends, []);
+  assert.deepEqual(w.mails, []);
+  assert.equal(
+    (await world(true, true).post(send(letter))).status,
+    200,
+    "a person still gets through",
+  );
 });
 
 test(`${MAIL_PER_ADDRESS} messages a day per address, then too-many and no mail`, async () => {

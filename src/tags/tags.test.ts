@@ -24,7 +24,7 @@ function world(mailWorks = true) {
     mails.push({ subject, text });
     return mailWorks;
   });
-  return { rows, sends, mails, api: handlers(() => deps) };
+  return { rows, sends, mails, deps, api: handlers(() => deps) };
 }
 
 let devices = 0;
@@ -172,6 +172,19 @@ test("a held spot shows no tag, only where it is", async () => {
   const { api } = world();
   await api.POST(send(tag()));
   assert.deepEqual(Object.keys((await wall(api)).held[0]!).sort(), ["h", "turn", "w", "x", "y"]);
+});
+
+test("a robot (BotID says so) is refused: nothing stored, counted or mailed", async () => {
+  const w = world();
+  const robot = handlers(() => ({
+    ...memoryDeps(SECRET, async () => true).deps,
+    human: async () => false,
+  }));
+  const r = await robot.POST(send(tag()));
+  assert.equal(r.status, 403);
+  assert.deepEqual(await r.json(), { error: "robot" });
+  const person = handlers(() => ({ ...w.deps, human: async () => true }));
+  assert.equal((await person.POST(send(tag()))).status, 200, "a person still gets through");
 });
 
 test("one tag per device, forever", async () => {
