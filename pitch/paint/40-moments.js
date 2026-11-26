@@ -57,9 +57,7 @@
     for (let i = 0; i < 140; i++) { const y = fl(.15 + rnd() * .75), x = rnd() * W, l = 20 + rnd() * 110; g.strokeStyle = `rgba(${rnd() < .5 ? "70,62,50" : "255,252,240"},${.08 + rnd() * .2})`; g.lineWidth = 1 + rnd() * 2.5; g.beginPath(); g.moveTo(x, y); g.lineTo(x + l, y + (rnd() - .5) * 6); g.stroke(); }
     for (let i = 0; i < 90; i++) { const y = fl(.1 + rnd() * rnd() * 1.6), x = rnd() * W; g.fillStyle = `rgba(112,114,112,${.35 + rnd() * .35})`; g.beginPath(); g.ellipse(x, y, 2 + rnd() * 7, 1.5 + rnd() * 4, rnd() * 3, 0, 6.3); g.fill(); }
     for (let i = 0; i < 9; i++) { const x = rnd() * W, w = 6 + rnd() * 14; g.fillStyle = `rgba(80,66,48,${.06 + rnd() * .08})`; g.fillRect(x, 0, w, H * (.4 + rnd() * .6)); } // old water runs
-    // a few small tags, hand-drawn scribbles at chest height
-    for (const [tx, col] of [[300, "#c8402a"], [820, "#2f6fb3"], [1300, "#26272a"], [1000, "#d8a21a"]]) { const y = fl(1.15 + rnd() * .5); g.strokeStyle = col; g.lineWidth = 3.2; g.lineCap = g.lineJoin = "round"; g.beginPath(); g.moveTo(tx, y);
-      for (let k = 0; k < 6; k++) g.bezierCurveTo(tx + k * 14 + rnd() * 10, y - 26 - rnd() * 22, tx + k * 14 + 12, y + 24 + rnd() * 16, tx + (k + 1) * 14 + rnd() * 6, y + (rnd() - .5) * 16); g.stroke(); g.globalAlpha = .4; g.lineWidth = 7; g.stroke(); g.globalAlpha = 1; }
+    // (no loose scribbles: Tom 11-26, they read as stray marks round the Toolbox production)
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
   const floorTex = () => { const W = 1024, c = document.createElement("canvas"); c.width = c.height = W; const g = c.getContext("2d"), rnd = rngOf(5);
     g.fillStyle = "#6c7074"; g.fillRect(0, 0, W, W); for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "255,255,255" : "20,20,24"},${.02 + rnd() * .04})`; g.fillRect(rnd() * W, rnd() * W, 20 + rnd() * 90, 8 + rnd() * 30); }
@@ -223,9 +221,10 @@
   // the Toolbox production (Tom 11-26, A5): ONE see-through strip, 5300 x 960 px, painted on the desk's graphics card, cut into four webp tiles (the title tile, then a tile for each piece).
   // The stack words are painted into it as small tags; the live numbers are sprayed in the bare wall above each piece. PK metres a pixel, PC where each piece's middle stands.
   // positions from toolbox-final.json (strip pixels): the camera stop of each piece, its painted box, link mark and the bare areas for the live numbers
-  const STRIP_S = [0, 1130, 2450, 3750], TILE_TW = [1130, 1320, 1300, 1550], STOP = [[1767, 505], [3144, 620], [4398, 615]],
+  // the tiles are cut at strip x 1130, 2450 and 3750 and overlap 48 px each way (they share the paint there, so no seam; a tile alone ends in overspray); each is laid at its own pixel size
+  const STRIP_S = [0, 1082, 2402, 3702], TILE_TW = [1178, 1416, 1396, 1598], STOP = [[1767, 505], [3144, 620], [4398, 615]],
     prod = (n, key, link, plate, mark, painted, nums) => { const s0 = STRIP_S[n], sh = r => [r[0] - s0, r[1], r[2] - s0, r[3]]; return tool(PC[n - 1], key, ["", "ttoolbox", "dot", "tthermal"][n], link, plate,
-      { tile: n, nums: nums.map(sh), art: [`assets/toolbox_${n}.webp`, TILE_TW[n] * .00385, TILE_TW[n] * .0022, [STOP[n - 1][0] - s0, STOP[n - 1][1]], 2.1 - (STOP[n - 1][1] - 480) * PK, [sh(painted)]], marks: [sh(mark)] }); };
+      { tile: n, px: [TILE_TW[n], 960], nums: nums.map(sh), art: [`assets/toolbox_${n}.webp`, TILE_TW[n] * .00385, TILE_TW[n] * .0022, [STOP[n - 1][0] - s0, STOP[n - 1][1]], 2.1 - (STOP[n - 1][1] - 480) * PK, [sh(painted)]], marks: [sh(mark)] }); };
   const U4 = [
     prod(1, 700, "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.", [1187, 315, 2347, 762], [1130, 323, 2470, 885], [[1170, 150, 1549, 320], [1986, 150, 2430, 320]]),
     prod(2, 770, "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.", [2547, 335, 3740, 790], [2430, 323, 3770, 885], [[2470, 150, 2750, 340], [3450, 150, 3730, 340]]),
@@ -233,7 +232,7 @@
     { x: 75, key: 990, leave: 1045, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       art: ["assets/edge_wall.webp", 6.6, 3.5, [714, 518], 1.9, [[20, 200, 1409, 745], ...EDGE_V.areas]], ov: EDGE_V.ov, marks: EDGE_V.marks,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base. Work project, built alone." } ];
-  U4.forEach((u, i) => { const [file, wL, wP, c, y, areas, z = .002] = u.art; if (u.tile === 1) { u.X = paintOn("assets/toolbox_0.webp", 1130 * (N_ ? .0022 : .00385), [0, 480], [PX0, G3 + 2.1], z, [1150, 960], WZ); u.X.m.visible = false; u.X.m.material.opacity = 0; } u.zw = u.zw || 0; u.B = paintOn(file, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z, undefined, u.zw); if (u.ov) { u.O = paintOn(u.ov, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z + .001, undefined, u.zw); u.O.m.renderOrder = 2; } areas.forEach((a, j) => u.B.protect(u.name + "'s painting" + (j ? " " + (j + 1) : ""), a));
+  U4.forEach((u, i) => { const [file, wL, wP, c, y, areas, z = .002] = u.art; if (u.tile === 1) { u.X = paintOn("assets/toolbox_0.webp", TILE_TW[0] * PK, [0, 480], [PX0, G3 + 2.1], z, [TILE_TW[0], 960], WZ); u.X.m.visible = false; u.X.m.material.opacity = 0; } u.zw = u.zw || 0; u.B = paintOn(file, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z, u.px, u.zw); if (u.ov) { u.O = paintOn(u.ov, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z + .001, undefined, u.zw); u.O.m.renderOrder = 2; } areas.forEach((a, j) => u.B.protect(u.name + "'s painting" + (j ? " " + (j + 1) : ""), a));
     u.bb = [0, 1, 2, 3].map(n => Math[n < 2 ? "min" : "max"](...areas.map(a => a[n]))); u.start = 0; // the painted area as one box
     u.links.forEach((l, j) => l.box = u.marks[j]);
     { const [key, colour, stack0] = { "Self-hosted platform": ["self", "#2d3a5c", ["TypeScript", "Next.js", "Hono", "SQLite", "Java", "Docker", "Caddy", "Tailscale"]], ttoolbox: ["ttoolbox", "#c8402a", ["Claude Code", "Python", "Bash"]],
