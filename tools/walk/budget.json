@@ -32,11 +32,11 @@
     "limits": {
       "desktop": {
         "bytes": 2000000,
-        "ms": 4000
+        "ms": 4000, "slowMs": 3000
       },
       "phone": {
         "bytes": 2000000,
-        "ms": 4000
+        "ms": 4000, "slowMs": 3000
       }
     }
   }
