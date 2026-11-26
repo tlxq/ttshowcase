@@ -27,6 +27,13 @@ for p in / /admin /no-such-page /next; do
     grep -qF "$want" <<<"$csp" || no "$p: the CSP lacks $want"
   done
   grep -qi '^permissions-policy:.*camera=()' <<<"$h" || no "$p has no Permissions-Policy"
+  # only names Chromium knows: an unknown one is a console warning on the live site ("Unrecognized feature: 'bluetooth'", 11-26).
+  # Checked against the W3C feature registry and MDN's Permissions-Policy table; bluetooth is not here because the live site's console
+  # warned it is unrecognized. A feature goes in this list only after it is checked there again.
+  known="camera microphone geolocation payment usb serial hid display-capture browsing-topics"
+  for name in $(grep -i '^permissions-policy:' <<<"$h" | sed 's/^[^:]*: *//' | tr ',' '\n' | sed 's/=.*//; s/ //g'); do
+    case " $known " in *" $name "*) ;; *) no "$p: Permissions-Policy names '$name', which the browser may not know. Remove it or add it to the known list in tools/header-check.sh after checking it" ;; esac
+  done
   grep -qi '^x-content-type-options: nosniff' <<<"$h" || no "$p has no nosniff"
   grep -qi '^x-frame-options: DENY' <<<"$h" || no "$p can be framed (no X-Frame-Options: DENY)"
 done
