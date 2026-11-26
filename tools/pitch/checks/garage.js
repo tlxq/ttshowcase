@@ -54,5 +54,8 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   }
   await oneMove('going out', 840, 965); // out through the back door (Tom 11-26: it looked down at the pavement and out over the street, half the screen black): the same one glide, from tthermal's stop to EDGE's
   g = await at(905); if (g.cam[0] < 62 || g.cam[2] < -1.6) errs.push('the back door out is not reached by 905: ' + JSON.stringify(g));
+  { const on = ([x, y, ok]) => ok && x > -40 && x < W + 40 && y > -40 && y < page.viewportSize().height + 40, site = () => page.evaluate(() => siteTest()); // (Tom 11-26) the stop at EDGE shows no lamp head floating in a corner, the last stop (the bare wall) no stump of the fence
+    await at(1045); let st = await site(); if (st.heads.some(on)) errs.push('a site lamp head is in the frame at EDGE (a lit pale box in its top corner): ' + JSON.stringify(st.heads));
+    await at(1180); st = await site(); if (on(st.fenceEnd)) errs.push("the site fence's end sticks into the last stop's frame (an orange stub at the bottom left): " + JSON.stringify(st.fenceEnd)); }
   g = await at(1045); if (g.inside > .05 || g.cam[2] <= 0) errs.push('the way out at the far end did not lead back to the street at EDGE: ' + JSON.stringify(g));
   return JSON.stringify(res); }
