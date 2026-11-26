@@ -130,6 +130,10 @@
     lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * k); skyU.uBg.value.copy(scene.background); }
   document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
   function morning(now, sv, cp, look) { // after endCam: past EDGE, in close to the bare wall, the change to the visitors' wall, the light
+    paintTone(dayNow()); // the spray's colour follows the clock, as the light does
+    // by day the start wall's haze is thinner (as at the end, where the painting is 16 m away and the opening's haze would wash it out): the start's line is 16 m from the camera and the day's pale fog
+    // lifted its dark paint to a mid blue as light as the wall (1.1:1); by sv ~50 the walk's own haze is back
+    if (sv < 1060 && !pick.mode && !endS.show) scene.fog.density = .04 - .026 * dayNow() * (1 - sm(cl((sv - 12) / 36)));
     const day = sv >= CUT; endVisit = 0;
     // no landing, no flash (Tom 11-23, no zoom 11-24): past EDGE the street is the bare stretch's twin, moved by SEAM_D (the same concrete, the same lamp over it),
     // and its end is the visitors' wall, the page's seam. The page's top shows
@@ -202,8 +206,8 @@
     cp.set(at.x, y, at.z); look.set(at.x + Math.sin(h) * d, y + Math.tan(w.p0 + (w.p1 - w.p0) * u) * d, at.z - Math.cos(h) * d); }
   // in: from raddavarfruberga's stop (CAM.F: the camera stands there from sv 540 on) to ttoolbox's, facing the back wall all the way
   const IN_A = 540, IN_B = U4[0].key, IN_END = toolStop(U4[0].x, WF); let inWay = null;
-  function wayIn(sv, cp, look) { const t = cl((sv - IN_A) / (IN_B - IN_A)); if (t <= 0) return;
   const IN_TURN = [[0, 0], [.15, .25], [.3, .42], [.55, .1], [.7, 0], [1, 0]]; // phone (Tom 11-26): the head turns right to the garage door ~10 sv earlier; facing the wall straight on, its narrow view showed only street concrete and asphalt until the door was almost in front of the camera
+  function wayIn(sv, cp, look) { const t = cl((sv - IN_A) / (IN_B - IN_A)); if (t <= 0) return;
     if (!inWay) { const [P0, L0] = CAM.F, [P1, L1] = IN_END; inWay = glide(P0, L0, P1, L1, [V(DOOR_X - .2, 0, 4.2), V(DOOR_X + .1, 0, .4), V(DOOR_X + .9, 0, -1.2)], N_ ? IN_TURN : null); }
     glideAt(inWay, t, cp, look); }
   // out (Tom 11-26: "getting out of the garage"): from tthermal's stop through the back door to EDGE's stop. It was two lerps of the look POINT, the first aimed at the

@@ -88,6 +88,8 @@
   const tokHex = n => { const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); if (!/^#[0-9a-f]{6}$/i.test(v)) throw new Error("Couldn't read " + n + " from tokens.css"); return v; };
   const INK_LIGHT = tokHex("--look-paint-light"), INK_BLUE = tokHex("--look-paint-blue"); // EDGE's words on the concrete
   const PAINT_HEX = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(), PAINT = new THREE.Color(PAINT_HEX); if (!/^#[0-9a-f]{6}$/i.test(PAINT_HEX)) throw new Error("--front-spray is missing from tokens.css"); bounce.color.copy(PAINT); // the paint (and the glow where it lands): the front's blue (Tom 11-22, one site), from tokens.css
+  const PAINT_DAY_HEX = getComputedStyle(document.documentElement).getPropertyValue("--front-spray-day").trim(); if (!/^#[0-9a-f]{6}$/i.test(PAINT_DAY_HEX)) throw new Error("--front-spray-day is missing from tokens.css");
+  const hexRGB = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), PAINT_N = hexRGB(PAINT_HEX), PAINT_D = hexRGB(PAINT_DAY_HEX);
   const mistCol = [1, 3, 5].map(i => parseInt(PAINT_HEX.slice(i, i + 2), 16) / 255); // the mist and the splashes are the paint's own blue (its sRGB: their shader writes it straight out)
   const pourU = { uInk: { value: new THREE.Color("#20232b") } /* the outline (Tom 11-24): the walls' dark ink */, uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
     uA: { value: Array.from({ length: NS }, () => new THREE.Vector4(0, -99, -99, 99)) }, uB: { value: Array.from({ length: NS }, () => new THREE.Vector4()) },
