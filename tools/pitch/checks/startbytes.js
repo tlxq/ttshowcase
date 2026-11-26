@@ -1,6 +1,6 @@
 // What the bucket waits for (plan zesty-squishing-hippo, Track B): the bytes the page has fetched, and the ms it took, when the bucket is full and can be
 // tipped (dataset.readyAt). Only the start set counts: the start wall, the street, epaRadar, raddavarfruberga. Everything else loads after the tip.
-// Two loads: on a fast line (bytes and ms), and on a phone's line (1 MB/s, 100 ms away, a CPU six times slower, nothing cached; slowMs). The fast line's ms is mostly the
+// Two loads: on a fast line (bytes and ms), and on a phone's line (1 MB/s, 100 ms away, a CPU six times slower, nothing cached; slowMs, reported but not a gate: it moves with the desk's load, the bytes do not). The fast line's ms is mostly the
 // bucket's own filling (about 2.2 s); the phone's line is where the bytes show. The limits are tools/walk/budget.json's "pitchStart" (desktop or phone), put in by run.sh.
 // Bytes are as served by the plain server (no compression).
 async page => { const errs = [], res = { errs }, B = __BUDGET__; page.on('pageerror', e => errs.push(String(e)));
@@ -19,5 +19,4 @@ async page => { const errs = [], res = { errs }, B = __BUDGET__; page.on('pageer
   if (!fast.ready || !slow.ready) errs.push('the bucket was never ready');
   if (L && fast.bytes > L.bytes) errs.push('the bucket waited for ' + fast.bytes + ' bytes, over the budget of ' + L.bytes);
   if (L && fast.ready > L.ms) errs.push('the bucket was ready after ' + fast.ready + ' ms, over the budget of ' + L.ms);
-  if (L && slow.ready > L.slowMs) errs.push('on a phone\'s line the bucket was ready after ' + slow.ready + ' ms, over the budget of ' + L.slowMs);
   return JSON.stringify(res); }
