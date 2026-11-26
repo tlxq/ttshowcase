@@ -7,7 +7,7 @@
     const asp = STK[name], w = asp >= 1 ? size : size * asp, h = asp >= 1 ? size / asp : size, N = 14, pos = new Float32Array((N + 1) * (N + 1) * 3), uv = [], idx = [], cs = Math.cos(rot), sn = Math.sin(rot), cu = brnd() < .5 ? 0 : 1, cv = brnd() < .5 ? 0 : 1;
     const bend = (c, R) => { let k = 0; for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) { const u = i / N, v = j / N, a0 = (u - .5) * w, b0 = (v - .5) * h; // R: how far from the lifted corner the sheet comes off (.5 = the corner only; past 1.4 = the whole sticker, a peel)
       const d = Math.hypot(u - cu, v - cv) / Math.SQRT2, lift = c * Math.pow(Math.max(0, R - d) / R, 2) + .0012 * Math.sin(Math.PI * u) * Math.sin(Math.PI * v);
-      const [p, n] = put(a0 * cs - b0 * sn, a0 * sn + b0 * cs, layer); pos[k++] = p.x + n.x * lift; pos[k++] = p.y + n.y * lift; pos[k++] = p.z + n.z * lift; } };
+      const [p, n] = put(a0 * cs - b0 * sn, a0 * sn + b0 * cs, layer); pos[k] = p.x + n.x * lift; pos[k + 1] = p.y + n.y * lift; pos[k + 2] = p.z + n.z * lift; k += 3; } };
     bend(curl, .5); for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) uv.push(i / N, j / N);
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const a = j * (N + 1) + i, b = a + 1, c = a + N + 1, d = c + 1; idx.push(a, b, c, b, d, c); }
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();

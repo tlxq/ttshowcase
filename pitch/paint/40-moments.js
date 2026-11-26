@@ -66,14 +66,14 @@
     return new THREE.CanvasTexture(c); })();
   const coverM = new THREE.MeshStandardMaterial({ color: 0x4a4440, metalness: .65, roughness: .55, bumpMap: coverTex, bumpScale: 2, envMapIntensity: .8 });
   const rungM = new THREE.MeshStandardMaterial({ color: 0x6b5a48, metalness: .8, roughness: .5 }), shaftM = conc(2 * Math.PI * MR, G3 - DY, 0, DY, 0x5c5e62); shaftM.side = THREE.BackSide;
-  const covers = [MX_IN, MX_OUT].map((x, i) => {
+  [MX_IN, MX_OUT].forEach((x, i) => {
     const ring = new THREE.Mesh(new THREE.RingGeometry(MR - .005, MR + .07, 40), iron); ring.rotation.x = -Math.PI / 2; ring.position.set(x, G3 + .006, MZ); scene.add(ring);
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(MR, MR, G3 - DY, 32, 1, true), shaftM); shaft.position.set(x, (G3 + DY) / 2, MZ); scene.add(shaft);
     for (let y = G3 - .3; y > WF + .2; y -= .3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, .36, 8), rungM); r.rotation.z = Math.PI / 2; r.position.set(x, y, MZ - MR + .09); scene.add(r); }
     for (const dx of [-.18, .18]) { const rl = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, DY - WF, 8), rungM); rl.position.set(x + dx, (DY + WF) / 2, MZ - MR + .09); scene.add(rl);
       for (const y of [DY - .4, WF + 1.2]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, MZ - MR + .09, 8), rungM); st.rotation.x = Math.PI / 2; st.position.set(x + dx, y, (MZ - MR + .09) / 2); scene.add(st); } } // stays back to the wall
     const cover = new THREE.Mesh(new THREE.CylinderGeometry(MR + .04, MR + .04, .05, 40), [coverM, coverM, coverM]); cover.position.set(x, G3 + .02, MZ); scene.add(cover);
-    return { x, cover }; });
+  });
   // a street lamp's pool over the cover you are near, so you see it open; it fades as you go down or walk on
   const manL = new THREE.SpotLight(0xffd9a8, 0, 9, .55, .7, 1.4); scene.add(manL, manL.target);
   function manAt(cp) { const c = Math.abs(cp.x - MX_IN) < Math.abs(cp.x - MX_OUT) ? MX_IN : MX_OUT, d = Math.abs(cp.x - c);

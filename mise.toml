@@ -67,6 +67,10 @@ run = "tools/share-front/make.sh"
 description = "Film the sites in src/content/recordings.json scrolling, for the Live part's screens (the walk fails once a film is 30 days old); name one site to film only that"
 run = "tools/previews.sh"
 
+[tasks.stills]
+description = "Take the sites in src/content/stills.json as sharp stills (laptop and phone) for the front page's work part, into public/projects; name one site to take only that"
+run = "tools/stills.sh"
+
 [tasks.walk]
 description = "Build, serve on localhost and walk the page in a headless browser; name one walk to run only that, e.g. mise run walk fill-phone"
 run = "tools/passes/build-first.sh walk build tools/walk/run.sh"
