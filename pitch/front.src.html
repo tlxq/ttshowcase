@@ -900,7 +900,7 @@ __LIBS__
       const tick = (t) => { raf = 0; if (!live()) return pace.rest(); raf = requestAnimationFrame(tick);
         const was = pace.slow; pace.tick(t); if (pace.slow && !was) { ease = 1 - (1 - ease) ** 2; flick *= 2; document.documentElement.dataset.posterSlow = "1"; /* the checks read it */ } // two frames' worth of follow and flicker in one
         if (parseFloat(cv.style.opacity || "1") > 0.01 && pace.due(t, drawn)) { drawn = t; draw(t); } };
-      const wake = () => { if (!raf && live()) raf = requestAnimationFrame(tick); };
+      const wake = () => { if (!raf && live() && !still) raf = requestAnimationFrame(tick); }; // reduced motion: one drawing, no loop
       new IntersectionObserver(([e]) => { shown = e.isIntersecting; if (shown) wake(); }).observe(document.querySelector(".hero"));
       document.addEventListener("visibilitychange", wake);
       if (!still) wake(); else draw(0);
