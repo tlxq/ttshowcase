@@ -337,23 +337,14 @@ async function stopOne(name, quiet = false) {
 }
 
 // ---------- status ----------
-function passKey() {
-  return sh("tools/passes/passes.sh", ["key"]).stdout;
-}
+// which checks have a saved pass for the files as they are now (tools/passes/passes.sh, keyed by the tree since 11-26)
 function savedPasses() {
-  const key = passKey();
-  const sha = key.split("\n")[0]?.slice(0, 7);
   const names = { check: "check", walk: "walk", pitch: "pitch:check" };
   const ok = [],
     not = [];
-  for (const [file, label] of Object.entries(names)) {
-    let saved = null;
-    try {
-      saved = readFileSync(join(root, ".cache/passes", `${file}.pass`), "utf8").trim();
-    } catch {}
-    (saved === key.trim() ? ok : not).push(label);
-  }
-  return { sha, ok, not };
+  for (const [check, label] of Object.entries(names))
+    (sh("tools/passes/passes.sh", ["has", check]).code === 0 ? ok : not).push(label);
+  return { ok, not };
 }
 
 async function gatherStatus() {
@@ -428,9 +419,7 @@ async function status({ header = false } = {}) {
   ]
     .filter(Boolean)
     .join("  ");
-  say(
-    `  ${lab("passes")} ${dirty ? c.dim("none count while files are changed (commit first)") : `${c.dim(`on ${passes.sha}`)}  ${p}`}`,
-  );
+  say(`  ${lab("passes")} ${c.dim("for these files")}  ${p}`);
   if (pr) {
     const runs = pr.statusCheckRollup ?? [];
     const st = runs.some((r) => ["FAILURE", "ERROR"].includes(r.conclusion ?? r.state))
@@ -564,7 +553,7 @@ async function check(f) {
   let built = false,
     green = 0;
   for (const p of parts) {
-    // a whole part that passed on this commit is skipped before anything is built
+    // a whole part that passed on these files is skipped before anything is built
     if (
       !name &&
       sh("tools/passes/passes.sh", ["skip", saved[p]], {
@@ -576,7 +565,7 @@ async function check(f) {
           c,
           "ok",
           label[p],
-          c.dim(`already passed on this commit, skipped (--force runs it again)`),
+          c.dim(`already passed on these files, skipped (--force runs it again)`),
           12,
         ),
       );

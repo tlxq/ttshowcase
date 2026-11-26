@@ -19,7 +19,7 @@ cleanup # a browser left by an interrupted run would point at a dead server
 
 # the base build: its files from git (no worktree), with this checkout's packages and fonts
 rm -rf "$sheet" && mkdir -p "$src/.cache" "$sheet"
-git archive "$base" pitch tools/pitch/build.mjs tools/pitch/paint-parts.mjs api src | tar -x -C "$src" || { echo "Couldn't copy $base's files: it may be older than the paint pitch" >&2; exit 1; }
+git archive "$base" pitch tools/pitch api src | tar -x -C "$src" || { echo "Couldn't copy $base's files: it may be older than the paint pitch" >&2; exit 1; }
 # this branch first: its build fetches the fonts once into .cache/fonts, which the base build borrows (a fresh worktree has none yet)
 node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
 ln -s "$root/node_modules" "$src/node_modules"; ln -s "$root/.cache/fonts" "$src/.cache/fonts"
@@ -37,8 +37,7 @@ shoot() { # build (base|branch), screen (laptop|phone), hour; a failed shoot lea
   sed -e "s#__URL__#http://127.0.0.1:$port/paint.html?hour=$3#" -e "s#__OUT__#$out/#" tools/pitch/sheet.js > "$js"
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
-  playwright-cli -s="$s" route "https://api.github.com/**" --status=200 --body='[]' >/dev/null 2>&1 # no live numbers: see run.sh
-  playwright-cli -s="$s" route "https://raw.githubusercontent.com/**" --status=200 --body='' >/dev/null 2>&1
+  playwright-cli -s="$s" route "**/api/github" --status=200 --body='{}' >/dev/null 2>&1 # no live numbers: see run.sh
   result=$(playwright-cli --raw -s="$s" run-code --filename="$js" 2>&1 | grep -v '^$' | tail -1)
   playwright-cli -s="$s" close >/dev/null 2>&1; kill "$srv" "$tags" 2>/dev/null; rm -f "$js"
   case "$result" in '"{\"errs\":[]}"') ;; *) echo "$result" > "$out.fail"; echo "$1 $2 hour $3 failed: $result" ;; esac

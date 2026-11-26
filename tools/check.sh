@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# `mise run check` (the steps are the hidden task check:steps). Skipped when it already passed on this exact commit
+# `mise run check` (the steps are the hidden task check:steps). Skipped when it already passed on these exact files
 # and these tool versions (tools/passes); --force or FORCE=1 runs it anyway.
 set -euo pipefail
 cd "$(dirname "$0")/.."

@@ -10,7 +10,11 @@
 //   POST approve                    approve every waiting tag
 import { createServer } from "node:http";
 import { randomBytes } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { handlers } from "../../api/tags.ts";
+import { GET as githubNumbers } from "../../api/github.ts";
 import { admin } from "../../api/admin.ts";
 import { memoryDeps } from "../../src/tags/memory.ts";
 
@@ -111,6 +115,45 @@ async function seed(n) {
   }
 }
 
+// /api/github on this PC, kept like Vercel's edge keeps it (api/github.ts): GitHub is asked at most once an hour (every 5 minutes while
+// a number is missing), not on every load, so a preview open all day stays under GitHub's 60 asks an hour. The answer is also kept in
+// .cache/github-numbers.json, so a restarted server doesn't ask again. Local preview only: a number GitHub doesn't give now keeps the
+// last one it gave (the live site draws nothing instead).
+const NUMBERS_FILE = fileURLToPath(new URL("../../.cache/github-numbers.json", import.meta.url));
+const HOUR = 3600e3,
+  RETRY = 300e3;
+let numbersKept = (() => {
+  try {
+    return JSON.parse(readFileSync(NUMBERS_FILE, "utf8"));
+  } catch {
+    return null; // none yet
+  }
+})();
+let numbersAsking = null;
+async function localNumbers() {
+  const k = numbersKept;
+  if (k && Date.now() - k.at < (k.whole ? HOUR : RETRY)) return k.body;
+  numbersAsking ??= (async () => {
+    const fresh = await (await githubNumbers()).json();
+    const body = {};
+    for (const [wall, own] of Object.entries(fresh)) {
+      body[wall] = {};
+      for (const [key, n] of Object.entries(own))
+        body[wall][key] = n ?? k?.body?.[wall]?.[key] ?? null;
+    }
+    const whole = Object.values(fresh).every((w) => Object.values(w).every((n) => n != null));
+    numbersKept = { at: Date.now(), whole, body };
+    try {
+      mkdirSync(dirname(NUMBERS_FILE), { recursive: true });
+      writeFileSync(NUMBERS_FILE, JSON.stringify(numbersKept));
+    } catch {
+      // kept in memory only
+    }
+    return body;
+  })().finally(() => (numbersAsking = null));
+  return numbersAsking;
+}
+
 const reply = (res, body, status = 200) => {
   res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });
   res.end(JSON.stringify(body));
@@ -121,6 +164,10 @@ createServer(async (req, res) => {
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const url = new URL(req.url, `http://${req.headers.host || "127.0.0.1:" + port}`);
+    if (url.pathname === "/api/github") {
+      // the walls' live numbers (the checks answer this path themselves, so a run never asks GitHub)
+      return reply(res, await localNumbers());
+    }
     if (url.pathname.startsWith("/api/tags-local/")) {
       const door = url.pathname.slice("/api/tags-local/".length);
       if (door === "mails") return reply(res, mails);
