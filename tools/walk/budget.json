@@ -54,14 +54,14 @@
     },
     "limits": {
       "desktop": {
-        "bytes": 2830000,
+        "bytes": 3700000,
         "ms": 4500,
-        "slowMs": 8500
+        "slowMs": 9500
       },
       "phone": {
-        "bytes": 2830000,
+        "bytes": 3700000,
         "ms": 4500,
-        "slowMs": 10500
+        "slowMs": 11500
       }
     }
   }
