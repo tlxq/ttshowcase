@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from "react";
 
 import mail from "@/content/mailWords.json";
+import { sendContact } from "@/content/sendContact";
 
 type State = "writing" | "sending" | "sent" | "failed";
 
@@ -10,9 +11,6 @@ type State = "writing" | "sending" | "sent" | "failed";
 const LONGEST = 4000;
 /** "312 left" shows from this close to the longest message. */
 const SHOW_LEFT = 400;
-
-/** Why sending failed, in the visitor's words (signum W6: what, why, Try again). One source for the site and both pitch pages: src/content/mailWords.json. */
-const WHY: Record<string, string> = mail.why;
 
 /**
  * The mail form in Questions (Tom 11-11 picked Rows: mono rows, send ↵; 11-15: the only way to
@@ -35,21 +33,13 @@ export function MailForm() {
     event.preventDefault();
     setHeight(form.current?.offsetHeight ?? 0);
     setState("sending");
-    try {
-      const answer = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message, website }),
-      });
-      if (answer.ok) {
-        setState("sent");
-        return;
-      }
-      const { error } = (await answer.json().catch(() => ({}))) as { error?: string };
-      setWhy(WHY[error ?? ""] ?? mail.other);
-    } catch {
-      setWhy(mail.offline);
+    // The send and its error words: one source for the site and both pitch pages (src/content/sendContact.ts, mailWords.json).
+    const answer = await sendContact({ name, email, message, website }, mail);
+    if (answer.ok) {
+      setState("sent");
+      return;
     }
+    setWhy(answer.why);
     setState("failed");
   }
 
