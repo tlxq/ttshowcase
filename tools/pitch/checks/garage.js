@@ -3,6 +3,9 @@
 // painted in front of its stop, "Toolbox" is not stencilled on the wall, the camera is not inside at each stop, or the way out at the far end leaves it inside. Page errors and three.js warnings fail it too.
 // The live numbers (Tom 11-26): the site's /api/github answers with fixed counts here; each piece's two numbers must be painted (painted digits, with paint on them) at its stop,
 // and ttoolbox's must still be on the wall between ttoolbox and dot (they stay while the piece is in view, not only at its stop).
+// In through the door (Tom 11-26, cause D: "the camera dips to the floor going in"): from raddavarfruberga's stop (548) to ttoolbox's (700) the camera moves as ONE glide.
+// Read every 4 sv: it speeds up once and slows down once, with no stop on the way (it used to stop just outside the door and just inside), its height over the floor stays between the two stops'
+// heights and its look up or down between the two stops' (a little slack for the hand's drift): no dip to the floor, no bob.
 // No Toolbox painting may carry the street concrete's bump map (Tom 11-26: its joint drew a dark line across them at waist height; the block wall has none).
 async page => { const W = page.viewportSize().width, errs = [], res = { errs, stops: {} };
   page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('THREE.'))) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
@@ -16,6 +19,15 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   if (!(await page.evaluate(() => typeof window.garageTest === 'function'))) { errs.push('there is no garage workshop in the walk (window.garageTest is missing)'); return JSON.stringify(res); }
   const at = async sv => { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(sv >= 700 ? 3200 : 2200); const g = await page.evaluate(() => garageTest()); res.stops[sv] = g;
     await page.screenshot({ path: '__SHOTS__pitch-garage-' + W + '-' + sv + '.png' }); return g; };
+  { const way = []; for (let sv = 548; sv <= 700; sv += 4) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(120); way.push([sv, await page.evaluate(() => { const g = garageTest(); return [g.cam, g.eye, g.pitch]; })]); }
+    res.way = way.map(([sv, [c, e, p]]) => sv + ':' + e + '/' + p); const [e0, p0] = way[0][1].slice(1), [e1, p1] = way[way.length - 1][1].slice(1);
+    for (let i = 1; i < way.length; i++) { const [sv, [, e, p]] = way[i];
+      if (e < Math.min(e0, e1) - .08 || e > Math.max(e0, e1) + .08) errs.push('going in, the camera drops or rises out of line at sv ' + sv + ': ' + e + ' m over the floor (the stops: ' + e0 + ', ' + e1 + ')');
+      if (p < Math.min(p0, p1) - 1.5 || p > Math.max(p0, p1) + 1.5) errs.push('going in, the camera tips at sv ' + sv + ': looks ' + p + ' degrees (the stops: ' + p0 + ', ' + p1 + ')');
+    }
+    const step = way.slice(1).map(([, [c]], i) => Math.hypot(c[0] - way[i][1][0][0], c[2] - way[i][1][0][2])); // metres walked each 4 sv: one move speeds up once and slows down once
+    for (let i = 1; i < step.length - 1; i++) { const before = Math.max(...step.slice(0, i)), after = Math.max(...step.slice(i + 1));
+      if (step[i] < .6 * Math.min(before, after)) { errs.push('going in, the camera slows almost to a stop at sv ' + way[i + 1][0] + ' and sets off again: not one move (' + step.map(d => d.toFixed(2)).join(' ') + ')'); break; } } }
   let g = await at(540); if (g.open > .05 || g.inside > .05) errs.push('before the workshop the garage door should be shut and the camera in the street: ' + JSON.stringify(g));
   g = await at(590); if (g.open <= .05 || g.open >= .95) errs.push('the door should be rolling up at 590: ' + JSON.stringify(g));
   g = await at(625); if (g.open < .95) errs.push('the garage door did not roll up: ' + JSON.stringify(g));

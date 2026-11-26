@@ -184,10 +184,20 @@
   // the way through the workshop (Tom 11-26): to the door, through it, then a stop in front of each tool, out by the far door
   const DOOR_X = (DOOR_A[0] + DOOR_A[1]) / 2, EXIT_X = (DOOR_B[0] + DOOR_B[1]) / 2;
   const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + 8.2, floor + 1.95, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
-  const KEYS = [[548, 612, V(DOOR_X - .3, G3 + 1.7, 4.6), V(DOOR_X + .3, G3 + 1.5, WZ + 2)], [612, 640, V(DOOR_X + .5, G3 + 1.55, -1), V(DOOR_X + .4, G3 + 1.6, WZ)],
-    [640, U4[0].key, ...toolStop(U4[0].x, WF)], ...U4.slice(1, 3).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)]),
+  // in through the door (Tom 11-26, cause D): ONE move from raddavarfruberga to ttoolbox's stop, eased once at its ends. It was three moves, each eased
+  // to a standstill (just outside the door, just inside), and the eye sank 0.8 m on the way. Now the camera glides on a smooth line through the middle of
+  // the doorway, facing the back wall; its height and its look up or down change evenly from the one stop to the other: never a dip.
+  const IN_A = 548, IN_B = U4[0].key, IN_END = toolStop(U4[0].x, WF); let inWay = null;
+  function wayIn(sv, cp, look) { const t = cl((sv - IN_A) / (IN_B - IN_A)); if (t <= 0) return;
+    if (!inWay) { const [P0, L0] = CAM.F, [P1, L1] = IN_END, flat = (a, b) => Math.hypot(b.x - a.x, b.z - a.z);
+      inWay = { P0, P1, L0, L1, path: new THREE.CatmullRomCurve3([V(P0.x, 0, P0.z), V(DOOR_X - .2, 0, 4.2), V(DOOR_X + .1, 0, .4), V(DOOR_X + .9, 0, -1.2), V(P1.x, 0, P1.z)], false, "centripetal"),
+        p0: Math.atan2(L0.y - P0.y, flat(P0, L0)), p1: Math.atan2(L1.y - P1.y, flat(P1, L1)), h0: Math.atan2(L0.x - P0.x, P0.z - L0.z), h1: Math.atan2(L1.x - P1.x, P1.z - L1.z), d0: flat(P0, L0), d1: flat(P1, L1) }; } // from raddavarfruberga's stop (CAM.F: the camera stands there from sv 540 on)
+    const w = inWay, u = sm(t), at = w.path.getPointAt(u), y = w.P0.y + (w.P1.y - w.P0.y) * u;
+    const h = w.h0 + (w.h1 - w.h0) * u, d = w.d0 + (w.d1 - w.d0) * u; // it faces the back wall all the way (no swing left and right), the head turning and tipping evenly
+    cp.set(at.x, y, at.z); look.set(at.x + Math.sin(h) * d, y + Math.tan(w.p0 + (w.p1 - w.p0) * u) * d, at.z - Math.cos(h) * d); }
+  const KEYS = [...U4.slice(1, 3).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)]),
     [860, 875, V(EXIT_X - .2, G3 + 1.65, -1), V(EXIT_X + 1.5, G3 + .4, 4)], [875, 905, V(EXIT_X + 1.5, G3 + 1.65, 2.2), V(EXIT_X + 8, G3 + 1.8, 0)], [905, 965, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
-  function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
+  function endCam(sv, cp, look) { wayIn(sv, cp, look); for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cp) { shopAt(now, sv, cp); const cx = cp.x;
     edgeL.intensity = 5 * sm(cl((sv - 850) / 40)); siteM.emissiveIntensity = 2.6 * sm(cl((sv - 850) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
     scene.fog.color.copy(FOG0); sky.color.copy(SKY0);

@@ -45,7 +45,7 @@
     normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE), color: col, roughness: .92, envMapIntensity: .2 });
   const slab = (x0, x1, y0, y1, z0, z1, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m); b.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); scene.add(b); return b; };
   // the room's material (Tom 11-26): a PAINTED BLOCK GARAGE. Concrete blocks painted off-white long ago, scuffed, a few small tags, the paint worn at knee height; a grey painted
-  // floor with oil and tyre marks. Pale and painted inside, raw grey concrete outside. Drawn once on canvases (256 px a metre); wallMat/floorMat/ceilMat are the swap points.
+  // floor with a few oil stains. Pale and painted inside, raw grey concrete outside. Drawn once on canvases (256 px a metre); wallMat/floorMat/ceilMat are the swap points.
   const rngOf = seed => { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; };
   const blockTex = () => { const PXM = 256, W = 1600, H = 1152, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d"), rnd = rngOf(11);
     g.fillStyle = "#d6d1c4"; g.fillRect(0, 0, W, H); const bw = .4 * PXM, bh = .2 * PXM;
@@ -58,15 +58,25 @@
     for (let i = 0; i < 9; i++) { const x = rnd() * W, w = 6 + rnd() * 14; g.fillStyle = `rgba(80,66,48,${.06 + rnd() * .08})`; g.fillRect(x, 0, w, H * (.4 + rnd() * .6)); } // old water runs
     // (no loose scribbles: Tom 11-26, they read as stray marks round the Toolbox production)
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
-  const floorTex = () => { const W = 1024, c = document.createElement("canvas"); c.width = c.height = W; const g = c.getContext("2d"), rnd = rngOf(5);
-    g.fillStyle = "#6c7074"; g.fillRect(0, 0, W, W); for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "255,255,255" : "20,20,24"},${.02 + rnd() * .04})`; g.fillRect(rnd() * W, rnd() * W, 20 + rnd() * 90, 8 + rnd() * 30); }
-    g.strokeStyle = "rgba(30,32,36,.55)"; g.lineWidth = 2; g.strokeRect(0, 0, W, W); // saw cuts
-    for (let i = 0; i < 14; i++) { const x = rnd() * W, y = rnd() * W, r = 10 + rnd() * rnd() * 90, gd = g.createRadialGradient(x, y, 1, x, y, r); gd.addColorStop(0, `rgba(14,12,10,${.25 + rnd() * .4})`); gd.addColorStop(.6, `rgba(20,18,14,${.1 + rnd() * .2})`); gd.addColorStop(1, "rgba(20,18,14,0)"); g.fillStyle = gd; g.beginPath(); g.ellipse(x, y, r, r * (.6 + rnd() * .3), rnd() * 3, 0, 6.3); g.fill(); } // oil
-    g.lineCap = "round"; for (let i = 0; i < 3; i++) { const x0 = rnd() * W, y0 = rnd() * W; for (const o of [0, 26]) { g.strokeStyle = "rgba(25,25,28,.38)"; g.lineWidth = 11; g.beginPath(); g.moveTo(x0 + o, y0); g.bezierCurveTo(x0 + o + 120, y0 + 80, x0 + o + 260, y0 + 60, x0 + o + 420, y0 + 190); g.stroke(); } } // tyre marks
+  // the floor (Tom 11-26, cause D: it read as a road): grey painted concrete, 6 m a tile. Soft mottling in the paint, worn patches where the bare concrete
+  // shows through, fine grit and scuffs, one saw cut, and only two oil stains a tile, each a soft puddle with a darker heart. No tyre marks, no hard blocks.
+  const floorTex = () => { const W = 1024, c = document.createElement("canvas"); c.width = c.height = W; const g = c.getContext("2d"), rnd = rngOf(5), PXM = W / 6;
+    const blob = (x, y, r, col, a0, a1 = 0) => { for (const dx of [-W, 0, W]) for (const dy of [-W, 0, W]) { const X = x + dx, Y = y + dy; if (X + r < 0 || X - r > W || Y + r < 0 || Y - r > W) continue; // wraps, so the tiles meet without a seam
+      const gd = g.createRadialGradient(X, Y, 0, X, Y, r); gd.addColorStop(0, `rgba(${col},${a0})`); gd.addColorStop(.55, `rgba(${col},${(a0 + a1) / 2})`); gd.addColorStop(1, `rgba(${col},${a1})`); g.fillStyle = gd; g.fillRect(X - r, Y - r, 2 * r, 2 * r); } };
+    g.fillStyle = "#73787d"; g.fillRect(0, 0, W, W);
+    for (let i = 0; i < 70; i++) blob(rnd() * W, rnd() * W, 60 + rnd() * 160, rnd() < .5 ? "255,255,255" : "18,20,24", .025 + rnd() * .035); // the paint's own unevenness
+    for (let i = 0; i < 5; i++) { const x = rnd() * W, y = rnd() * W; for (let k = 0; k < 14; k++) blob(x + (rnd() - .5) * 180, y + (rnd() - .5) * 90, 14 + rnd() * 40, "150,145,134", .18 + rnd() * .14); } // paint worn through to the concrete
+    for (let i = 0; i < 4000; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "235,235,230" : "25,25,28"},${.05 + rnd() * .08})`; g.fillRect(rnd() * W, rnd() * W, 1 + rnd() * 1.5, 1 + rnd() * 1.5); } // grit
+    g.lineCap = "round"; for (let i = 0; i < 40; i++) { const x = rnd() * W, y = rnd() * W, a = rnd() * 6.3, l = 10 + rnd() * 50; g.strokeStyle = `rgba(${rnd() < .6 ? "200,200,195" : "30,30,34"},${.06 + rnd() * .08})`; g.lineWidth = .8 + rnd();
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); } // scuffs
+    g.strokeStyle = "rgba(40,42,46,.4)"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(0, .5); g.lineTo(W, .5); g.stroke(); // one saw cut across, every 6 m
+    for (let i = 0; i < 2; i++) { const x = (.2 + .6 * rnd()) * W, y = (.2 + .6 * rnd()) * W, r = (.25 + rnd() * .35) * PXM; // oil: a soft puddle of a few drops, a darker heart, a faint brown edge
+      for (let k = 0; k < 7; k++) blob(x + (rnd() - .5) * r * 1.4, y + (rnd() - .5) * r * .5, r * (.25 + rnd() * .45), "30,26,20", .08 + rnd() * .08);
+      blob(x, y, r * .3, "14,12,10", .14); blob(x + r * .3, y - r * .1, r * 1.3, "60,48,32", .04); }
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
   const BLOCK_T = blockTex(), FLOOR_T = floorTex(), cloneT = (t, rx, ry) => { const q = t.clone(); q.needsUpdate = true; q.repeat.set(rx, ry); return q; };
   const wallMat = (w, h) => new THREE.MeshStandardMaterial({ map: cloneT(BLOCK_T, w / 6.25, h / 4.5), roughness: .9, envMapIntensity: .1 });
-  const floorMat = (w, d) => new THREE.MeshStandardMaterial({ map: cloneT(FLOOR_T, w / 4, d / 4), roughness: .5, envMapIntensity: .35 });
+  const floorMat = (w, d) => new THREE.MeshStandardMaterial({ map: cloneT(FLOOR_T, w / 6, d / 6), roughness: .55, envMapIntensity: .35 });
   const ceilMat = new THREE.MeshStandardMaterial({ color: 0xb9b5ab, roughness: .95 });
   const plank = (w, h, horiz) => horiz ? floorMat(w, h) : wallMat(w, h); // (the old name: every caller says wall, or floor when horiz)
   const RW = CX1 - HX0, CEIL = G3 + RH, DOORS = [DOOR_A, DOOR_B], SHOP_WARM = 0xf3f1ff;
@@ -232,9 +242,9 @@
     const cage = new THREE.Mesh(new THREE.CylinderGeometry(.1, .17, .3, 14, 1, true), lampShade), bulb = new THREE.Mesh(new THREE.SphereGeometry(.09, 12, 8), shopBulb); cage.position.set(xc, G3 + DOOR_H + 1.02, .62); bulb.position.set(xc, G3 + DOOR_H + .98, .62); const stem = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .2, 6), metalM); stem.position.set(xc, G3 + DOOR_H + 1.12, .62); const hood = new THREE.Mesh(new THREE.CylinderGeometry(.06, .2, .1, 14), metalM); hood.position.set(xc, G3 + DOOR_H + 1.2, .62); scene.add(cage, bulb, stem, hood); }
   // the lights that go with the camera: a warm spot on the wall it faces, a warm fill from the room's middle, and the light that spills out of the door onto the wet street
   const exitL = new THREE.PointLight(0xffd9a0, 0, 15, 1.4); scene.add(exitL); exitL.position.set((DOOR_B[0] + DOOR_B[1]) / 2, G3 + DOOR_H + .9, 1.1); // the work lamp over the back door
-  const shopSpot = new THREE.SpotLight(SHOP_WARM, 0, 15, 1, 1, 1.3), shopFill = new THREE.PointLight(0xf1f2ff, 0, 13, 1.6), spill = new THREE.SpotLight(0xffd29a, 0, 18, .85, .85, 1.1); scene.add(shopSpot, shopSpot.target, shopFill, spill, spill.target);
+  const shopSpot = new THREE.SpotLight(SHOP_WARM, 0, 15, 1, 1, 1.3), shopFill = new THREE.PointLight(0xf1f2ff, 0, 13, 1.6), spill = new THREE.SpotLight(0xffd29a, 0, 14, .7, .85, 1.1); scene.add(shopSpot, shopSpot.target, shopFill, spill, spill.target);
   function shopAt(now, sv, cp) { // the door's roll, the lamps, where the light stands
-    const tIn = sm(cl((sv - 560) / 55)); shop.open = tIn; shop.lit = tIn * (1 - sm(cl((sv - 940) / 50)));
+    const tIn = sm(cl((sv - 578) / 50)); shop.open = tIn; shop.lit = tIn * (1 - sm(cl((sv - 940) / 50))); // (cause D) the door rolls up as the camera comes to it, open before it goes through (sv ~645)
     shop.panel.position.y = G3 + DOOR_H / 2 + tIn * (DOOR_H + .05); shop.panel.visible = tIn < .999;
     const inX = sm(cl((cp.x - HX0 + .2) / 1.4)) * (1 - sm(cl((cp.x - CX1 + 1.2) / 1.6))), inZ = sm(cl((.9 - cp.z) / 1.6)); shop.ins = inX * inZ;
     shopBulb.emissiveIntensity = 2.2 * shop.lit; tubeM.emissiveIntensity = 2.4 * shop.lit; tubeBad.emissiveIntensity = (Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4) * shop.lit;
@@ -242,10 +252,13 @@
     shopSpot.intensity = 2.2 * shop.lit; shopSpot.position.set(cx, CEIL - .3, WZ + 1.7); shopSpot.target.position.set(cx, G3 + 1.7, WZ);
     shopFill.intensity = 1.0 * shop.lit; shopFill.position.set(cx, G3 + 3.2, WZ + 6.3);
     const sx = sm(cl((cp.x - 50) / 8)), dx = DOOR_A[0] + (DOOR_A[1] - DOOR_A[0]) / 2, ex = DOOR_B[0] + (DOOR_B[1] - DOOR_B[0]) / 2; // the light out of the door follows you to the far one
-    spill.position.set(dx + (ex - dx) * sx, G3 + 2.6, WZ + 3.2); spill.target.position.set(dx + (ex - dx) * sx + .4, G3, 7);
-    spill.intensity = 14 * shop.lit * (1 - .6 * shop.ins); exitL.intensity = 15 * shop.lit * sm(cl((sv - 820) / 40));
+    // (Tom 11-26, cause D) it shines from the door's own lintel out onto the street: from deep in the room it lit the floor inside the door white, a pool that filled the screen on the way in
+    spill.position.set(dx + (ex - dx) * sx, G3 + DOOR_H - .15, -.35); spill.target.position.set(dx + (ex - dx) * sx + .4, G3, 6);
+    spill.intensity = 9 * shop.lit * (1 - .6 * shop.ins); exitL.intensity = 15 * shop.lit * sm(cl((sv - 820) / 40));
 }
-  window.garageTest = () => ({ open: +shop.open.toFixed(3), lit: +shop.lit.toFixed(3), inside: +shop.ins.toFixed(3), cam: [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)], // for the garage check: the door, the light, where the camera is
+  window.garageTest = () => ({ open: +shop.open.toFixed(3), lit: +shop.lit.toFixed(3), inside: +shop.ins.toFixed(3), cam: [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)],
+    eye: +(camera.position.y - G3).toFixed(2), pitch: +THREE.MathUtils.radToDeg(Math.asin(camera.getWorldDirection(V()).y)).toFixed(1), // the camera's height over the floor and how far it looks up (+) or down (-), in degrees
+    // for the garage check: the door, the light, where the camera is
     paintings: U4.slice(0, 3).map(u => ({ name: u.name, x: u.x, shown: u.B.m.visible && u.B.m.material.opacity > .99, wall: u.zw, bump: !!u.B.m.material.normalMap })) }); // bump: the street concrete's joints drawn on it
   // the last wall past the climb out, lower, so the sky shows over it; the coping on top
   const XW0 = CX1 - .3, XW1 = END_X, XWT = G3 + WH;
