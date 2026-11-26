@@ -6,6 +6,8 @@
 // In through the door (Tom 11-26, cause D: "the camera dips to the floor going in"): from raddavarfruberga's stop (548) to ttoolbox's (700) the camera moves as ONE glide.
 // Read every 4 sv: it speeds up once and slows down once, with no stop on the way (it used to stop just outside the door and just inside), its height over the floor stays between the two stops'
 // heights and its look up or down between the two stops' (a little slack for the hand's drift): no dip to the floor, no bob.
+// Out through the back door (cause: the camera looked at the pavement, swung round and looked out over the street): the same read from tthermal's stop (840) to EDGE's (965), the same three rules,
+// and the camera is never within 0.6 m of a door jamb and never faces more than 100 degrees from the back wall (the street side has no sky or city: the dark background showed there).
 // No Toolbox painting may carry the street concrete's bump map (Tom 11-26: its joint drew a dark line across them at waist height; the block wall has none).
 async page => { const W = page.viewportSize().width, errs = [], res = { errs, stops: {} };
   page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('THREE.'))) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
@@ -19,15 +21,20 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   if (!(await page.evaluate(() => typeof window.garageTest === 'function'))) { errs.push('there is no garage workshop in the walk (window.garageTest is missing)'); return JSON.stringify(res); }
   const at = async sv => { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(sv >= 700 ? 3200 : 2200); const g = await page.evaluate(() => garageTest()); res.stops[sv] = g;
     await page.screenshot({ path: '__SHOTS__pitch-garage-' + W + '-' + sv + '.png' }); return g; };
-  { const way = []; for (let sv = 548; sv <= 700; sv += 4) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(120); way.push([sv, await page.evaluate(() => { const g = garageTest(); return [g.cam, g.eye, g.pitch]; })]); }
-    res.way = way.map(([sv, [c, e, p]]) => sv + ':' + e + '/' + p); const [e0, p0] = way[0][1].slice(1), [e1, p1] = way[way.length - 1][1].slice(1);
+  const oneMove = async (name, sv0, sv1) => { const way = []; for (let sv = sv0; sv <= sv1; sv += 4) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(120); way.push([sv, await page.evaluate(() => { const g = garageTest(); return [g.cam, g.eye, g.pitch, g.face]; })]); }
+    res['way ' + name] = way.map(([sv, [c, e, p]]) => sv + ':' + e + '/' + p); const [e0, p0] = way[0][1].slice(1), [e1, p1] = way[way.length - 1][1].slice(1);
     for (let i = 1; i < way.length; i++) { const [sv, [, e, p]] = way[i];
-      if (e < Math.min(e0, e1) - .08 || e > Math.max(e0, e1) + .08) errs.push('going in, the camera drops or rises out of line at sv ' + sv + ': ' + e + ' m over the floor (the stops: ' + e0 + ', ' + e1 + ')');
-      if (p < Math.min(p0, p1) - 1.5 || p > Math.max(p0, p1) + 1.5) errs.push('going in, the camera tips at sv ' + sv + ': looks ' + p + ' degrees (the stops: ' + p0 + ', ' + p1 + ')');
+      if (e < Math.min(e0, e1) - .08 || e > Math.max(e0, e1) + .08) errs.push(name + ', the camera drops or rises out of line at sv ' + sv + ': ' + e + ' m over the floor (the stops: ' + e0 + ', ' + e1 + ')');
+      if (p < Math.min(p0, p1) - 1.5 || p > Math.max(p0, p1) + 1.5) errs.push(name + ', the camera tips at sv ' + sv + ': looks ' + p + ' degrees (the stops: ' + p0 + ', ' + p1 + ')');
     }
-    const step = way.slice(1).map(([, [c]], i) => Math.hypot(c[0] - way[i][1][0][0], c[2] - way[i][1][0][2])); // metres walked each 4 sv: one move speeds up once and slows down once
+    const all = way.slice(1).map(([, [c]], i) => Math.hypot(c[0] - way[i][1][0][0], c[2] - way[i][1][0][2])), top = Math.max(...all), on = all.map(d => d > .05 * top), from = on.indexOf(true), to = on.lastIndexOf(true);
+    const step = all.slice(from, to + 1); // metres walked each 4 sv, from where it sets off to where it comes to rest (the stops before and after are held still): one move speeds up once and slows down once
     for (let i = 1; i < step.length - 1; i++) { const before = Math.max(...step.slice(0, i)), after = Math.max(...step.slice(i + 1));
-      if (step[i] < .6 * Math.min(before, after)) { errs.push('going in, the camera slows almost to a stop at sv ' + way[i + 1][0] + ' and sets off again: not one move (' + step.map(d => d.toFixed(2)).join(' ') + ')'); break; } } }
+      if (step[i] < .6 * Math.min(before, after)) { errs.push(name + ', the camera slows almost to a stop at sv ' + way[from + i + 1][0] + ' and sets off again: not one move (' + step.map(d => d.toFixed(2)).join(' ') + ')'); break; } }
+    for (const [sv, [[x, , z], , , face]] of way) { // a doorway's jamb: never closer than 0.6 m; and never turned out over the street (nothing is built there: just the dark background)
+      for (const jx of [62.7, 67.1]) if (name === 'going out' && Math.hypot(x - jx, Math.max(0, Math.max(-.3 - z, z))) < .6) errs.push(name + ', the camera is within 0.6 m of a door jamb at sv ' + sv + ': ' + x + ', ' + z);
+      if (name === 'going out' && Math.abs(face) > 100) errs.push(name + ', the camera turns out over the street at sv ' + sv + ': faces ' + face + ' degrees (0 = the back wall, 90 = along the street, 180 = out over it)'); } };
+  await oneMove('going in', 548, 700);
   let g = await at(540); if (g.open > .05 || g.inside > .05) errs.push('before the workshop the garage door should be shut and the camera in the street: ' + JSON.stringify(g));
   g = await at(590); if (g.open <= .05 || g.open >= .95) errs.push('the door should be rolling up at 590: ' + JSON.stringify(g));
   g = await at(625); if (g.open < .95) errs.push('the garage door did not roll up: ' + JSON.stringify(g));
@@ -39,6 +46,7 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
     const bad = await nums(p.name, NUMS[p.name]); if (bad) errs.push(bad);
     if (sv === 700) { await at(735); const off = await nums('ttoolbox', NUMS.ttoolbox); if (off) errs.push('between ttoolbox and dot: ' + off); }
   }
+  await oneMove('going out', 840, 965); // out through the back door (Tom 11-26: it looked down at the pavement and out over the street, half the screen black): the same one glide, from tthermal's stop to EDGE's
   g = await at(905); if (g.cam[0] < 62 || g.cam[2] < -1.6) errs.push('the back door out is not reached by 905: ' + JSON.stringify(g));
   g = await at(1045); if (g.inside > .05 || g.cam[2] <= 0) errs.push('the way out at the far end did not lead back to the street at EDGE: ' + JSON.stringify(g));
   return JSON.stringify(res); }

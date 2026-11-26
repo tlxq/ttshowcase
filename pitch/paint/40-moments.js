@@ -257,7 +257,7 @@
     spill.intensity = 9 * shop.lit * (1 - .6 * shop.ins); exitL.intensity = 15 * shop.lit * sm(cl((sv - 820) / 40));
 }
   window.garageTest = () => ({ open: +shop.open.toFixed(3), lit: +shop.lit.toFixed(3), inside: +shop.ins.toFixed(3), cam: [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)],
-    eye: +(camera.position.y - G3).toFixed(2), pitch: +THREE.MathUtils.radToDeg(Math.asin(camera.getWorldDirection(V()).y)).toFixed(1), // the camera's height over the floor and how far it looks up (+) or down (-), in degrees
+    eye: +(camera.position.y - G3).toFixed(2), pitch: +THREE.MathUtils.radToDeg(Math.asin(camera.getWorldDirection(V()).y)).toFixed(1), face: +THREE.MathUtils.radToDeg(Math.atan2(...(d => [d.x, -d.z])(camera.getWorldDirection(V())))).toFixed(1), // the camera's height over the floor and how far it looks up (+) or down (-), in degrees; which way it faces (0 = the back wall, 90 = along the street, 180 = out over the street)
     // for the garage check: the door, the light, where the camera is
     paintings: U4.slice(0, 3).map(u => ({ name: u.name, x: u.x, shown: u.B.m.visible && u.B.m.material.opacity > .99, wall: u.zw, bump: !!u.B.m.material.normalMap })) }); // bump: the street concrete's joints drawn on it
   // the last wall past the climb out, lower, so the sky shows over it; the coping on top
