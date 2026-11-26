@@ -56,7 +56,7 @@ esac
 url="$base/next?key=$(python3 -I -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip(), safe=""))' <"$key_file")"
 if [ -n "$print" ]; then
   echo "$url"
-  command -v qrencode >/dev/null && qrencode -t ansiutf8 "$url"
+  if command -v qrencode >/dev/null; then qrencode -t ansiutf8 "$url"; fi # as an if: a bare && made the script end with 1 on a PC without qrencode
 else
   xdg-open "$url" >/dev/null 2>&1 &
   echo "Opened $base/next in the browser"

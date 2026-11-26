@@ -194,7 +194,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 .start .go { position: absolute; bottom: 5svh; font: 700 15px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .02em; color: var(--look-cream); opacity: 0; transition: opacity .4s; }
 
 .stripe { position: fixed; left: 0; right: 0; top: 0; height: var(--look-stripe); z-index: 7; pointer-events: none; font-family: "Inter", system-ui, sans-serif; color: var(--look-soft); }
-/* a full-screen flow (pick, tag, Tom's edit) is open: the stripe and its name step aside so they never sit over the flow's bar. visibility, not aria-hidden: the bar keeps its role and value text and is a progress bar again the moment it returns */
+/* a full-screen flow (pick, tag, Tom's edit) is open: the stripe and its name step aside so they never sit over the flow's bar. while hidden it is out of the screen reader's tree too (the flow is full-screen); its value keeps updating, and it is a progress bar again the moment it returns */
 .stripe { transition: opacity 300ms var(--ease), visibility 300ms var(--ease); }
 html.flow .stripe { opacity: 0; visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .stripe { transition: none; } }
