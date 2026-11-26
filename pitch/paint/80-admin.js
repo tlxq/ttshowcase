@@ -186,7 +186,7 @@
   const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + 8.2, floor + 1.95, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
   const KEYS = [[548, 612, V(DOOR_X - .3, G3 + 1.7, 4.6), V(DOOR_X + .3, G3 + 1.5, WZ + 2)], [612, 640, V(DOOR_X + .5, G3 + 1.55, -1), V(DOOR_X + .4, G3 + 1.6, WZ)],
     [640, U4[0].key, ...toolStop(U4[0].x, WF)], ...U4.slice(1, 4).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)]),
-    [925, 955, V(EXIT_X - .3, G3 + 1.65, -1.2), V(EXIT_X + 3.5, G3 + 1.7, 6)], [955, 1035, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
+    [925, 945, V(EXIT_X - .2, G3 + 1.65, -1), V(EXIT_X + 1.5, G3 + 1.7, 4)], [945, 985, V(EXIT_X + 1.5, G3 + 1.65, 2.2), V(EXIT_X + 8, G3 + 1.8, 0)], [985, 1035, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
   function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cp) { shopAt(now, sv, cp); const cx = cp.x;
     edgeL.intensity = 6.5 * sm(cl((sv - 900) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */

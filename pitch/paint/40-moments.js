@@ -155,7 +155,7 @@
     shopFill.intensity = 1.6 * shop.lit; shopFill.position.set(cx, G3 + 3.2, WZ + 6.3);
     const sx = sm(cl((cp.x - 50) / 8)), dx = DOOR_A[0] + (DOOR_A[1] - DOOR_A[0]) / 2, ex = DOOR_B[0] + (DOOR_B[1] - DOOR_B[0]) / 2; // the light out of the door follows you to the far one
     spill.position.set(dx + (ex - dx) * sx, G3 + 2.6, WZ + 3.2); spill.target.position.set(dx + (ex - dx) * sx + .4, G3, 7);
-    spill.intensity = 14 * shop.lit * (1 - .6 * shop.ins); exitL.intensity = 7 * shop.lit * sm(cl((sv - 880) / 40));
+    spill.intensity = 14 * shop.lit * (1 - .6 * shop.ins); exitL.intensity = 11 * shop.lit * sm(cl((sv - 880) / 40));
     const here = sv > 590 && sv < 960 && cp.x < 52 && shop.ins > .3; toolboxSpray.fade(here); }
   window.garageTest = () => ({ open: +shop.open.toFixed(3), lit: +shop.lit.toFixed(3), inside: +shop.ins.toFixed(3), cam: [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)], stencil: +toolboxSpray.op.toFixed(2), // for the garage check: the door, the light, where the camera is, the stencil
     paintings: U4.slice(0, 4).map(u => ({ name: u.name, x: u.x, shown: u.B.m.visible && u.B.m.material.opacity > .99, wall: u.zw })) });
