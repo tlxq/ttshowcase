@@ -195,7 +195,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 
 .stripe { position: fixed; left: 0; right: 0; top: 0; height: var(--look-stripe); z-index: 7; pointer-events: none; font-family: "Inter", system-ui, sans-serif; color: var(--look-soft); }
 .stripe canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
-.stripe span { position: absolute; top: 30px; font: var(--look-stripe-name)/1 "Saira Stencil One", sans-serif; color: var(--look-soft); opacity: .55; white-space: nowrap; transition: opacity 300ms var(--ease), color 300ms var(--ease); }
+.stripe span { position: absolute; top: 30px; font: var(--look-stripe-name)/1 "Saira Stencil One", sans-serif; color: var(--look-soft); opacity: 0; text-shadow: 0 0 6px var(--look-stripe-band), 0 0 3px var(--look-stripe-band); white-space: nowrap; transition: opacity 300ms var(--ease), color 300ms var(--ease); }
 .stripe span.on { opacity: 1; color: var(--look-text); }
 @media (max-aspect-ratio: 4/5) { .stripe span { font-size: var(--look-stripe-name-phone); top: 26px; } }
 @media (prefers-reduced-motion: reduce) { .stripe span { transition: none; } }
