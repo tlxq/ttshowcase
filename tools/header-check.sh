@@ -59,15 +59,17 @@ for f in pages:
         if re.search(r"\ssrc\s*=", attrs) or not runs:
             continue
         want.add("sha256-" + base64.b64encode(hashlib.sha256(body.encode()).digest()).decode())
-    src = script_src(head(path))
-    if src is None:
-        bad.append(f"{path}: no script-src in its CSP")
-        continue
-    if "'unsafe-inline'" in src or "'unsafe-eval'" in src:
-        bad.append(f"{path}: script-src allows any inline script")
-    named = set(re.findall(r"'(sha256-[^']+)'", src))
-    if want - named:
-        bad.append(f"{path}: {len(want - named)} of its {len(want)} inline scripts have no hash in the CSP")
+    # the page's file address too (/wall.html, /index.html): the walks open pages by it
+    for at in (path, "/index.html" if path == "/" else path + ".html"):
+        src = script_src(head(at))
+        if src is None:
+            bad.append(f"{at}: no script-src in its CSP")
+            continue
+        if "'unsafe-inline'" in src or "'unsafe-eval'" in src:
+            bad.append(f"{at}: script-src allows any inline script")
+        named = set(re.findall(r"'(sha256-[^']+)'", src))
+        if want - named:
+            bad.append(f"{at}: {len(want - named)} of its {len(want)} inline scripts have no hash in the CSP")
 for path in ("/no-such-page", "/no/such/page/"):
     src = script_src(head(path)) or ""
     if not src or "'unsafe-inline'" in src:
