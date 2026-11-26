@@ -203,7 +203,8 @@
   // in: from raddavarfruberga's stop (CAM.F: the camera stands there from sv 540 on) to ttoolbox's, facing the back wall all the way
   const IN_A = 540, IN_B = U4[0].key, IN_END = toolStop(U4[0].x, WF); let inWay = null;
   function wayIn(sv, cp, look) { const t = cl((sv - IN_A) / (IN_B - IN_A)); if (t <= 0) return;
-    if (!inWay) { const [P0, L0] = CAM.F, [P1, L1] = IN_END; inWay = glide(P0, L0, P1, L1, [V(DOOR_X - .2, 0, 4.2), V(DOOR_X + .1, 0, .4), V(DOOR_X + .9, 0, -1.2)]); }
+  const IN_TURN = [[0, 0], [.15, .25], [.3, .42], [.55, .1], [.7, 0], [1, 0]]; // phone (Tom 11-26): the head turns right to the garage door ~10 sv earlier; facing the wall straight on, its narrow view showed only street concrete and asphalt until the door was almost in front of the camera
+    if (!inWay) { const [P0, L0] = CAM.F, [P1, L1] = IN_END; inWay = glide(P0, L0, P1, L1, [V(DOOR_X - .2, 0, 4.2), V(DOOR_X + .1, 0, .4), V(DOOR_X + .9, 0, -1.2)], N_ ? IN_TURN : null); }
     glideAt(inWay, t, cp, look); }
   // out (Tom 11-26: "getting out of the garage"): from tthermal's stop through the back door to EDGE's stop. It was two lerps of the look POINT, the first aimed at the
   // pavement outside the door, so the view fell to the floor, swung round and looked out over the street at nothing. Now the camera walks out through the middle of the
