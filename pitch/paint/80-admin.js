@@ -209,9 +209,9 @@
   // pavement outside the door, so the view fell to the floor, swung round and looked out over the street at nothing. Now the camera walks out through the middle of the
   // door with its head turned back to the lit workshop (the tools, the paintings; the room's end wall and the corner are bare, so they are never what it faces, and the
   // street has no sky behind it), then turns to the lit fence, along it first, then on to EDGE's stop.
-  const OUT_A = U4[2].key, OUT_B = 965, /* it sets off at tthermal's stop: no stretch of scroll where nothing moves */ OUT_FROM = toolStop(U4[2].x, WF); let outWay = null; const OUT_TURN = [[0, 0], [.22, -.5], [.5, -.5], [.78, 1.15], [1, 0]];
+  const OUT_A = U4[2].key, OUT_B = 965, /* it sets off at tthermal's stop: no stretch of scroll where nothing moves */ OUT_FROM = toolStop(U4[2].x, WF); let outWay = null; const OUT_TURN = [[0, 0], [.2, -.28], [.42, -.4], [.7, 0], [.9, .15], [1, 0]]; // (Tom 11-26) the head is back to the room only while the camera is still in it, and level by the door: it walked out of the door with the head turned 35 degrees and swung 100 degrees right in 20 sv, which on a phone's narrow view was a flash of jamb, then street wall
   function wayOut(sv, cp, look) { const t = cl((sv - OUT_A) / (OUT_B - OUT_A)); if (t <= 0) return;
-    if (!outWay) { const [P0, L0] = OUT_FROM, [P1, L1] = EDGE_STOP; outWay = glide(P0, L0, P1, L1, [V(EXIT_X - 1.6, 0, -1.1), V(EXIT_X, 0, .5), V(EXIT_X + .5, 0, 2.6)], OUT_TURN); }
+    if (!outWay) { const [P0, L0] = OUT_FROM, [P1, L1] = EDGE_STOP; outWay = glide(P0, L0, P1, L1, [V(EXIT_X - 1.2, 0, -1.2), V(EXIT_X, 0, .3), V(EXIT_X + .15, 0, 3), V(EXIT_X + 4.8, 0, 7.4)] /* straight out through the middle of the door first, away from both jambs, then across to the fence */, OUT_TURN); }
     glideAt(outWay, t, cp, look); }
   const KEYS = [...U4.slice(1, 3).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)])], KEY_END = [1058, SV_MAX - 10, ...BARE_T]; /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */
   const keyTo = (sv, cp, look, [a, b, P, L]) => { const k = sm(cl((sv - a) / (b - a))); if (k > 0) { cp.lerp(P, k); look.lerp(L, k); } };
