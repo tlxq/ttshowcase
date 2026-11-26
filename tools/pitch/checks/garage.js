@@ -8,6 +8,7 @@
 // heights and its look up or down between the two stops' (a little slack for the hand's drift): no dip to the floor, no bob.
 // Out through the back door (cause: the camera looked at the pavement, swung round and looked out over the street): the same read from tthermal's stop (840) to EDGE's (965), the same three rules,
 // and the camera is never within 0.6 m of a door jamb and never faces more than 100 degrees from the back wall (the street side has no sky or city: the dark background showed there).
+// The production comes up as a whole as the camera clears the door (sv 660: all three pieces painted, not each only just before its own stop).
 // No Toolbox painting may carry the street concrete's bump map (Tom 11-26: its joint drew a dark line across them at waist height; the block wall has none).
 async page => { const W = page.viewportSize().width, errs = [], res = { errs, stops: {} };
   page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('THREE.'))) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
@@ -41,6 +42,7 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   g = await at(590); if (g.open <= .05 || g.open >= .95) errs.push('the door should be rolling up at 590: ' + JSON.stringify(g));
   g = await at(625); if (g.open < .95) errs.push('the garage door did not roll up: ' + JSON.stringify(g));
   g = await at(660); if (g.inside < .5 || g.cam[2] >= 0) errs.push('the camera did not walk in through the door by 660: ' + JSON.stringify(g));
+  { const bare = g.paintings.filter(p => !p.shown).map(p => p.name); if (bare.length) errs.push('the production is not on the wall as the camera clears the door (sv 660), the stretch between two stops is bare: ' + bare.join(', ') + ' not painted yet: ' + JSON.stringify(g.paintings)); } // (Tom 11-26) all three pieces and the title tile come up together as it comes in, so no wall between two stops is bare
   for (const [sv, i] of [[700, 0], [770, 1], [840, 2]]) { g = await at(sv); const p = g.paintings[i];
     if (!p.shown) errs.push(p.name + ' is not painted at its stop: ' + JSON.stringify(g));
     if (p.bump) errs.push(p.name + " has the street concrete's bumps on the block wall (its joint draws a dark line across the painting)"); if (g.inside < .95) errs.push('at ' + p.name + ' the camera is not inside the workshop: ' + JSON.stringify(g));

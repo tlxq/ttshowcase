@@ -222,9 +222,9 @@
     const FADE = .8; // seconds a painting takes to come up on its wall
     // (Tom 11-26) a production piece keeps its numbers and plate while it is in view, not only at its stop: inView is how much of its painted box is on the screen
     const seen = u => { const [ax, , oa] = proj(u.B.at(u.bb[0], u.bb[3])), [bx, , ob] = proj(u.B.at(u.bb[2], u.bb[3])); return oa && ob ? Math.max(0, Math.min(innerWidth, bx) - Math.max(0, ax)) / Math.max(1, bx - ax) : 0; };
-    const inGarage = sv > U4[0].key - 14 && sv < 875, view = U4.map(u => u.tile && inGarage ? seen(u) : 0), most = view.indexOf(Math.max(...view)); // the plate: only the piece most in view has one
+    const PROD_FROM = U4[0].key - 70, /* (Tom 11-26) the production comes up as the camera clears the door, all three pieces and the title tile together: the wall between two stops is never bare */ inGarage = sv > PROD_FROM && sv < 875, view = U4.map(u => u.tile && inGarage ? seen(u) : 0), most = view.indexOf(Math.max(...view)); // the plate: only the piece most in view has one
     U4.forEach((u, i) => { const near = u.tile ? view[i] > .5 : Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = u.tile ? inGarage : sv > u.key - 14 && sv < u.leave + 15;
-      if (introOver && sv > u.key - 14 && !u.start && u.B.ready() && (!u.O || u.O.ready()) && (!u.X || u.X.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
+      if (introOver && sv > (u.tile ? PROD_FROM : u.key - 14) && !u.start && u.B.ready() && (!u.O || u.O.ready()) && (!u.X || u.X.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1, t0 = .35, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / FADE)), shown = k >= 1;
       if (k > 0 && !u.B.ready()) root.dataset.pops = (+root.dataset.pops || 0) + 1; u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.X) { u.X.m.visible = k > 0; u.X.m.material.opacity = k; } if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
