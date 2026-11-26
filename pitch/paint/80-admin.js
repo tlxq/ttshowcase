@@ -125,7 +125,7 @@
   const HOUR_Q = new URLSearchParams(location.search).get("hour");
   function dayNow() { const d = new Date(), h = HOUR_Q !== null && HOUR_Q !== "" && isFinite(+HOUR_Q) ? ((+HOUR_Q % 24) + 24) % 24 : d.getHours() + d.getMinutes() / 60; return sm(cl(h - 6)) * (1 - sm(cl(h - 18))); }
   function clockLight(k) { skyU.uDay.value = Math.max(0, k); if (k <= 0) return; const n = 1 - k, cf = cityFar.material.color.r; // day: the street light, the work light and the stair lights off, the sun and the morning sky on
-    lamp.intensity *= n; pool.intensity *= n; bulbM.emissiveIntensity *= n; work.intensity *= n; lamp2.intensity *= n; stairLight.intensity *= n; manL.intensity *= n;
+    lamp.intensity *= n; pool.intensity *= n; bulbM.emissiveIntensity *= n; work.intensity *= n; lamp2.intensity *= n; stairLight.intensity *= n;
     sky.color.lerp(SKYM, k); sky.groundColor.lerp(GNDM, k); sky.intensity += (.75 - sky.intensity) * k; sun.intensity = 2.1 * k; scene.background.lerp(BGM, k); scene.fog.color.lerp(FOGM, k);
     lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * k); skyU.uBg.value.copy(scene.background); }
   document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
@@ -137,17 +137,18 @@
     if (sv > 1060 && !pick.mode) { scene.fog.density = .04; lens.uniforms.uAper.value = 1; }
     if (day) { const k = sm(cl((sv - CUT) / (SV_MAX - 6 - CUT))); 
       // back at the start wall in the visitor's own light (Tom 11-23): the night is the start's own set-up, the clock blends it to day
-      lamp.intensity = 5.5; pool.intensity = 9; bulbM.emissiveIntensity = 2.2; work.intensity = 4.2 * .3; stairLight.intensity = manL.intensity = 0;
+      lamp.intensity = 5.5; pool.intensity = 9; bulbM.emissiveIntensity = 2.2; work.intensity = 4.2 * .3; stairLight.intensity = 0;
       sky.color.copy(SKY0); sky.groundColor.copy(GND0); sky.intensity = .35; sun.intensity = 0; scene.background.copy(BG0); scene.fog.color.copy(FOG0); lens.uniforms.uAper.value = 1; cityFar.material.color.setScalar(.25);
       if (sv >= SV_MAX - 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, 8); // the loop: the page's top shows the same wall, then the pole, the start
       clockLight(dayNow()); }
-    else { endVisit = 0; sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); clockLight(dayNow() * startDay * Math.max(1 - sm(cl((sv - 470) / 70)), sm(cl((sv - 1060) / 40)))); } // by day the sun comes up only as the start's paint shows the wall // the street up to the manhole is in the clock's light; under it, the walk's own; out past EDGE the clock's again
+    else { endVisit = 0; sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); clockLight(dayNow() * startDay * (1 - shop.ins)); } // by day the sun comes up only as the start's paint shows the wall // the street is in the clock's light all along; inside the workshop it has its own warm light (Tom 11-26)
     endReady = false; // no end landing any more (Tom 11-23): Leave your tag lives on the visitors' wall
     if (document.documentElement.dataset.endReady !== (endReady ? "1" : "0")) document.documentElement.dataset.endReady = endReady ? "1" : "0"; // the checks wait for it
-    endWallState(now, false); }
-  // the camera's way: over the cover, straight down the shaft, back into the room and a stop in front of each tool, under the far shaft,
-  // straight up it, out to EDGE, on towards the sunrise (then morning() cuts to the opening wall). In a shaft it stays on its centre line, so it never touches the concrete.
-  const stop = (x, y, z, ly) => [V(x + .1, y, z), V(x, ly, 0)];
+    endWallState(now, false);
+    sun.intensity *= 1 - .97 * shop.ins; sky.intensity *= 1 - .6 * shop.ins; } // inside the workshop the day's sun and sky are mostly shut out
+  // the camera's way: along the street to the garage door, in through it, a stop in front of each tool on the workshop's back wall, out through the far door,
+  // on to EDGE, on towards the sunrise (then morning() cuts to the opening wall).
+  const stop = (x, y, z, ly, lz = 0) => [V(x + .1, y, z), V(x, ly, lz)];
   // the visitors' wall's street light (Tom 11-23: one more light, no swing) is lamp2, which is off wherever that wall is in view: at the epaRadar wall on the
   // walk, at the visitors' wall (and the start beside it) and at its twin past EDGE, where the walk changes from one to the other
   const L2_VIS = [V(-18.6, GROUND + 6.35, 3.7), V(-11, 1.2, 0)], L2_EPA = [lamp2.position.clone(), lamp2.target.position.clone()];
@@ -180,20 +181,16 @@
     if (REDUCED) STEN.f = 11; else if (now - STEN.at < 2500) STEN.f = Math.round((mx * .5 + .5) * (STEN.n - 1)); else { STEN.f += STEN.dir; if (STEN.f >= STEN.n - 1 || STEN.f <= 0) STEN.dir *= -1; STEN.f = cl(STEN.f, 0, STEN.n - 1); }
     STEN.mat.map = STEN.frames[STEN.f]; const j = REDUCED ? [0, 0, 0] : [(Math.random() - .5) * .02, (Math.random() - .5) * .02, (Math.random() - .5) * .008];
     STEN.meshes.forEach((m, k) => { m.position.set(STEN.x + j[0] + (k ? SEAM_D.x : 0), STEN.y + j[1] + (k ? SEAM_D.y : 0), .002); m.rotation.z = j[2]; }); }
-  // the room under the street (Tom 11-24: a straight drop, no look down or up a shaft): from raddavarfruberga the camera glides down through the street
-  // to the first tool's wall, still facing the wall, and after the last one up through it to EDGE, so a painting is always coming in. The covers stay shut.
-  const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, 8.2, floor + 1.55) : stop(x, floor + 1.3, 7.6, floor + 1.75);
-  // the glides cross the street inside the room (its length HX0..CX1 and depth RZ), never through solid ground or in front of the room's ceiling edge (the via point: a key's fifth entry bends its way)
-  const KEYS = [...U4.slice(0, 4).map((u, i) => [i ? u.key - 45 : 548, u.key, ...toolStop(u.x, WF), ...(i ? [] : [V(U4[0].x, G3 + .3, 3)])]),
-    [935, 1045, ...EDGE_STOP, V(CX1 - 6, G3 + .3, 8)], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
-  const inShaft = p => (1 - sm(cl((Math.min(Math.hypot(p.x - MX_IN, p.z - MZ), Math.hypot(p.x - MX_OUT, p.z - MZ)) - .3) / 1.2))) * (1 - sm(cl((p.y - G3 - 1) / 1.2))); // 1 in a shaft, 0 away from it: the hand sway fades out as you near one
-  function endCam(sv, cp, look) { for (const [a, b, P, L, via] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue;
-    if (via) cp.multiplyScalar((1 - k) * (1 - k)).addScaledVector(via, 2 * k * (1 - k)).addScaledVector(P, k * k); else cp.lerp(P, k); look.lerp(L, k); } }
-  function endAt(now, sv, cx) {
-    const under = sm(cl((cx - HX0 - .5) / 1.5)) * (1 - sm(cl((cx - CX1 + 1) / 2)));
-    tubeLight.intensity = 5.5 * under; roomFill.intensity = 6 * under; roomFill.position.set(cx + 2.5, DY - .25, 5.5); edgeL.intensity = 6.5 * (cx > EDGE_X ? 1 : 1 - sm(cl((EDGE_X - cx - 2) / 6))); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */ tubeLight.position.set(cx, DY - .1, 1.6); tubeLight.target.position.set(cx, WF + .9, 0);
-    tubeBad.emissiveIntensity = Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4;
-    scene.fog.color.copy(FOG0); sky.intensity *= 1 - .55 * under; sky.color.copy(SKY0);
+  // the way through the workshop (Tom 11-26): to the door, through it, then a stop in front of each tool, out by the far door
+  const DOOR_X = (DOOR_A[0] + DOOR_A[1]) / 2, EXIT_X = (DOOR_B[0] + DOOR_B[1]) / 2;
+  const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + 8.2, floor + 1.55, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
+  const KEYS = [[548, 612, V(DOOR_X - .3, G3 + 1.7, 4.6), V(DOOR_X + .3, G3 + 1.5, WZ + 2)], [612, 650, V(DOOR_X + .5, G3 + 1.55, -1), V(U4[0].x - .8, G3 + 1.6, WZ)],
+    [650, U4[0].key, ...toolStop(U4[0].x, WF)], ...U4.slice(1, 4).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)]),
+    [935, 975, V(EXIT_X - .3, G3 + 1.65, -1.2), V(EXIT_X + 3.6, G3 + 1.5, 6)], [975, 1045, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
+  function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
+  function endAt(now, sv, cp) { shopAt(now, sv, cp); const cx = cp.x;
+    edgeL.intensity = 6.5 * (cx > EDGE_X ? 1 : 1 - sm(cl((EDGE_X - cx - 2) / 6))); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
+    scene.fog.color.copy(FOG0); sky.color.copy(SKY0);
     const FADE = .8; // seconds a painting takes to come up on its wall
     U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && sv < u.leave + 15;
       if (introOver && sv > u.key - 14 && !u.start) u.start = now; // once per visit
@@ -201,7 +198,7 @@
       u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0); u.parts.forEach((p, k) => p.fade(show && sec > t0 + .2 + FADE + k * .3));
-        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); } }); } // phone: on the floor below the wall, where nothing is painted
+        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); } }); } // phone: on the floor below the wall, where nothing is painted
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");
