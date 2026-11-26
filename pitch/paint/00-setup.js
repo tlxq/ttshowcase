@@ -26,10 +26,21 @@
 
   // the wall: scanned concrete (Poly Haven concrete_wall_003, CC0)
   const tl = new THREE.TextureLoader(), maxAniso = renderer.capabilities.getMaxAnisotropy();
+  // what the bucket doesn't wait for (Track B, 11-26): the start's own pictures go through the default manager above (the bucket fills as they arrive); the rest (the workshop's and EDGE's
+  // paintings, the stencil frames) is asked for once the bucket has tipped and the pour is over (LATE.start), on a manager of its own, so it never holds the bucket. Each place waits for its own pictures before it
+  // shows (a painting's fade-up starts when its picture is in; the stencil fades in), so nothing pops in.
+  const LATE = { mgr: new THREE.LoadingManager(), q: [], on: false, left: 0, done: 0, run(f) { this.left++; const g = () => { f(); }; this.on ? g() : this.q.push(g); },
+    start() { if (this.on) return; this.on = true; this.q.splice(0).forEach(g => g()); },
+    // a picture goes to the graphics card one at a time, 120 ms apart: thirty at once cost a frame of 200 ms (tagsfull), one costs a few ms
+    ups: [], up(f) { this.ups.push(f); if (!this.tm) this.tm = setTimeout(() => this.next(), 120); }, next() { const f = this.ups.shift(); this.tm = 0; if (f) f(); if (this.ups.length) this.tm = setTimeout(() => this.next(), 120); }, got() { if (++this.done === this.left) document.documentElement.dataset.lateDone = Math.round(performance.now()); } };
+  const imLate = new THREE.ImageLoader(LATE.mgr);
   // each picture is loaded and sent to the graphics card once; every surface that uses it shares it (own repeat/offset only)
   const texCache = {};
-  const tex = (u, srgb, rx, ry, ox = 0, oy = 0) => { let c = texCache[u];
-    if (!c) { c = texCache[u] = { all: [] }; c.base = tl.load(u, () => { c.all.forEach(t => { if (t !== c.base) { t.source = c.base.source; t.needsUpdate = true; } }); renderer.initTexture(c.base); }); }
+  const texReady = u => !!(texCache[u] && texCache[u].base && texCache[u].base.image); // the picture is in (a late one comes after the tip)
+  const tex = (u, srgb, rx, ry, ox = 0, oy = 0, late = false) => { let c = texCache[u];
+    if (!c) { c = texCache[u] = { all: [] }; const done = () => { c.all.forEach(t => { if (t !== c.base) { t.source = c.base.source; t.needsUpdate = true; } }); renderer.initTexture(c.base); };
+      if (late) { c.base = new THREE.Texture(); LATE.run(() => imLate.load(u, img => (img.decode ? img.decode().catch(() => {}) : Promise.resolve()).then(() => LATE.up(() => { c.base.image = img; c.base.needsUpdate = true; done(); LATE.got(); })) /* decoded off the main thread first: the upload alone is then a few ms, not a 40 ms frame */, undefined, () => LATE.got())); }
+      else c.base = tl.load(u, done); }
     // a surface asking before the picture is in gets an empty texture that takes the picture on load: clone() marks it for upload at once, and an upload with no picture warns every frame
     const t = !c.all.length ? c.base : c.base.image ? c.base.clone() : new THREE.Texture(); c.all.push(t); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.offset.set(ox, oy); t.anisotropy = maxAniso; if (srgb) t.encoding = THREE.sRGBEncoding; return t; };
   const WW = 90, WX = 24, WH = 10, GROUND = -2.2, TILE = 6;

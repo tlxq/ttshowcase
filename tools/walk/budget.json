@@ -25,5 +25,42 @@
     "requests": 30,
     "lcpMs": 101,
     "tbtMs": 256
+  },
+  "pitchStart": {
+    "about": "What the paint page's bucket waits for, read by tools/pitch/checks/startbytes.js: bytes fetched and ms until dataset.readyAt, on a fast line (ms is mostly the bucket's own filling, about 2.2 s, so it barely moves) and on a phone's line (1 MB/s, 100 ms, CPU x6, nothing cached: slowMs, where the bytes show). before = master 572e909 (every texture, the 8 paintings and the 22 stencil frames on the default loading manager); recorded = perf/start-load (only the start set; the workshop's and EDGE's paintings and the stencil frames load after the tip; the concrete's occlusion and roughness maps are 1024, its bump map stays 2048 because 1024 blurred it). limits = recorded + 10 % on bytes, room for the machine's noise on ms.",
+    "before": {
+      "desktop": {
+        "bytes": 6809228,
+        "ms": 2780,
+        "slowMs": 7295
+      },
+      "phone": {
+        "bytes": 6809228,
+        "ms": 2680,
+        "slowMs": 7024
+      }
+    },
+    "recorded": {
+      "desktop": {
+        "bytes": 3364261,
+        "ms": 2665,
+        "slowMs": 5891
+      },
+      "phone": {
+        "bytes": 3364261,
+        "ms": 2662,
+        "slowMs": 6335
+      }
+    },
+    "limits": {
+      "desktop": {
+        "bytes": 3700000,
+        "ms": 4500
+      },
+      "phone": {
+        "bytes": 3700000,
+        "ms": 4500
+      }
+    }
   }
 }

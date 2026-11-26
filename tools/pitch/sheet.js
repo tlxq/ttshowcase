@@ -13,6 +13,7 @@ async (page) => {
   // master and the branch draw the same ones, and only a real change shows as a difference
   await page.addInitScript(() => {
     let s = 7;
+    window.__reseed = () => { s = 7; }; // the tap starts the same chance on both builds: how many frames each drew before it (a build that loads less drops fewer) must not shift the paint's runs
     Math.random = () => {
       s = (s + 0x6d2b79f5) | 0;
       let t = Math.imul(s ^ (s >>> 15), 1 | s);
@@ -22,6 +23,7 @@ async (page) => {
   });
   await page.goto("__URL__");
   await page.waitForTimeout(3500);
+  await page.evaluate(() => window.__reseed());
   await page.evaluate(() => window.bucketAt()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (
     let i = 0;

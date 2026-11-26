@@ -171,11 +171,11 @@
   { const w = STEN.h * 512 / 543, mat = wallBump(new THREE.MeshStandardMaterial({ transparent: true, depthWrite: false, roughness: .6, polygonOffset: true, polygonOffsetFactor: -2, visible: false,
       normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, STEN.h / TILE, (STEN.x - w / 2 - (WX - WW / 2)) / TILE, (STEN.y - STEN.h / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.4, .4) }));
     STEN.mat = mat; STEN.meshes = [V(), SEAM_D].map(d => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, STEN.h), mat); m.position.set(STEN.x + d.x, STEN.y + d.y, .002); scene.add(m); return m; });
-    const tl2 = new THREE.TextureLoader(); let got = 0, lost = 0;
-    for (let i = 0; i < STEN.n; i++) tl2.load(`assets/stencil/s${String(i).padStart(2, "0")}.webp`, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; STEN.frames[i] = t;
-      if (++got === STEN.n) { mat.map = STEN.frames[STEN.f]; mat.visible = true; mat.needsUpdate = true; STEN.frames.forEach(f => renderer.initTexture(f)); } }, undefined, () => { if (!lost++) console.info("The stencil is off: a frame in media/stencil didn't load."); }); }
+    const tl2 = new THREE.TextureLoader(LATE.mgr); let got = 0, lost = 0;
+    for (let i = 0; i < STEN.n; i++) LATE.run(() => tl2.load(`assets/stencil/s${String(i).padStart(2, "0")}.webp`, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; STEN.frames[i] = t; LATE.up(() => { renderer.initTexture(t); LATE.got(); // each frame goes to the graphics card on its own turn, not all 22 in one frame (145 ms)
+      if (++got === STEN.n) { mat.map = STEN.frames[STEN.f]; mat.opacity = 0; STEN.t0 = performance.now(); mat.visible = true; mat.needsUpdate = true; } }); }, undefined, () => { LATE.got(); if (!lost++) console.info("The stencil is off: a frame in media/stencil didn't load."); })); }
   addEventListener("pointermove", () => STEN.at = performance.now());
-  function stencilTick(now, cp) { if (!STEN.mat.visible) return; const near = cp.x < -8 || cp.x > 80; STEN.meshes.forEach(m => m.visible = near); if (!near) return;
+  function stencilTick(now, cp) { if (!STEN.mat.visible) return; const near = cp.x < -8 || cp.x > 80; STEN.meshes.forEach(m => m.visible = near); if (!near) return; STEN.mat.opacity = REDUCED ? 1 : cl((now - STEN.t0) / 700); // it comes up on its wall when its frames are in, never pops
     const step = Math.floor(now / 125); if (step === STEN.step) return; STEN.step = step;
     if (REDUCED) STEN.f = 11; else if (now - STEN.at < 2500) STEN.f = Math.round((mx * .5 + .5) * (STEN.n - 1)); else { STEN.f += STEN.dir; if (STEN.f >= STEN.n - 1 || STEN.f <= 0) STEN.dir *= -1; STEN.f = cl(STEN.f, 0, STEN.n - 1); }
     STEN.mat.map = STEN.frames[STEN.f]; const j = REDUCED ? [0, 0, 0] : [(Math.random() - .5) * .02, (Math.random() - .5) * .02, (Math.random() - .5) * .008];
@@ -196,9 +196,9 @@
     scene.fog.color.copy(FOG0); sky.intensity *= 1 - .55 * under; sky.color.copy(SKY0);
     const FADE = .8; // seconds a painting takes to come up on its wall
     U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && sv < u.leave + 15;
-      if (introOver && sv > u.key - 14 && !u.start) u.start = now; // once per visit
+      if (introOver && sv > u.key - 14 && !u.start && u.B.ready() && (!u.O || u.O.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1, t0 = .35, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / FADE)), shown = k >= 1;
-      u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
+      if (k > 0 && !u.B.ready()) root.dataset.pops = (+root.dataset.pops || 0) + 1; u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0); u.parts.forEach((p, k) => p.fade(show && sec > t0 + .2 + FADE + k * .3));
         if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); } }); } // phone: on the floor below the wall, where nothing is painted
