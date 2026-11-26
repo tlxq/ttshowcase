@@ -27,16 +27,41 @@
     "tbtMs": 256
   },
   "pitchStart": {
-    "about": "What the paint page's bucket waits for (tools/pitch/checks/startbytes.js): bytes fetched and ms until dataset.readyAt, laptop and phone. Placeholder limits, recorded below once measured.",
-    "recorded": {},
-    "limits": {
+    "about": "What the paint page's bucket waits for, read by tools/pitch/checks/startbytes.js: bytes fetched and ms until dataset.readyAt, on a fast line (ms is mostly the bucket's own filling, ~2.2 s) and on a phone's line (1 MB/s, 100 ms, CPU x6, nothing cached: slowMs). before = master 572e909 (every texture, the 8 paintings and the 22 stencil frames on the default loading manager); recorded = perf/start-load (only the start set; the rest loads after the tip). limits = recorded + 10 %, timings with room for the machine's noise.",
+    "before": {
       "desktop": {
-        "bytes": 2000000,
-        "ms": 4000, "slowMs": 3000
+        "bytes": 6809228,
+        "ms": 3311,
+        "slowMs": 12512
       },
       "phone": {
-        "bytes": 2000000,
-        "ms": 4000, "slowMs": 3000
+        "bytes": 6809228,
+        "ms": 3141,
+        "slowMs": 13543
+      }
+    },
+    "recorded": {
+      "desktop": {
+        "bytes": 2570016,
+        "ms": 3614,
+        "slowMs": 7129
+      },
+      "phone": {
+        "bytes": 2570016,
+        "ms": 3063,
+        "slowMs": 9117
+      }
+    },
+    "limits": {
+      "desktop": {
+        "bytes": 2830000,
+        "ms": 4500,
+        "slowMs": 8500
+      },
+      "phone": {
+        "bytes": 2830000,
+        "ms": 4500,
+        "slowMs": 10500
       }
     }
   }
