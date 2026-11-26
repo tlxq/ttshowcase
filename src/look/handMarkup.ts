@@ -5,7 +5,7 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").repl
 /**
  * The strokes and drips of one piece of handwriting as svg markup: a mask per stroke that reveals
  * it along its path, the paint it reveals, and the drips. The tag over the first screen carries it
- * in the page (Tag.tsx); every other piece is a file of its own (app/hands) that Motion.tsx puts in.
+ * in the page (Tag.tsx); every other piece comes from one file (app/hands.svg/) that Motion.tsx puts in.
  */
 export function handMarkup(name: HandName): string {
   const { box, strokes, drips } = hands[name];

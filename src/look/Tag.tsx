@@ -16,8 +16,8 @@ interface HandProps {
 /**
  * A piece of Tom's handwriting in spray paint. Each stroke shows along its own path at the pen's
  * own speed, then the paint runs (look.css). Without motion it is simply there. A piece written
- * as the page scrolls ("scroll") is only its empty svg in the page: its strokes are a file of
- * their own (/hands/<name>.svg, app/hands) that Motion.tsx puts in as the piece nears the screen,
+ * as the page scrolls ("scroll") is only its empty svg in the page: its strokes are in
+ * one file (/hands.svg, app/hands.svg) that Motion.tsx puts in once the page has settled,
  * so the page carries them once, not twice (as drawn and as data for the browser).
  */
 export function Hand({ name, label, className = "", mode = "scroll", lineEnd }: HandProps) {

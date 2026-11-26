@@ -1,14 +1,14 @@
 {
-  "about": "Speed budget for the front page, read by speed.js. recorded is the build on 2026-11-14 after A3's lighter page (hand paint as short relative paths, the photos as grey AVIF; film bytes are fetched as they near the screen); limits are recorded + 10 %, timings at least + 25 ms (paint varies 72-96 ms between runs of the same build). Bytes are as served by the walk's plain server (no compression), after a walk down the whole page. Paint and blocking are the middle of three first-visit loads, before any scroll. Timings come from a headless browser without a graphics card. 2026-11-22 (Tom): image, film and total re-recorded for the sharper project media (films 1280/390 wide, stills 1920); the first screen's paint stayed at 80 ms. 2026-11-24 (Tom): css limit +1 KB (37696 -> 38720) for the privacy label by the live form's Send; /privacy's own styles load only there. Go-live re-records the budget for the new front.",
+  "about": "Speed budget for the front page, read by speed.js. recorded is the build on 2026-11-14 after A3's lighter page (hand paint as short relative paths, the photos as grey AVIF; film bytes are fetched as they near the screen); limits are recorded + 10 %, timings at least + 25 ms (paint varies 72-96 ms between runs of the same build). Bytes are as served by the walk's plain server (no compression), after a walk down the whole page. Paint and blocking are the middle of three first-visit loads, before any scroll. Timings come from a headless browser without a graphics card. 2026-11-22 (Tom): image, film and total re-recorded for the sharper project media (films 1280/390 wide, stills 1920); the first screen's paint stayed at 80 ms. 2026-11-24 (Tom): css limit +1 KB (37696 -> 38720) for the privacy label by the live form's Send; /privacy's own styles load only there. Go-live re-records the budget for the new front. 2026-11-26 (W-3): the hand paint of the pieces written on the scroll is one file (/hands.svg) put in once the page has settled, so html fell from 740 KB to 110 KB and the page's data is no longer carried twice; the file counts as image bytes. html, image and total re-recorded; the first screen's paint is the same.",
   "recorded": {
     "js": 481202,
     "css": 34269,
     "font": 76856,
-    "image": 1338452,
+    "image": 1607903,
     "film": 1058272,
-    "html": 740143,
+    "html": 109619,
     "other": 0,
-    "total": 3665268,
+    "total": 3386249,
     "requests": 27,
     "lcpMs": 76,
     "tbtMs": 231
@@ -17,11 +17,11 @@
     "js": 529323,
     "css": 38720,
     "font": 84542,
-    "image": 1472297,
+    "image": 1768693,
     "film": 1164099,
-    "html": 814158,
+    "html": 120581,
     "other": 0,
-    "total": 4031795,
+    "total": 3724874,
     "requests": 30,
     "lcpMs": 101,
     "tbtMs": 256

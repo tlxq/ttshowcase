@@ -144,36 +144,32 @@ export function Motion() {
       last = performance.now();
       frame = requestAnimationFrame(tick);
     };
-    // A piece of handwriting that is written on the scroll is an empty svg in the page; its strokes
-    // are a file (/hands/<name>.svg, made at build time) put in as it nears the screen, and the rest
-    // once the page has settled, so a quick scroll never finds one missing.
+    // A piece of handwriting that is written on the scroll is an empty svg in the page; the strokes
+    // of every piece are one file (/hands.svg, made at build time), fetched once the page has settled
+    // and put in piece by piece. A piece is put in when its file is here and it is near the screen
+    // or the page has settled, so a quick scroll never finds one missing.
     const unloaded = new Set(writes.map((w) => w.el).filter((el) => el.dataset.hand));
+    let strokeFile: Promise<Document> | undefined;
+    const fetchStrokes = () =>
+      (strokeFile ??= fetch("/hands.svg").then(async (res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return new DOMParser().parseFromString(await res.text(), "image/svg+xml");
+      }));
     const load = async (el: SVGSVGElement) => {
       if (!unloaded.delete(el)) return;
       try {
-        const res = await fetch(`/hands/${el.dataset.hand}.svg`);
-        if (!res.ok) throw new Error(String(res.status));
-        const doc = new DOMParser().parseFromString(await res.text(), "image/svg+xml");
-        for (const node of [...doc.documentElement.childNodes])
-          el.append(document.importNode(node, true));
+        const doc = await fetchStrokes();
+        const group = [...doc.querySelectorAll("g")].find((g) => g.id === el.dataset.hand);
+        if (!group) return;
+        for (const node of [...group.childNodes]) el.append(document.importNode(node, true));
         const w = writes.find((p) => p.el === el);
         if (w) w.strokes = strokesOf(el);
         wake();
       } catch {
+        strokeFile = undefined;
         unloaded.add(el);
       }
     };
-    const handsNear = new IntersectionObserver(
-      (seen) => {
-        for (const s of seen) {
-          if (!s.isIntersecting) continue;
-          handsNear.unobserve(s.target);
-          void load(s.target as SVGSVGElement);
-        }
-      },
-      { rootMargin: "200% 0px" },
-    );
-    for (const el of unloaded) handsNear.observe(el);
     const loadRest = () => {
       for (const el of [...unloaded]) void load(el);
     };
@@ -192,7 +188,6 @@ export function Motion() {
       removeEventListener("resize", wake);
       grown.disconnect();
       near.disconnect();
-      handsNear.disconnect();
       films.disconnect();
     };
   }, []);
