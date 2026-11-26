@@ -125,7 +125,7 @@
   const HOUR_Q = new URLSearchParams(location.search).get("hour");
   function dayNow() { const d = new Date(), h = HOUR_Q !== null && HOUR_Q !== "" && isFinite(+HOUR_Q) ? ((+HOUR_Q % 24) + 24) % 24 : d.getHours() + d.getMinutes() / 60; return sm(cl(h - 6)) * (1 - sm(cl(h - 18))); }
   function clockLight(k) { skyU.uDay.value = Math.max(0, k); if (k <= 0) return; const n = 1 - k, cf = cityFar.material.color.r; // day: the street light, the work light and the stair lights off, the sun and the morning sky on
-    lamp.intensity *= n; pool.intensity *= n; bulbM.emissiveIntensity *= n; work.intensity *= n; lamp2.intensity *= n; stairLight.intensity *= n;
+    lamp.intensity *= n; pool.intensity *= n; bulbM.emissiveIntensity *= n; work.intensity *= n; lamp2.intensity *= n; stairLight.intensity *= n; edgeL.intensity *= n; siteM.emissiveIntensity *= n;
     sky.color.lerp(SKYM, k); sky.groundColor.lerp(GNDM, k); sky.intensity += (.75 - sky.intensity) * k; sun.intensity = 2.1 * k; scene.background.lerp(BGM, k); scene.fog.color.lerp(FOGM, k);
     lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * k); skyU.uBg.value.copy(scene.background); }
   document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
@@ -185,17 +185,17 @@
   const DOOR_X = (DOOR_A[0] + DOOR_A[1]) / 2, EXIT_X = (DOOR_B[0] + DOOR_B[1]) / 2;
   const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + 8.2, floor + 1.95, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
   const KEYS = [[548, 612, V(DOOR_X - .3, G3 + 1.7, 4.6), V(DOOR_X + .3, G3 + 1.5, WZ + 2)], [612, 640, V(DOOR_X + .5, G3 + 1.55, -1), V(DOOR_X + .4, G3 + 1.6, WZ)],
-    [640, U4[0].key, ...toolStop(U4[0].x, WF)], ...U4.slice(1, 4).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)]),
-    [925, 945, V(EXIT_X - .2, G3 + 1.65, -1), V(EXIT_X + 1.5, G3 + .4, 4)], [945, 985, V(EXIT_X + 1.5, G3 + 1.65, 2.2), V(EXIT_X + 8, G3 + 1.8, 0)], [985, 1035, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
+    [640, U4[0].key, ...toolStop(U4[0].x, WF)], ...U4.slice(1, 3).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)]),
+    [865, 885, V(EXIT_X - .2, G3 + 1.65, -1), V(EXIT_X + 1.5, G3 + .4, 4)], [885, 925, V(EXIT_X + 1.5, G3 + 1.65, 2.2), V(EXIT_X + 8, G3 + 1.8, 0)], [925, 985, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
   function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cp) { shopAt(now, sv, cp); const cx = cp.x;
-    edgeL.intensity = 6.5 * sm(cl((sv - 900) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
+    edgeL.intensity = 5 * sm(cl((sv - 850) / 40)); siteM.emissiveIntensity = 2.6 * sm(cl((sv - 850) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
     scene.fog.color.copy(FOG0); sky.color.copy(SKY0);
     const FADE = .8; // seconds a painting takes to come up on its wall
     U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && sv < u.leave + 15;
-      if (introOver && sv > u.key - 14 && !u.start && u.B.ready() && (!u.O || u.O.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
+      if (introOver && sv > u.key - 14 && !u.start && u.B.ready() && (!u.O || u.O.ready()) && (!u.X || u.X.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1, t0 = .35, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / FADE)), shown = k >= 1;
-      if (k > 0 && !u.B.ready()) root.dataset.pops = (+root.dataset.pops || 0) + 1; u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
+      if (k > 0 && !u.B.ready()) root.dataset.pops = (+root.dataset.pops || 0) + 1; u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.X) { u.X.m.visible = k > 0; u.X.m.material.opacity = k; } if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0); u.parts.forEach((p, k) => p.fade(show && sec > t0 + .2 + FADE + k * .3));
         if (show) { if (NARROW) u.el.style.maxWidth = innerWidth - 24 - 112 + "px"; /* narrower than the Write to me sticker's left edge */ } if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); } }); } // phone: on the floor below the wall, where nothing is painted

@@ -7,7 +7,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const go = sv => page.evaluate(sv => { scrollTo(0, svY(sv)); return performance.now(); }, sv);
   const state = n => page.evaluate(n => ({ plates: [...document.querySelectorAll('.tag.facts')].filter(e => getComputedStyle(e).opacity > .5 && e.textContent.startsWith(n)).length, hots: [...document.querySelectorAll('a.hot')].filter(a => a.style.display === 'block' && ({ ttoolbox: /^Code for ttoolbox$/, dot: /^Code for dot$/, tthermal: /^Code for tthermal$/, 'app-utveckling': /^(app-utveckling\.se|mjukvaruutvecklare\.com)$/, 'Self-hosted platform': /^$/ })[n].test(a.getAttribute('aria-label'))).length }), n);
   res.fromArrival = {};
-  for (const [name, sv, want] of [['Self-hosted platform', 700, { plates: 1, hots: 0 }], ['ttoolbox', 770, { plates: 1, hots: 1 }], ['dot', 840, { plates: 1, hots: 1 }], ['tthermal', 910, { plates: 1, hots: 1 }], ['app-utveckling', 1045, { plates: 1, hots: 2 }]]) { // no morning stop any more (Tom 11-23: no landing)
+  for (const [name, sv, want] of [['ttoolbox', 700, { plates: 1, hots: 1 }], ['dot', 770, { plates: 1, hots: 1 }], ['tthermal', 840, { plates: 1, hots: 1 }], ['app-utveckling', 1045, { plates: 1, hots: 2 }]]) { // no morning stop any more (Tom 11-23: no landing)
     const t0 = await go(sv); let t = -1;
     for (let i = 0; i < 60; i++) { const s = await state(name); if (s.plates >= want.plates && s.hots >= want.hots) { t = await page.evaluate(() => performance.now()); break; } await page.waitForTimeout(100); }
     res.fromArrival[name] = t < 0 ? null : +((t - t0) / 1000).toFixed(1); if (t < 0) errs.push(name + ': label or links never showed');

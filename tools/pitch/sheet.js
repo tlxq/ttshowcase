@@ -45,10 +45,10 @@ async (page) => {
     [432, "05-raddavarfruberga"],
     [585, "05b-the-garage-door"], // master: still the street, the manhole not yet in view
     [670, "06-the-way-in"], // master: down the manhole; here: just inside the garage door
-    [700, "07-Self-hosted"],
-    [770, "08-ttoolbox"],
-    [840, "09-dot"],
-    [910, "10-tthermal"],
+    [700, "07-ttoolbox"],
+    [770, "08-dot"],
+    [840, "09-tthermal"],
+    [925, "10-the-back-door"],
     [1045, "11-EDGE"],
     [1230, "12-end"], // the walk's last view, the same as the page's top (13)
   ];
