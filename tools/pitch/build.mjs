@@ -16,6 +16,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
+import { stripTypeScriptTypes } from "node:module";
 import { join, resolve } from "node:path";
 import { TAG_LIMITS } from "../../api/tags.ts";
 import { fillParts, readParts } from "./paint-parts.mjs";
@@ -111,6 +112,18 @@ const frontFonts =
   `@font-face{font-family:'Archivo';src:url(data:font/woff2;base64,${b64(await google("ArchivoExpandedBlack.woff2", "Archivo:wdth,wght@125,900", "Archivo"))}) format('woff2');font-weight:900;font-stretch:125%;font-display:block}` +
   `@font-face{font-family:'JetBrains Mono';src:url(data:font/woff2;base64,${b64(await google("JetBrainsMono.woff2", "JetBrains+Mono:wght@500..800", "JetBrains Mono"))}) format('woff2');font-weight:500 800;font-display:block}`;
 
+// the contact form's send (src/content/sendContact.ts): the same function the site's form imports, as plain JavaScript for the pages' inline scripts
+function mailSend() {
+  const ts = readFileSync(join(root, "src/content/sendContact.ts"), "utf8");
+  const at = ts.indexOf("export async function sendContact(");
+  if (at < 0 || ts.indexOf("export ", at + 1) >= 0 || /^import /m.test(ts))
+    throw new Error("src/content/sendContact.ts must hold one exported function and no imports");
+  const js = stripTypeScriptTypes(ts)
+    .slice(at)
+    .replace("export ", "")
+    .replace(/[ \t]+$/gm, "");
+  return `(${js.trimEnd()})`;
+}
 const parts = {
   __EMBED__: embed + frontFonts, // the walk's start says the name in the front's type (Archivo) and its mono labels
   __TOKENS__: readFileSync(join(root, "src/design/tokens.css"), "utf8"), // the site's own colours, sizes and speeds: one source
@@ -119,6 +132,7 @@ const parts = {
   __MAIL_WORDS__: JSON.stringify(
     JSON.parse(readFileSync(join(root, "src/content/mailWords.json"), "utf8")),
   ), // the contact form's words: the site's own file (src/look/MailForm.tsx reads it too)
+  __MAIL_SEND__: mailSend(), // the contact form's send: the site's own file (src/look/MailForm.tsx imports it too)
   __TAG_LIMITS__: JSON.stringify(TAG_LIMITS), // what one tag may hold: the store's own numbers (api/tags.ts)
 };
 // the page's style and script come first, from their parts (pitch/paint/): they hold the __HAND__ etc. filled below
@@ -201,6 +215,7 @@ let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
   .replaceAll("__EMBED__", () => embed + frontFonts)
   .replaceAll("__TOKENS__", () => parts.__TOKENS__)
   .replaceAll("__MAIL_WORDS__", () => parts.__MAIL_WORDS__)
+  .replaceAll("__MAIL_SEND__", () => parts.__MAIL_SEND__)
   .replaceAll("__LIBS__", () => libs)
   .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
 if (/__[A-Z_]{3,}__/.test(front))

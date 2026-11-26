@@ -53,3 +53,47 @@ test("the build fills the pitch pages with the same words", () => {
   assert.match(build, /__MAIL_WORDS__[\s\S]{0,80}src\/content\/mailWords\.json/);
   assert.match(build, /replaceAll\("__MAIL_WORDS__"/, "front.html is not filled with the words");
 });
+
+// D-1: the send itself lives once too (src/content/sendContact.ts); the three forms only show its answer.
+const senders = {
+  "src/look/MailForm.tsx": /from "@\/content\/sendContact"/,
+  "pitch/front.src.html": /const sendContact = __MAIL_SEND__;/,
+  "pitch/paint/50-end.js": /const sendContact = __MAIL_SEND__;/,
+};
+for (const [file, source] of Object.entries(senders)) {
+  test(`${file} sends through the one source and keeps no request of its own`, () => {
+    const text = read(file);
+    assert.match(
+      text,
+      source,
+      "this file no longer takes the send from src/content/sendContact.ts",
+    );
+    assert.doesNotMatch(text, /\/api\/contact/, `${file} holds its own request to /api/contact`);
+  });
+}
+
+test("the build puts the same send into both pitch pages, as plain JavaScript", async () => {
+  const build = read("tools/pitch/build.mjs");
+  assert.match(build, /__MAIL_SEND__: mailSend\(\)/, "paint.html is not filled with the send");
+  assert.match(build, /replaceAll\("__MAIL_SEND__"/, "front.html is not filled with the send");
+  // what the build inlines is the module's own function: run both on the same answers
+  const { stripTypeScriptTypes } = await import("node:module");
+  const ts = read("src/content/sendContact.ts");
+  const js = stripTypeScriptTypes(ts)
+    .slice(ts.indexOf("export async function sendContact("))
+    .replace("export ", "");
+  const inlined = new Function(`return (${js})`)();
+  const { sendContact } = await import("../../src/content/sendContact.ts");
+  for (const post of [
+    async () => new Response('{"error":"robot"}', { status: 403 }),
+    async () => new Response("<html>", { status: 502 }),
+    async () => new Response("{}", { status: 200 }),
+    async () => {
+      throw new TypeError("offline");
+    },
+  ])
+    assert.deepEqual(
+      await inlined({ a: 1 }, words, post),
+      await sendContact({ a: 1 }, words, post),
+    );
+});

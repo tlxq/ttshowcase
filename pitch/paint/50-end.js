@@ -15,11 +15,11 @@
 `);
   const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
   const MAIL = __MAIL_WORDS__; // the words: src/content/mailWords.json, one source (tools/pitch/build.mjs fills it in)
-  mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true; let why;
-    try { const f = Object.fromEntries(new FormData(mail)), a = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) });
-      if (a.ok) { sheetSent = true; const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
-      why = MAIL.why[((await a.json().catch(() => ({}))).error) || ""] || MAIL.other; } catch (_) { why = MAIL.offline; }
-    mailErr.textContent = MAIL.lead + why; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
+  const sendContact = __MAIL_SEND__; // the send and its error words: src/content/sendContact.ts, one source for the site and both pitch pages (tools/pitch/build.mjs fills it in)
+  mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true;
+    const f = Object.fromEntries(new FormData(mail)), r = await sendContact(f, MAIL);
+    if (r.ok) { sheetSent = true; const sent = document.createElement("p"); sent.setAttribute("role", "status"); sent.textContent = `Sent. I'll write back to ${f.email}.`; mail.querySelector(".fields").replaceChildren(sent); return; } // the links stay: a next step (signum L1)
+    mailErr.textContent = r.text; mailErr.hidden = false; mailBtn.disabled = false; mailBtn.textContent = "Try again"; });
   // the end wall (Tom 11-19, try 67): one painting on the graphics card (CREDITS.txt), the bare concrete keyed out so the wall
   // shows through; the can is the Leave your tag button, the form sits in the painted frame, the two sprayed stencils (GitHub's and LinkedIn's own marks, drawn from their vector shapes) are the links to GitHub and
   // LinkedIn. Picture pixels: 1536 x 960; foot: the row
