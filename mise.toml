@@ -16,10 +16,10 @@ lefthook = "2.2.2"
 _.path = ["{{config_root}}/bin"]
 
 [tasks.install]
-description = "Install the npm packages and the git hooks if they are missing"
+description = "Install the npm packages (missing, older than the lock, or a link to another folder) and the git hooks if they are missing"
 hide = true
 # a fresh clone has neither; GitHub's check (CI) needs no hooks
-run = ["[ -d node_modules ] || npm ci", "[ -n \"${CI:-}\" ] || [ -f \"$(git rev-parse --git-path hooks/pre-commit)\" ] || lefthook install"]
+run = ["node tools/showcase/ensure-packages.mjs", "[ -n \"${CI:-}\" ] || [ -f \"$(git rev-parse --git-path hooks/pre-commit)\" ] || lefthook install"]
 
 [tasks.build]
 description = "Build the static site into out/"
