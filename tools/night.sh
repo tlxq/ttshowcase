@@ -7,10 +7,10 @@
 #    one limit of NIGHT_WAIT_MIN minutes (default 60; NIGHT_WAIT_SEC for tests); past it the walk runs anyway and says so.
 #    Child commands get the lock's fd closed, so a server left running can't keep the lock after the night.
 # 2. npm ci only when package-lock.json changed since the last night (or node_modules is missing).
-# 3. Both checks; each skips by itself when it already passed on this commit (tools/passes).
+# 3. Both checks; each skips by itself when it already passed on these files (tools/passes).
 # Writes ${XDG_STATE_HOME:-~/.local/state}/ttshowcase/night.json:
 #   {when, commit, result: green|red|skipped, failed: [check names], log, note}
-# skipped = both checks had already passed on this commit, so nothing ran. Exit 1 when red.
+# skipped = both checks had already passed on these files, so nothing ran. Exit 1 when red.
 # The SessionStart hook (.claude/hooks/night.mjs) says so in the next session when it is red.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 2
@@ -76,7 +76,8 @@ failed=()
 ran=0
 for check in pitch:check walk; do
   out=$(mktemp)
-  mise run "$check" 9>&- 2>&1 | tee "$out"
+  # the night owns the desk (GPU lock, quiet desk), so its checks skip the test lane and keep the time limit
+  TESTLANE=off mise run "$check" 9>&- 2>&1 | tee "$out"
   rc=${PIPESTATUS[0]}
   grep -q "already passed on" "$out" || ran=1
   if [ "$rc" != 0 ]; then

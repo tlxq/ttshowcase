@@ -30,7 +30,7 @@ function setup() {
   // mise stub: says whether the GPU lock is held while the check runs
   writeFileSync(
     join(bin, "mise"),
-    `#!/usr/bin/env bash\nif flock -n "$HOME/.cache/ttshowcase-gpu.lock" true; then echo "$2 lock=free" >> "$HOME/mise.log"; else echo "$2 lock=held" >> "$HOME/mise.log"; fi\n`,
+    `#!/usr/bin/env bash\nif flock -n "$HOME/.cache/ttshowcase-gpu.lock" true; then echo "$2 lock=free lane=$TESTLANE" >> "$HOME/mise.log"; else echo "$2 lock=held lane=$TESTLANE" >> "$HOME/mise.log"; fi\n`,
   );
   writeFileSync(join(bin, "npm"), "#!/usr/bin/env bash\nexit 0\n");
   for (const f of ["mise", "npm"]) chmodSync(join(bin, f), 0o755);
@@ -75,7 +75,7 @@ test("both checks run while the walk holds the GPU lock", () => {
   try {
     const r = t.run({ NIGHT_WAIT_SEC: "0" });
     assert.equal(r.status, 0, r.stdout + r.stderr);
-    assert.equal(t.miseLog(), "pitch:check lock=held\nwalk lock=held\n");
+    assert.equal(t.miseLog(), "pitch:check lock=held lane=off\nwalk lock=held lane=off\n");
     assert.equal(t.night().result, "green");
   } finally {
     t.done();
@@ -108,7 +108,7 @@ test("picture generation holding the lock past the limit: the walk runs anyway a
     const r = t.run({ NIGHT_WAIT_SEC: "1" });
     assert.equal(r.status, 0, r.stdout + r.stderr);
     assert.match(t.night().note, /Picture generation held the graphics card/);
-    assert.equal(t.miseLog(), "pitch:check lock=held\nwalk lock=held\n");
+    assert.equal(t.miseLog(), "pitch:check lock=held lane=off\nwalk lock=held lane=off\n");
   } finally {
     holder.kill();
     t.done();
