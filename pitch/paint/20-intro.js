@@ -206,7 +206,7 @@
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
   function intro(now, dt) {
-    const since = (now - t0) / 1000; wallUpload(); if (goAt) LATE.start(); // the bucket tipped (or was skipped): now the rest is asked for
+    const since = (now - t0) / 1000; wallUpload(); if (introOver) LATE.start(); // the bucket has tipped and the pour is over: now the rest is asked for (not during the pour, which keeps the frames to itself)
     if (!goAt) {
       const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 2.2);
       level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 3.5);
