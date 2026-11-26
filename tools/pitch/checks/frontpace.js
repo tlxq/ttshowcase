@@ -6,18 +6,25 @@ async page => { const errs = [], res = { errs };
   page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await page.addInitScript(() => { window.__drawn = 0; const clear = CanvasRenderingContext2D.prototype.clearRect;
     CanvasRenderingContext2D.prototype.clearRect = function (x, y, w, h) { if (x === 0 && y === 0 && this.canvas.classList.contains('code')) window.__drawn++; return clear.call(this, x, y, w, h); }; });
+  // The desk's own load must not read as the page's fault: the page's own frame gaps are recorded from the start, and the busiest 60 frames
+  // after the first 2.5 s are worked out with pitch/pace.js's own rule (mean gap over 25 ms = slow). If the desk itself was that busy while the
+  // fast device was judged, the fast-device verdicts say "desk too busy to judge" and not "slow".
+  await page.addInitScript(() => { const gaps = []; let last = 0; window.__gaps = gaps; (function f(t) { if (last && t > 2500 && t - last <= 250) gaps.push(t - last); last = t; requestAnimationFrame(f); })(0); });
+  const busiest = () => page.evaluate(() => { const g = window.__gaps; let worst = 0; for (let i = 0; i + 60 <= g.length; i++) worst = Math.max(worst, g.slice(i, i + 60).reduce((a, b) => a + b, 0) / 60); return Math.round(worst * 10) / 10; });
   const rate = async ms => { const a = await page.evaluate(() => window.__drawn); await page.waitForTimeout(ms); return Math.round(((await page.evaluate(() => window.__drawn)) - a) / (ms / 1000)); };
   const slow = () => page.evaluate(() => document.documentElement.dataset.posterSlow === '1');
   await page.goto('__URL__'); await page.waitForTimeout(4000); // past the load: the first 2.5 s are not counted as the device's speed
   res.fast = await rate(2000); res.fastFlag = await slow();
-  if (res.fast < 40) errs.push('the poster draws ' + res.fast + ' a second on a fast device, not about 60');
-  if (res.fastFlag) errs.push('a fast device was taken for a slow one');
+  res.busiestGap = await busiest(); const busy = res.busiestGap > 25;
+  if (busy) errs.push('desk too busy to judge: the page\'s own frames ran ' + res.busiestGap + ' ms apart on average over 60 frames with nothing slowed down (over 25 is slow). Run this check alone, on a quiet desk');
+  if (res.fast < 40 && !busy) errs.push('the poster draws ' + res.fast + ' a second on a fast device, not about 60');
+  if (res.fastFlag && !busy) errs.push('a fast device was taken for a slow one');
   await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight)); await page.waitForTimeout(800);
   res.off = await rate(1500);
   if (res.off > 0) errs.push('the poster drew ' + res.off + ' a second with the hero off screen');
   await page.evaluate(() => scrollTo(0, 0)); await page.waitForTimeout(800);
   res.back = await rate(1000);
-  if (res.back < 40) errs.push('the poster did not start again when it came back (' + res.back + ' a second)');
+  if (res.back < 40 && !busy) errs.push('the poster did not start again when it came back (' + res.back + ' a second)');
   const cdp = await page.context().newCDPSession(page); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
   await page.waitForTimeout(6000); // enough frames to know
   res.slowFlag = await slow(); res.slow = await rate(2000);
