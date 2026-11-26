@@ -19,6 +19,13 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const spot = await page.evaluate(() => window.pickTest.freeOnScreen()); await page.mouse.click(spot.x, spot.y); await page.waitForTimeout(1500);
   res.locked = await st();
   if (res.locked.stage !== 'draw' || !res.locked.bar || !res.locked.shown) errs.push('a tap on the wall did not open the drawing bar: ' + JSON.stringify(res.locked));
+  // Tom 11-26 (S23): the progress stripe's area name was drawn over the tag bar's words. While the flow is open nothing of the stripe shows,
+  // and no visible stripe name's box meets the bar's top row (the words and Cancel).
+  res.stripeIn = await page.evaluate(() => { const n = document.querySelector('.stripe'), top = document.querySelector('.pick .top').getBoundingClientRect(), cs = getComputedStyle(n);
+    const hit = [...n.querySelectorAll('span')].filter(s => getComputedStyle(s).opacity > 0).map(s => s.getBoundingClientRect()).filter(r => r.left < top.right && r.right > top.left && r.top < top.bottom && r.bottom > top.top);
+    return { visibility: cs.visibility, opacity: cs.opacity, overlaps: hit.length }; });
+  if (res.stripeIn.overlaps && res.stripeIn.visibility !== 'hidden') errs.push('the stripe name is drawn over the tag bar\'s words: ' + JSON.stringify(res.stripeIn));
+  if (res.stripeIn.visibility !== 'hidden' && +res.stripeIn.opacity > 0) errs.push('the stripe stays on screen while the tag flow is open: ' + JSON.stringify(res.stripeIn));
   const b = await page.evaluate(() => window.tagTest.frameBox());
   const line = async pts => { await page.mouse.move(b.x + b.w * pts[0][0], b.y + b.h * pts[0][1]); await page.mouse.down();
     for (const [x, y] of pts.slice(1)) await page.mouse.move(b.x + b.w * x, b.y + b.h * y, { steps: 12 }); await page.mouse.up(); };
@@ -58,6 +65,9 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-send.png' });
   await page.fill('#tagName', 'Walker'); await page.click('#tagPut'); await page.waitForTimeout(2200);
   res.put = await st();
+  // ...and it is back when the flow ends, still a progress bar with its value text for a screen reader
+  res.stripeOut = await page.evaluate(() => { const n = document.querySelector('.stripe'), cs = getComputedStyle(n); return { visibility: cs.visibility, opacity: cs.opacity, role: n.getAttribute('role'), text: n.getAttribute('aria-valuetext'), now: n.getAttribute('aria-valuenow'), hiddenAttr: n.closest('[aria-hidden="true"],[hidden],[inert]') ? 1 : 0 }; });
+  if (res.stripeOut.visibility !== 'visible' || +res.stripeOut.opacity < 1 || res.stripeOut.role !== 'progressbar' || !res.stripeOut.text || res.stripeOut.hiddenAttr) errs.push('after the tag flow the stripe is not back as a progress bar: ' + JSON.stringify(res.stripeOut));
   if (res.put.stage || !res.put.saved || res.put.leave || !res.put.shown || res.put.held) errs.push('Put it on the wall did not keep the tag and step back to the walk: ' + JSON.stringify(res.put));
   if (!(res.put.wet > 0 && res.put.wet < 1)) errs.push('the paint is not drying as you step back: wet ' + res.put.wet);
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-tagit-put.png' });

@@ -16,10 +16,21 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { stripTypeScriptTypes } from "node:module";
+import * as nodeModule from "node:module";
 import { join, resolve } from "node:path";
-import { TAG_LIMITS } from "../../api/tags.ts";
+import { nodeProblem } from "./need-node.mjs";
 import { fillParts, readParts } from "./paint-parts.mjs";
+
+// before anything that needs a new Node, so an old one gets this sentence and not a cryptic load error
+const nodeSays = nodeProblem(
+  process.versions.node,
+  typeof nodeModule.stripTypeScriptTypes === "function",
+);
+if (nodeSays) {
+  console.error(nodeSays);
+  process.exit(1);
+}
+const { TAG_LIMITS } = await import("../../api/tags.ts");
 
 const root = resolve(import.meta.dirname, "../..");
 const fonts = join(root, ".cache/fonts");
@@ -118,7 +129,8 @@ function mailSend() {
   const at = ts.indexOf("export async function sendContact(");
   if (at < 0 || ts.indexOf("export ", at + 1) >= 0 || /^import /m.test(ts))
     throw new Error("src/content/sendContact.ts must hold one exported function and no imports");
-  const js = stripTypeScriptTypes(ts)
+  const js = nodeModule
+    .stripTypeScriptTypes(ts)
     .slice(at)
     .replace("export ", "")
     .replace(/[ \t]+$/gm, "");
