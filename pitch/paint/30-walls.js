@@ -37,8 +37,8 @@
     els.forEach((h, i) => { const g = R[i]; if (!g.ok) { h.style.display = "none"; h.tabIndex = -1; return; }
       Object.assign(h.style, { display: "block", left: g.l + "px", top: g.t + "px", width: g.r - g.l + "px", height: g.b - g.t + "px" }); h.tabIndex = 0; }); }
   // ---- live numbers sprayed on the walls (Tom 11-19). RULE: every visible number comes from a PUBLIC source, asked when the page loads; nothing is typed in or baked into a picture.
-  // If it fails that number is not drawn (no old value, no placeholder) and the wall still looks complete (the stack stays). Self-hosted, EDGE and raddavarfruberga show no numbers:
-  // the first two are private, and raddavarfruberga.se offers no public count (its page is prerendered and sends no CORS header, so a browser can't read it).
+  // If it fails that number is not drawn (no old value, no placeholder) and the wall still looks complete (the stack stays). EDGE and raddavarfruberga show no numbers:
+  // EDGE is private, and raddavarfruberga.se offers no public count (its page is prerendered and sends no CORS header, so a browser can't read it).
   // The page asks this site's /api/github (api/github.ts), which asks GitHub once an hour for everyone: a visitor's own address may make only 60 anonymous asks an hour, and past that every load logged 403 errors in the console.
   const NUMS = fetch("/api/github").then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => ({})); // one ask for all walls; no answer = no numbers
   const numOf = (wall, key) => NUMS.then(d => { const n = d?.[wall]?.[key]; if (!(n > 0)) throw 0; return n; });

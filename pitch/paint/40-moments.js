@@ -328,7 +328,7 @@
   U4.forEach((u, i) => { const [file, wL, wP, c, y, areas, z = .002] = u.art; if (u.tile === 1) { u.X = paintOn("assets/toolbox_0.webp", TILE_TW[0] * PK, [0, 480], [PX0, G3 + 2.1], z, [TILE_TW[0], 960], WZ); u.X.m.visible = false; u.X.m.material.opacity = 0; } u.zw = u.zw || 0; u.B = paintOn(file, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z, u.px, u.zw); if (u.ov) { u.O = paintOn(u.ov, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z + .001, undefined, u.zw); u.O.m.renderOrder = 2; } areas.forEach((a, j) => u.B.protect(u.name + "'s painting" + (j ? " " + (j + 1) : ""), a));
     u.bb = [0, 1, 2, 3].map(n => Math[n < 2 ? "min" : "max"](...areas.map(a => a[n]))); u.start = 0; // the painted area as one box
     u.links.forEach((l, j) => l.box = u.marks[j]);
-    { const [key, colour, stack0] = { "Self-hosted platform": ["self", "#2d3a5c", ["TypeScript", "Next.js", "Hono", "SQLite", "Java", "Docker", "Caddy", "Tailscale"]], ttoolbox: ["ttoolbox", "#c8402a", ["Claude Code", "Python", "Bash"]],
+    { const [key, colour, stack0] = { ttoolbox: ["ttoolbox", "#c8402a", ["Claude Code", "Python", "Bash"]],
         dot: ["dot", "#25407a", ["Bash", "bats", "GNU Stow", "mise"]], tthermal: ["tthermal", "#d8435f", ["JavaScript", "QML", "Shell"]], "app-utveckling.se": ["edge", "#1f5fc4", ["Astro", "TypeScript"]] }[u.name];
       const stack = u.painted || u.tile ? [] : stack0, yb = u.B.at(0, u.bb[3]).y; // painted: the picture has its stack written in // beside the painting on a laptop; under it, above the floor, on a phone
       if (u.tile) { // (Tom 11-26) the production: the live numbers sprayed in the bare wall above the piece, clear of its clouds and words (the stack words are painted into the strip),

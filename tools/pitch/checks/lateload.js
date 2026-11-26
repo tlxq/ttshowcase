@@ -2,7 +2,7 @@
 // pictures are in. On a slow line a visitor who tips and scrolls at once reaches each painting before its picture; the painting waits and comes up when it arrives
 // (dataset.pops counts frames that drew a painting without its picture: 0). Everything late arrives (dataset.lateDone), the stencil among it.
 async page => { const errs = [], res = { errs }; page.on('pageerror', e => errs.push(String(e)));
-  const LATE = '(self|ttoolbox|dot|tthermal|edge)_wall\\.webp|edge_banner\\.webp|stencil/s\\d+\\.webp';
+  const LATE = 'toolbox_\\d\\.webp|edge_wall\\.webp|edge_banner\\.webp|stencil/s\\d+\\.webp';
   await page.goto('__URL__');
   for (let i = 0; i < 400 && !(await page.evaluate(() => document.documentElement.dataset.readyAt)); i++) await page.waitForTimeout(50);
   res.early = await page.evaluate(re => performance.getEntriesByType('resource').filter(r => new RegExp(re).test(r.name)).length, LATE);
@@ -20,5 +20,5 @@ async page => { const errs = [], res = { errs }; page.on('pageerror', e => errs.
   if (!res.after.late) errs.push('the late pictures never all arrived');
   if (res.after.pops) errs.push('a painting was drawn before its picture, ' + res.after.pops + ' frames');
   if (res.after.started < 4) errs.push('only ' + res.after.started + ' of the 4 late paintings came up');
-  if (res.after.asked < 26) errs.push('only ' + res.after.asked + ' of the 26 late pictures were asked for');
+  if (res.after.asked < 28) errs.push('only ' + res.after.asked + ' of the 28 late pictures were asked for'); // 4 Toolbox tiles, EDGE's painting and link mark, 22 stencil frames
   return JSON.stringify(res); }
