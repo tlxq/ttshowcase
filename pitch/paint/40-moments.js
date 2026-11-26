@@ -47,7 +47,7 @@
   const slab = (x0, x1, y0, y1, z0, z1, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m); b.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); scene.add(b); return b; };
   const RW = CX1 - HX0, CEIL = G3 + RH, DOORS = [DOOR_A, DOOR_B], SHOP_WARM = 0xffe6c8;
   const shop = { open: 0, lit: 0, ins: 0, panel: null, screen: null }; // open: how far door A has rolled up (0..1); lit: the workshop's own light (0..1); ins: how far the camera is inside (0..1)
-  const woodM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }), metalM = new THREE.MeshStandardMaterial({ color: 0x33363a, metalness: .5, roughness: .6 });
+  const woodM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }), metalM = new THREE.MeshStandardMaterial({ color: 0x4d5156, metalness: .5, roughness: .6 });
   { // the room: floor, back wall, ceiling, the two end walls, and the street wall's inside with a thick frame round each door
     const wallM = conc(RW, RH, HX0, G3, 0x77746f); wallM.roughness = .9;
     const back = new THREE.Mesh(new THREE.PlaneGeometry(RW, RH), wallM); back.position.set(HX0 + RW / 2, G3 + RH / 2, WZ); scene.add(back);
@@ -59,13 +59,13 @@
     [[1, 2], [3, 4]].forEach(([a, b]) => slab(edges[a], edges[b], G3 + DOOR_H, CEIL, -.3, -.001, conc(edges[b] - edges[a], RH - DOOR_H, edges[a], G3 + DOOR_H, 0x77746f)));
     const ribs = (() => { const c = document.createElement("canvas"); c.width = 16; c.height = 64; const g = c.getContext("2d"); g.fillStyle = "#8a8f94"; g.fillRect(0, 0, 16, 64); g.fillStyle = "#4b4f54"; g.fillRect(0, 0, 16, 7); g.fillStyle = "#a7acb1"; g.fillRect(0, 7, 16, 3);
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.repeat.set(1, DOOR_H / .1); return t; })();
-    const steel = new THREE.MeshStandardMaterial({ color: 0x5b6065, metalness: .7, roughness: .5, envMapIntensity: .6 });
+    const steel = new THREE.MeshStandardMaterial({ color: 0x7d8288, metalness: .7, roughness: .5, envMapIntensity: .6 });
     DOORS.forEach(([a, b], i) => { const w = b - a, xc = (a + b) / 2; // each door: its guide rails, the drum the shutter rolls into above it, and (door A) the shutter itself
       for (const x of [a - .05, b + .05]) slab(x - .06, x + .06, G3, G3 + DOOR_H + .1, .005, .1, metalM);
       const drum = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, w + .5, 28), steel); drum.rotation.z = Math.PI / 2; drum.position.set(xc, G3 + DOOR_H + .42, .36); scene.add(drum);
       for (const x of [a - .2, b + .2]) slab(x - .04, x + .04, G3 + DOOR_H + .1, G3 + DOOR_H + .75, .005, .36, metalM);
       if (i) return;
-      const pm = new THREE.MeshStandardMaterial({ color: 0x9ea3a8, map: ribs, bumpMap: ribs, bumpScale: 1.4, metalness: .55, roughness: .5, envMapIntensity: .5 });
+      const pm = new THREE.MeshStandardMaterial({ color: 0xc4c9ce, map: ribs, bumpMap: ribs, bumpScale: 1.4, metalness: .55, roughness: .5, envMapIntensity: .5 });
       shop.panel = new THREE.Mesh(new THREE.BoxGeometry(w + .04, DOOR_H, .05), pm); shop.panel.position.set(xc, G3 + DOOR_H / 2, -.12); scene.add(shop.panel);
       const handle = new THREE.Mesh(new THREE.BoxGeometry(.5, .06, .06), metalM); handle.position.set(0, -DOOR_H / 2 + .12, .05); shop.panel.add(handle); }); }
   // the lamps: warm pendants on cords, rafters, two beams, one conduit; the one tube at the far end that flickers
@@ -119,13 +119,13 @@
   // the far end: a metal shelf with crates, and a stack of tyres by the door
   { for (const y of [.5, 1.1, 1.7]) slab(63.6, 66.8, G3 + y, G3 + y + .03, WZ + .05, WZ + .55, metalM); for (const x of [63.6, 66.8]) slab(x - .03, x + .03, G3, G3 + 1.9, WZ + .05, WZ + .55, metalM);
     [[64.2, .5, .9], [65.4, .5, .8], [66.2, 1.1, .7], [64.6, 1.1, .8], [65.6, 1.7, .9]].forEach(([x, y, w], i) => slab(x - w / 4, x + w / 4, G3 + y + .03, G3 + y + .33, WZ + .1, WZ + .5, i % 2 ? woodM : new THREE.MeshStandardMaterial({ color: 0x3a5a7a, roughness: .7 })));
-    for (let k = 0; k < 3; k++) { const ty = new THREE.Mesh(new THREE.TorusGeometry(.3, .11, 10, 22), new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .9 })); ty.rotation.x = Math.PI / 2; ty.position.set(HX0 + 2.4, G3 + .12 + k * .22, WZ + 1.3); scene.add(ty); } }
+  }
   // the west end: a bench under the pegboard on the end wall, a stool
   { const b = new THREE.Mesh(new THREE.BoxGeometry(.7, .06, 3.6), woodM); b.position.set(HX0 + .4, G3 + .9, WZ + 4.8); scene.add(b); for (const dz of [-1.7, 1.7]) slab(HX0 + .1, HX0 + .7, G3, G3 + .9, WZ + 4.8 + dz - .04, WZ + 4.8 + dz + .04, metalM);
     const st = new THREE.Mesh(new THREE.CylinderGeometry(.19, .17, .06, 16), woodM); st.position.set(HX0 + 1.5, G3 + .5, WZ + 3.4); scene.add(st); const lg = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .5, 6), metalM); lg.position.set(HX0 + 1.5, G3 + .25, WZ + 3.4); scene.add(lg); }
   // the lights that go with the camera: a warm spot on the wall it faces, a warm fill from the room's middle, and the light that spills out of the door onto the wet street
   const shopSpot = new THREE.SpotLight(SHOP_WARM, 0, 15, 1, 1, 1.3), shopFill = new THREE.PointLight(0xffc98f, 0, 13, 1.6), spill = new THREE.SpotLight(0xffd29a, 0, 18, .85, .85, 1.1); scene.add(shopSpot, shopSpot.target, shopFill, spill, spill.target);
-  const toolboxSpray = makeSpray({ key: "toolbox", name: "the Toolbox stencil", colour: "#d9d0ba", font: SPRAY_FONT, cap: .2, stack: ["TOOLBOX"], rect: [HX0 + 1.2, G3 + 2.2, HX0 + 4.8, G3 + 3.2], zw: WZ, z: .004 });
+  const toolboxSpray = makeSpray({ key: "toolbox", name: "the Toolbox stencil", colour: "#d9d0ba", font: SPRAY_FONT, cap: .2, stack: ["TOOLBOX"], rect: NARROW ? [HX0 + 2.3, G3 + 2.2, HX0 + 4.9, G3 + 3.2] : [HX0 + 1.2, G3 + 2.2, HX0 + 4.8, G3 + 3.2], zw: WZ, z: .004 });
   function shopAt(now, sv, cp) { // the door's roll, the lamps, where the light stands
     const tIn = sm(cl((sv - 560) / 55)); shop.open = tIn; shop.lit = tIn * (1 - sm(cl((sv - 990) / 60)));
     shop.panel.position.y = G3 + DOOR_H / 2 + tIn * (DOOR_H + .05); shop.panel.visible = tIn < .999;
@@ -182,7 +182,7 @@
   const tool = (x, key, name, link, plate, more) => Object.assign({ x, key, leave: key + 25, floor: WF, zw: WZ, name, links: link ? [{ t: "Code for " + link, href: GHUB + link }] : [], plate }, more);
   const U4 = [
     tool(41, 700, "Self-hosted platform", null, "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool. Built alone.",
-      { art: ["assets/self_wall.webp", 4.2, 3.8, [776, 488], 1.7, [[247, 89, 1305, 400], [420, 290, 1175, 888]]], marks: [] }),
+      { painted: true, art: ["assets/self_wall.webp", 4.2, 3.8, [776, 488], 1.7, [[247, 89, 1305, 400], [420, 290, 1175, 888]]], marks: [] }),
     tool(47.5, 770, "ttoolbox", "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.",
       { painted: true, nums: [[80, 80, 560, 250], [980, 80, 1450, 250]], art: ["assets/ttoolbox_wall.webp", 4.9, 3.1, [768, 480], 2.0, [[30, 20, 1516, 940]]], marks: [[250, 590, 415, 665]] }),
     tool(54, 840, "dot", "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.",
