@@ -37,9 +37,8 @@
     RVF_PAINT(REDUCED ? 1 : sec < 0 ? 0 : cl(sec / .9)); RVF_TAGS.forEach((t, i) => t.fade(showL && sec > RVF_END + .2 + i * .3));
     placeHots([hot3], [RVF_BOX], RVP, sec >= .3 && walk3 > .5 && endK < .5); } // the banner is the link, once the camera is at the wall
 
-  // ---- the ending (Tom 11-26): past raddavarfruberga a garage door in the street wall rolls up and the camera walks into a workshop: pegboards, a bench, the home
-  // server and a coffee cup, warm lamps. On its back wall the four tools in a row, biggest first: the self-hosted platform, ttoolbox, dot, tthermal ("Toolbox"
-  // stencilled on it). A second door at the far end is open: the way out to EDGE, on its own clean wall (client work, the next round); then on along the wall, in close
+  // ---- the ending (Tom 11-26): past raddavarfruberga a garage door in the street wall rolls up and the camera walks into a workshop: a workbench at the door end, a shelf and a
+  // tool chest at the far end, fluorescent tubes. On its back wall the Toolbox production: ttoolbox, dot, tthermal. A second door at the far end is open: the way out to EDGE, on its own clean wall (client work, the next round); then on along the wall, in close
   // to its bare concrete, and out at the visitors' wall, where the walk began (Tom 11-23: no flash, no landing).
   // Words from src/content/look.ts and the repos' own descriptions. Signs are drawn once and shown by time (reveal).
   const conc = (w, h, x0, y0, col) => new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE),
@@ -72,8 +71,8 @@
   const plank = (w, h, horiz) => horiz ? floorMat(w, h) : wallMat(w, h); // (the old name: every caller says wall, or floor when horiz)
   const RW = CX1 - HX0, CEIL = G3 + RH, DOORS = [DOOR_A, DOOR_B], SHOP_WARM = 0xf3f1ff;
   const PK = NARROW ? .0022 : .00385, PX0 = NARROW ? 39.3 : 37.2, PC = [1767, 3144, 4398].map(c => PX0 + c * PK); // the production's strip: metres a pixel, where it starts, the x of each piece's middle
-  const shop = { open: 0, lit: 0, ins: 0, panel: null, screen: null }; // open: how far door A has rolled up (0..1); lit: the workshop's own light (0..1); ins: how far the camera is inside (0..1)
-  const woodM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }), metalM = new THREE.MeshStandardMaterial({ color: 0x4d5156, metalness: .5, roughness: .6 });
+  const shop = { open: 0, lit: 0, ins: 0, panel: null }; // open: how far door A has rolled up (0..1); lit: the workshop's own light (0..1); ins: how far the camera is inside (0..1)
+  const metalM = new THREE.MeshStandardMaterial({ color: 0x4d5156, metalness: .5, roughness: .6 });
   { // the room: floor, back wall, ceiling, the two end walls, and the street wall's inside with a thick frame round each door
     const wallM = plank(RW, RH);
     const back = new THREE.Mesh(new THREE.PlaneGeometry(RW, RH), wallM); back.position.set(HX0 + RW / 2, G3 + RH / 2, WZ); scene.add(back);
@@ -104,52 +103,133 @@
   const fixM = new THREE.MeshStandardMaterial({ color: 0x3a3c3f, metalness: .5, roughness: .5 }), tubeM = new THREE.MeshStandardMaterial({ color: 0, emissive: 0xeef3ff, emissiveIntensity: 0 }), tubeBad = tubeM.clone();
   const TUBE_X = []; for (let x = HX0 + 2.4; x < CX1 - 1; x += 4.8) TUBE_X.push(x);
   for (const z of [WZ + 1.5, WZ + 5.2]) TUBE_X.forEach((x, i) => { const f = new THREE.Mesh(new THREE.BoxGeometry(1.4, .05, .16), fixM), t = new THREE.Mesh(new THREE.BoxGeometry(1.3, .026, .08), z > WZ + 3 && i === 8 ? tubeBad : tubeM); f.position.set(x, CEIL - .35, z); t.position.set(x, CEIL - .39, z); scene.add(f, t); });
-  // garage things, only at the ends and on the side walls (Tom 11-26), every one different: a workbench with a pegboard on the west wall, the home server, a laptop and a cup,
-  // a stool; a steel shelf of boxes and cans by the door end; at the far end a tall steel shelf with jerry cans and a tyre, a red tool chest on wheels, an oil drum, a ladder.
+  // garage things (Tom 11-26, cause C of his walk-through): only at the two ends, every one different, nothing between or in front of the paintings. At the door end
+  // a worn workbench in the corner with a pegboard of real tools over it and a fire extinguisher on the side wall; at the far end a steel shelf, a stack of tyres
+  // and a red tool chest on castors. Few things, each with depth: rounded edges, real sizes, one shared wear map (grime in the corners, scuffs, chips), a soft
+  // contact shadow under and behind each, nothing floating. Built after the tip (LATE), and each canvas goes to the graphics card on its own turn.
   const steelM = new THREE.MeshStandardMaterial({ color: 0x8e949a, metalness: .6, roughness: .5 });
   const mat = c => new THREE.MeshStandardMaterial({ color: c, roughness: .7 }), box = (w, h, d, x, y, z, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); scene.add(b); return b; };
-  const pegTex = (w, h) => { const PX = 200, c = document.createElement("canvas"); c.width = Math.round(w * PX); c.height = Math.round(h * PX); const g = c.getContext("2d"), rnd = rngOf(3); g.fillStyle = "#b9bdbf"; g.fillRect(0, 0, c.width, c.height);
-    for (let y = 8; y < c.height; y += 16) for (let x = 8; x < c.width; x += 16) { g.fillStyle = "rgba(40,44,48,.6)"; g.beginPath(); g.arc(x, y, 2, 0, 6.3); g.fill(); }
-    g.lineCap = "round"; const tool = (x, y, k, col, r) => { g.save(); g.translate(x, y); g.rotate(r); g.shadowColor = "rgba(0,0,0,.4)"; g.shadowBlur = 4; g.shadowOffsetX = 3; g.shadowOffsetY = 3; g.strokeStyle = col; g.fillStyle = col;
-      if (k === 0) { g.lineWidth = 7; g.strokeStyle = "#7a4e2b"; g.beginPath(); g.moveTo(0, -26); g.lineTo(0, 34); g.stroke(); g.fillStyle = "#4c5055"; g.fillRect(-16, -34, 32, 14); }
-      else if (k === 1) { g.lineWidth = 6; g.beginPath(); g.moveTo(0, -30); g.lineTo(0, 30); g.stroke(); g.lineWidth = 3.5; g.beginPath(); g.arc(0, -32, 9, 0, 6.3); g.stroke(); }
-      else if (k === 2) { g.lineWidth = 3; g.strokeStyle = "#6c7075"; g.beginPath(); g.moveTo(0, -4); g.lineTo(0, 30); g.stroke(); g.fillStyle = col; g.fillRect(-5, -34, 10, 30); }
-      else { g.lineWidth = 4; g.beginPath(); g.moveTo(-8, 30); g.lineTo(0, -4); g.lineTo(8, 30); g.stroke(); g.fillStyle = col; g.fillRect(-12, 26, 8, 14); g.fillRect(4, 26, 8, 14); }
-      g.restore(); };
-    const cols = ["#c8402a", "#d8a21a", "#2f6fb3", "#26272a"]; for (let y = 36; y < c.height - 40; y += 70) for (let x = 30; x < c.width - 20; x += 50 + rnd() * 24) tool(x, y + rnd() * 10, (rnd() * 4) | 0, cols[(rnd() * 4) | 0], (rnd() - .5) * .25);
-    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
-  { const w = 3.4, h = 1.6, m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: pegTex(w, h), roughness: .8, envMapIntensity: .2 })); m.rotation.y = Math.PI / 2; m.position.set(HX0 + .03, G3 + 1.95, WZ + 5.4); scene.add(m); } // the pegboard on the west wall
-  box(.7, .06, 3.6, HX0 + .4, G3 + .9, WZ + 5.4, woodM); for (const dz of [-1.7, 1.7]) box(.6, .9, .08, HX0 + .4, G3 + .45, WZ + 5.4 + dz, metalM); box(.66, .04, 3.2, HX0 + .4, G3 + .3, WZ + 5.4, metalM); // the bench
-  { const lx = HX0 + .55, lz = WZ + 4.6; const base = box(.25, .02, .36, lx, G3 + .94, lz, mat(0x2b2d30)), scr = box(.012, .23, .36, lx - .1, G3 + 1.06, lz, new THREE.MeshStandardMaterial({ color: 0x0a0c10, emissive: 0x6fc6d6, emissiveIntensity: 0 })); scr.rotation.z = .2; shop.screen = scr;
-    const cup = new THREE.Mesh(new THREE.CylinderGeometry(.04, .033, .095, 16), mat(0xe9e4d8)); cup.position.set(HX0 + .5, G3 + .98, WZ + 6.6); scene.add(cup); const cof = new THREE.Mesh(new THREE.CircleGeometry(.034, 16), mat(0x2a170c)); cof.rotation.x = -Math.PI / 2; cof.position.set(HX0 + .5, G3 + 1.03, WZ + 6.6); scene.add(cof); }
-  { const w = .52, h = 1.3, d = .6, c = document.createElement("canvas"); c.width = 256; c.height = 640; const g = c.getContext("2d"); g.fillStyle = "#17191c"; g.fillRect(0, 0, 256, 640); // the home server
-    for (let i = 0; i < 6; i++) { g.fillStyle = "#23262b"; g.fillRect(10, 14 + i * 104, 236, 92); g.fillStyle = "#0a0b0d"; for (let k = 0; k < 8; k++) g.fillRect(24 + k * 14, 28 + i * 104, 8, 40); for (let k = 0; k < 3; k++) { g.fillStyle = ["#46d37a", "#4aa8ff", "#e8b24a"][(i + k) % 3]; g.beginPath(); g.arc(200 + k * 14, 40 + i * 104, 3.6, 0, 6.3); g.fill(); } }
-    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; const side = mat(0x1b1d20), front = new THREE.MeshStandardMaterial({ map: t, emissiveMap: t, emissive: 0xffffff, emissiveIntensity: .55, metalness: .4, roughness: .6 });
-    const m = new THREE.Mesh(new THREE.BoxGeometry(d, h, w), [front, side, side, side, side, side]); m.position.set(HX0 + .5, G3 + h / 2 + .06, WZ + 8.4); scene.add(m); box(.7, .06, .7, HX0 + .5, G3 + .03, WZ + 8.4, metalM); }
-  { const st = new THREE.Mesh(new THREE.CylinderGeometry(.19, .17, .06, 16), woodM); st.position.set(HX0 + 1.6, G3 + .5, WZ + 3.6); scene.add(st); const lg = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .5, 6), metalM); lg.position.set(HX0 + 1.6, G3 + .25, WZ + 3.6); scene.add(lg); } // a stool
-  const shelf = (x0, x1, ys, d = .5) => { for (const y of ys) box(x1 - x0, .04, d, (x0 + x1) / 2, G3 + y, WZ + d / 2 + .04, steelM); for (const x of [x0, x1]) box(.05, ys[ys.length - 1] + .1, d, x, G3 + (ys[ys.length - 1] + .1) / 2, WZ + d / 2 + .04, steelM); };
-  { const cv = document.createElement("canvas"); cv.width = cv.height = 128; const g = cv.getContext("2d"); g.fillStyle = "#f2efe6"; g.beginPath(); g.arc(64, 64, 62, 0, 6.3); g.fill(); g.strokeStyle = "#222"; g.lineWidth = 4; g.stroke(); for (let k = 0; k < 12; k++) { g.save(); g.translate(64, 64); g.rotate(k * Math.PI / 6); g.fillRect(-1.5, -58, 3, k % 3 ? 7 : 12); g.restore(); }
-    g.lineWidth = 5; g.lineCap = "round"; g.beginPath(); g.moveTo(64, 64); g.lineTo(64, 28); g.stroke(); g.lineWidth = 4; g.beginPath(); g.moveTo(64, 64); g.lineTo(88, 74); g.stroke();
-    const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; const clock = new THREE.Mesh(new THREE.CircleGeometry(.24, 28), new THREE.MeshStandardMaterial({ map: t, roughness: .6 })); clock.position.set(39.2, G3 + 3.1, WZ + .03); scene.add(clock);
-    box(.5, .7, .14, 38.3, G3 + 1.9, WZ + .08, mat(0x9aa0a4)); box(.42, .6, .02, 38.3, G3 + 1.9, WZ + .16, mat(0x868c90)); box(.12, .12, .02, 38.3, G3 + 2.1, WZ + .18, mat(0xc89a1a));
-    const sg = new THREE.Mesh(new THREE.PlaneGeometry(.5, .5), new THREE.MeshStandardMaterial({ color: 0xe0b520, roughness: .6 })); sg.rotation.z = Math.PI / 4; sg.position.set(37.7, G3 + 2.6, WZ + .03); scene.add(sg); }
-  shelf(34.9, 37.2, [.4, 1.0, 1.6, 2.2]); // a steel shelf by the door end: boxes, tins of paint
-  box(.6, .4, .4, 35.4, G3 + .62, WZ + .3, mat(0x9a7a4e)); box(.5, .3, .4, 36.2, G3 + .57, WZ + .3, mat(0x3a5a7a)); box(.5, .35, .4, 36.8, G3 + .6, WZ + .3, mat(0xa8a090)); for (const [x, y, c] of [[35.3, 1.1, 0xc8402a], [35.6, 1.1, 0xe8e2d0], [36.1, 1.1, 0x2f6fb3], [36.6, 1.1, 0x4a6b3a]]) { const tin = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .2, 14), mat(c)); tin.position.set(x, G3 + y + .12, WZ + .3); scene.add(tin); }
-  box(.8, .4, .4, 35.8, G3 + 1.2, WZ + .3, mat(0x6b5a48)); box(.5, .3, .4, 36.6, G3 + 1.75, WZ + .3, mat(0x8e5a3a)); box(.4, .3, .35, 35.3, G3 + 2.35, WZ + .3, mat(0x5a6a7a));
-  shelf(59.2, 61.4, [.35, .95, 1.55, 2.15, 2.75], .55); // a tall steel shelf at the far end: jerry cans, a tyre, a coil of hose
-  for (const [x, y, c] of [[59.7, .35, 0xb8341f], [60.3, .35, 0x3f5f2f], [60.9, .35, 0xc89a1a]]) box(.4, .46, .26, x, G3 + y + .25, WZ + .35, mat(c));
-  { const ty = new THREE.Mesh(new THREE.TorusGeometry(.26, .1, 10, 22), mat(0x151515)); ty.position.set(60.2, G3 + 1.3, WZ + .35); scene.add(ty); const hose = new THREE.Mesh(new THREE.TorusGeometry(.2, .04, 8, 20), mat(0x1f5a9a)); hose.position.set(60.4, G3 + 1.92, WZ + .35); hose.rotation.x = .3; scene.add(hose); }
-  { box(.8, .5, .45, 62.6, G3 + .75, WZ + .5, new THREE.MeshStandardMaterial({ color: 0xa8281f, metalness: .4, roughness: .45 })); box(.8, .5, .45, 62.6, G3 + .3, WZ + .5, new THREE.MeshStandardMaterial({ color: 0xa8281f, metalness: .4, roughness: .45 })); for (const dx of [-.34, .34]) { const wh = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .05, 12), mat(0x111111)); wh.rotation.x = Math.PI / 2; wh.position.set(62.6 + dx, G3 + .08, WZ + .75); scene.add(wh); } for (let k = 0; k < 5; k++) box(.7, .012, .01, 62.6, G3 + .12 + k * .2, WZ + .73, metalM); }
-  { const dr = new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .88, 20), mat(0x2f5a8a)); dr.position.set(64.1, G3 + .44, WZ + .5); scene.add(dr); for (const y of [.2, .66]) { const rg = new THREE.Mesh(new THREE.TorusGeometry(.3, .012, 6, 24), metalM); rg.rotation.x = Math.PI / 2; rg.position.set(64.1, G3 + y, WZ + .5); scene.add(rg); } } // an oil drum
-  { for (const dx of [-.22, .22]) { const rl = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, 3.2, 6), woodM); rl.position.set(65.4 + dx, G3 + 1.6, WZ + .45); rl.rotation.x = -.08; scene.add(rl); } for (let k = 0; k < 9; k++) box(.44, .025, .03, 65.4, G3 + .3 + k * .33, WZ + .36 + k * .0, woodM); } // a ladder against the wall
+  LATE.run(() => { const lateT = [], canv = (w, h, draw, rep) => { const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new THREE.CanvasTexture(c);
+      t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping; lateT.push(t); return t; };
+    // a box with rounded edges (three's RoundedBoxGeometry, r147, without its UV tweak: each face keeps 0..1, so the wear map's grime sits in every face's corners)
+    const rgeo = (w, h, d, r = .012) => { const s = 3, g = new THREE.BoxGeometry(1, 1, 1, s, s, s).toNonIndexed(), p = g.attributes.position.array, n = g.attributes.normal.array, hs = .5 / s;
+      r = Math.min(r, w / 2, h / 2, d / 2); const b = V(w, h, d).divideScalar(2).subScalar(r), q = V(), k = V();
+      for (let i = 0; i < p.length; i += 3) { q.fromArray(p, i); k.set(q.x - Math.sign(q.x) * hs, q.y - Math.sign(q.y) * hs, q.z - Math.sign(q.z) * hs).normalize();
+        p[i] = b.x * Math.sign(q.x) + k.x * r; p[i + 1] = b.y * Math.sign(q.y) + k.y * r; p[i + 2] = b.z * Math.sign(q.z) + k.z * r; n[i] = k.x; n[i + 1] = k.y; n[i + 2] = k.z; }
+      return g; };
+    const put = (geo, m, x, y, z, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(0, ry, rz); scene.add(o); return o; };
+    const rb = (w, h, d, x, y, z, m, r, ry) => put(rgeo(w, h, d, r), m, x, y, z, ry); // x, z: the middle; y: the bottom (things stand on something)
+    rb.at = (w, h, d, x, y, z, m, r, ry) => rb(w, h, d, x, y + h / 2, z, m, r, ry);
+    const cyl = (r0, r1, h, x, y, z, m, seg = 20) => put(new THREE.CylinderGeometry(r0, r1, h, seg), m, x, y + h / 2, z);
+    // the wear map, shared: light in the middle, grime towards each face's edges, scuffs, chips and a few rust spots; materials tint it with their own colour
+    const WEAR = canv(256, 256, (g, W) => { const rnd = rngOf(23); g.fillStyle = "#f2f0ec"; g.fillRect(0, 0, W, W);
+      for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "255,255,255" : "60,52,44"},${.03 + rnd() * .06})`; g.fillRect(rnd() * W, rnd() * W, 2 + rnd() * 10, 1 + rnd() * 6); }
+      for (const [x0, y0, x1, y1] of [[0, 0, 0, 1], [0, 0, 1, 0], [W, 0, W - 1, 0], [0, W, 0, W - 1]]) { const gr = g.createLinearGradient(x0, y0, x0 + (x1 - x0) * 34, y0 + (y1 - y0) * 34); gr.addColorStop(0, "rgba(40,34,28,.55)"); gr.addColorStop(1, "rgba(40,34,28,0)"); g.fillStyle = gr; g.fillRect(0, 0, W, W); }
+      g.lineCap = "round"; for (let i = 0; i < 40; i++) { const x = rnd() * W, y = rnd() * W, l = 6 + rnd() * 40, a = rnd() * 3; g.strokeStyle = `rgba(${rnd() < .6 ? "70,64,58" : "255,255,250"},${.15 + rnd() * .25})`; g.lineWidth = .6 + rnd() * 1.4; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }
+      for (let i = 0; i < 26; i++) { const e = rnd() < .7, x = e ? (rnd() < .5 ? rnd() * 14 : W - rnd() * 14) : rnd() * W, y = rnd() * W; g.fillStyle = rnd() < .4 ? "rgba(120,74,40,.55)" : "rgba(70,70,72,.6)"; g.beginPath(); g.ellipse(x, y, 1.5 + rnd() * 5, 1 + rnd() * 3, rnd() * 3, 0, 6.3); g.fill(); } }, true);
+    const worn = (c, metal = 0, rough = .65) => new THREE.MeshStandardMaterial({ color: c, map: WEAR, metalness: metal, roughness: rough, envMapIntensity: .3 });
+    const kraft = new THREE.MeshStandardMaterial({ roughness: .9, map: canv(128, 128, (g, W) => { const rnd = rngOf(9); g.fillStyle = "#8f6d42"; g.fillRect(0, 0, W, W);
+      for (let i = 0; i < 300; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "255,240,210" : "70,50,25"},${.04 + rnd() * .07})`; g.fillRect(rnd() * W, rnd() * W, 1 + rnd() * 4, 1 + rnd() * 4); }
+      g.fillStyle = "rgba(205,180,130,.75)"; g.fillRect(W * .42, 0, W * .16, W); g.strokeStyle = "rgba(60,40,20,.35)"; g.lineWidth = 3; g.strokeRect(1.5, 1.5, W - 3, W - 3);
+      g.fillStyle = "rgba(30,30,32,.55)"; g.fillRect(W * .12, W * .18, W * .22, 5); g.fillRect(W * .12, W * .26, W * .14, 5); }) }); // cardboard: tape down the middle, a marker scrawl
+    const woodTop = new THREE.MeshStandardMaterial({ roughness: .8, map: canv(512, 128, (g, W, H) => { const rnd = rngOf(31); g.fillStyle = "#6a5038"; g.fillRect(0, 0, W, H);
+      for (let i = 0; i < 70; i++) { const y = rnd() * H; g.strokeStyle = `rgba(${rnd() < .5 ? "40,28,18" : "150,120,85"},${.15 + rnd() * .2})`; g.lineWidth = .5 + rnd() * 1.5; g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(W * .3, y + (rnd() - .5) * 8, W * .7, y + (rnd() - .5) * 8, W, y + (rnd() - .5) * 6); g.stroke(); }
+      for (let i = 0; i < 9; i++) { const x = rnd() * W, y = rnd() * H, r = 6 + rnd() * 22, gd = g.createRadialGradient(x, y, 1, x, y, r); gd.addColorStop(0, `rgba(18,12,8,${.25 + rnd() * .3})`); gd.addColorStop(1, "rgba(18,12,8,0)"); g.fillStyle = gd; g.fillRect(x - r, y - r, 2 * r, 2 * r); } // oil and coffee rings
+      for (let i = 0; i < 40; i++) { const x = rnd() * W, y = rnd() * H; g.strokeStyle = "rgba(210,190,160,.3)"; g.lineWidth = 1; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (rnd() - .5) * 40, y + (rnd() - .5) * 10); g.stroke(); } }) });
+    // contact shadows: one soft dark rectangle, laid on the floor under a thing and on the wall behind it
+    const SH = canv(128, 128, (g, W) => { const img = g.createImageData(W, W); for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) { const dx = Math.max(0, Math.abs(x - 63.5) - 30) / 34, dy = Math.max(0, Math.abs(y - 63.5) - 30) / 34, d = Math.min(1, Math.hypot(dx, dy));
+      img.data[(y * W + x) * 4 + 3] = 255 * (1 - d) * (1 - d); } g.putImageData(img, 0, 0); });
+    const shM = new THREE.MeshBasicMaterial({ map: SH, color: 0x000000, transparent: true, opacity: .7, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }), shW = shM.clone(); shW.opacity = .32;
+    const shadow = (w, d, x, z, o = 1) => { const m = put(new THREE.PlaneGeometry(w, d), o === 1 ? shM : Object.assign(shM.clone(), { opacity: .7 * o }), x, G3 + .004, z); m.rotation.x = -Math.PI / 2; };
+    const wallShadow = (w, h, x, y) => put(new THREE.PlaneGeometry(w, h), shW, x, y, WZ + .004);
+    const steelW = worn(0x9aa0a6, .55, .5), darkSteel = worn(0x3d4146, .6, .45), chrome = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: .9, roughness: .3 }), rubber = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness: .85 });
+
+    // ---- the door end: the workbench against the back wall, ending 45 cm short of the production (PX0): in the corner on a laptop, nearer the door on a phone, so it is in view there too
+    const BX1 = PX0 - .45, BX0 = Math.max(HX0 + .12, BX1 - 2.13), BXC = (BX0 + BX1) / 2, BW = BX1 - BX0, BD_ = .68, BZ = WZ + BD_ / 2 + .02, TOP = G3 + .9;
+    shadow(BW + .5, BD_ + .4, BXC, BZ + .02); wallShadow(BW + .3, 1.1, BXC, G3 + .55);
+    rb(BW, .07, BD_, BXC, TOP - .035, BZ, woodTop, .01); // the top: thick worn boards
+    for (const dx of [-BW / 2 + .06, BW / 2 - .06]) for (const dz of [-BD_ / 2 + .06, BD_ / 2 - .06]) rb.at(.05, .83, .05, BXC + dx, G3, BZ + dz, darkSteel, .006); // the legs: square steel tube
+    rb.at(BW - .12, .03, .04, BXC, TOP - .14, BZ + BD_ / 2 - .06, darkSteel, .005); rb.at(BW - .1, .025, BD_ - .1, BXC, G3 + .16, BZ, woodTop, .006); // the rail under the top, the low shelf
+    rb.at(.44, .3, .36, BXC - BW / 2 + .32, G3 + .185, BZ - .04, kraft, .01, .06); rb.at(.3, .2, .3, BXC - BW / 2 + .66, G3 + .185, BZ - .02, kraft, .01, -.1); // boxes on the low shelf
+    cyl(.09, .09, .13, BXC + BW / 2 - .32, G3 + .185, BZ - .02, worn(0x7d8a6a, .4, .5)); cyl(.093, .093, .012, BXC + BW / 2 - .32, G3 + .315, BZ - .02, steelW); // a paint tin and its lid
+    { const vx = BXC + BW / 2 - .22, vz = BZ + BD_ / 2 - .1, vm = worn(0x2f4f6f, .45, .5); // a vice on the front corner
+      rb.at(.14, .05, .2, vx, TOP, vz - .02, vm, .01); rb.at(.12, .12, .07, vx, TOP + .05, vz - .08, vm, .012); rb.at(.12, .12, .07, vx, TOP + .05, vz + .02, vm, .012);
+      rb.at(.12, .03, .012, vx, TOP + .14, vz - .04, darkSteel, .003); rb.at(.12, .03, .012, vx, TOP + .14, vz - .02, darkSteel, .003);
+      const sc = put(new THREE.CylinderGeometry(.011, .011, .3, 10), chrome, vx, TOP + .1, vz + .12); sc.rotation.x = Math.PI / 2; }
+    { const cm = worn(0xa3291f, .4, .45), x = BXC - .2, z = BZ - .08; rb.at(.5, .2, .24, x, TOP, z, cm, .015, .05); // a red tool case, its lid line and handle
+      rb.at(.505, .012, .245, x, TOP + .15, z, darkSteel, .003, .05); rb.at(.2, .025, .03, x, TOP + .2, z, rubber, .01, .05); }
+    for (const [dx, c] of [[.18, 0x23252a], [.27, 0xd8d4c8]]) { const x = BXC + dx, z = BZ + .12, can = worn(c, .5, .4); // two spray cans: a graffiti writer's garage
+      cyl(.033, .033, .19, x, TOP, z, can, 18); cyl(.033, .02, .03, x, TOP + .19, z, can, 18); cyl(.022, .022, .04, x, TOP + .215, z, mat(c === 0x23252a ? 0xc8402a : 0x2f6fb3), 14); }
+    { const x = BXC - BW / 2 + .3, z = BZ + .15, mug = new THREE.MeshStandardMaterial({ color: 0xe9e4d8, map: WEAR, roughness: .4 }); cyl(.042, .038, .1, x, TOP, z, mug, 20); // a mug
+      put(new THREE.TorusGeometry(.028, .007, 8, 16, Math.PI), mug, x + .042, TOP + .05, z, 0, -Math.PI / 2);put(new THREE.CircleGeometry(.036, 20), mat(0x2a170c), x, TOP + .085, z).rotation.x = -Math.PI / 2; }
+    { const rag = put(new THREE.PlaneGeometry(.26, .2, 6, 4), new THREE.MeshStandardMaterial({ color: 0x8c3a2c, map: WEAR, roughness: 1, side: THREE.DoubleSide }), BXC + .55, TOP + .006, BZ + .2); rag.rotation.set(-Math.PI / 2, 0, .4); // an oily rag, crumpled
+      const p = rag.geometry.attributes.position, rnd = rngOf(4); for (let i = 0; i < p.count; i++) p.setZ(i, rnd() * .012); rag.geometry.computeVertexNormals(); }
+    // the pegboard over it: brown hardboard on battens, a marker outline round each tool's place, and real tools hanging off pegs
+    const PB = { x: BXC, y0: TOP + .16, w: BW - .1, h: 1.08 }, PZ = WZ + .035, py = PB.y0 + PB.h / 2;
+    wallShadow(PB.w + .22, PB.h + .2, PB.x, py); for (const y of [PB.y0 + .08, PB.y0 + PB.h - .08]) rb(PB.w, .05, .03, PB.x, y, WZ + .015, woodTop, .005);
+    const TOOLS = [ // x, y on the board (m from its left, bottom), kind
+      [.16, .7, "hammer"], [.36, .74, "saw"], [.74, .8, "wr", .24], [.84, .8, "wr", .2], [.93, .8, "wr", .16], [.74, .38, "sd", 0xc8402a], [.81, .38, "sd", 0xd8a21a], [.88, .38, "sd", 0x26272a],
+      [1.12, .66, "pliers"], [1.36, .7, "cable"], [1.12, .3, "tape"], [1.62, .74, "square"], [.38, .12, "level"]].filter(t => t[0] < PB.w - .12);
+    const PXM = 220, peg = canv(Math.round(PB.w * PXM), Math.round(PB.h * PXM), (g, W, H) => { const rnd = rngOf(3); g.fillStyle = "#7d6146"; g.fillRect(0, 0, W, H);
+      for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "255,235,200" : "40,26,14"},${.04 + rnd() * .06})`; g.fillRect(rnd() * W, rnd() * H, 4 + rnd() * 30, 2 + rnd() * 8); }
+      for (let y = 11; y < H; y += 22) for (let x = 11; x < W; x += 22) { g.fillStyle = "rgba(22,14,8,.85)"; g.beginPath(); g.arc(x, y, 2.6, 0, 6.3); g.fill(); }
+      g.strokeStyle = "rgba(235,235,225,.55)"; g.lineWidth = 2; g.lineJoin = "round"; for (const [tx, ty, k, a] of TOOLS) { const x = tx * PXM, y = H - ty * PXM, s = k === "wr" ? a * PXM : 0; // the outlines, a little bigger than the tool
+        g.beginPath(); if (k === "hammer") { g.rect(x - 24, y - 6, 48, 22); g.rect(x - 6, y + 14, 12, 66); } else if (k === "saw") { g.moveTo(x - 10, y + 10); g.lineTo(x + 34, y + 10); g.lineTo(x + 26, y + 110); g.lineTo(x - 2, y + 110); g.closePath(); }
+        else if (k === "wr") { g.rect(x - 7, y, 14, s + 4); } else if (k === "sd") { g.rect(x - 7, y - 4, 14, 52); } else if (k === "cable") { g.arc(x, y + 30, 32, 0, 6.3); } else if (k === "square") { g.moveTo(x - 4, y - 4); g.lineTo(x + 4, y - 4); g.lineTo(x + 4, y + 70); g.lineTo(x + 44, y + 70); g.lineTo(x + 44, y + 78); g.lineTo(x - 4, y + 78); g.closePath(); }
+        else if (k === "level") { g.rect(x - 40, y - 8, 80, 16); } else g.rect(x - 14, y - 4, 28, 40); g.stroke();
+        g.save(); g.filter = "blur(6px)"; g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(x - 10 + 6, y + 4, 20, k === "saw" ? 100 : k === "level" ? 10 : 50); g.restore(); } // the soft shadow each tool throws on the board
+      const gr = g.createLinearGradient(0, H - 40, 0, H); gr.addColorStop(0, "rgba(30,20,10,0)"); gr.addColorStop(1, "rgba(30,20,10,.35)"); g.fillStyle = gr; g.fillRect(0, 0, W, H); });
+    put(new THREE.PlaneGeometry(PB.w, PB.h), new THREE.MeshStandardMaterial({ map: peg, roughness: .85 }), PB.x, py, PZ);
+    const handleW = worn(0x8a5a32, 0, .6), TZ = PZ + .03, bx = PB.x - PB.w / 2;
+    for (const [tx, ty, k, a] of TOOLS) { const x = bx + tx, y = PB.y0 + ty; // y: the hook's height on the board
+      cyl(.004, .004, .05, x, y + .01, PZ + .02, chrome, 6).rotation.x = Math.PI / 2 - .3; // the peg
+      if (k === "hammer") { cyl(.013, .016, .3, x, y - .34, TZ, handleW, 12); rb(.11, .028, .032, x, y - .02, TZ, darkSteel, .006); }
+      else if (k === "saw") { const s = new THREE.Shape(); s.moveTo(-.01, 0); s.lineTo(.03, 0); s.lineTo(.022, -.45); s.lineTo(-.008, -.45); s.closePath(); put(new THREE.ExtrudeGeometry(s, { depth: .003, bevelEnabled: false }), chrome, x, y - .02, TZ - .01);
+        rb(.06, .1, .025, x + .01, y + .02, TZ, handleW, .01); }
+      else if (k === "wr") { rb(.018, a, .006, x, y - a / 2 - .01, TZ, chrome, .003); for (const e of [0, 1]) put(new THREE.TorusGeometry(.016 + a * .03, .006, 6, 14), chrome, x, y - .01 - e * a, TZ); }
+      else if (k === "sd") { cyl(.012, .014, .1, x, y - .1, TZ, mat(a), 10); cyl(.003, .003, .12, x, y - .22, TZ, chrome, 6); }
+      else if (k === "pliers") { const pm = worn(0xb8341f, 0, .5); for (const s of [-1, 1]) { const arm = rb(.016, .16, .01, x + s * .012, y - .12, TZ, pm, .005); arm.rotation.z = s * .1; } rb(.03, .05, .012, x, y - .02, TZ, chrome, .004); }
+      else if (k === "cable") { const c = put(new THREE.TorusGeometry(.13, .02, 8, 28), worn(0xd2602a, 0, .6), x, y - .13, TZ + .01); c.scale.set(1, 1.05, .6); }
+      else if (k === "tape") { rb(.075, .075, .04, x, y - .05, TZ, worn(0xd8a21a, .2, .45), .015); }
+      else if (k === "square") { rb(.018, .3, .006, x, y - .15, TZ, chrome, .002); rb(.2, .03, .012, x + .09, y - .29, TZ, handleW, .003); }
+      else if (k === "level") { rb(.6, .05, .03, x, y, TZ, worn(0xd8a21a, .3, .45), .006); rb(.06, .02, .032, x, y, TZ, mat(0x6fbf6a), .004); } }
+    { const ex = HX0 + .01, ez = WZ + 1.5, em = worn(0xb32016, .3, .35); // a fire extinguisher on the side wall by the bench, on its bracket
+      rb.at(.03, .12, .1, ex + .015, G3 + 1.05, ez, darkSteel, .005); cyl(.075, .075, .44, ex + .1, G3 + .62, ez, em, 22); put(new THREE.SphereGeometry(.075, 22, 10, 0, 6.3, 0, Math.PI / 2), em, ex + .1, G3 + 1.06, ez);
+      cyl(.02, .02, .07, ex + .1, G3 + 1.1, ez, darkSteel, 10); rb.at(.1, .02, .03, ex + .12, G3 + 1.17, ez, darkSteel, .006); const ho = put(new THREE.TorusGeometry(.1, .01, 6, 16, 3.6), rubber, ex + .17, G3 + .98, ez); ho.rotation.y = Math.PI / 2;
+      shadow(.3, .3, ex + .1, ez, .6); }
+
+    // ---- the far end: 90 cm past the production's end (on a phone too, where the production is shorter), a steel shelf, a stack of tyres and the tool chest by the back door
+    const SX0 = PX0 + 5300 * PK + .9, SW = 2, SD = .5, SXC = SX0 + SW / 2, SZ = WZ + SD / 2 + .03, LV = [.12, .72, 1.32, 1.92], SH_ = 2.05;
+    shadow(SW + .4, SD + .4, SXC, SZ); wallShadow(SW + .25, SH_ + .1, SXC, G3 + SH_ / 2);
+    for (const dx of [-SW / 2, SW / 2]) for (const dz of [-SD / 2, SD / 2]) { rb.at(.045, SH_, .012, SXC + dx, G3, SZ + dz, steelW, .002); rb.at(.012, SH_, .045, SXC + dx, G3, SZ + dz, steelW, .002); } // angle posts
+    const board = worn(0xb79a72, 0, .85); for (const y of LV) { for (const dz of [-SD / 2, SD / 2]) rb.at(SW, .05, .03, SXC, G3 + y - .05, SZ + dz, worn(0x3e6fa6, .4, .5), .004); rb.at(SW - .03, .018, SD, SXC, G3 + y, SZ, board, .003); }
+    const on = (i, x, w, h, d, m, ry = 0, r = .012) => rb.at(w, h, d, SX0 + x, G3 + LV[i] + .018, SZ + (SD - d) / 2 - .04, m, r, ry);
+    { const jc = (i, x, c) => { const m = worn(c, .3, .5); const b = on(i, x, .17, .36, .32, m, 0, .03); const y = G3 + LV[i] + .018 + .36; // jerry cans: the body, its three handles on top, the spout cap
+        for (const dz of [-.08, 0, .08]) rb.at(.03, .05, .03, b.position.x, y, b.position.z + dz, m, .01); cyl(.025, .025, .04, b.position.x, y, b.position.z + .13, darkSteel, 10); };
+      jc(0, .28, 0x9e2b1c); jc(0, .52, 0x3f5f2f); }
+    on(0, 1.05, .34, .17, .34, rubber, .1, .02); // a car battery on the floor shelf
+    on(0, 1.55, .5, .38, .4, kraft, -.04); on(1, .35, .55, .36, .42, kraft, .03); on(1, .35, .42, .14, .34, kraft, -.08).position.y += .36; on(1, 1.0, .46, .28, .42, worn(0x56606b, 0, .7), 0, .02);
+    for (const [x, c] of [[1.45, 0x7d8a6a], [1.62, 0xd8d4c8], [1.79, 0x2f4f6f]]) { cyl(.085, .085, .19, SX0 + x, G3 + LV[1] + .018, SZ, worn(c, .45, .45)); cyl(.088, .088, .012, SX0 + x, G3 + LV[1] + .208, SZ, steelW); } // paint tins with lids
+    on(2, .4, .6, .3, .4, worn(0x2c5d8f, 0, .6), 0, .025); on(2, 1.15, .5, .4, .42, kraft, .05);
+    { const hose = put(new THREE.TorusGeometry(.19, .024, 8, 28), worn(0x2e6a3a, 0, .55), SX0 + 1.65, G3 + LV[2] + .042, SZ); hose.rotation.x = Math.PI / 2; const h2 = hose.clone(); h2.position.y += .045; h2.rotation.z = .5; h2.scale.setScalar(.92); scene.add(h2); } // a garden hose, coiled flat
+    on(3, .3, .4, .26, .38, kraft, -.05); on(3, .85, .36, .2, .34, kraft, .1); on(3, 1.45, .55, .32, .42, worn(0x56606b, 0, .7), 0, .02);
+    // a stack of worn tyres on the floor beside it, each a little off the one under it
+    { const tx = SX0 + SW + .45, tz = WZ + .5, tm = new THREE.MeshStandardMaterial({ color: 0x18181a, map: WEAR, roughness: .9 }), rim = worn(0x7e8389, .7, .4); shadow(.95, .95, tx, tz, 1);
+      [[0, 0, 0], [.03, -.02, .4], [-.02, .03, .9], [.02, .01, 1.3]].forEach(([dx, dz, r], i) => { const y = G3 + .1 + i * .2; const t = put(new THREE.TorusGeometry(.26, .1, 12, 30), tm, tx + dx, y, tz + dz); t.rotation.set(Math.PI / 2, 0, r); t.scale.set(1, 1, .95);
+        if (i === 3) { const w = put(new THREE.CylinderGeometry(.19, .19, .16, 24, 1, true), rim, tx + dx, y, tz + dz); w.material.side = THREE.DoubleSide; } }); }
+    // the tool chest on castors, in the far corner: a roll cabinet with a top chest on it, drawers with steel pulls
+    { const cx = SX0 + SW + 1.3, cz = WZ + .32, CW = .74, CD = .48, red = worn(0xa3291f, .45, .42); shadow(CW + .35, CD + .35, cx, cz); wallShadow(CW + .25, 1.5, cx, G3 + .7);
+      for (const dx of [-CW / 2 + .07, CW / 2 - .07]) for (const dz of [-CD / 2 + .07, CD / 2 - .07]) { rb.at(.06, .03, .06, cx + dx, G3 + .1, cz + dz, darkSteel, .005); const w = put(new THREE.CylinderGeometry(.045, .045, .035, 16), rubber, cx + dx, G3 + .045, cz + dz); w.rotation.x = Math.PI / 2; }
+      const y0 = G3 + .13; rb.at(CW, .78, CD, cx, y0, cz, red, .02); rb.at(CW - .02, .3, CD - .04, cx, y0 + .8, cz - .01, red, .03); rb.at(CW, .018, CD + .005, cx, y0 + .78, cz, darkSteel, .004);
+      const rows = [[.06, .1], [.18, .1], [.3, .1], [.42, .14], [.58, .18]]; for (const [y, h] of rows) { rb.at(CW - .06, h - .014, .012, cx, y0 + y, cz + CD / 2, red, .006); rb.at(CW * .55, .014, .02, cx, y0 + y + h - .04, cz + CD / 2 + .012, chrome, .006); }
+      for (const [y, h] of [[.84, .08], [.95, .06]]) { rb.at(CW - .08, h - .012, .012, cx, y0 + y, cz + CD / 2 - .02, red, .006); rb.at(CW * .45, .012, .018, cx, y0 + y + h - .035, cz + CD / 2 - .01, chrome, .005); }
+      for (const s of [-1, 1]) { const hd = put(new THREE.CylinderGeometry(.012, .012, .3, 10), chrome, cx + s * (CW / 2 + .05), y0 + .62, cz); hd.rotation.x = Math.PI / 2; rb.at(.05, .03, .02, cx + s * (CW / 2 + .025), y0 + .6, cz - .13, chrome, .005); rb.at(.05, .03, .02, cx + s * (CW / 2 + .025), y0 + .6, cz + .13, chrome, .005); }
+      rb.at(.2, .1, .13, cx - .14, y0 + 1.1, cz, worn(0x26272a, .2, .5), .02); cyl(.04, .04, .14, cx + .2, y0 + 1.1, cz + .05, worn(0x2f6fb3, .3, .45), 16); } // on top: a socket case and a can of oil
+    lateT.forEach(t => LATE.up(() => renderer.initTexture(t))); LATE.got(); });
   for (const [a, b] of DOORS) box(b - a, .02, .16, (a + b) / 2, G3 + .01, 0, steelM); // a flat steel threshold in each doorway
   // the back door out (Tom 11-26): a work lamp in a cage over it, outside, and a lit step
   { const xc = (DOOR_B[0] + DOOR_B[1]) / 2, arm = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .6, 8), metalM); arm.rotation.x = Math.PI / 2; arm.position.set(xc, G3 + DOOR_H + 1.15, .3); scene.add(arm);
     const cage = new THREE.Mesh(new THREE.CylinderGeometry(.1, .17, .3, 14, 1, true), lampShade), bulb = new THREE.Mesh(new THREE.SphereGeometry(.09, 12, 8), shopBulb); cage.position.set(xc, G3 + DOOR_H + 1.02, .62); bulb.position.set(xc, G3 + DOOR_H + .98, .62); const stem = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .2, 6), metalM); stem.position.set(xc, G3 + DOOR_H + 1.12, .62); const hood = new THREE.Mesh(new THREE.CylinderGeometry(.06, .2, .1, 14), metalM); hood.position.set(xc, G3 + DOOR_H + 1.2, .62); scene.add(cage, bulb, stem, hood); }
-  // phone: a prop in frame at every piece: a low bench under it and a fluorescent tube on chains hanging into the top of the frame
-  if (NARROW) PC.forEach((x, i) => { box(2.7, .06, .5, x, G3 + .24, WZ + .3, woodM); for (const dx of [-1.25, 1.25]) box(.08, .24, .4, x + dx, G3 + .12, WZ + .3, metalM);
-    box(.4, .24, .3, x + (i % 2 ? -.8 : .8), G3 + .39, WZ + .3, mat([0xa8281f, 0x3a5a7a, 0x8e5a3a][i]));
-    const tb = new THREE.Mesh(new THREE.BoxGeometry(1.2, .05, .1), tubeM); tb.position.set(x + .7, G3 + 3.62, WZ + 1.1); scene.add(tb); for (const dx of [-.5, .5]) { const ch = new THREE.Mesh(new THREE.CylinderGeometry(.006, .006, .75, 4), metalM); ch.position.set(x + .7 + dx, G3 + 4.02, WZ + 1.1); scene.add(ch); } });
   // the lights that go with the camera: a warm spot on the wall it faces, a warm fill from the room's middle, and the light that spills out of the door onto the wet street
   const exitL = new THREE.PointLight(0xffd9a0, 0, 15, 1.4); scene.add(exitL); exitL.position.set((DOOR_B[0] + DOOR_B[1]) / 2, G3 + DOOR_H + .9, 1.1); // the work lamp over the back door
   const shopSpot = new THREE.SpotLight(SHOP_WARM, 0, 15, 1, 1, 1.3), shopFill = new THREE.PointLight(0xf1f2ff, 0, 13, 1.6), spill = new THREE.SpotLight(0xffd29a, 0, 18, .85, .85, 1.1); scene.add(shopSpot, shopSpot.target, shopFill, spill, spill.target);
@@ -157,7 +237,7 @@
     const tIn = sm(cl((sv - 560) / 55)); shop.open = tIn; shop.lit = tIn * (1 - sm(cl((sv - 940) / 50)));
     shop.panel.position.y = G3 + DOOR_H / 2 + tIn * (DOOR_H + .05); shop.panel.visible = tIn < .999;
     const inX = sm(cl((cp.x - HX0 + .2) / 1.4)) * (1 - sm(cl((cp.x - CX1 + 1.2) / 1.6))), inZ = sm(cl((.9 - cp.z) / 1.6)); shop.ins = inX * inZ;
-    shopBulb.emissiveIntensity = 2.2 * shop.lit; tubeM.emissiveIntensity = 2.4 * shop.lit; tubeBad.emissiveIntensity = (Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4) * shop.lit; shop.screen.material.emissiveIntensity = 1.4 * shop.lit;
+    shopBulb.emissiveIntensity = 2.2 * shop.lit; tubeM.emissiveIntensity = 2.4 * shop.lit; tubeBad.emissiveIntensity = (Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4) * shop.lit;
     const cx = cl(cp.x, HX0 + 1.5, CX1 - 1.5);
     shopSpot.intensity = 2.2 * shop.lit; shopSpot.position.set(cx, CEIL - .3, WZ + 1.7); shopSpot.target.position.set(cx, G3 + 1.7, WZ);
     shopFill.intensity = 1.0 * shop.lit; shopFill.position.set(cx, G3 + 3.2, WZ + 6.3);
