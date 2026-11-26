@@ -76,7 +76,8 @@ failed=()
 ran=0
 for check in pitch:check walk; do
   out=$(mktemp)
-  mise run "$check" 9>&- 2>&1 | tee "$out"
+  # the night owns the desk (GPU lock, quiet desk), so its checks skip the test lane and keep the time limit
+  TESTLANE=off mise run "$check" 9>&- 2>&1 | tee "$out"
   rc=${PIPESTATUS[0]}
   grep -q "already passed on" "$out" || ran=1
   if [ "$rc" != 0 ]; then
