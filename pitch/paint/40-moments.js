@@ -136,9 +136,9 @@
   { const xc = (DOOR_B[0] + DOOR_B[1]) / 2, arm = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .6, 8), metalM); arm.rotation.x = Math.PI / 2; arm.position.set(xc, G3 + DOOR_H + 1.15, .3); scene.add(arm);
     const cage = new THREE.Mesh(new THREE.CylinderGeometry(.1, .17, .3, 14, 1, true), lampShade), bulb = new THREE.Mesh(new THREE.SphereGeometry(.09, 12, 8), shopBulb); cage.position.set(xc, G3 + DOOR_H + 1.02, .62); bulb.position.set(xc, G3 + DOOR_H + .98, .62); scene.add(cage, bulb); }
   // phone: a prop in frame at every painting: a lamp on the wall hanging into the top corner, and a low bench under it (the numbers sit above it)
-  if (NARROW) [42.2, 48.7, 55.2, 61.7].forEach((x, i) => { const bt = new THREE.Mesh(new THREE.BoxGeometry(2.7, .06, .5), woodM); bt.position.set(x, G3 + .36, WZ + .3); scene.add(bt);
-    for (const dx of [-1.25, 1.25]) slab(x + dx - .04, x + dx + .04, G3, G3 + .36, WZ + .1, WZ + .5, metalM);
-    const crate = new THREE.Mesh(new THREE.BoxGeometry(.4, .24, .3), i % 2 ? new THREE.MeshStandardMaterial({ color: 0x3a5a7a, roughness: .7 }) : new THREE.MeshStandardMaterial({ color: 0xa8281f, roughness: .5 })); crate.position.set(x + (i % 2 ? -.8 : .8), G3 + .51, WZ + .3); scene.add(crate);
+  if (NARROW) [42.2, 48.7, 55.2, 61.7].forEach((x, i) => { const bt = new THREE.Mesh(new THREE.BoxGeometry(2.7, .06, .5), woodM); bt.position.set(x, G3 + .24, WZ + .3); scene.add(bt);
+    for (const dx of [-1.25, 1.25]) slab(x + dx - .04, x + dx + .04, G3, G3 + .24, WZ + .1, WZ + .5, metalM);
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(.4, .24, .3), i % 2 ? new THREE.MeshStandardMaterial({ color: 0x3a5a7a, roughness: .7 }) : new THREE.MeshStandardMaterial({ color: 0xa8281f, roughness: .5 })); crate.position.set(x + (i % 2 ? -.8 : .8), G3 + .39, WZ + .3); scene.add(crate);
     const lx = x + 1.1, arm = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .9, 6), metalM); arm.rotation.x = Math.PI / 2; arm.position.set(lx, G3 + 3.6, WZ + .45); scene.add(arm);
     const sh = new THREE.Mesh(new THREE.CylinderGeometry(.06, .26, .22, 18, 1, true), lampShade), bu = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 8), shopBulb); sh.position.set(lx, G3 + 3.4, WZ + .9); bu.position.set(lx, G3 + 3.36, WZ + .9); scene.add(sh, bu); });
   // the lights that go with the camera: a warm spot on the wall it faces, a warm fill from the room's middle, and the light that spills out of the door onto the wet street
@@ -207,7 +207,7 @@
     tool(55.2, 840, "dot", "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.",
       { art: ["assets/dot_wall.webp", 5, 3.7, [756, 524], 1.5, [[140, 164, 1373, 885]]], marks: [[140, 735, 372, 860]] }),
     tool(61.7, 910, "tthermal", "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.",
-      { leave: 935, art: ["assets/tthermal_wall.webp", 5.6, 3.4, [775, 525], 1.5, [[104, 254, 1447, 796]]], marks: [[162, 675, 390, 775]] }),
+      { leave: 925, art: ["assets/tthermal_wall.webp", 5.6, 3.4, [775, 525], 1.5, [[104, 254, 1447, 796]]], marks: [[162, 675, 390, 775]] }),
     { x: 75, key: 1045, leave: 1045, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       art: ["assets/edge_wall.webp", 6.6, 3.5, [714, 518], 1.9, [[20, 200, 1409, 745], ...EDGE_V.areas]], ov: EDGE_V.ov, marks: EDGE_V.marks,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base. Work project, built alone." } ];

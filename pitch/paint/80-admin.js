@@ -186,7 +186,7 @@
   const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + 8.2, floor + 1.95, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
   const KEYS = [[548, 612, V(DOOR_X - .3, G3 + 1.7, 4.6), V(DOOR_X + .3, G3 + 1.5, WZ + 2)], [612, 640, V(DOOR_X + .5, G3 + 1.55, -1), V(DOOR_X + .4, G3 + 1.6, WZ)],
     [640, U4[0].key, ...toolStop(U4[0].x, WF)], ...U4.slice(1, 4).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)]),
-    [925, 945, V(EXIT_X - .2, G3 + 1.65, -1), V(EXIT_X + 1.5, G3 + 1.7, 4)], [945, 985, V(EXIT_X + 1.5, G3 + 1.65, 2.2), V(EXIT_X + 8, G3 + 1.8, 0)], [985, 1035, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
+    [925, 945, V(EXIT_X - .2, G3 + 1.65, -1), V(EXIT_X + 1.5, G3 + .4, 4)], [945, 985, V(EXIT_X + 1.5, G3 + 1.65, 2.2), V(EXIT_X + 8, G3 + 1.8, 0)], [985, 1035, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
   function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cp) { shopAt(now, sv, cp); const cx = cp.x;
     edgeL.intensity = 6.5 * sm(cl((sv - 900) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
@@ -198,7 +198,7 @@
       u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0); u.parts.forEach((p, k) => p.fade(show && sec > t0 + .2 + FADE + k * .3));
-        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); } }); } // phone: on the floor below the wall, where nothing is painted
+        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (NARROW) u.el.style.top = Math.min(parseFloat(u.el.style.top), innerHeight - u.el.offsetHeight - 92) + "px"; /* above the Write to me sticker */ } }); } // phone: on the floor below the wall, where nothing is painted
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");
