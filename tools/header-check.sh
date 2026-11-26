@@ -105,6 +105,18 @@ if "'unsafe-inline'" in rule.group(1) or "'unsafe-eval'" in rule.group(1):
     sys.exit("header-check: /next's script rule allows any inline script")
 PY
 
+# caching (N-31): only the content-hashed files under /_next/static/ are cached for good; every page stays "ask again"
+# (the walk's /next/assets, /projects and /images keep fixed names, so a repainted picture must reach returning visitors: no long cache for them)
+hashed=$(cd out && find _next/static -type f -name '*.js' | sort | head -1)
+[ -n "$hashed" ] || no "no hashed script in out/_next/static to check the cache rule on"
+cc=$(curl -sI "$base/$hashed" | tr -d '\r' | grep -i '^cache-control:' || true)
+grep -qiE 'max-age=31536000' <<<"$cc" && grep -qi 'immutable' <<<"$cc" || no "/$hashed (content-hashed) is not cached for good: '${cc:-no Cache-Control}'"
+for p in / /privacy /index.html /privacy.html; do
+  cc=$(curl -sI "$base$p" | tr -d '\r' | grep -i '^cache-control:' || true)
+  grep -qiE 'immutable|max-age=([1-9])' <<<"$cc" && no "$p (a page) must not be cached for good: '$cc'"
+  grep -qiE 'no-cache|no-store|max-age=0' <<<"$cc" || no "$p (a page) has no revalidating Cache-Control: '${cc:-none}'"
+done
+
 txt=$(curl -s -w '\n%{http_code}' "$base/.well-known/security.txt")
 [ "$(tail -1 <<<"$txt")" = 200 ] || no "/.well-known/security.txt is missing"
 expires=$(grep -oP '^Expires: \K\S+' <<<"$txt" || true)
