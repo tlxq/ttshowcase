@@ -39,9 +39,14 @@
   /* the front's first screen, the code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono */
   --front-name: "Archivo", "Arial Black", sans-serif;
   --front-code: "JetBrains Mono", ui-monospace, Menlo, monospace;
-  /* The progress line (Tom 11-23): one line at the bottom and one at the top of the screen, a loop the marker runs round */
-  --look-progress: 3px;
-  --look-progress-dash: 48px;
+  /* The progress stripe (Tom 11-26, pick B): a sprayed stripe along the top that fills as you walk, the area's name stencilled under it.
+     Its height, the gap it keeps to the screen's edge, the name's size (laptop, phone) and the two colours its canvas draws. */
+  --look-stripe: 74px;
+  --look-stripe-gap: 14px;
+  --look-stripe-name: 22px;
+  --look-stripe-name-phone: 17px;
+  --look-stripe-band: rgba(10, 10, 10, 0.55);
+  --look-stripe-edge: var(--front-spray);
   /* The first screen's words: as big as fits four lines on the screen and "MYSELF." across it */
   --look-hero: min(19.5vw, 17.5svh, 158px);
   /* The four parts' names, as big as fits EXPERIMENTS across the screen, up to this */

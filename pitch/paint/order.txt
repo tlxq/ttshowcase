@@ -8,4 +8,5 @@
 60-pick.js
 70-tag-it.js
 80-admin.js
+85-stripe.js
 90-rail.js

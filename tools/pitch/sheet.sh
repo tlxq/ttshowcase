@@ -19,7 +19,7 @@ cleanup # a browser left by an interrupted run would point at a dead server
 
 # the base build: its files from git (no worktree), with this checkout's packages and fonts
 rm -rf "$sheet" && mkdir -p "$src/.cache" "$sheet"
-git archive "$base" pitch tools/pitch/build.mjs api src | tar -x -C "$src" || { echo "Couldn't copy $base's files: it may be older than the paint pitch" >&2; exit 1; }
+git archive "$base" pitch tools/pitch/build.mjs tools/pitch/paint-parts.mjs api src | tar -x -C "$src" || { echo "Couldn't copy $base's files: it may be older than the paint pitch" >&2; exit 1; }
 # this branch first: its build fetches the fonts once into .cache/fonts, which the base build borrows (a fresh worktree has none yet)
 node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
 ln -s "$root/node_modules" "$src/node_modules"; ln -s "$root/.cache/fonts" "$src/.cache/fonts"
