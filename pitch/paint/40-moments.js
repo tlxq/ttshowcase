@@ -90,8 +90,11 @@
     const ceil = new THREE.Mesh(new THREE.PlaneGeometry(RW, BD), ceilMat); ceil.rotation.x = Math.PI / 2; ceil.position.set(HX0 + RW / 2, CEIL, WZ / 2); scene.add(ceil);
     const floorM = plank(RW, BD, true); slab(HX0, CX1, G3 - .3, G3, WZ, 0, floorM);
     const edges = [HX0, DOOR_A[0], DOOR_A[1], DOOR_B[0], DOOR_B[1], CX1]; // the wall between the doors, and over each (the lintel)
-    [[0, 1], [2, 3], [4, 5]].forEach(([a, b]) => slab(edges[a], edges[b], G3 - .01, CEIL, -.3, -.001, plank(edges[b] - edges[a], RH)));
-    [[1, 2], [3, 4]].forEach(([a, b]) => slab(edges[a], edges[b], G3 + DOOR_H, CEIL, -.3, -.001, plank(edges[b] - edges[a], RH - DOOR_H)));
+    // a wall piece is a box 0.3 m thick: its narrow faces (a doorway's jambs, the underside of a lintel) get the blocks at their own size. With the one material the whole
+    // wall's width of blocks was squeezed into the 0.3 m of a jamb, which shimmered as the camera passed through the door (Tom 11-26: "where it flickers").
+    const wallPiece = (x0, x1, y0, y1) => { const w = x1 - x0, h = y1 - y0, face = plank(w, h), jamb = plank(.3, h), under = plank(w, .3); slab(x0, x1, y0, y1, -.3, -.001, [jamb, jamb, under, under, face, face]); };
+    [[0, 1], [2, 3], [4, 5]].forEach(([a, b]) => wallPiece(edges[a], edges[b], G3 - .01, CEIL));
+    [[1, 2], [3, 4]].forEach(([a, b]) => wallPiece(edges[a], edges[b], G3 + DOOR_H, CEIL));
     const ribs = (() => { const c = document.createElement("canvas"); c.width = 16; c.height = 64; const g = c.getContext("2d"); g.fillStyle = "#8a8f94"; g.fillRect(0, 0, 16, 64); g.fillStyle = "#4b4f54"; g.fillRect(0, 0, 16, 7); g.fillStyle = "#a7acb1"; g.fillRect(0, 7, 16, 3);
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.repeat.set(1, DOOR_H / .1); return t; })();
     const steel = new THREE.MeshStandardMaterial({ color: 0x7d8288, metalness: .7, roughness: .5, envMapIntensity: .6 });

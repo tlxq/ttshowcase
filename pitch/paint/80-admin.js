@@ -194,11 +194,14 @@
   const glide = (P0, L0, P1, L1, via, turn = null) => { const flat = (a, b) => Math.hypot(b.x - a.x, b.z - a.z);
     return { P0, P1, L0, L1, turn, path: new THREE.CatmullRomCurve3([V(P0.x, 0, P0.z), ...via, V(P1.x, 0, P1.z)], false, "centripetal"),
       p0: Math.atan2(L0.y - P0.y, flat(P0, L0)), p1: Math.atan2(L1.y - P1.y, flat(P1, L1)), h0: Math.atan2(L0.x - P0.x, P0.z - L0.z), h1: Math.atan2(L1.x - P1.x, P1.z - L1.z), d0: flat(P0, L0), d1: flat(P1, L1) }; };
-  function glideAt(w, t, cp, look) { const u = sm(t), at = w.path.getPointAt(u), y = w.P0.y + (w.P1.y - w.P0.y) * u;
+  // (Tom 11-26: "so we don't get stuck") the pace is the street rail's: slow at the two stops, GLIDE_SLOW of its speed, but never standing still while the visitor scrolls.
+  // It was a smoothstep, which crawls to nothing at both ends: a swipe just after a stop moved the camera almost not at all.
+  const GLIDE_SLOW = .35, glideEase = t => t - (1 - GLIDE_SLOW) * Math.sin(2 * Math.PI * t) / (2 * Math.PI);
+  function glideAt(w, t, cp, look) { const u = glideEase(t), at = w.path.getPointAt(u), y = w.P0.y + (w.P1.y - w.P0.y) * u;
     const h = w.h0 + (w.h1 - w.h0) * u + turnAt(w.turn, u), d = w.d0 + (w.d1 - w.d0) * u;
     cp.set(at.x, y, at.z); look.set(at.x + Math.sin(h) * d, y + Math.tan(w.p0 + (w.p1 - w.p0) * u) * d, at.z - Math.cos(h) * d); }
   // in: from raddavarfruberga's stop (CAM.F: the camera stands there from sv 540 on) to ttoolbox's, facing the back wall all the way
-  const IN_A = 548, IN_B = U4[0].key, IN_END = toolStop(U4[0].x, WF); let inWay = null;
+  const IN_A = 540, IN_B = U4[0].key, IN_END = toolStop(U4[0].x, WF); let inWay = null;
   function wayIn(sv, cp, look) { const t = cl((sv - IN_A) / (IN_B - IN_A)); if (t <= 0) return;
     if (!inWay) { const [P0, L0] = CAM.F, [P1, L1] = IN_END; inWay = glide(P0, L0, P1, L1, [V(DOOR_X - .2, 0, 4.2), V(DOOR_X + .1, 0, .4), V(DOOR_X + .9, 0, -1.2)]); }
     glideAt(inWay, t, cp, look); }
@@ -206,7 +209,7 @@
   // pavement outside the door, so the view fell to the floor, swung round and looked out over the street at nothing. Now the camera walks out through the middle of the
   // door with its head turned back to the lit workshop (the tools, the paintings; the room's end wall and the corner are bare, so they are never what it faces, and the
   // street has no sky behind it), then turns to the lit fence, along it first, then on to EDGE's stop.
-  const OUT_A = 855, OUT_B = 965, OUT_FROM = toolStop(U4[2].x, WF); let outWay = null; const OUT_TURN = [[0, 0], [.22, -.5], [.5, -.5], [.78, 1.15], [1, 0]];
+  const OUT_A = U4[2].key, OUT_B = 965, /* it sets off at tthermal's stop: no stretch of scroll where nothing moves */ OUT_FROM = toolStop(U4[2].x, WF); let outWay = null; const OUT_TURN = [[0, 0], [.22, -.5], [.5, -.5], [.78, 1.15], [1, 0]];
   function wayOut(sv, cp, look) { const t = cl((sv - OUT_A) / (OUT_B - OUT_A)); if (t <= 0) return;
     if (!outWay) { const [P0, L0] = OUT_FROM, [P1, L1] = EDGE_STOP; outWay = glide(P0, L0, P1, L1, [V(EXIT_X - 1.6, 0, -1.1), V(EXIT_X, 0, .5), V(EXIT_X + .5, 0, 2.6)], OUT_TURN); }
     glideAt(outWay, t, cp, look); }

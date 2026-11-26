@@ -28,13 +28,15 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
       if (p < Math.min(p0, p1) - 1.5 || p > Math.max(p0, p1) + 1.5) errs.push(name + ', the camera tips at sv ' + sv + ': looks ' + p + ' degrees (the stops: ' + p0 + ', ' + p1 + ')');
     }
     const all = way.slice(1).map(([, [c]], i) => Math.hypot(c[0] - way[i][1][0][0], c[2] - way[i][1][0][2])), top = Math.max(...all), on = all.map(d => d > .05 * top), from = on.indexOf(true), to = on.lastIndexOf(true);
+    { const mean = all.reduce((a, d) => a + d, 0) / all.length, i = all.findIndex(d => d < .2 * mean); // (Tom 11-26: "so we don't get stuck") between its two stops the camera never stands still while the visitor scrolls
+      if (i >= 0) errs.push(name + ', the scroll moves the camera almost not at all at sv ' + way[i][0] + '-' + way[i + 1][0] + ': ' + all[i].toFixed(2) + ' m in 4 sv (the mean is ' + mean.toFixed(2) + '): it feels stuck'); }
     const step = all.slice(from, to + 1); // metres walked each 4 sv, from where it sets off to where it comes to rest (the stops before and after are held still): one move speeds up once and slows down once
     for (let i = 1; i < step.length - 1; i++) { const before = Math.max(...step.slice(0, i)), after = Math.max(...step.slice(i + 1));
       if (step[i] < .6 * Math.min(before, after)) { errs.push(name + ', the camera slows almost to a stop at sv ' + way[from + i + 1][0] + ' and sets off again: not one move (' + step.map(d => d.toFixed(2)).join(' ') + ')'); break; } }
     for (const [sv, [[x, , z], , , face]] of way) { // a doorway's jamb: never closer than 0.6 m; and never turned out over the street (nothing is built there: just the dark background)
       for (const jx of [62.7, 67.1]) if (name === 'going out' && Math.hypot(x - jx, Math.max(0, Math.max(-.3 - z, z))) < .6) errs.push(name + ', the camera is within 0.6 m of a door jamb at sv ' + sv + ': ' + x + ', ' + z);
       if (name === 'going out' && Math.abs(face) > 100) errs.push(name + ', the camera turns out over the street at sv ' + sv + ': faces ' + face + ' degrees (0 = the back wall, 90 = along the street, 180 = out over it)'); } };
-  await oneMove('going in', 548, 700);
+  await oneMove('going in', 540, 700);
   let g = await at(540); if (g.open > .05 || g.inside > .05) errs.push('before the workshop the garage door should be shut and the camera in the street: ' + JSON.stringify(g));
   g = await at(590); if (g.open <= .05 || g.open >= .95) errs.push('the door should be rolling up at 590: ' + JSON.stringify(g));
   g = await at(625); if (g.open < .95) errs.push('the garage door did not roll up: ' + JSON.stringify(g));
