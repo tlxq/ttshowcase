@@ -10,6 +10,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -69,6 +70,11 @@ function setup() {
     done: () => rmSync(dir, { recursive: true, force: true }),
   };
 }
+
+// 11-26: #124 dropped the script's executable bit; the desk's timer starts it directly, so the night would not run
+test("the timer can start night.sh directly", () => {
+  assert.ok(statSync(script).mode & 0o100, "tools/night.sh is not executable");
+});
 
 test("both checks run while the walk holds the GPU lock", () => {
   const t = setup();
