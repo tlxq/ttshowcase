@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 
-import { ensurePackages } from "./ensure-packages.mjs";
+import { ensurePackages, FAILED_WORDS } from "./ensure-packages.mjs";
 import { lockHash } from "./lib.mjs";
 
 function repo() {
@@ -67,11 +67,20 @@ test("a node_modules link is removed, never what it points at, and real packages
   rmSync(other, { recursive: true });
 });
 
-test("a failed install says so", () => {
+test("a failed install says so: no packages in this folder, and what to run", () => {
   const dir = repo();
+  const said = [];
   assert.equal(
-    ensurePackages(dir, () => 1, quiet),
+    ensurePackages(
+      dir,
+      () => 1,
+      quiet,
+      (t) => said.push(t),
+    ),
     "failed",
   );
+  assert.deepEqual(said, [FAILED_WORDS]);
+  assert.match(FAILED_WORDS, /no packages/);
+  assert.match(FAILED_WORDS, /mise run install/);
   rmSync(dir, { recursive: true });
 });
