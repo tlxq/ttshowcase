@@ -192,13 +192,17 @@
     edgeL.intensity = 5 * sm(cl((sv - 850) / 40)); siteM.emissiveIntensity = 2.6 * sm(cl((sv - 850) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
     scene.fog.color.copy(FOG0); sky.color.copy(SKY0);
     const FADE = .8; // seconds a painting takes to come up on its wall
-    U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && sv < u.leave + 15;
+    // (Tom 11-26) a production piece keeps its numbers and plate while it is in view, not only at its stop: inView is how much of its painted box is on the screen
+    const seen = u => { const [ax, , oa] = proj(u.B.at(u.bb[0], u.bb[3])), [bx, , ob] = proj(u.B.at(u.bb[2], u.bb[3])); return oa && ob ? Math.max(0, Math.min(innerWidth, bx) - Math.max(0, ax)) / Math.max(1, bx - ax) : 0; };
+    const inGarage = sv > U4[0].key - 14 && sv < 875, view = U4.map(u => u.tile && inGarage ? seen(u) : 0), most = view.indexOf(Math.max(...view)); // the plate: only the piece most in view has one
+    U4.forEach((u, i) => { const near = u.tile ? view[i] > .5 : Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = u.tile ? inGarage : sv > u.key - 14 && sv < u.leave + 15;
       if (introOver && sv > u.key - 14 && !u.start && u.B.ready() && (!u.O || u.O.ready()) && (!u.X || u.X.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1, t0 = .35, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / FADE)), shown = k >= 1;
       if (k > 0 && !u.B.ready()) root.dataset.pops = (+root.dataset.pops || 0) + 1; u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.X) { u.X.m.visible = k > 0; u.X.m.material.opacity = k; } if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
-      if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0); u.parts.forEach((p, k) => p.fade(show && sec > t0 + .2 + FADE + k * .3));
-        if (show) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - 112, 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (show && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
+      if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE, plate = show && (!u.tile || i === most); [u.el, u.l, u.c].forEach(e => e.style.opacity = plate ? 1 : 0);
+        u.on = u.tile ? here && shown && (u.on ? view[i] > 0 : view[i] > .5) : show; u.parts.forEach((p, k) => p.fade(u.on && sec > t0 + .2 + FADE + k * .3)); // numbers sprayed on stay while any of the piece is on the screen
+        if (plate) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - 112, 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (plate) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (plate && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");

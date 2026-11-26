@@ -220,15 +220,15 @@
   const tool = (x, key, name, link, plate, more) => Object.assign({ x, key, leave: key + 25, floor: WF, zw: WZ, name, links: link ? [{ t: "Code for " + link, href: GHUB + link }] : [], plate }, more);
   // the Toolbox production (Tom 11-26, A5): ONE see-through strip, 5300 x 960 px, painted on the desk's graphics card, cut into four webp tiles (the title tile, then a tile for each piece).
   // The stack words are painted into it as small tags; the live numbers are sprayed in the bare wall above each piece. PK metres a pixel, PC where each piece's middle stands.
-  // positions from toolbox-final.json (strip pixels): the camera stop of each piece, its painted box, link mark and the bare areas for the live numbers
+  // positions from toolbox-final.json (strip pixels): the camera stop of each piece, its painted box, link mark, the bare areas for the live numbers (11-26: 30 px clear of the topmost cloud, 150 px tall, ttoolbox's right one 120, so it stays clear of the screen's top) and the painted words (title, tags: no label may cover them)
   // the tiles are cut at strip x 1130, 2450 and 3750 and overlap 48 px each way (they share the paint there, so no seam; a tile alone ends in overspray); each is laid at its own pixel size
   const STRIP_S = [0, 1082, 2402, 3702], TILE_TW = [1178, 1416, 1396, 1598], STOP = [[1767, 505], [3144, 620], [4398, 615]],
-    prod = (n, key, link, plate, mark, painted, nums) => { const s0 = STRIP_S[n], sh = r => [r[0] - s0, r[1], r[2] - s0, r[3]]; return tool(PC[n - 1], key, ["", "ttoolbox", "dot", "tthermal"][n], link, plate,
-      { tile: n, px: [TILE_TW[n], 960], nums: nums.map(sh), art: [`assets/toolbox_${n}.webp`, TILE_TW[n] * .00385, TILE_TW[n] * .0022, [STOP[n - 1][0] - s0, STOP[n - 1][1]], 2.1 - (STOP[n - 1][1] - 480) * PK, [sh(painted)]], marks: [sh(mark)] }); };
+    prod = (n, key, link, plate, mark, painted, nums, text) => { const s0 = STRIP_S[n], sh = r => [r[0] - s0, r[1], r[2] - s0, r[3]]; return tool(PC[n - 1], key, ["", "ttoolbox", "dot", "tthermal"][n], link, plate,
+      { tile: n, px: [TILE_TW[n], 960], nums: nums.map(sh), text: text.map(sh), art: [`assets/toolbox_${n}.webp`, TILE_TW[n] * .00385, TILE_TW[n] * .0022, [STOP[n - 1][0] - s0, STOP[n - 1][1]], 2.1 - (STOP[n - 1][1] - 480) * PK, [sh(painted)]], marks: [sh(mark)] }); };
   const U4 = [
-    prod(1, 700, "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.", [1187, 315, 2347, 762], [1130, 323, 2470, 885], [[1170, 150, 1549, 320], [1986, 150, 2430, 320]]),
-    prod(2, 770, "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.", [2547, 335, 3740, 790], [2430, 323, 3770, 885], [[2470, 150, 2750, 340], [3450, 150, 3730, 340]]),
-    prod(3, 840, "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.", [3714, 333, 5083, 761], [3730, 323, 5070, 877], [[3770, 150, 4050, 338], [4750, 150, 5030, 338]]),
+    prod(1, 700, "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.", [1187, 315, 2347, 762], [1130, 323, 2470, 885], [[1090, 72, 1540, 222], [1995, 4, 2470, 124]], [[1564, 130, 1971, 350], [1341, 770, 1739, 860], [1879, 790, 2121, 880]]),
+    prod(2, 770, "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.", [2547, 335, 3740, 790], [2430, 323, 3770, 885], [[2470, 46, 2950, 196], [3250, 38, 3730, 188]], [[2594, 775, 2746, 865], [2836, 795, 3025, 885], [3111, 775, 3439, 865], [3520, 799, 3715, 881]]),
+    prod(3, 840, "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.", [3714, 333, 5083, 761], [3730, 323, 5070, 877], [[3770, 57, 4250, 207], [4590, 59, 5070, 209]], [[3938, 770, 4112, 860], [4340, 794, 4520, 877], [4656, 770, 4814, 860]]),
     { x: 75, key: 990, leave: 1045, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       art: ["assets/edge_wall.webp", 6.6, 3.5, [714, 518], 1.9, [[20, 200, 1409, 745], ...EDGE_V.areas]], ov: EDGE_V.ov, marks: EDGE_V.marks,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base. Work project, built alone." } ];
@@ -238,8 +238,10 @@
     { const [key, colour, stack0] = { "Self-hosted platform": ["self", "#2d3a5c", ["TypeScript", "Next.js", "Hono", "SQLite", "Java", "Docker", "Caddy", "Tailscale"]], ttoolbox: ["ttoolbox", "#c8402a", ["Claude Code", "Python", "Bash"]],
         dot: ["dot", "#25407a", ["Bash", "bats", "GNU Stow", "mise"]], tthermal: ["tthermal", "#d8435f", ["JavaScript", "QML", "Shell"]], "app-utveckling.se": ["edge", "#1f5fc4", ["Astro", "TypeScript"]] }[u.name];
       const stack = u.painted || u.tile ? [] : stack0, yb = u.B.at(0, u.bb[3]).y; // painted: the picture has its stack written in // beside the painting on a laptop; under it, above the floor, on a phone
-      if (u.tile) { // (Tom 11-26) the production: the live numbers in the bare wall above the piece (the stack words are painted into the strip)
-        u.parts = (LIVE[key] || []).map((_, i) => makeSpray({ key, only: i, name: u.name + "'s number " + (i + 1), colour: "#f3ead8", piece: colour, font: '"Clash Display", sans-serif', weight: 700, stack: [], row: true, zw: u.zw, z: .004,
+      if (u.tile) { // (Tom 11-26) the production: the live numbers sprayed in the bare wall above the piece, clear of its clouds and words (the stack words are painted into the strip),
+        // in painted digits and words (assets/epa_glyphs.webp, the tag hand epaRadar's numbers use), outlined and shadowed like the production's own tags
+        const GW = { commits: [["commits"]], tests: [["tests"]], skills: [["skills"]], "merged pull requests": [["merged"], ["pull requests"]] };
+        u.parts = (LIVE[key] || []).map((s, i) => makeSpray({ key, only: i, name: u.name + "'s number " + (i + 1), colour: "#f3ead8", piece: colour, glyphs: { words: GW[s.word[1]] }, stack: [], zw: u.zw, z: .004,
           rect: ((p, q, p1, q1) => [u.B.at(p, 0).x, u.B.at(0, q1).y, u.B.at(p1, 0).x, u.B.at(0, q).y])(...u.nums[i]) })); }
       else if (N_) { // (Tom 11-19) phone: under the painting, above the floor: the numbers big in the piece's style, then each tool its own tag, staggered
         const z = (u.art[6] || 0) + .004, zw = u.zw, top = yb - .04, bot = u.floor + .06, hg = top - bot, nums = (LIVE[key] || []).length, nh = nums ? hg * .58 : 0, long = (LIVE[key] || []).some(s => s.word[1].length > 12);

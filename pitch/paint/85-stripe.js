@@ -1,7 +1,7 @@
   // ---- The progress stripe (Tom 11-26, pick B; it replaced the 3px line and its blue dash): a sprayed stripe along the top of the screen that fills as you
   // walk, with the area's name stencilled under it. The walk's three areas (Tom 11-26): Side projects (epaRadar, raddavarfruberga), Toolbox (Self-hosted,
   // ttoolbox, dot, tthermal), Client work (EDGE). Its sizes and colours are tokens (--look-stripe*); a screen reader hears the area as the bar's value text.
-  const STRIPE_AREAS = [["Side projects", 0, 128], ["Toolbox", 590, 700], ["Client work", 990, 1045]]; // name, where the area starts (sv), its first stop
+  const STRIPE_AREAS = [["Side projects", 0, 128], ["Toolbox", 590, 700], ["Client work", 875, 1045]]; // name, where the area starts (sv: Client work at the garage's back door, so it is named all the way to EDGE), its first stop
   const stripeNav = document.createElement("nav"); stripeNav.className = "stripe"; stripeNav.setAttribute("role", "progressbar"); stripeNav.setAttribute("aria-label", "Where you are in the walk");
   stripeNav.setAttribute("aria-valuemin", "0"); stripeNav.setAttribute("aria-valuemax", "100"); document.body.append(stripeNav);
   const stripeCanvas = document.createElement("canvas"); stripeCanvas.setAttribute("aria-hidden", "true"); stripeNav.append(stripeCanvas);
