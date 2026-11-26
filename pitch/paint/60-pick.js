@@ -26,10 +26,11 @@
   const hlEl = document.createElement("div"); hlEl.className = "hl"; hlEl.setAttribute("aria-hidden", "true"); document.querySelector(".hud").append(hlEl);
   const HOTL = [], PULSE = NARROW || matchMedia("(pointer: coarse)").matches, hostOf = h => h.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
   const labelOf = el => el.protocol === "mailto:" ? "Opens your email" : el.hostname === "github.com" ? "Opens GitHub" : el.hostname.includes("linkedin") ? "Opens LinkedIn" : "Opens " + hostOf(el.href);
-  const hotOn = (el, label, glow) => { el.dataset.hl = label; HOTL.push({ el, label, glow }); };
+  const hotOn = (el, label, glow, avoid) => { el.dataset.hl = label; HOTL.push({ el, label, glow, avoid }); }; // avoid: the painted words round the mark (screen boxes), which its label must not cover
+  const boxesOn = (B, boxes) => () => boxes.map(([x0, y0, x1, y1]) => { const [ax, ay] = proj(B.at(x0, y0)), [bx, by] = proj(B.at(x1, y1)); return [Math.min(ax, bx), Math.min(ay, by), Math.max(ax, bx), Math.max(ay, by)]; });
   { EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAN, b, i ? { rect: true, colour: "#ffffff", fill: 0, hole: 1 } : { rect: true })));
     hotOn(hot3, labelOf(hot3), RVF_GLOW());
-    U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}))));
+    U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), u.tile ? { build() {}, pulse: -1, op: 0, mesh: null } /* the production's words are the link: no glow over them (it hazed the piece on a phone) */ : makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}), u.text && boxesOn(u.B, [...u.text, ...u.nums]))));
     const leaveHot = document.getElementById("leave");
     hotOn(leaveHot, "Leave your tag", { build() {}, pulse: -1, op: 0, mesh: null }); // a real can: its tap area is the can itself, no glow drawn from paint
     endS.hots = { leaveHot }; }
@@ -73,7 +74,13 @@
       g.op += (target - g.op) * (REDUCED ? 1 : Math.min(1, dt * 10)); if (g.mesh) { g.mesh.material.opacity = g.op; g.mesh.visible = g.op > .01 && !g.gone; } if (on && h.label) act = h; }
     if (!act && endS.show) { const h = HOTL.find(h => h.el === endS.hots.leaveHot); if (h && h.el.style.display === "block") { act = h; act.below = true; } } // the can says what it is without a hover: a phone has none (design review 11-23)
     if (act) { const r = act.el.getBoundingClientRect(); hlEl.textContent = act.label; hlEl.classList.add("on"); const lw = hlEl.offsetWidth, lh = hlEl.offsetHeight;
-      hlEl.style.left = cl((r.left + r.right) / 2 - lw / 2, 8, innerWidth - lw - 8) + "px"; hlEl.style.top = (act.below || r.top - lh - 8 < 8 ? r.bottom + 8 : r.top - lh - 8) + "px"; act.below = false; } else hlEl.classList.remove("on"); }
+      // over the mark (under it for the can), its middle first, then its ends; where painted words sit round the mark (act.avoid), also just over or under each
+      // of them, the nearest first. The first place that covers none of them, nor the mark's own painted word, wins.
+      const words = act.avoid ? [[r.left, r.top, r.right, r.bottom], ...act.avoid()] : [], clear = (x, y) => words.every(([a, b, c, d]) => x + lw + 6 < a || x - 6 > c || y + lh + 6 < b || y - 6 > d);
+      const xs = [(r.left + r.right) / 2 - lw / 2, r.left, r.right - lw].map(x => cl(x, 8, innerWidth - lw - 8)), off = y => y + lh < r.top ? r.top - y - lh : y > r.bottom ? y - r.bottom : 0;
+      const ys = [...(act.below ? [r.bottom + 8, r.top - lh - 8] : [r.top - lh - 8, r.bottom + 8]), ...words.flatMap(([, b, , d]) => [b - lh - 8, d + 8]).sort((a, b) => off(a) - off(b))].filter(y => y >= 8 && y + lh <= innerHeight - 8);
+      let at = null; for (const y of ys.length ? ys : [r.bottom + 8]) { for (const x of xs) if (clear(x, y)) { at = [x, y]; break; } if (at) break; }
+      at ||= [xs[0], ys[0] ?? r.bottom + 8]; hlEl.style.left = at[0] + "px"; hlEl.style.top = at[1] + "px"; act.below = false; } else hlEl.classList.remove("on"); }
   // Leave your tag (Tom 11-17, PR5 pick the spot): from the form the camera steps back to a wide shot of the whole wall a visitor may tag:
   // the visitor stretch left of the opening and the opening wall itself, where the bucket pours, so the tags greet everyone who arrives.
   // Lit = may be tagged; dark = kept clear (the title, the line's run to the drain, the bucket's ledge). Tap a lit part: that is the spot (Tom 11-18:

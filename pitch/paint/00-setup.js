@@ -52,9 +52,9 @@
     m.customProgramCacheKey = () => "wallBump"; return m; };
   // downhill (Tom 11-16: scrolling down should go down): the street steps down 1.8 m twice, between the scenes
   const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, STAIRS = [[5, 8, GROUND, G2], [19.3, 22.3, G2, G3]], NSTEP = 12;
-  // the workshop (storyboard 5; Tom 11-17: you go in like a "brunn", a manhole). A room under the street from HX0 to CX1; a round cover on the
-  // pavement by the wall at MX_IN slides aside, a ladder goes down a shaft into it; at MX_OUT a second shaft climbs out. MR: the shaft's radius,
-  // MZ: its centre from the wall. DY: the room's ceiling (the ground above is 1.5 m deep), WF: its floor. The street stays at G3 from here on.
+  // the workshop (Tom 11-26: a garage workshop, not a way down under the ground). A room built behind the street wall from HX0 to CX1: BD deep, RH high, its
+  // floor the street's (WF = G3). A garage door in the street wall (DOOR_A) rolls up as you come; the far one (DOOR_B) is open, the way out. The four tools'
+  // walls hang on the room's back wall, at z = WZ. The street stays at G3 all along.
   const SV_END = 1180, LOOP = 60, SV_MAX = SV_END + LOOP; document.documentElement.dataset.svEnd = SV_END; // the scroll at the page's end, in vh; the checks read it. LOOP (Tom 11-23): past the end the camera steps back to the start's view in the same light, and the page is at the start again
   // the walk is a loop (Tom 11-17): after the pour the page parks UP vh down; scrolling up from there turns the camera left to the visitor wall.
   // upPx: the park in pixels, from the track's own height (a phone's vh and innerHeight differ while its address bar moves)
@@ -62,7 +62,7 @@
   // the scroll's own pace (R2, Tom 11-24: "a lot of scrolling"): the walk keeps its own count (sv, 0..SV_MAX: every moment, light and check is set in it),
   // but the page is shorter: a wall holds ~20-25 vh of scroll, a move between walls about half what it took. PACE: [sv, vh down the page below the park];
   // straight between pairs, so a move keeps its own easing. The checks scroll with svY(sv), which reads it.
-  const PACE = [[0, 0], [60, 45], [240, 70], [304, 90], [340, 95], [416, 145], [486, 170], [529, 190], [548, 195], [612, 215], [656, 219], [700, 240], /* 612-656: through the street slab, a flick */ [725, 260], [770, 290], [795, 310],
+  const PACE = [[0, 0], [60, 45], [240, 70], [304, 90], [340, 95], [416, 145], [486, 170], [529, 190], [548, 195], [612, 217], [656, 230], [700, 248], /* 612-656: through the garage door, a little quicker */ [725, 262], [770, 290], [795, 310],
     [840, 340], [865, 360], [910, 390], [935, 410], [1045, 460], [1058, 485], [SV_MAX - 10, 535], [SV_MAX, 543]], WALK = PACE[PACE.length - 1][1];
   const paceOf = (v, a, b) => { if (v <= PACE[0][a]) return PACE[0][b]; for (let i = 1; i < PACE.length; i++) if (v <= PACE[i][a]) { const [p, q] = [PACE[i - 1], PACE[i]]; return p[b] + (q[b] - p[b]) * (v - p[a]) / (q[a] - p[a]); } return PACE[PACE.length - 1][b]; };
   const UP = 90, TOP = 50, PAGE = TOP + UP + WALK + 100, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / PAGE, topPx = () => track.offsetHeight * TOP / PAGE;
@@ -70,9 +70,13 @@
   window.visitY = () => topPx(); // the visitors' wall in pixels; the checks scroll with this
   let up0 = 0, endVisit = 0; // the park at the last frame; how far the end has walked in to the visitors' wall (0..1)
   window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * paceOf(sv, 0, 1) / WALK; // the checks scroll with this
-  const HX0 = 35, CX1 = 66, MX_IN = 36.8, MX_OUT = 64, MZ = 1.1, MR = .42, RZ = 9, DY = G3 - 1.5, WF = G3 - 4.5, END_X = 104;
+  const HX0 = 34.5, CX1 = 67.5, BD = 9.5, RH = 4.4, WZ = -BD, WF = G3, DOOR_A = [35.6, 40.6], DOOR_B = [62.7, 67.1], DOOR_H = 3.3, END_X = 104;
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
   const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, WW / TILE, (WH + 2 * TILE) / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), roughnessMap: tex("assets/wall4_rough.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), aoMap: tex("assets/wall4_ao.jpg", false, WW / TILE, (WH + 2 * TILE) / TILE), color: 0xc9ccd0, envMapIntensity: .3, normalScale: new THREE.Vector2(.7, .7) }));
+  // the two garage doors' openings, cut through the street wall (the room's own front wall frames them, see the workshop)
+  wall.material.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvWP = (modelMatrix * vec4(transformed, 1.)).xyz;");
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vWP;").replace("#include <map_fragment>", `#include <map_fragment>
+      if (vWP.y > ${(G3 - .3).toFixed(2)} && vWP.y < ${(G3 + DOOR_H).toFixed(2)} && ((vWP.x > ${DOOR_A[0]} && vWP.x < ${DOOR_A[1]}) || (vWP.x > ${DOOR_B[0]} && vWP.x < ${DOOR_B[1]}))) discard;`); };
   wall.position.set(WX, GROUND - 2 * TILE + (WH + 2 * TILE) / 2, 0); wall.receiveShadow = true; scene.add(wall); // reaches down to the workshop floor
   // the bare stretch left of the visitors' wall (R3): the page's top starts on it; its twin past EDGE ends the walk on the same view
   const WALL_ADD = (x0, x1, yb, yt, shift) => { const w = x1 - x0, h = yt - yb, ox = (x0 - shift.x - (WX - WW / 2)) / TILE, oy = (yb - shift.y - (GROUND - 2 * TILE)) / TILE, rx = w / TILE, ry = h / TILE, g = new THREE.PlaneGeometry(w, h); g.setAttribute("uv2", g.attributes.uv);
@@ -80,7 +84,6 @@
     m.position.set((x0 + x1) / 2, yb + h / 2, 0); m.receiveShadow = true; scene.add(m);
     const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, envMapIntensity: .3 })); cap.position.set((x0 + x1) / 2, yt - .02, -.17); scene.add(cap); return m; };
   const bareL = WALL_ADD(-39, WX - WW / 2, GROUND - 2 * TILE, GROUND + WH, V());
-  const MANHOLE_CUT = `if (vWP.y > ${(G3 - 1.6).toFixed(2)} && min(length(vWP.xz - vec2(${MX_IN.toFixed(2)}, ${MZ.toFixed(2)})), length(vWP.xz - vec2(${MX_OUT.toFixed(2)}, ${MZ.toFixed(2)}))) < ${MR.toFixed(3)}) discard;`; // the two shafts through the street and the ceiling
   const PROF = (() => { const pts = [[-40, GROUND]]; for (const [a, b, h0, h1] of STAIRS) { const t = (b - a) / NSTEP, r = (h0 - h1) / NSTEP;
       pts.push([a, h0]); for (let k = 0; k < NSTEP; k++) { pts.push([a + k * t, h0 - (k + 1) * r], [a + (k + 1) * t, h0 - (k + 1) * r]); } } pts.push([END_X, G3]); return pts; })();
   const groundAt = x => { let h = GROUND; for (const [a, b, h0, h1] of STAIRS) { if (x >= b) h = h1; else if (x >= a) h = h0 - (Math.floor((x - a) / ((b - a) / NSTEP)) + 1) * (h0 - h1) / NSTEP; } return h; };
@@ -106,7 +109,6 @@
       float gn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(gh(i), gh(i + vec2(1, 0)), f.x), mix(gh(i + vec2(0, 1)), gh(i + vec2(1, 1)), f.x), f.y); }
       float gf(vec2 p) { float a = .5, s = 0.; for (int i = 0; i < 5; i++) { s += a * gn(p); p = p * 2.03 + 11.7; a *= .5; } return s; }`)
       .replace("#include <map_fragment>", `#include <map_fragment>
-        ${MANHOLE_CUT}
         float jx = abs(fract((vWP.x - .13) / 1.2 + .5) - .5) * 1.2, jz = abs(fract(vWP.z / 1.2 + .5) - .5) * 1.2, aw = fwidth(vWP.x) + fwidth(vWP.z);
         gRoad = smoothstep(${CURB_Z.toFixed(2)} + .32, ${CURB_Z.toFixed(2)} + .36, vWP.z);
         gJoint = (1. - gRoad) * (1. - smoothstep(.012, .012 + aw, min(jx, jz))) * step(.15, vWP.z);
