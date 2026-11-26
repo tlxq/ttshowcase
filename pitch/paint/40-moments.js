@@ -64,7 +64,7 @@
   const floorTex = () => { const W = 1024, c = document.createElement("canvas"); c.width = c.height = W; const g = c.getContext("2d"), rnd = rngOf(5);
     g.fillStyle = "#6c7074"; g.fillRect(0, 0, W, W); for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "255,255,255" : "20,20,24"},${.02 + rnd() * .04})`; g.fillRect(rnd() * W, rnd() * W, 20 + rnd() * 90, 8 + rnd() * 30); }
     g.strokeStyle = "rgba(30,32,36,.55)"; g.lineWidth = 2; g.strokeRect(0, 0, W, W); // saw cuts
-    for (let i = 0; i < 6; i++) { const x = rnd() * W, y = rnd() * W, r = 30 + rnd() * 90, gd = g.createRadialGradient(x, y, 2, x, y, r); gd.addColorStop(0, "rgba(14,12,10,.7)"); gd.addColorStop(.6, "rgba(20,18,14,.35)"); gd.addColorStop(1, "rgba(20,18,14,0)"); g.fillStyle = gd; g.beginPath(); g.ellipse(x, y, r, r * (.6 + rnd() * .3), rnd() * 3, 0, 6.3); g.fill(); } // oil
+    for (let i = 0; i < 14; i++) { const x = rnd() * W, y = rnd() * W, r = 10 + rnd() * rnd() * 90, gd = g.createRadialGradient(x, y, 1, x, y, r); gd.addColorStop(0, `rgba(14,12,10,${.25 + rnd() * .4})`); gd.addColorStop(.6, `rgba(20,18,14,${.1 + rnd() * .2})`); gd.addColorStop(1, "rgba(20,18,14,0)"); g.fillStyle = gd; g.beginPath(); g.ellipse(x, y, r, r * (.6 + rnd() * .3), rnd() * 3, 0, 6.3); g.fill(); } // oil
     g.lineCap = "round"; for (let i = 0; i < 3; i++) { const x0 = rnd() * W, y0 = rnd() * W; for (const o of [0, 26]) { g.strokeStyle = "rgba(25,25,28,.38)"; g.lineWidth = 11; g.beginPath(); g.moveTo(x0 + o, y0); g.bezierCurveTo(x0 + o + 120, y0 + 80, x0 + o + 260, y0 + 60, x0 + o + 420, y0 + 190); g.stroke(); } } // tyre marks
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
   const BLOCK_T = blockTex(), FLOOR_T = floorTex(), cloneT = (t, rx, ry) => { const q = t.clone(); q.needsUpdate = true; q.repeat.set(rx, ry); return q; };
@@ -73,7 +73,7 @@
   const ceilMat = new THREE.MeshStandardMaterial({ color: 0xb9b5ab, roughness: .95 });
   const plank = (w, h, horiz) => horiz ? floorMat(w, h) : wallMat(w, h); // (the old name: every caller says wall, or floor when horiz)
   const RW = CX1 - HX0, CEIL = G3 + RH, DOORS = [DOOR_A, DOOR_B], SHOP_WARM = 0xf3f1ff;
-  const PK = NARROW ? .0021 : .00385, PX0 = NARROW ? 40.5 : 37.5, PC = [1800, 3100, 4400].map(c => PX0 + c * PK); // the production's strip: metres a pixel, where it starts, the x of each piece's middle
+  const PK = NARROW ? .0024 : .00385, PX0 = NARROW ? 40.5 : 37.5, PC = [1800, 3100, 4400].map(c => PX0 + c * PK); // the production's strip: metres a pixel, where it starts, the x of each piece's middle
   const shop = { open: 0, lit: 0, ins: 0, panel: null, screen: null }; // open: how far door A has rolled up (0..1); lit: the workshop's own light (0..1); ins: how far the camera is inside (0..1)
   const woodM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }), metalM = new THREE.MeshStandardMaterial({ color: 0x4d5156, metalness: .5, roughness: .6 });
   { // the room: floor, back wall, ceiling, the two end walls, and the street wall's inside with a thick frame round each door
@@ -130,6 +130,11 @@
     const m = new THREE.Mesh(new THREE.BoxGeometry(d, h, w), [front, side, side, side, side, side]); m.position.set(HX0 + .5, G3 + h / 2 + .06, WZ + 8.4); scene.add(m); box(.7, .06, .7, HX0 + .5, G3 + .03, WZ + 8.4, metalM); }
   { const st = new THREE.Mesh(new THREE.CylinderGeometry(.19, .17, .06, 16), woodM); st.position.set(HX0 + 1.6, G3 + .5, WZ + 3.6); scene.add(st); const lg = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .5, 6), metalM); lg.position.set(HX0 + 1.6, G3 + .25, WZ + 3.6); scene.add(lg); } // a stool
   const shelf = (x0, x1, ys, d = .5) => { for (const y of ys) box(x1 - x0, .04, d, (x0 + x1) / 2, G3 + y, WZ + d / 2 + .04, steelM); for (const x of [x0, x1]) box(.05, ys[ys.length - 1] + .1, d, x, G3 + (ys[ys.length - 1] + .1) / 2, WZ + d / 2 + .04, steelM); };
+  { const cv = document.createElement("canvas"); cv.width = cv.height = 128; const g = cv.getContext("2d"); g.fillStyle = "#f2efe6"; g.beginPath(); g.arc(64, 64, 62, 0, 6.3); g.fill(); g.strokeStyle = "#222"; g.lineWidth = 4; g.stroke(); for (let k = 0; k < 12; k++) { g.save(); g.translate(64, 64); g.rotate(k * Math.PI / 6); g.fillRect(-1.5, -58, 3, k % 3 ? 7 : 12); g.restore(); }
+    g.lineWidth = 5; g.lineCap = "round"; g.beginPath(); g.moveTo(64, 64); g.lineTo(64, 28); g.stroke(); g.lineWidth = 4; g.beginPath(); g.moveTo(64, 64); g.lineTo(88, 74); g.stroke();
+    const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; const clock = new THREE.Mesh(new THREE.CircleGeometry(.24, 28), new THREE.MeshStandardMaterial({ map: t, roughness: .6 })); clock.position.set(39.2, G3 + 3.1, WZ + .03); scene.add(clock);
+    box(.5, .7, .14, 38.3, G3 + 1.9, WZ + .08, mat(0x9aa0a4)); box(.42, .6, .02, 38.3, G3 + 1.9, WZ + .16, mat(0x868c90)); box(.12, .12, .02, 38.3, G3 + 2.1, WZ + .18, mat(0xc89a1a));
+    const sg = new THREE.Mesh(new THREE.PlaneGeometry(.5, .5), new THREE.MeshStandardMaterial({ color: 0xe0b520, roughness: .6 })); sg.rotation.z = Math.PI / 4; sg.position.set(37.7, G3 + 2.6, WZ + .03); scene.add(sg); }
   shelf(34.9, 37.2, [.4, 1.0, 1.6, 2.2]); // a steel shelf by the door end: boxes, tins of paint
   box(.6, .4, .4, 35.4, G3 + .62, WZ + .3, mat(0x9a7a4e)); box(.5, .3, .4, 36.2, G3 + .57, WZ + .3, mat(0x3a5a7a)); box(.5, .35, .4, 36.8, G3 + .6, WZ + .3, mat(0xa8a090)); for (const [x, y, c] of [[35.3, 1.1, 0xc8402a], [35.6, 1.1, 0xe8e2d0], [36.1, 1.1, 0x2f6fb3], [36.6, 1.1, 0x4a6b3a]]) { const tin = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .2, 14), mat(c)); tin.position.set(x, G3 + y + .12, WZ + .3); scene.add(tin); }
   box(.8, .4, .4, 35.8, G3 + 1.2, WZ + .3, mat(0x6b5a48)); box(.5, .3, .4, 36.6, G3 + 1.75, WZ + .3, mat(0x8e5a3a)); box(.4, .3, .35, 35.3, G3 + 2.35, WZ + .3, mat(0x5a6a7a));
@@ -194,16 +199,16 @@
   // the letters in the piece's blue, their own picture over the painting. Spray, no pen tag.
   const EDGE_X = 75, EDGE_H = 4;
   // Tom 11-24: no lamp fixture over EDGE (a lamp on a bare wall made no sense); its light stays, from the street
-  const edgeL = new THREE.SpotLight(0xffbf80, 0, 14, 1.2, 1, 1.2); edgeL.position.set(EDGE_X, G3 + EDGE_H - .2, 1.15); edgeL.target.position.set(EDGE_X, G3 + 1.7, 0); scene.add(edgeL, edgeL.target);
+  const edgeL = new THREE.SpotLight(0xffd9aa, 0, 14, 1.2, 1, 1.2); edgeL.position.set(EDGE_X, G3 + EDGE_H - .2, 1.15); edgeL.target.position.set(EDGE_X, G3 + 1.7, 0); scene.add(edgeL, edgeL.target);
   // the building site's plywood fence (Tom 11-26, simple): out of the back door, EDGE is painted on a lit plywood hoarding with orange site lamps; the site itself is the next round
   const siteM = new THREE.MeshStandardMaterial({ color: 0x201508, emissive: 0xffa040, emissiveIntensity: 0 });
   { const sheet = (() => { const c = document.createElement("canvas"); c.width = 512; c.height = 256; const g = c.getContext("2d"), rnd = rngOf(9); g.fillStyle = "#94704a"; g.fillRect(0, 0, 512, 256);
-      for (let i = 0; i < 160; i++) { g.strokeStyle = `rgba(${rnd() < .5 ? "90,56,24" : "230,190,130"},${.08 + rnd() * .14})`; g.lineWidth = 1 + rnd() * 2; g.beginPath(); const y = rnd() * 256; g.moveTo(0, y); g.bezierCurveTo(150, y + (rnd() - .5) * 14, 350, y + (rnd() - .5) * 14, 512, y + (rnd() - .5) * 10); g.stroke(); }
+      for (let i = 0; i < 160; i++) { g.strokeStyle = `rgba(${rnd() < .5 ? "90,56,24" : "230,190,130"},${.04 + rnd() * .08})`; g.lineWidth = 1 + rnd() * 2; g.beginPath(); const y = rnd() * 256; g.moveTo(0, y); g.bezierCurveTo(150, y + (rnd() - .5) * 14, 350, y + (rnd() - .5) * 14, 512, y + (rnd() - .5) * 10); g.stroke(); }
       for (let i = 0; i < 6; i++) { g.fillStyle = "rgba(60,36,14,.3)"; g.beginPath(); g.ellipse(rnd() * 512, rnd() * 256, 10 + rnd() * 30, 6 + rnd() * 14, rnd() * 3, 0, 6.3); g.fill(); }
       g.strokeStyle = "rgba(40,24,8,.8)"; g.lineWidth = 3; g.strokeRect(1, 1, 510, 254); for (const [x, y] of [[14, 14], [498, 14], [14, 242], [498, 242], [256, 14], [256, 242]]) { g.fillStyle = "rgba(40,30,20,.8)"; g.beginPath(); g.arc(x, y, 3, 0, 6.3); g.fill(); }
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.repeat.set(7, 1.5); return t; })();
     const FX0 = 68.4, FX1 = 86.4, FH = 3.6, fence = new THREE.Mesh(new THREE.PlaneGeometry(FX1 - FX0, FH), new THREE.MeshStandardMaterial({ map: sheet, roughness: .85, polygonOffset: true, polygonOffsetFactor: -1 })); fence.position.set((FX0 + FX1) / 2, G3 + FH / 2, .0012); scene.add(fence);
-    const postM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }); for (let x = FX0; x <= FX1 + .01; x += 3) { const po = new THREE.Mesh(new THREE.BoxGeometry(.12, FH + .1, .12), postM); po.position.set(x, G3 + FH / 2, .09); scene.add(po); }
+    const postM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }); for (const x of [68.4, 70.9, 79.2, 81.8, 84.4, 86.4]) { const po = new THREE.Mesh(new THREE.BoxGeometry(.12, FH + .1, .12), postM); po.position.set(x, G3 + FH / 2, .09); scene.add(po); }
     const rail = new THREE.Mesh(new THREE.BoxGeometry(FX1 - FX0, .1, .1), postM); rail.position.set((FX0 + FX1) / 2, G3 + FH + .05, .09); scene.add(rail);
     for (const x of [71.2, 79.6]) { const pole = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, FH + .8, 8), metalM), head = new THREE.Mesh(new THREE.BoxGeometry(.5, .16, .22), siteM); pole.position.set(x, G3 + (FH + .8) / 2, .5); head.position.set(x, G3 + FH + .8, .6); head.rotation.x = .3; scene.add(pole, head); } }
   const GHUB = "https://github.com/tlxq/";
@@ -217,15 +222,15 @@
   // the Toolbox production (Tom 11-26, A5): ONE see-through strip, 5300 x 960 px, painted on the desk's graphics card, cut into four webp tiles (the title tile, then a tile for each piece).
   // The stack words are painted into it as small tags; the live numbers are sprayed in the bare wall above each piece. PK metres a pixel, PC where each piece's middle stands.
   const TILE_TW = [1150, 1300, 1300, 1550], prod = (n, key, link, plate, marks, nums) => tool(PC[n - 1], key, ['', 'ttoolbox', 'dot', 'tthermal'][n], link, plate,
-    { tile: n, nums, art: [`assets/toolbox_${n}.webp`, TILE_TW[n] * .00385, TILE_TW[n] * .0021, [650, 480], 2.1, [[0, 190, 1300, 890]]], marks: [marks] });
+    { tile: n, nums, art: [`assets/toolbox_${n}.webp`, TILE_TW[n] * .00385, TILE_TW[n] * .0024, [650, 480], 2.1, [[0, 190, 1300, 890]]], marks: [marks] });
   const U4 = [
-    prod(1, 700, "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.", [40, 340, 1250, 660], [[30, 40, 420, 230], [880, 40, 1270, 230]]),
-    prod(2, 770, "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.", [110, 320, 1270, 800], [[30, 40, 420, 230], [880, 40, 1270, 230]]),
-    prod(3, 840, "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.", [50, 340, 1270, 680], [[30, 40, 420, 230], [880, 40, 1270, 230]]),
+    prod(1, 700, "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.", [60, 610, 300, 690], [[30, 40, 420, 230], [880, 40, 1270, 230]]),
+    prod(2, 770, "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.", [130, 720, 370, 800], [[30, 40, 420, 230], [880, 40, 1270, 230]]),
+    prod(3, 840, "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.", [60, 590, 300, 670], [[30, 40, 420, 230], [880, 40, 1270, 230]]),
     { x: 75, key: 990, leave: 1045, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       art: ["assets/edge_wall.webp", 6.6, 3.5, [714, 518], 1.9, [[20, 200, 1409, 745], ...EDGE_V.areas]], ov: EDGE_V.ov, marks: EDGE_V.marks,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base. Work project, built alone." } ];
-  U4.forEach((u, i) => { const [file, wL, wP, c, y, areas, z = .002] = u.art; if (u.tile === 1) { u.X = paintOn("assets/toolbox_0.webp", 1150 * (N_ ? .0021 : .00385), [0, 480], [PX0, G3 + 2.1], z, [1150, 960], WZ); u.X.m.visible = false; u.X.m.material.opacity = 0; } u.zw = u.zw || 0; u.B = paintOn(file, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z, undefined, u.zw); if (u.ov) { u.O = paintOn(u.ov, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z + .001, undefined, u.zw); u.O.m.renderOrder = 2; } areas.forEach((a, j) => u.B.protect(u.name + "'s painting" + (j ? " " + (j + 1) : ""), a));
+  U4.forEach((u, i) => { const [file, wL, wP, c, y, areas, z = .002] = u.art; if (u.tile === 1) { u.X = paintOn("assets/toolbox_0.webp", 1150 * (N_ ? .0024 : .00385), [0, 480], [PX0, G3 + 2.1], z, [1150, 960], WZ); u.X.m.visible = false; u.X.m.material.opacity = 0; } u.zw = u.zw || 0; u.B = paintOn(file, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z, undefined, u.zw); if (u.ov) { u.O = paintOn(u.ov, N_ ? wP : wL, c, [u.x, u.floor + (N_ && u.yP || y)], z + .001, undefined, u.zw); u.O.m.renderOrder = 2; } areas.forEach((a, j) => u.B.protect(u.name + "'s painting" + (j ? " " + (j + 1) : ""), a));
     u.bb = [0, 1, 2, 3].map(n => Math[n < 2 ? "min" : "max"](...areas.map(a => a[n]))); u.start = 0; // the painted area as one box
     u.links.forEach((l, j) => l.box = u.marks[j]);
     { const [key, colour, stack0] = { "Self-hosted platform": ["self", "#2d3a5c", ["TypeScript", "Next.js", "Hono", "SQLite", "Java", "Docker", "Caddy", "Tailscale"]], ttoolbox: ["ttoolbox", "#c8402a", ["Claude Code", "Python", "Bash"]],
