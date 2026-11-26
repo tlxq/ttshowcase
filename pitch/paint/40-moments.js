@@ -48,8 +48,8 @@
   // raw wood planks (Tom 11-26: the inside is warm wood, the street is cold concrete): boards 0.3 m wide, drawn once on a canvas; horizontal = across the other way (the floor)
   const plankTex = horiz => { const c = document.createElement("canvas"); c.width = c.height = 256; const g = c.getContext("2d"); let sd = horiz ? 7 : 3; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
     if (horiz) { g.translate(0, 256); g.rotate(-Math.PI / 2); }
-    for (let i = 0; i < 4; i++) { const x = i * 64, l = 52 + rnd() * 14; g.fillStyle = `hsl(${28 + rnd() * 6},${42 + rnd() * 10}%,${l}%)`; g.fillRect(x, 0, 64, 256);
-      for (let k = 0; k < 26; k++) { g.fillStyle = `rgba(60,34,14,${.05 + rnd() * .1})`; g.fillRect(x + 2 + rnd() * 58, 0, 1 + rnd() * 1.6, 256); }
+    for (let i = 0; i < 4; i++) { const x = i * 64, l = 52 + rnd() * 14; g.fillStyle = `hsl(${26 + rnd() * 6},${24 + rnd() * 8}%,${l - 10}%)`; g.fillRect(x, 0, 64, 256);
+      for (let k = 0; k < 26; k++) { g.fillStyle = `rgba(60,34,14,${.03 + rnd() * .06})`; g.fillRect(x + 2 + rnd() * 58, 0, 1 + rnd() * 1.6, 256); }
       if (rnd() < .7) { const ky = rnd() * 230 + 12, kx = x + 14 + rnd() * 36; g.fillStyle = "rgba(55,30,12,.45)"; g.beginPath(); g.ellipse(kx, ky, 4, 7, 0, 0, 6.3); g.fill(); }
       g.fillStyle = "rgba(30,16,6,.7)"; g.fillRect(x, 0, 1.6, 256); g.fillStyle = "rgba(255,225,170,.12)"; g.fillRect(x + 2, 0, 1, 256); }
     const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; return t; };
@@ -58,14 +58,14 @@
   const shop = { open: 0, lit: 0, ins: 0, panel: null, screen: null }; // open: how far door A has rolled up (0..1); lit: the workshop's own light (0..1); ins: how far the camera is inside (0..1)
   const woodM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }), metalM = new THREE.MeshStandardMaterial({ color: 0x4d5156, metalness: .5, roughness: .6 });
   { // the room: floor, back wall, ceiling, the two end walls, and the street wall's inside with a thick frame round each door
-    const wallM = plank(RW, RH, false, .5);
+    const wallM = plank(RW, RH, false, .62);
     const back = new THREE.Mesh(new THREE.PlaneGeometry(RW, RH), wallM); back.position.set(HX0 + RW / 2, G3 + RH / 2, WZ); scene.add(back);
-    for (const [x, ry] of [[HX0, Math.PI / 2], [CX1, -Math.PI / 2]]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(BD, RH), plank(BD, RH, false, .45)); m.rotation.y = ry; m.position.set(x, G3 + RH / 2, WZ / 2); scene.add(m); }
+    for (const [x, ry] of [[HX0, Math.PI / 2], [CX1, -Math.PI / 2]]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(BD, RH), plank(BD, RH, false, .55)); m.rotation.y = ry; m.position.set(x, G3 + RH / 2, WZ / 2); scene.add(m); }
     const ceil = new THREE.Mesh(new THREE.PlaneGeometry(RW, BD), plank(RW, BD, false, .5)); ceil.rotation.x = Math.PI / 2; ceil.position.set(HX0 + RW / 2, CEIL, WZ / 2); scene.add(ceil);
-    const floorM = plank(RW, BD, true, .5); slab(HX0, CX1, G3 - .3, G3, WZ, 0, floorM);
+    const floorM = plank(RW, BD, true, .6); slab(HX0, CX1, G3 - .3, G3, WZ, 0, floorM);
     const edges = [HX0, DOOR_A[0], DOOR_A[1], DOOR_B[0], DOOR_B[1], CX1]; // the wall between the doors, and over each (the lintel)
-    [[0, 1], [2, 3], [4, 5]].forEach(([a, b]) => slab(edges[a], edges[b], G3 - .01, CEIL, -.3, -.001, plank(edges[b] - edges[a], RH, false, .5)));
-    [[1, 2], [3, 4]].forEach(([a, b]) => slab(edges[a], edges[b], G3 + DOOR_H, CEIL, -.3, -.001, plank(edges[b] - edges[a], RH - DOOR_H, false, .5)));
+    [[0, 1], [2, 3], [4, 5]].forEach(([a, b]) => slab(edges[a], edges[b], G3 - .01, CEIL, -.3, -.001, plank(edges[b] - edges[a], RH, false, .62)));
+    [[1, 2], [3, 4]].forEach(([a, b]) => slab(edges[a], edges[b], G3 + DOOR_H, CEIL, -.3, -.001, plank(edges[b] - edges[a], RH - DOOR_H, false, .62)));
     const ribs = (() => { const c = document.createElement("canvas"); c.width = 16; c.height = 64; const g = c.getContext("2d"); g.fillStyle = "#8a8f94"; g.fillRect(0, 0, 16, 64); g.fillStyle = "#4b4f54"; g.fillRect(0, 0, 16, 7); g.fillStyle = "#a7acb1"; g.fillRect(0, 7, 16, 3);
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.repeat.set(1, DOOR_H / .1); return t; })();
     const steel = new THREE.MeshStandardMaterial({ color: 0x7d8288, metalness: .7, roughness: .5, envMapIntensity: .6 });
