@@ -166,7 +166,7 @@
     spill.intensity = 14 * shop.lit * (1 - .6 * shop.ins); exitL.intensity = 15 * shop.lit * sm(cl((sv - 820) / 40));
 }
   window.garageTest = () => ({ open: +shop.open.toFixed(3), lit: +shop.lit.toFixed(3), inside: +shop.ins.toFixed(3), cam: [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)], // for the garage check: the door, the light, where the camera is
-    paintings: U4.slice(0, 3).map(u => ({ name: u.name, x: u.x, shown: u.B.m.visible && u.B.m.material.opacity > .99, wall: u.zw })) });
+    paintings: U4.slice(0, 3).map(u => ({ name: u.name, x: u.x, shown: u.B.m.visible && u.B.m.material.opacity > .99, wall: u.zw, bump: !!u.B.m.material.normalMap })) }); // bump: the street concrete's joints drawn on it
   // the last wall past the climb out, lower, so the sky shows over it; the coping on top
   const XW0 = CX1 - .3, XW1 = END_X, XWT = G3 + WH;
   WALL_ADD(XW0, XW1, G3 - .6, XWT, SEAM_D); // R3: full height now, its concrete the bare stretch's by the visitors' wall, moved by SEAM_D
@@ -218,17 +218,17 @@
   const N_ = NARROW;
   const EDGE_V = { ov: "assets/edge_banner.webp", marks: [[481, 739, 1059, 821], [411, 825, 1129, 907]], areas: [[411, 739, 1129, 907]] }; // the two banners (the links): the picture over the painting, the two tap areas and the painted area, in picture pixels (left, top, right, bottom)
   const tool = (x, key, name, link, plate, more) => Object.assign({ x, key, leave: key + 25, floor: WF, zw: WZ, name, links: link ? [{ t: "Code for " + link, href: GHUB + link }] : [], plate }, more);
-  // the Toolbox production (Tom 11-26, A5): ONE see-through strip, 5300 x 960 px, painted on the desk's graphics card, cut into four webp tiles (the title tile, then a tile for each piece).
+  // the Toolbox production (Tom 11-26, A5): ONE see-through strip, 5300 x 960 px, painted on the desk's graphics card, cut into four webp tiles (the left end, then a tile for each piece).
   // The stack words are painted into it as small tags; the live numbers are sprayed in the bare wall above each piece. PK metres a pixel, PC where each piece's middle stands.
-  // positions from toolbox-final.json (strip pixels): the camera stop of each piece, its painted box, link mark, the bare areas for the live numbers (11-26: 30 px clear of the topmost cloud, 150 px tall, ttoolbox's right one 120, so it stays clear of the screen's top) and the painted words (title, tags: no label may cover them)
+  // positions from toolbox-final.json (strip pixels): the camera stop of each piece, its painted box, link mark, the bare areas for the live numbers (11-26: 150 px tall, one each side of the letters' middle, as low as the paint under them lets them, 24 px clear of it, so they stay in a short laptop window) and the painted words (the tags: no label may cover them). No painted title (Tom 11-26: the stripe says Toolbox)
   // the tiles are cut at strip x 1130, 2450 and 3750 and overlap 48 px each way (they share the paint there, so no seam; a tile alone ends in overspray); each is laid at its own pixel size
   const STRIP_S = [0, 1082, 2402, 3702], TILE_TW = [1178, 1416, 1396, 1598], STOP = [[1767, 505], [3144, 620], [4398, 615]],
     prod = (n, key, link, plate, mark, painted, nums, text) => { const s0 = STRIP_S[n], sh = r => [r[0] - s0, r[1], r[2] - s0, r[3]]; return tool(PC[n - 1], key, ["", "ttoolbox", "dot", "tthermal"][n], link, plate,
       { tile: n, px: [TILE_TW[n], 960], nums: nums.map(sh), text: text.map(sh), art: [`assets/toolbox_${n}.webp`, TILE_TW[n] * .00385, TILE_TW[n] * .0022, [STOP[n - 1][0] - s0, STOP[n - 1][1]], 2.1 - (STOP[n - 1][1] - 480) * PK, [sh(painted)]], marks: [sh(mark)] }); };
   const U4 = [
-    prod(1, 700, "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.", [1187, 315, 2347, 762], [1130, 323, 2470, 885], [[1090, 72, 1540, 222], [1995, 4, 2470, 124]], [[1564, 130, 1971, 350], [1341, 770, 1739, 860], [1879, 790, 2121, 880]]),
-    prod(2, 770, "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.", [2547, 335, 3740, 790], [2430, 323, 3770, 885], [[2470, 46, 2950, 196], [3250, 38, 3730, 188]], [[2594, 775, 2746, 865], [2836, 795, 3025, 885], [3111, 775, 3439, 865], [3520, 799, 3715, 881]]),
-    prod(3, 840, "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.", [3714, 333, 5083, 761], [3730, 323, 5070, 877], [[3770, 57, 4250, 207], [4590, 59, 5070, 209]], [[3938, 770, 4112, 860], [4340, 794, 4520, 877], [4656, 770, 4814, 860]]),
+    prod(1, 700, "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.", [1187, 315, 2347, 762], [1130, 323, 2470, 885], [[1120, 81, 1600, 231], [2107, 55, 2587, 205]], [[1341, 770, 1739, 860], [1879, 790, 2121, 880]]),
+    prod(2, 770, "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.", [2547, 335, 3740, 790], [2430, 323, 3770, 885], [[2622, 92, 3102, 242], [3183, 45, 3663, 195]], [[2594, 775, 2746, 865], [2836, 795, 3025, 885], [3111, 775, 3439, 865], [3520, 799, 3715, 881]]),
+    prod(3, 840, "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.", [3714, 333, 5083, 761], [3730, 323, 5070, 877], [[3875, 65, 4355, 215], [4438, 67, 4918, 217]], [[3938, 770, 4112, 860], [4340, 794, 4520, 877], [4656, 770, 4814, 860]]),
     { x: 75, key: 990, leave: 1045, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       art: ["assets/edge_wall.webp", 6.6, 3.5, [714, 518], 1.9, [[20, 200, 1409, 745], ...EDGE_V.areas]], ov: EDGE_V.ov, marks: EDGE_V.marks,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base. Work project, built alone." } ];

@@ -3,6 +3,7 @@
 // painted in front of its stop, "Toolbox" is not stencilled on the wall, the camera is not inside at each stop, or the way out at the far end leaves it inside. Page errors and three.js warnings fail it too.
 // The live numbers (Tom 11-26): the site's /api/github answers with fixed counts here; each piece's two numbers must be painted (painted digits, with paint on them) at its stop,
 // and ttoolbox's must still be on the wall between ttoolbox and dot (they stay while the piece is in view, not only at its stop).
+// No Toolbox painting may carry the street concrete's bump map (Tom 11-26: its joint drew a dark line across them at waist height; the block wall has none).
 async page => { const W = page.viewportSize().width, errs = [], res = { errs, stops: {} };
   page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('THREE.'))) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   const NUMS = { ttoolbox: [9, 10], dot: [5, 92], tthermal: [8, 7] };
@@ -20,7 +21,8 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   g = await at(625); if (g.open < .95) errs.push('the garage door did not roll up: ' + JSON.stringify(g));
   g = await at(660); if (g.inside < .5 || g.cam[2] >= 0) errs.push('the camera did not walk in through the door by 660: ' + JSON.stringify(g));
   for (const [sv, i] of [[700, 0], [770, 1], [840, 2]]) { g = await at(sv); const p = g.paintings[i];
-    if (!p.shown) errs.push(p.name + ' is not painted at its stop: ' + JSON.stringify(g)); if (g.inside < .95) errs.push('at ' + p.name + ' the camera is not inside the workshop: ' + JSON.stringify(g));
+    if (!p.shown) errs.push(p.name + ' is not painted at its stop: ' + JSON.stringify(g));
+    if (p.bump) errs.push(p.name + " has the street concrete's bumps on the block wall (its joint draws a dark line across the painting)"); if (g.inside < .95) errs.push('at ' + p.name + ' the camera is not inside the workshop: ' + JSON.stringify(g));
     if (Math.abs(g.cam[0] - p.x) > 1) errs.push('at ' + p.name + ' the camera is not in front of it: ' + JSON.stringify(g));
     const bad = await nums(p.name, NUMS[p.name]); if (bad) errs.push(bad);
     if (sv === 700) { await at(735); const off = await nums('ttoolbox', NUMS.ttoolbox); if (off) errs.push('between ttoolbox and dot: ' + off); }

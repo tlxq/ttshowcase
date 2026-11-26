@@ -18,8 +18,11 @@
   // at(u, v) is any picture pixel in the wall's own space; the link marks and the painted areas are in picture pixels. The wall's own hole (moment 3) cuts through it too.
   // zw: the wall's own place in depth (the workshop's back wall stands at WZ)
   function paintOn(file, w, [px, py], [wx, wy], z = .002, [pw, ph] = [1536, 960], zw = 0) { const h = w * ph / pw, k = w / pw, cx = wx - px * k + w / 2, cy = wy + py * k - h / 2, late = !/^assets\/(epa|rvf)_/.test(file), map = tex(file, true, 1, 1, 0, 0, late); map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallBump(new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .55,
-      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2) - (cx > CX1 ? SEAM_D.x : 0)) / TILE, (cy - h / 2 - GROUND - (cx > CX1 ? SEAM_D.y : 0)) / TILE), normalScale: new THREE.Vector2(.4, .4), polygonOffset: true, polygonOffsetFactor: -2 })));
+    // the bumps are the street concrete's (its joints included): a painting on the workshop's back wall (zw) gets none, as that wall is smooth blocks
+    // (Tom 11-26: a dark line across the Toolbox paintings at waist height was the street wall's joint, drawn where the block wall has none)
+    const mat = new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .55, polygonOffset: true, polygonOffsetFactor: -2 });
+    if (!zw) Object.assign(mat, { normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2) - (cx > CX1 ? SEAM_D.x : 0)) / TILE, (cy - h / 2 - GROUND - (cx > CX1 ? SEAM_D.y : 0)) / TILE), normalScale: new THREE.Vector2(.4, .4) });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), zw ? mat : wallBump(mat));
     m.position.set(cx, cy, zw + z); scene.add(m);
     const at = (u, v) => V(cx - w / 2 + u * k, cy + h / 2 - v * k, zw);
     return { m, at, w, h, k, ready: () => texReady(file), protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y1), at(x1, y0)]), zw }; }
