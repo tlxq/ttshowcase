@@ -8,10 +8,8 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from "node:fs";
-import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,6 +35,8 @@ import {
   parseWorktrees,
   pickLook,
   worktreeFolder,
+  lockHash,
+  packagesCurrent,
   suggest,
   tick,
   took,
@@ -188,34 +188,17 @@ async function waitFor(url, pid, name, limitMs) {
   return { ok: false, ms: Date.now() - t0, slow: true };
 }
 
-// dir: another worktree; there the packages are also installed again when its package-lock.json changed since the last install.
+// dir: another worktree. Packages are installed again whenever package-lock.json changed since the last install (packagesCurrent).
 async function install(dir = root) {
-  const lock = join(dir, "package-lock.json");
   const stamp = join(dir, "node_modules/.showcase-lock");
-  const hash = () => createHash("sha256").update(readFileSync(lock)).digest("hex");
-  if (existsSync(join(dir, "node_modules"))) {
-    if (dir === root) return say(tick(c, "ok", "packages", "already installed"));
-    let same;
-    try {
-      same = readFileSync(stamp, "utf8").trim() === hash();
-    } catch {
-      // no stamp yet: npm's own copy of the lock is the record
-      try {
-        same =
-          statSync(join(dir, "node_modules/.package-lock.json")).mtimeMs >= statSync(lock).mtimeMs;
-      } catch {
-        same = false;
-      }
-    }
-    if (same) return say(tick(c, "ok", "packages", "already installed"));
-  }
+  if (packagesCurrent(dir)) return say(tick(c, "ok", "packages", "already installed"));
   const r = await step("packages", "npm", ["ci"], { cwd: dir });
   if (r.code !== 0) {
     say(tick(c, "bad", "packages", "Couldn't install them. See the log"));
     showFailure(r);
     return false;
   }
-  if (dir !== root) writeFileSync(stamp, hash() + "\n");
+  writeFileSync(stamp, lockHash(dir) + "\n");
   say(tick(c, "ok", "packages", `installed in ${took(r.ms)}`));
 }
 

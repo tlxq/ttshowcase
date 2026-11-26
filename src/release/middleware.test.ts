@@ -1,6 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { gate, cookieValue, sameKey, cleanPath, config } from "../../middleware.ts";
+import {
+  gate,
+  cookieValue,
+  sameKey,
+  cleanPath,
+  config,
+  policyFor,
+  STRICT_CSP,
+} from "../../middleware.ts";
 
 const K = "s3cret-key";
 const u = (p: string) => new URL("https://ttdevs.com" + p);
@@ -104,4 +112,22 @@ test("the matcher sends every page and page-data request through the gate, but n
   for (const p of ["/_next/static/chunks/a.js", "/share.jpg", "/icon.svg", "/fonts/a.woff2"]) {
     assert.ok(!re.test(p), p);
   }
+});
+
+test("each page gets its own policy; an address without a page gets the 404 page's", () => {
+  const m = { "/": "front", "/privacy": "privacy", "/next/front": "nf", default: "404" };
+  assert.equal(policyFor("/", m), "front");
+  assert.equal(policyFor("/privacy", m), "privacy");
+  assert.equal(policyFor("/privacy/", m), "privacy");
+  assert.equal(policyFor("/%70rivacy", m), "privacy");
+  assert.equal(policyFor("/next/front", m), "nf");
+  assert.equal(policyFor("/nope", m), "404");
+  assert.equal(policyFor("/default", m), "404");
+  assert.equal(policyFor("/__proto__", m), "404");
+});
+
+test("no manifest: the strictest policy, with no inline scripts", () => {
+  assert.equal(policyFor("/", null), STRICT_CSP);
+  assert.doesNotMatch(STRICT_CSP, /unsafe-inline/);
+  assert.match(STRICT_CSP, /frame-ancestors 'none'/);
 });

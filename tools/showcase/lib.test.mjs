@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   ago,
@@ -23,6 +25,8 @@ import {
   tick,
   took,
   versionIn,
+  lockHash,
+  packagesCurrent,
   walkNames,
   worktreeFolder,
 } from "./lib.mjs";
@@ -192,4 +196,26 @@ test("a branch gets its own server name and a port that is free", () => {
   assert.equal(freePort([8130, 8131]), 8132);
   assert.equal(freePort([]), 8130);
   assert.equal(worktreeFolder("pitch/start-poster"), "pitch-start-poster");
+});
+
+test("packages are current only while they match package-lock.json, in the main checkout too (F-look-1)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "showcase-lock-"));
+  try {
+    writeFileSync(join(dir, "package-lock.json"), "one");
+    assert.equal(packagesCurrent(dir), false, "no node_modules yet");
+    mkdirSync(join(dir, "node_modules"));
+    writeFileSync(join(dir, "node_modules/.showcase-lock"), lockHash(dir) + "\n");
+    assert.equal(packagesCurrent(dir), true);
+    writeFileSync(join(dir, "package-lock.json"), "two"); // a pull changed the lock
+    assert.equal(packagesCurrent(dir), false);
+    rmSync(join(dir, "node_modules/.showcase-lock")); // no stamp: npm's own copy of the lock is the record
+    writeFileSync(join(dir, "node_modules/.package-lock.json"), "{}");
+    utimesSync(join(dir, "package-lock.json"), 2000, 2000);
+    utimesSync(join(dir, "node_modules/.package-lock.json"), 3000, 3000);
+    assert.equal(packagesCurrent(dir), true);
+    utimesSync(join(dir, "package-lock.json"), 4000, 4000);
+    assert.equal(packagesCurrent(dir), false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

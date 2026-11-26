@@ -60,7 +60,6 @@
     Object.assign(leaveUp.style, { display: "block", left: l + "px", top: t + "px", width: r - l + "px", height: b - t + "px" }); leaveUp.tabIndex = 0; }
   function endPlace(now) { camera.updateMatrixWorld(); if (endS.show) { inflow.visible = false; outflow.visible = false; curtain.me.visible = false; LRUNS.forEach(r => r.f.me.visible = false); } // the poured paint is not in the day's picture
     const { leaveHot } = endS.hots, ui = endS.show && !pick.mode && endReady, marks = ui; // a phone looking at the form has no marks over it to tap: nothing may lie over the form; the tabs sit under it, so they stay live
-    const grow = ([a, b, c, d]) => [a - 4, b - 4, c + 4, d + 4];
     eCan3.visible = endS.show && !leaveHot.hidden;
     { const P = [ECAN.clone().add(V(-.45, 0, 0)), ECAN.clone().add(V(.45, 1.3, 0))].map(proj), l = Math.min(P[0][0], P[1][0]), r = Math.max(P[0][0], P[1][0]), t = Math.min(P[0][1], P[1][1]), b = Math.max(P[0][1], P[1][1]);
       if (!marks || leaveHot.hidden || !P.every(q => q[2]) || r < 0 || l > innerWidth || b < 0 || t > innerHeight) { leaveHot.style.display = "none"; leaveHot.tabIndex = -1; }

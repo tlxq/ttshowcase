@@ -116,6 +116,9 @@ const parts = {
   __TOKENS__: readFileSync(join(root, "src/design/tokens.css"), "utf8"), // the site's own colours, sizes and speeds: one source
   __HAND__: hand("hi-i-m-tom"),
   __HAND_WALL__: `{${["tom", "ttdevs", "larsson", "tt"].map((w) => `"${w}": ${hand(w)}`).join(", ")}}`,
+  __MAIL_WORDS__: JSON.stringify(
+    JSON.parse(readFileSync(join(root, "src/content/mailWords.json"), "utf8")),
+  ), // the contact form's words: the site's own file (src/look/MailForm.tsx reads it too)
   __TAG_LIMITS__: JSON.stringify(TAG_LIMITS), // what one tag may hold: the store's own numbers (api/tags.ts)
 };
 // the page's style and script come first, from their parts (pitch/paint/): they hold the __HAND__ etc. filled below
@@ -197,6 +200,7 @@ const libs = ["gsap/dist/gsap.min.js", "gsap/dist/ScrollTrigger.min.js", "lenis/
 let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
   .replaceAll("__EMBED__", () => embed + frontFonts)
   .replaceAll("__TOKENS__", () => parts.__TOKENS__)
+  .replaceAll("__MAIL_WORDS__", () => parts.__MAIL_WORDS__)
   .replaceAll("__LIBS__", () => libs)
   .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
 if (/__[A-Z_]{3,}__/.test(front))

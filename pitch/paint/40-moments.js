@@ -19,7 +19,6 @@
     RVF_PAINT = k => { k = Math.round(k * 60) / 60; if (k === shown) return; shown = k; const g = show.getContext("2d"); g.clearRect(0, 0, CW, CH); if (k <= 0) { bt.needsUpdate = true; return; }
       const x = k * CW * 1.1; g.drawImage(full, 0, 0); g.globalCompositeOperation = "destination-in"; const gr = g.createLinearGradient(x - CW * .1, 0, x, 0); gr.addColorStop(0, "#000"); gr.addColorStop(1, "rgba(0,0,0,0)");
       g.fillStyle = gr; g.fillRect(0, 0, CW, CH); g.globalCompositeOperation = "source-over"; bt.needsUpdate = true; }; // left to right, a soft front like a can moving along
-    const R = ([u0, v0, u1, v1]) => [RVP.at(u0, 0).x, RVP.at(0, v1).y, RVP.at(u1, 0).x, RVP.at(0, v0).y];
     RVF_TAGS = []; // the stack is in the painting
   }
   const lamp3 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp3.position.set(RX - 9, 3.8 - 2 * DROP, 4.4); lamp3.target.position.set(RX - 1.6, .3 - 2 * DROP, 0); lamp3.castShadow = false; scene.add(lamp3, lamp3.target);
@@ -67,14 +66,14 @@
     return new THREE.CanvasTexture(c); })();
   const coverM = new THREE.MeshStandardMaterial({ color: 0x4a4440, metalness: .65, roughness: .55, bumpMap: coverTex, bumpScale: 2, envMapIntensity: .8 });
   const rungM = new THREE.MeshStandardMaterial({ color: 0x6b5a48, metalness: .8, roughness: .5 }), shaftM = conc(2 * Math.PI * MR, G3 - DY, 0, DY, 0x5c5e62); shaftM.side = THREE.BackSide;
-  const covers = [MX_IN, MX_OUT].map((x, i) => {
+  [MX_IN, MX_OUT].forEach((x, i) => {
     const ring = new THREE.Mesh(new THREE.RingGeometry(MR - .005, MR + .07, 40), iron); ring.rotation.x = -Math.PI / 2; ring.position.set(x, G3 + .006, MZ); scene.add(ring);
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(MR, MR, G3 - DY, 32, 1, true), shaftM); shaft.position.set(x, (G3 + DY) / 2, MZ); scene.add(shaft);
     for (let y = G3 - .3; y > WF + .2; y -= .3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.016, .016, .36, 8), rungM); r.rotation.z = Math.PI / 2; r.position.set(x, y, MZ - MR + .09); scene.add(r); }
     for (const dx of [-.18, .18]) { const rl = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, DY - WF, 8), rungM); rl.position.set(x + dx, (DY + WF) / 2, MZ - MR + .09); scene.add(rl);
       for (const y of [DY - .4, WF + 1.2]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, MZ - MR + .09, 8), rungM); st.rotation.x = Math.PI / 2; st.position.set(x + dx, y, (MZ - MR + .09) / 2); scene.add(st); } } // stays back to the wall
     const cover = new THREE.Mesh(new THREE.CylinderGeometry(MR + .04, MR + .04, .05, 40), [coverM, coverM, coverM]); cover.position.set(x, G3 + .02, MZ); scene.add(cover);
-    return { x, cover }; });
+  });
   // a street lamp's pool over the cover you are near, so you see it open; it fades as you go down or walk on
   const manL = new THREE.SpotLight(0xffd9a8, 0, 9, .55, .7, 1.4); scene.add(manL, manL.target);
   function manAt(cp) { const c = Math.abs(cp.x - MX_IN) < Math.abs(cp.x - MX_OUT) ? MX_IN : MX_OUT, d = Math.abs(cp.x - c);
@@ -119,7 +118,7 @@
   // EDGE (Tom 11-16, storyboard 6): client work stands apart from my own. Up out of the workshop, in the open: a clean plastered wall, a lamp over it,
   // and one blockbuster painting on it (Tom 11-19; it replaced the printed sheet), "EDGE". Its two links are marks of its own story (Tom 11-19): two banners sprayed under
   // the letters in the piece's blue, their own picture over the painting. Spray, no pen tag.
-  const EDGE_X = 75, EDGE_W = NARROW ? 3.7 : 6.2, EDGE_H = 4;
+  const EDGE_X = 75, EDGE_H = 4;
   // Tom 11-24: no lamp fixture over EDGE (a lamp on a bare wall made no sense); its light stays, from the street
   const edgeL = new THREE.SpotLight(0xfff0dc, 0, 12, 1.15, 1, 1.2); edgeL.position.set(EDGE_X, G3 + EDGE_H - .2, 1.15); edgeL.target.position.set(EDGE_X, G3 + 1.7, 0); scene.add(edgeL, edgeL.target);
   const GHUB = "https://github.com/tlxq/";
@@ -147,7 +146,7 @@
     u.links.forEach((l, j) => l.box = u.marks[j]);
     { const [key, colour, stack] = { "Self-hosted platform": ["self", "#2d3a5c", ["TypeScript", "Next.js", "Hono", "SQLite", "Java", "Docker", "Caddy", "Tailscale"]], ttoolbox: ["ttoolbox", "#c8402a", ["Claude Code", "Python", "Bash"]],
         dot: ["dot", "#25407a", ["Bash", "bats", "GNU Stow", "mise"]], tthermal: ["tthermal", "#d8435f", ["JavaScript", "QML", "Shell"]], "app-utveckling.se": ["edge", "#1f5fc4", ["Astro", "TypeScript"]] }[u.name];
-      const xr = u.B.at(u.bb[2], 0).x, yb = u.B.at(0, u.bb[3]).y, ym = u.B.at(0, (u.bb[1] + u.bb[3]) / 2).y; // beside the painting on a laptop; under it, above the floor, on a phone
+      const yb = u.B.at(0, u.bb[3]).y; // beside the painting on a laptop; under it, above the floor, on a phone
       if (N_) { // (Tom 11-19) phone: under the painting, above the floor: the numbers big in the piece's style, then each tool its own tag, staggered
         const z = (u.art[6] || 0) + .004, top = yb - .04, bot = u.floor + .06, hg = top - bot, nums = (LIVE[key] || []).length, nh = nums ? hg * .58 : 0, long = (LIVE[key] || []).some(s => s.word[1].length > 12);
         const per = Math.ceil(stack.length / (stack.length > 4 ? 2 : 1)), rows = Math.ceil(stack.length / per), th = (hg - nh) / rows, tw = 2.8 / per;

@@ -131,8 +131,8 @@
   document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
   function morning(now, sv, cp, look) { // after endCam: past EDGE, in close to the bare wall, the change to the visitors' wall, the light
     const day = sv >= CUT; endVisit = 0;
-    // no landing, no flash (Tom 11-23): past EDGE the camera steps in close to the bare wall (as Leave your tag does), changes there to the same bare wall by the
-    // visitors' wall (CLOSE_V, SEAM_D: the same concrete, the same lamp over it) and steps back out to the visitors' wall, the page's seam. The page's top shows
+    // no landing, no flash (Tom 11-23, no zoom 11-24): past EDGE the street is the bare stretch's twin, moved by SEAM_D (the same concrete, the same lamp over it),
+    // and its end is the visitors' wall, the page's seam. The page's top shows
     // that same wall, so scrolling down past the end jumps there, and scrolling up from the wall jumps here; nothing turns back, nothing shows
     if (sv > 1060 && !pick.mode) { scene.fog.density = .04; lens.uniforms.uAper.value = 1; }
     if (day) { const k = sm(cl((sv - CUT) / (SV_MAX - 6 - CUT))); 
@@ -149,8 +149,8 @@
   // straight up it, out to EDGE, on towards the sunrise (then morning() cuts to the opening wall). In a shaft it stays on its centre line, so it never touches the concrete.
   const stop = (x, y, z, ly) => [V(x + .1, y, z), V(x, ly, 0)];
   // the visitors' wall's street light (Tom 11-23: one more light, no swing) is lamp2, which is off wherever that wall is in view: at the epaRadar wall on the
-  // walk, at the visitors' wall (and the start beside it) and at its twin past EDGE, where the walk changes from one to the other in close
-  const CLOSE_V = V(-16, 1.8, 0), CLOSE_D = () => NARROW ? 1.2 : 1.4, L2_VIS = [V(-18.6, GROUND + 6.35, 3.7), V(-11, 1.2, 0)], L2_EPA = [lamp2.position.clone(), lamp2.target.position.clone()];
+  // walk, at the visitors' wall (and the start beside it) and at its twin past EDGE, where the walk changes from one to the other
+  const L2_VIS = [V(-18.6, GROUND + 6.35, 3.7), V(-11, 1.2, 0)], L2_EPA = [lamp2.position.clone(), lamp2.target.position.clone()];
   function lamp2At(sv) { const vis = sv < 4, twin = !vis && sv > 1040;
     if (!vis && !twin) { lamp2.position.copy(L2_EPA[0]); lamp2.target.position.copy(L2_EPA[1]); lamp2.angle = .62; lamp2.penumbra = .75; return; }
     const d = twin ? SEAM_D : V(); lamp2.position.copy(L2_VIS[0]).add(d); lamp2.target.position.copy(L2_VIS[1]).add(d); lamp2.angle = .9; lamp2.penumbra = .75; lamp2.intensity = 6.2;
