@@ -45,18 +45,18 @@
   const conc = (w, h, x0, y0, col) => new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE),
     normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (x0 + 21) / TILE, (y0 - GROUND) / TILE), color: col, roughness: .92, envMapIntensity: .2 });
   const slab = (x0, x1, y0, y1, z0, z1, m) => { const b = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m); b.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); scene.add(b); return b; };
-  const RW = CX1 - HX0, CEIL = G3 + RH, DOORS = [DOOR_A, DOOR_B], SHOP_WARM = 0xffd7a3;
+  const RW = CX1 - HX0, CEIL = G3 + RH, DOORS = [DOOR_A, DOOR_B], SHOP_WARM = 0xffe6c8;
   const shop = { open: 0, lit: 0, ins: 0, panel: null, screen: null }; // open: how far door A has rolled up (0..1); lit: the workshop's own light (0..1); ins: how far the camera is inside (0..1)
   const woodM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }), metalM = new THREE.MeshStandardMaterial({ color: 0x33363a, metalness: .5, roughness: .6 });
   { // the room: floor, back wall, ceiling, the two end walls, and the street wall's inside with a thick frame round each door
-    const wallM = conc(RW, RH, HX0, G3, 0xaaa69f); wallM.roughness = .85;
+    const wallM = conc(RW, RH, HX0, G3, 0x77746f); wallM.roughness = .9;
     const back = new THREE.Mesh(new THREE.PlaneGeometry(RW, RH), wallM); back.position.set(HX0 + RW / 2, G3 + RH / 2, WZ); scene.add(back);
-    for (const [x, ry] of [[HX0, Math.PI / 2], [CX1, -Math.PI / 2]]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(BD, RH), conc(BD, RH, 0, G3, 0x9b978f)); m.rotation.y = ry; m.position.set(x, G3 + RH / 2, WZ / 2); scene.add(m); }
+    for (const [x, ry] of [[HX0, Math.PI / 2], [CX1, -Math.PI / 2]]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(BD, RH), conc(BD, RH, 0, G3, 0x6d6a66)); m.rotation.y = ry; m.position.set(x, G3 + RH / 2, WZ / 2); scene.add(m); }
     const ceil = new THREE.Mesh(new THREE.PlaneGeometry(RW, BD), conc(RW, BD, HX0, 0, 0x4a4743)); ceil.rotation.x = Math.PI / 2; ceil.position.set(HX0 + RW / 2, CEIL, WZ / 2); scene.add(ceil);
-    const floorM = conc(RW, BD, HX0, 0, 0x73706b); floorM.roughness = .55; floorM.envMapIntensity = .5; slab(HX0, CX1, G3 - .3, G3, WZ, 0, floorM);
+    const floorM = conc(RW, BD, HX0, 0, 0x55534f); floorM.roughness = .5; floorM.envMapIntensity = .5; slab(HX0, CX1, G3 - .3, G3, WZ, 0, floorM);
     const edges = [HX0, DOOR_A[0], DOOR_A[1], DOOR_B[0], DOOR_B[1], CX1]; // the wall between the doors, and over each (the lintel)
-    [[0, 1], [2, 3], [4, 5]].forEach(([a, b]) => slab(edges[a], edges[b], G3 - .01, CEIL, -.3, -.001, conc(edges[b] - edges[a], RH, edges[a], G3, 0xaaa69f)));
-    [[1, 2], [3, 4]].forEach(([a, b]) => slab(edges[a], edges[b], G3 + DOOR_H, CEIL, -.3, -.001, conc(edges[b] - edges[a], RH - DOOR_H, edges[a], G3 + DOOR_H, 0xaaa69f)));
+    [[0, 1], [2, 3], [4, 5]].forEach(([a, b]) => slab(edges[a], edges[b], G3 - .01, CEIL, -.3, -.001, conc(edges[b] - edges[a], RH, edges[a], G3, 0x77746f)));
+    [[1, 2], [3, 4]].forEach(([a, b]) => slab(edges[a], edges[b], G3 + DOOR_H, CEIL, -.3, -.001, conc(edges[b] - edges[a], RH - DOOR_H, edges[a], G3 + DOOR_H, 0x77746f)));
     const ribs = (() => { const c = document.createElement("canvas"); c.width = 16; c.height = 64; const g = c.getContext("2d"); g.fillStyle = "#8a8f94"; g.fillRect(0, 0, 16, 64); g.fillStyle = "#4b4f54"; g.fillRect(0, 0, 16, 7); g.fillStyle = "#a7acb1"; g.fillRect(0, 7, 16, 3);
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.repeat.set(1, DOOR_H / .1); return t; })();
     const steel = new THREE.MeshStandardMaterial({ color: 0x5b6065, metalness: .7, roughness: .5, envMapIntensity: .6 });
@@ -119,22 +119,23 @@
   // the far end: a metal shelf with crates, and a stack of tyres by the door
   { for (const y of [.5, 1.1, 1.7]) slab(63.6, 66.8, G3 + y, G3 + y + .03, WZ + .05, WZ + .55, metalM); for (const x of [63.6, 66.8]) slab(x - .03, x + .03, G3, G3 + 1.9, WZ + .05, WZ + .55, metalM);
     [[64.2, .5, .9], [65.4, .5, .8], [66.2, 1.1, .7], [64.6, 1.1, .8], [65.6, 1.7, .9]].forEach(([x, y, w], i) => slab(x - w / 4, x + w / 4, G3 + y + .03, G3 + y + .33, WZ + .1, WZ + .5, i % 2 ? woodM : new THREE.MeshStandardMaterial({ color: 0x3a5a7a, roughness: .7 })));
-    for (let k = 0; k < 3; k++) { const ty = new THREE.Mesh(new THREE.TorusGeometry(.3, .11, 10, 22), new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .9 })); ty.rotation.x = Math.PI / 2; ty.position.set(61.9, G3 + .12 + k * .22, WZ + 1.3); scene.add(ty); } }
+    for (let k = 0; k < 3; k++) { const ty = new THREE.Mesh(new THREE.TorusGeometry(.3, .11, 10, 22), new THREE.MeshStandardMaterial({ color: 0x151515, roughness: .9 })); ty.rotation.x = Math.PI / 2; ty.position.set(HX0 + 2.4, G3 + .12 + k * .22, WZ + 1.3); scene.add(ty); } }
   // the west end: a bench under the pegboard on the end wall, a stool
   { const b = new THREE.Mesh(new THREE.BoxGeometry(.7, .06, 3.6), woodM); b.position.set(HX0 + .4, G3 + .9, WZ + 4.8); scene.add(b); for (const dz of [-1.7, 1.7]) slab(HX0 + .1, HX0 + .7, G3, G3 + .9, WZ + 4.8 + dz - .04, WZ + 4.8 + dz + .04, metalM);
     const st = new THREE.Mesh(new THREE.CylinderGeometry(.19, .17, .06, 16), woodM); st.position.set(HX0 + 1.5, G3 + .5, WZ + 3.4); scene.add(st); const lg = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .5, 6), metalM); lg.position.set(HX0 + 1.5, G3 + .25, WZ + 3.4); scene.add(lg); }
   // the lights that go with the camera: a warm spot on the wall it faces, a warm fill from the room's middle, and the light that spills out of the door onto the wet street
-  const shopSpot = new THREE.SpotLight(SHOP_WARM, 0, 15, 1.05, .8, 1.3), shopFill = new THREE.PointLight(0xffc98f, 0, 13, 1.6), spill = new THREE.SpotLight(0xffd29a, 0, 18, .85, .85, 1.1); scene.add(shopSpot, shopSpot.target, shopFill, spill, spill.target);
-  spill.position.set((DOOR_A[0] + DOOR_A[1]) / 2, G3 + 2.6, WZ + 3.2); spill.target.position.set((DOOR_A[0] + DOOR_A[1]) / 2 + .4, G3, 7);
-  const toolboxSpray = makeSpray({ key: "toolbox", name: "the Toolbox stencil", colour: "#ece4d0", font: SPRAY_FONT, cap: .2, stack: ["TOOLBOX"], rect: [HX0 + 1.3, G3 + 2.3, HX0 + 4.6, G3 + 3.3], zw: WZ, z: .004 });
+  const shopSpot = new THREE.SpotLight(SHOP_WARM, 0, 15, 1, 1, 1.3), shopFill = new THREE.PointLight(0xffc98f, 0, 13, 1.6), spill = new THREE.SpotLight(0xffd29a, 0, 18, .85, .85, 1.1); scene.add(shopSpot, shopSpot.target, shopFill, spill, spill.target);
+  const toolboxSpray = makeSpray({ key: "toolbox", name: "the Toolbox stencil", colour: "#d9d0ba", font: SPRAY_FONT, cap: .2, stack: ["TOOLBOX"], rect: [HX0 + 1.2, G3 + 2.2, HX0 + 4.8, G3 + 3.2], zw: WZ, z: .004 });
   function shopAt(now, sv, cp) { // the door's roll, the lamps, where the light stands
     const tIn = sm(cl((sv - 560) / 55)); shop.open = tIn; shop.lit = tIn * (1 - sm(cl((sv - 990) / 60)));
     shop.panel.position.y = G3 + DOOR_H / 2 + tIn * (DOOR_H + .05); shop.panel.visible = tIn < .999;
     const inX = sm(cl((cp.x - HX0 + .2) / 1.4)) * (1 - sm(cl((cp.x - CX1 + 1.2) / 1.6))), inZ = sm(cl((.9 - cp.z) / 1.6)); shop.ins = inX * inZ;
-    shopBulb.emissiveIntensity = 2.8 * shop.lit; tubeM.emissiveIntensity = (Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4) * shop.lit; shop.screen.material.emissiveIntensity = 1.4 * shop.lit;
+    shopBulb.emissiveIntensity = 2.2 * shop.lit; tubeM.emissiveIntensity = (Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4) * shop.lit; shop.screen.material.emissiveIntensity = 1.4 * shop.lit;
     const cx = cl(cp.x, HX0 + 1.5, CX1 - 1.5);
-    shopSpot.intensity = 11 * shop.lit; shopSpot.position.set(cx, CEIL - .3, WZ + 3.8); shopSpot.target.position.set(cx, G3 + 1.7, WZ);
-    shopFill.intensity = 7 * shop.lit; shopFill.position.set(cx, G3 + 3.2, WZ + 6.3);
+    shopSpot.intensity = 9 * shop.lit; shopSpot.position.set(cx, CEIL - .3, WZ + 1.7); shopSpot.target.position.set(cx, G3 + 1.7, WZ);
+    shopFill.intensity = 2.6 * shop.lit; shopFill.position.set(cx, G3 + 3.2, WZ + 6.3);
+    const sx = sm(cl((cp.x - 50) / 8)), dx = DOOR_A[0] + (DOOR_A[1] - DOOR_A[0]) / 2, ex = DOOR_B[0] + (DOOR_B[1] - DOOR_B[0]) / 2; // the light out of the door follows you to the far one
+    spill.position.set(dx + (ex - dx) * sx, G3 + 2.6, WZ + 3.2); spill.target.position.set(dx + (ex - dx) * sx + .4, G3, 7);
     spill.intensity = 14 * shop.lit * (1 - .6 * shop.ins);
     const here = sv > 590 && sv < 960 && cp.x < 51 && shop.ins > .3; toolboxSpray.fade(here); }
   window.garageTest = () => ({ open: +shop.open.toFixed(3), lit: +shop.lit.toFixed(3), inside: +shop.ins.toFixed(3), cam: [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)], stencil: +toolboxSpray.op.toFixed(2), // for the garage check: the door, the light, where the camera is, the stencil
@@ -183,11 +184,11 @@
     tool(41, 700, "Self-hosted platform", null, "<b>Self-hosted platform</b>My own server with web apps, a TV app and a job tool. Built alone.",
       { art: ["assets/self_wall.webp", 4.2, 3.8, [776, 488], 1.7, [[247, 89, 1305, 400], [420, 290, 1175, 888]]], marks: [] }),
     tool(47.5, 770, "ttoolbox", "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.",
-      { painted: true, nums: [[80, 80, 560, 250], [980, 80, 1450, 250]], art: ["assets/ttoolbox_wall.webp", 4.9, 3.7, [768, 480], 1.85, [[30, 20, 1516, 940]]], marks: [[250, 590, 415, 665]] }),
+      { painted: true, nums: [[80, 80, 560, 250], [980, 80, 1450, 250]], art: ["assets/ttoolbox_wall.webp", 4.9, 3.1, [768, 480], 2.0, [[30, 20, 1516, 940]]], marks: [[250, 590, 415, 665]] }),
     tool(54, 840, "dot", "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.",
-      { painted: true, nums: [[90, 70, 520, 260], [1010, 70, 1450, 290]], art: ["assets/dot_wall.webp", 4.9, 3.7, [768, 480], 1.85, [[19, 20, 1516, 940]]], marks: [[270, 680, 550, 775]] }),
+      { painted: true, nums: [[90, 70, 520, 260], [1010, 70, 1450, 290]], art: ["assets/dot_wall.webp", 4.9, 3.1, [768, 480], 2.0, [[19, 20, 1516, 940]]], marks: [[270, 680, 550, 775]] }),
     tool(60.5, 910, "tthermal", "tthermal", "<b>tthermal</b>Omarchy bar plugin that keeps an Intel laptop under a temperature you choose.",
-      { leave: 935, painted: true, nums: [[90, 70, 540, 230], [1000, 70, 1440, 230]], art: ["assets/tthermal_wall.webp", 4.9, 3.7, [768, 480], 1.85, [[30, 20, 1515, 934]]], marks: [[245, 590, 445, 690]] }),
+      { leave: 935, painted: true, nums: [[90, 70, 540, 230], [1000, 70, 1440, 230]], art: ["assets/tthermal_wall.webp", 4.9, 3.1, [768, 480], 2.0, [[30, 20, 1515, 934]]], marks: [[245, 590, 445, 690]] }),
     { x: 75, key: 1045, leave: 1045, floor: G3, name: "app-utveckling.se", links: [{ t: "app-utveckling.se", href: "https://app-utveckling.se" }, { t: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" }],
       art: ["assets/edge_wall.webp", 6.6, 3.5, [714, 518], 1.9, [[20, 200, 1409, 745], ...EDGE_V.areas]], ov: EDGE_V.ov, marks: EDGE_V.marks,
       plate: "<b>app-utveckling.se</b>Two landing pages for EDGE Associates, on one code base. Work project, built alone." } ];

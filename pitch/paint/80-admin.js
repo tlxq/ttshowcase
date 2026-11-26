@@ -184,12 +184,12 @@
   // the way through the workshop (Tom 11-26): to the door, through it, then a stop in front of each tool, out by the far door
   const DOOR_X = (DOOR_A[0] + DOOR_A[1]) / 2, EXIT_X = (DOOR_B[0] + DOOR_B[1]) / 2;
   const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + 8.2, floor + 1.55, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
-  const KEYS = [[548, 612, V(DOOR_X - .3, G3 + 1.7, 4.6), V(DOOR_X + .3, G3 + 1.5, WZ + 2)], [612, 650, V(DOOR_X + .5, G3 + 1.55, -1), V(U4[0].x - .8, G3 + 1.6, WZ)],
+  const KEYS = [[548, 612, V(DOOR_X - .3, G3 + 1.7, 4.6), V(DOOR_X + .3, G3 + 1.5, WZ + 2)], [612, 650, V(DOOR_X + .5, G3 + 1.55, -1), V(DOOR_X + .4, G3 + 1.6, WZ)],
     [650, U4[0].key, ...toolStop(U4[0].x, WF)], ...U4.slice(1, 4).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)]),
-    [935, 975, V(EXIT_X - .3, G3 + 1.65, -1.2), V(EXIT_X + 3.6, G3 + 1.5, 6)], [975, 1045, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
+    [935, 975, V(EXIT_X - .6, G3 + 1.65, -1.2), V(EXIT_X + 7, G3 + 1.7, 3)], [975, 1045, ...EDGE_STOP], [1058, SV_MAX - 10, ...BARE_T] /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */];
   function endCam(sv, cp, look) { for (const [a, b, P, L] of KEYS) { const k = sm(cl((sv - a) / (b - a))); if (k <= 0) continue; cp.lerp(P, k); look.lerp(L, k); } }
   function endAt(now, sv, cp) { shopAt(now, sv, cp); const cx = cp.x;
-    edgeL.intensity = 6.5 * (cx > EDGE_X ? 1 : 1 - sm(cl((EDGE_X - cx - 2) / 6))); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
+    edgeL.intensity = 6.5 * sm(cl((sv - 930) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
     scene.fog.color.copy(FOG0); sky.color.copy(SKY0);
     const FADE = .8; // seconds a painting takes to come up on its wall
     U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && sv < u.leave + 15;
