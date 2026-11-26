@@ -105,7 +105,7 @@ depends = ["install"]
 run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts' 'tools/showcase/*.test.mjs' 'tools/pitch/*.test.mjs' 'tools/csp/*.test.mjs' 'tools/passes/*.test.mjs' 'tools/night.test.mjs'", "npm run lint", "npm run build", "tools/next-check.sh", "tools/header-check.sh", "tools/fn-check.sh", "tools/osv-gate", "tools/opengrep-gate"]
 
 [tasks.next]
-description = "Open the new site behind its secret link: live (default) or dev (this PC's Tailscale dev server); --print prints it for the phone; preview [PR#] prints a PR's preview link with a QR"
+description = "Open the new site behind its secret link: live (default) or dev (this PC's Tailscale dev server); --print (or NEXT_PRINT=1) prints it without opening a browser: for the phone and for scripts; preview [PR#] prints a PR's preview link with a QR"
 run = "tools/next.sh"
 
 [tasks.release]

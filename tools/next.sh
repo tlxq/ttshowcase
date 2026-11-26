@@ -3,8 +3,13 @@
 #   tools/next.sh live   ttdevs.com/next (Vercel)
 #   tools/next.sh dev    this PC's Tailscale dev server (mise run dev), port from PORT (default 3000)
 #   tools/next.sh preview [PR#]   a PR's Vercel preview (the current branch's PR when none is named): prints the link and a QR
-# Add --print to print the link instead (for the phone). The key comes from Proton Pass via ttpass sync.
+# --print (anywhere in the line) or NEXT_PRINT=1 prints the link instead of opening a browser: for the phone, and for scripts
+# and checkers, which must never get a browser tab on the desk. The key comes from Proton Pass via ttpass sync.
 set -euo pipefail
+print="${NEXT_PRINT:-}"
+args=()
+for a in "$@"; do if [ "$a" = --print ]; then print=1; else args+=("$a"); fi; done
+set -- "${args[@]+"${args[@]}"}"
 key_file="$HOME/.config/ttdevs/ttshowcase-next.key"
 [ -r "$key_file" ] || { echo "Couldn't find /next's key in $key_file. Run: ttpass sync" >&2; exit 1; }
 if [ "${1:-}" = preview ]; then
@@ -45,11 +50,11 @@ case "${1:-live}" in
   dev)
     name=$(tailscale status --json | python3 -I -c 'import json, sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')
     base="http://$name:${PORT:-3000}" ;;
-  *) echo "Usage: tools/next.sh live|dev [--print] | preview [PR#]" >&2; exit 2 ;;
+  *) echo "Usage: tools/next.sh live|dev [--print] | preview [PR#]  (NEXT_PRINT=1 is the same as --print)" >&2; exit 2 ;;
 esac
 # percent-encoded: Pass may put symbols in the key
 url="$base/next?key=$(python3 -I -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read().strip(), safe=""))' <"$key_file")"
-if [ "${2:-}" = --print ]; then
+if [ -n "$print" ]; then
   echo "$url"
   command -v qrencode >/dev/null && qrencode -t ansiutf8 "$url"
 else
