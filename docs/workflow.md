@@ -27,7 +27,7 @@ that would draw in software.
 |---|---|
 | A colour, size, space or speed | `src/design/tokens.css` first, with Tom's OK |
 | Words on the site | `src/content/look.ts`; handwritten ones with `mise run write` into `src/content/hand` |
-| The paint pitch | `pitch/paint.src.html`; pictures in `pitch/assets` (CC0 or Tom's own, listed in `CREDITS.txt`) |
+| The paint pitch | `pitch/paint.src.html` and its parts in `pitch/paint/` (order in `order.txt`); pictures in `pitch/assets` (CC0 or Tom's own, listed in `CREDITS.txt`) |
 | A font | Never in git. `tools/pitch/build.mjs` fetches it into `.cache/fonts` |
 
 ## Checks

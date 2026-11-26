@@ -19,7 +19,7 @@ export function policy(hashes) {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    "connect-src 'self' https://api.github.com https://raw.githubusercontent.com",
+    "connect-src 'self'",
     "worker-src 'self' blob:",
     "frame-src https://www.eparadar.se https://raddavarfruberga.se",
     "object-src 'none'",
