@@ -8,7 +8,7 @@ set -u
 only=""
 for a in "$@"; do if [ "$a" = --force ]; then export FORCE=1; else only="$a"; fi; done
 cd "$(dirname "$0")/../.."
-# A whole run that already passed on this commit and these tool versions is skipped (tools/passes); --force runs it.
+# A whole run that already passed on these files and these tool versions is skipped (tools/passes); --force runs it.
 [ -n "$only" ] || ! tools/passes/passes.sh skip walk || exit 0
 root="$PWD"
 [ -f out/index.html ] || { echo "Couldn't find the build in out/. Run: mise run build" >&2; exit 1; }

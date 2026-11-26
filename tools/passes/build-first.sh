@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # build-first.sh <pass> <mise build task> <script> [args]: the saved-pass lookup runs BEFORE the build, so a check that
-# already passed on this commit skips without building anything. Otherwise: build, then run the script with the args.
+# already passed on these files skips without building anything. Otherwise: build, then run the script with the args.
 # A named single check (any non-flag arg) is never skipped. --force runs it anyway.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
