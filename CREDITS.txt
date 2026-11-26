@@ -24,7 +24,6 @@ The paint pitch (pitch/):
   out to transparency. The link mark over EDGE's painting (pitch/assets/edge_banner.webp) is drawn by hand in code, and
   all its text is set by hand (Nimbus Sans and URW Gothic from the URW base-35 fonts).
   The stencil (pitch/assets/stencil/) is Tom's head turn, made from his own studio photos (11-22) on his own computer.
-  The GitHub and LinkedIn marks on the end wall are drawn from the vector shapes in Simple Icons (CC0 1.0): they are
-  the companies' own marks, used only to link to them, and stay their owners' trademarks. Inter (SIL Open Font License) and Sedgwick Ave
+  Inter (SIL Open Font License) and Sedgwick Ave
   Display (SIL Open Font License, Google Fonts) are used for the labels, the form and
   raddavarfruberga's banner words, and are fetched at build time.
