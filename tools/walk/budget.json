@@ -55,11 +55,13 @@
     "limits": {
       "desktop": {
         "bytes": 3700000,
-        "ms": 4500
+        "ms": 2300,
+        "warmMs": 1600
       },
       "phone": {
         "bytes": 3700000,
-        "ms": 4500
+        "ms": 2300,
+        "warmMs": 1600
       }
     }
   }

@@ -208,8 +208,8 @@
   function intro(now, dt) {
     const since = (now - t0) / 1000; wallUpload(); if (introOver) LATE.start(); // the bucket has tipped and the pour is over: now the rest is asked for (not during the pour, which keeps the frames to itself)
     if (!goAt) {
-      const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 2.2);
-      level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 3.5);
+      const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 1.0); // a fill that is not held back by loading takes about a second (Tom 11-26: quicker, still poured); loadFrac keeps a slow line waiting for the real loading
+      level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 7);
       if (pourReady && level > .975 && !readyAt) { readyAt = now; root.dataset.readyAt = Math.round(now - t0); warmUp(); tagBucket.tabIndex = 0; tagBucket.setAttribute("role", "button"); tagBucket.setAttribute("aria-label", "Tip the bucket to enter"); } /* Tab reaches the start, Enter tips it (B-4) */ else warmStep();
       if (pourReady && (REDUCED || RESUME !== null)) goAt = now - 60000; // a reload for a new window shape skips the bucket: the visitor tipped it already
       // a small rock now and then shows it can move

@@ -11,6 +11,7 @@ async page => { const errs = [], res = { errs }, B = __BUDGET__; page.on('pageer
     return { ready, ...m }; };
   await page.goto('__URL__');
   const fast = await measure(); res.bytes = fast.bytes; res.requests = fast.requests; res.readyMs = fast.ready; res.top = fast.top;
+  await page.reload(); const warm = await measure(); res.warmMs = warm.ready; // the second visit: the start set is in the cache
   const cdp = await page.context().newCDPSession(page); await cdp.send('Network.enable'); await cdp.send('Network.setCacheDisabled', { cacheDisabled: true });
   await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 100, downloadThroughput: 1000000, uploadThroughput: 250000 }); await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
   await page.goto('__URL__'); const slow = await measure(); res.slowMs = slow.ready; res.slowBytes = slow.bytes;
@@ -19,4 +20,6 @@ async page => { const errs = [], res = { errs }, B = __BUDGET__; page.on('pageer
   if (!fast.ready || !slow.ready) errs.push('the bucket was never ready');
   if (L && fast.bytes > L.bytes) errs.push('the bucket waited for ' + fast.bytes + ' bytes, over the budget of ' + L.bytes);
   if (L && fast.ready > L.ms) errs.push('the bucket was ready after ' + fast.ready + ' ms, over the budget of ' + L.ms);
+  if (L && warm.ready > L.warmMs) errs.push('on a second visit the bucket was ready after ' + warm.ready + ' ms, over the budget of ' + L.warmMs);
+  if (slow.ready < 3000) errs.push('on a phone\'s line the bucket was ready after only ' + slow.ready + ' ms: it did not wait for the loading');
   return JSON.stringify(res); }
