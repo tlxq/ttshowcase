@@ -25,5 +25,19 @@
     "requests": 30,
     "lcpMs": 101,
     "tbtMs": 256
+  },
+  "pitchStart": {
+    "about": "What the paint page's bucket waits for (tools/pitch/checks/startbytes.js): bytes fetched and ms until dataset.readyAt, laptop and phone. Placeholder limits, recorded below once measured.",
+    "recorded": {},
+    "limits": {
+      "desktop": {
+        "bytes": 2000000,
+        "ms": 4000
+      },
+      "phone": {
+        "bytes": 2000000,
+        "ms": 4000
+      }
+    }
   }
 }
