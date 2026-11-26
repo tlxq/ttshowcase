@@ -14,7 +14,8 @@ async page=>{ const errs=[], res={errs};
  const run=async(label)=>{
   for(const p of ['/','/wall.html','/404.html']){
    await page.goto('__WALK_URL__'+p); await page.waitForTimeout(2500);
-   await page.addScriptTag({path:'__AXE__'});
+   // axe goes in by evaluate, not as a script tag: the page's CSP (no inline scripts) blocks a tag but not the test runner
+   await page.evaluate(__AXE_SOURCE__);
    const r=await page.evaluate(async()=>{const o=await axe.run(document,{resultTypes:['violations','passes']});
     window.__passes=o.passes.length;
     return o.violations.map(v=>({id:v.id,impact:v.impact,nodes:v.nodes.length,first:v.nodes[0].target.join(' ').slice(0,80)}))});
