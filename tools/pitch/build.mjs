@@ -18,6 +18,7 @@ import {
 } from "node:fs";
 import * as nodeModule from "node:module";
 import { join, resolve } from "node:path";
+import { fontProblems } from "./fonts-used.mjs";
 import { nodeProblem } from "./need-node.mjs";
 import { fillParts, readParts } from "./paint-parts.mjs";
 
@@ -113,15 +114,23 @@ async function google(name, family, what) {
 mkdirSync(fonts, { recursive: true });
 mkdirSync(out, { recursive: true });
 const b64 = (f) => readFileSync(f).toString("base64");
-const embed =
-  `@font-face{font-family:'Clash Display';src:url(data:font/woff2;base64,${b64(await clash())}) format('woff2');font-weight:700;font-display:swap}` +
-  `@font-face{font-family:'Saira Stencil One';src:url(data:font/woff2;base64,${b64(await saira())}) format('woff2');font-display:block}` +
-  `@font-face{font-family:'Sedgwick Ave Display';src:url(data:font/woff2;base64,${b64(await google("SedgwickAveDisplay.woff2", "Sedgwick+Ave+Display", "Sedgwick Ave Display"))}) format('woff2');font-display:block}` +
-  `@font-face{font-family:'Inter';src:url(data:font/woff2;base64,${b64(await google("Inter.woff2", "Inter:wght@400..700", "Inter"))}) format('woff2');font-weight:400 700;font-display:block}`;
-// the front's code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono (both SIL OFL); the front only
-const frontFonts =
-  `@font-face{font-family:'Archivo';src:url(data:font/woff2;base64,${b64(await google("ArchivoExpandedBlack.woff2", "Archivo:wdth,wght@125,900", "Archivo"))}) format('woff2');font-weight:900;font-stretch:125%;font-display:block}` +
-  `@font-face{font-family:'JetBrains Mono';src:url(data:font/woff2;base64,${b64(await google("JetBrainsMono.woff2", "JetBrains+Mono:wght@500..800", "JetBrains Mono"))}) format('woff2');font-weight:500 800;font-display:block}`;
+const face = {
+  clash: `@font-face{font-family:'Clash Display';src:url(data:font/woff2;base64,${b64(await clash())}) format('woff2');font-weight:700;font-display:swap}`,
+  saira: `@font-face{font-family:'Saira Stencil One';src:url(data:font/woff2;base64,${b64(await saira())}) format('woff2');font-display:block}`,
+  sedgwick: `@font-face{font-family:'Sedgwick Ave Display';src:url(data:font/woff2;base64,${b64(await google("SedgwickAveDisplay.woff2", "Sedgwick+Ave+Display", "Sedgwick Ave Display"))}) format('woff2');font-display:block}`,
+  inter: `@font-face{font-family:'Inter';src:url(data:font/woff2;base64,${b64(await google("Inter.woff2", "Inter:wght@400..700", "Inter"))}) format('woff2');font-weight:400 700;font-display:block}`,
+  // the front's code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono (both SIL OFL); the walk's start says the name in them too
+  archivo: `@font-face{font-family:'Archivo';src:url(data:font/woff2;base64,${b64(await google("ArchivoExpandedBlack.woff2", "Archivo:wdth,wght@125,900", "Archivo"))}) format('woff2');font-weight:900;font-stretch:125%;font-display:block}`,
+  mono: `@font-face{font-family:'JetBrains Mono';src:url(data:font/woff2;base64,${b64(await google("JetBrainsMono.woff2", "JetBrains+Mono:wght@500..800", "JetBrains Mono"))}) format('woff2');font-weight:500 800;font-display:block}`,
+};
+// each page embeds only the fonts it uses (audit N-30: base64 does not compress, so an unused font is bytes before first paint);
+// fontProblems (tools/pitch/fonts-used.mjs) checks both built pages against this, canvas font strings included
+const walkFonts = face.clash + face.saira + face.inter + face.archivo + face.mono;
+const frontFontsEmbedded = face.sedgwick + face.inter + face.archivo + face.mono;
+function fontsOk(html, page) {
+  const problems = fontProblems(html, page);
+  if (problems.length) throw new Error(problems.join("\n"));
+}
 
 // the contact form's send (src/content/sendContact.ts): the same function the site's form imports, as plain JavaScript for the pages' inline scripts
 function mailSend() {
@@ -148,7 +157,7 @@ function pace() {
   return `(${js.slice(js.indexOf("export function makePace(") + 7).trimEnd()})`;
 }
 const parts = {
-  __EMBED__: embed + frontFonts, // the walk's start says the name in the front's type (Archivo) and its mono labels
+  __EMBED__: walkFonts,
   __TOKENS__: readFileSync(join(root, "src/design/tokens.css"), "utf8"), // the site's own colours, sizes and speeds: one source
   __HAND__: hand("hi-i-m-tom"),
   __HAND_WALL__: `{${["tom", "ttdevs", "larsson", "tt"].map((w) => `"${w}": ${hand(w)}`).join(", ")}}`,
@@ -223,6 +232,7 @@ function withScriptRule(html) {
     throw new Error('pitch/paint.src.html lost its <meta charset="utf-8"> line');
   return html.replace(at, `${at}<meta http-equiv="Content-Security-Policy" content="${rule}">\n`);
 }
+fontsOk(page, "the walk");
 writeFileSync(join(out, "paint.html"), withScriptRule(withBotId(page)));
 
 // The front page (pitch, 11-20, landonorris.com's techniques): the same fonts and tokens, no 3D. /next/front on the
@@ -235,7 +245,7 @@ const libs = ["gsap/dist/gsap.min.js", "gsap/dist/ScrollTrigger.min.js", "lenis/
   .map((f) => `<script>${lib(f)}</script>`)
   .join("\n");
 let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
-  .replaceAll("__EMBED__", () => embed + frontFonts)
+  .replaceAll("__EMBED__", () => frontFontsEmbedded)
   .replaceAll("__TOKENS__", () => parts.__TOKENS__)
   .replaceAll("__MAIL_WORDS__", () => parts.__MAIL_WORDS__)
   .replaceAll("__MAIL_SEND__", () => parts.__MAIL_SEND__)
@@ -244,6 +254,7 @@ let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
   .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
 if (/__[A-Z_]{3,}__/.test(front))
   throw new Error("pitch/front.src.html asks for a part the build doesn't fill");
+fontsOk(front, "the front");
 writeFileSync(join(out, "front.html"), withScriptRule(withBotId(front))); // the site copy below is changed first, then hashed
 // its product screens: /projects/ on the site (public/projects); the same path in the local pitch folder
 rmSync(join(out, "projects"), { force: true, recursive: true });
