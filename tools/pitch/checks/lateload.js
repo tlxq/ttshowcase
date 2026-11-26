@@ -7,17 +7,18 @@ async page => { const errs = [], res = { errs }; page.on('pageerror', e => errs.
   for (let i = 0; i < 400 && !(await page.evaluate(() => document.documentElement.dataset.readyAt)); i++) await page.waitForTimeout(50);
   res.early = await page.evaluate(re => performance.getEntriesByType('resource').filter(r => new RegExp(re).test(r.name)).length, LATE);
   if (res.early) errs.push(res.early + ' late pictures were asked for before the bucket was ready');
-  const cdp = await page.context().newCDPSession(page); await cdp.send('Network.enable'); await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 500000, uploadThroughput: 100000 });
+  const cdp = await page.context().newCDPSession(page); await cdp.send('Network.enable'); await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 120000, uploadThroughput: 100000 });
   const b = await page.evaluate(() => window.bucketAt()); await page.mouse.click(b.x, b.y);
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   const go = sv => page.evaluate(sv => scrollTo(0, svY(sv)), sv);
-  for (const sv of [560, 640, 700, 800, 900, 960, 1050]) { await go(sv); await page.waitForTimeout(500); } // straight down the walk, before the late pictures can be in
+  for (const sv of [1050, 900, 700]) { await go(sv); await page.waitForTimeout(1500); } // straight down to EDGE and back up the walk, before the late pictures can be in
   res.before = await page.evaluate(() => ({ late: document.documentElement.dataset.lateDone || null, pops: +document.documentElement.dataset.pops || 0 }));
   await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 });
-  for (let i = 0; i < 60 && !(await page.evaluate(() => document.documentElement.dataset.lateDone)); i++) await page.waitForTimeout(250);
-  for (const sv of [700, 800, 900, 960]) { await go(sv); await page.waitForTimeout(1500); }
-  res.after = await page.evaluate(re => ({ late: document.documentElement.dataset.lateDone || null, pops: +document.documentElement.dataset.pops || 0, asked: performance.getEntriesByType('resource').filter(r => new RegExp(re).test(r.name)).length }), LATE);
+  for (let i = 0; i < 160 && !(await page.evaluate(() => document.documentElement.dataset.lateDone)); i++) await page.waitForTimeout(250);
+  for (const sv of [700, 800, 900, 960, 1050]) { await go(sv); await page.waitForTimeout(1500); }
+  res.after = await page.evaluate(re => ({ late: document.documentElement.dataset.lateDone || null, pops: +document.documentElement.dataset.pops || 0, started: +document.documentElement.dataset.started || 0, asked: performance.getEntriesByType('resource').filter(r => new RegExp(re).test(r.name)).length }), LATE);
   if (!res.after.late) errs.push('the late pictures never all arrived');
   if (res.after.pops) errs.push('a painting was drawn before its picture, ' + res.after.pops + ' frames');
+  if (res.after.started < 5) errs.push('only ' + res.after.started + ' of the 5 late paintings came up');
   if (res.after.asked < 28) errs.push('only ' + res.after.asked + ' of the 28 late pictures were asked for');
   return JSON.stringify(res); }

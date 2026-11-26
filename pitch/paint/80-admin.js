@@ -196,7 +196,7 @@
     scene.fog.color.copy(FOG0); sky.intensity *= 1 - .55 * under; sky.color.copy(SKY0);
     const FADE = .8; // seconds a painting takes to come up on its wall
     U4.forEach((u, i) => { const near = Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = sv > u.key - 14 && sv < u.leave + 15;
-      if (introOver && sv > u.key - 14 && !u.start && u.B.ready() && (!u.O || u.O.ready())) u.start = now; // once per visit
+      if (introOver && sv > u.key - 14 && !u.start && u.B.ready() && (!u.O || u.O.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1, t0 = .35, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / FADE)), shown = k >= 1;
       if (k > 0 && !u.B.ready()) root.dataset.pops = (+root.dataset.pops || 0) + 1; u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
