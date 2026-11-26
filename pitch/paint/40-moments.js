@@ -246,12 +246,15 @@
   // the lights that go with the camera: a warm spot on the wall it faces, a warm fill from the room's middle, and the light that spills out of the door onto the wet street
   const exitL = new THREE.PointLight(0xffd9a0, 0, 15, 1.4); scene.add(exitL); exitL.position.set((DOOR_B[0] + DOOR_B[1]) / 2, G3 + DOOR_H + .9, 1.1); // the work lamp over the back door
   const shopSpot = new THREE.SpotLight(SHOP_WARM, 0, 15, 1, 1, 1.3), shopFill = new THREE.PointLight(0xf1f2ff, 0, 13, 1.6), spill = new THREE.SpotLight(0xffd29a, 0, 14, .7, .85, 1.1); scene.add(shopSpot, shopSpot.target, shopFill, spill, spill.target);
-  function shopAt(now, sv, cp) { // the door's roll, the lamps, where the light stands
+  function shopAt(now, sv, cp, look) { // the door's roll, the lamps, where the light stands
     const tIn = sm(cl((sv - 578) / 50)); shop.open = tIn; shop.lit = tIn * (1 - sm(cl((sv - 940) / 50))); // (cause D) the door rolls up as the camera comes to it, open before it goes through (sv ~645)
     shop.panel.position.y = G3 + DOOR_H / 2 + tIn * (DOOR_H + .05); shop.panel.visible = tIn < .999;
     const inX = sm(cl((cp.x - HX0 + .2) / 1.4)) * (1 - sm(cl((cp.x - CX1 + 1.2) / 1.6))), inZ = sm(cl((.9 - cp.z) / 1.6)); shop.ins = inX * inZ;
     shopBulb.emissiveIntensity = 2.2 * shop.lit; tubeM.emissiveIntensity = 2.4 * shop.lit; tubeBad.emissiveIntensity = (Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4) * shop.lit;
-    const cx = cl(cp.x, HX0 + 1.5, CX1 - 1.5);
+    // (Tom 11-26, night) the spot lights what the camera LOOKS at, not the wall in front of its feet: with the head turned back along the room (the way out) it stood where the camera
+    // was and the shelf and the tool chest it looked at were dim shapes. Where the view line meets the back wall; looking out of the room (no wall ahead), it stays by the camera.
+    const dir = look.clone().sub(cp), ahead = sm(cl((-dir.z / Math.hypot(dir.x, dir.z) - .15) / .3)), hit = dir.z < -1e-3 ? cp.x + dir.x * ((WZ - cp.z) / dir.z) : cp.x;
+    const cx = cl(cp.x + (hit - cp.x) * ahead, HX0 + 1.5, CX1 - 1.5);
     shopSpot.intensity = 2.2 * shop.lit; shopSpot.position.set(cx, CEIL - .3, WZ + 1.7); shopSpot.target.position.set(cx, G3 + 1.7, WZ);
     shopFill.intensity = 1.0 * shop.lit; shopFill.position.set(cx, G3 + 3.2, WZ + 6.3);
     const sx = sm(cl((cp.x - 50) / 8)), dx = DOOR_A[0] + (DOOR_A[1] - DOOR_A[0]) / 2, ex = DOOR_B[0] + (DOOR_B[1] - DOOR_B[0]) / 2; // the light out of the door follows you to the far one

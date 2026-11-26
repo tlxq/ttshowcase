@@ -216,7 +216,7 @@
   const KEYS = [...U4.slice(1, 3).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)])], KEY_END = [1058, SV_MAX - 10, ...BARE_T]; /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */
   const keyTo = (sv, cp, look, [a, b, P, L]) => { const k = sm(cl((sv - a) / (b - a))); if (k > 0) { cp.lerp(P, k); look.lerp(L, k); } };
   function endCam(sv, cp, look) { wayIn(sv, cp, look); KEYS.forEach(k => keyTo(sv, cp, look, k)); wayOut(sv, cp, look); keyTo(sv, cp, look, KEY_END); }
-  function endAt(now, sv, cp) { shopAt(now, sv, cp); const cx = cp.x;
+  function endAt(now, sv, cp, look) { shopAt(now, sv, cp, look); const cx = cp.x;
     edgeL.intensity = 5 * sm(cl((sv - 850) / 40)); siteM.emissiveIntensity = 2.6 * sm(cl((sv - 850) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
     scene.fog.color.copy(FOG0); sky.color.copy(SKY0);
     const FADE = .8; // seconds a painting takes to come up on its wall
