@@ -33,7 +33,14 @@ walk() { # name, script, then "desktop" or "phone"
   [ -z "$only" ] || [ "$only" = "$1" ] || return 0
   ran=1
   local s="walk-$1" result script=".cache/walk/$1.js"
-  sed -e "s#__WALK_URL__#http://127.0.0.1:$port#" -e "s#__URL__#http://127.0.0.1:$port/next/front?key=walk-local-key#" -e "s#__SHOTS__#$root/.cache/shots/#" -e "s#__AXE__#$root/node_modules/axe-core/axe.min.js#" -e "s#__BUDGET__#$(tr -d ' \n' < tools/walk/budget.json)#" "tools/walk/$2" > "$script"
+  sed -e "s#__WALK_URL__#http://127.0.0.1:$port#" -e "s#__URL__#http://127.0.0.1:$port/next/front?key=walk-local-key#" -e "s#__SHOTS__#$root/.cache/shots/#" -e "s#__BUDGET__#$(tr -d ' \n' < tools/walk/budget.json)#" "tools/walk/$2" > "$script"
+  # the axe source goes in as a JSON string for page.evaluate (a script tag is blocked by the page's CSP)
+  python3 -I - "$script" "$root/node_modules/axe-core/axe.min.js" <<'PY'
+import json, sys
+js = open(sys.argv[1], encoding="utf-8").read()
+if "__AXE_SOURCE__" in js:
+    open(sys.argv[1], "w", encoding="utf-8").write(js.replace("__AXE_SOURCE__", json.dumps(open(sys.argv[2], encoding="utf-8").read())))
+PY
   if [ "$3" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
   result=$(playwright-cli --raw -s="$s" run-code --filename="$root/$script" 2>&1 | grep -v '^$' | tail -1)

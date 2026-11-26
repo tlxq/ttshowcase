@@ -71,7 +71,8 @@ def csp_for(path):
             manifest = json.load(f)
     except (OSError, ValueError):
         return None
-    key = path.rstrip("/") or "/"
+    # a file's own address (/wall.html, /index.html) is the page's: the same inline scripts run there
+    key = re.sub(r"(^|/)index$", "", re.sub(r"\.html$", "", path.rstrip("/"))) or "/"
     return manifest[key] if key in manifest and key != "default" else manifest.get("default")
 
 
