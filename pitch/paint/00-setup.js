@@ -58,18 +58,6 @@
   track.style.height = PAGE + "vh"; // the stylesheet says the same, for the first paint
   window.visitY = () => topPx(); // the visitors' wall in pixels; the checks scroll with this
   let up0 = 0, endVisit = 0; // the park at the last frame; how far the end has walked in to the visitors' wall (0..1)
-  // The progress line (Tom 11-23): the only thing that says where on the site you are. The bottom line is the walk (start → EDGE, left to right),
-  // the top line the way round (right to left: the visitors' wall, the pole), so the marker runs round the screen and never jumps back.
-  const prog = ["top", "bot"].map(k => { const e = document.createElement("div"); e.className = "prog " + k; e.setAttribute("aria-hidden", "true"); e.append(document.createElement("b")); document.body.append(e); return e; });
-  const PROG_MARKS = [128, 432, 700, 770, 840, 910, 1045], DASH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--look-progress-dash")) || 48; let progW = 0;
-  function progPlace() { const max = document.documentElement.scrollHeight - innerHeight, park = upPx(), W = innerWidth; if (max <= park) return;
-    if (progW !== W) { progW = W; prog.forEach(e => e.querySelectorAll("i").forEach(i => i.remove())); // the walls: short marks where each one stands
-      for (const sv of PROG_MARKS) { const i = document.createElement("i"); i.style.left = (((svY(sv) - park) / (max - park)) * W).toFixed(1) + "px"; prog[1].append(i); }
-      const i = document.createElement("i"); i.style.left = ((1 - visitY() / park) * W).toFixed(1) + "px"; prog[0].append(i); }
-    const y = cl(scrollY, 0, max), s = y >= park ? ((y - park) / (max - park)) * W : W + (y / park) * W; // s: along the loop, 0..2W: the bottom (the walk), then the top (the page's top on the right, down to the start on the left)
-    for (const [e, a, b] of [[prog[1], 0, W], [prog[0], W, 2 * W]]) { let lo = 0, hi = 0, m = e.firstChild; // each line shows its part of the dash; round a corner it is on both
-      for (const o of [-2 * W, 0, 2 * W]) { const l = Math.max(a, s + o - DASH / 2), h = Math.min(b, s + o + DASH / 2); if (h > l) { lo = l; hi = h; } }
-      const x = e === prog[1] ? lo : 2 * W - hi; m.style.width = (hi - lo).toFixed(1) + "px"; m.style.transform = `translateX(${x.toFixed(1)}px)`; } }
   window.svY = sv => upPx() + (document.documentElement.scrollHeight - innerHeight - upPx()) * paceOf(sv, 0, 1) / WALK; // the checks scroll with this
   const HX0 = 34.5, CX1 = 67.5, BD = 9.5, RH = 4.4, WZ = -BD, WF = G3, DOOR_A = [35.6, 40.6], DOOR_B = [62.7, 67.1], DOOR_H = 3.3, END_X = 104;
   const wallGeo = new THREE.PlaneGeometry(WW, WH + 2 * TILE); wallGeo.setAttribute("uv2", wallGeo.attributes.uv);
