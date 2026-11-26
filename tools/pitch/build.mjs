@@ -124,6 +124,17 @@ function mailSend() {
     .replace(/[ \t]+$/gm, "");
   return `(${js.trimEnd()})`;
 }
+// the front's frame pacing (pitch/pace.js, S-2): plain JavaScript with one exported function, put into the page as that function
+function pace() {
+  const js = readFileSync(join(root, "pitch/pace.js"), "utf8");
+  if (
+    !js.includes("export function makePace(") ||
+    js.indexOf("export ") !== js.lastIndexOf("export ")
+  )
+    throw new Error("pitch/pace.js must hold one exported function, makePace");
+  if (/^import /m.test(js)) throw new Error("pitch/pace.js must have no imports");
+  return `(${js.slice(js.indexOf("export function makePace(") + 7).trimEnd()})`;
+}
 const parts = {
   __EMBED__: embed + frontFonts, // the walk's start says the name in the front's type (Archivo) and its mono labels
   __TOKENS__: readFileSync(join(root, "src/design/tokens.css"), "utf8"), // the site's own colours, sizes and speeds: one source
@@ -216,6 +227,7 @@ let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
   .replaceAll("__TOKENS__", () => parts.__TOKENS__)
   .replaceAll("__MAIL_WORDS__", () => parts.__MAIL_WORDS__)
   .replaceAll("__MAIL_SEND__", () => parts.__MAIL_SEND__)
+  .replaceAll("__PACE__", () => pace())
   .replaceAll("__LIBS__", () => libs)
   .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());
 if (/__[A-Z_]{3,}__/.test(front))

@@ -23,7 +23,7 @@ export async function sendContact(
     if (answer.ok) return { ok: true };
     code = ((await answer.json().catch(() => ({}))) as { error?: string }).error || "";
     why = words.why[code] || words.other;
-  } catch (_) {
+  } catch {
     why = words.offline;
   }
   return { ok: false, code, known: !!words.why[code], why, text: words.lead + why };
