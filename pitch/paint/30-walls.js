@@ -16,12 +16,16 @@
   // The other six paintings (Tom 11-19, one artist per wall) go on their walls the same way: painted on the desk's graphics card (CREDITS.txt), the bare
   // concrete keyed out so the wall shows through, 1536 x 960 px each. paintOn puts picture pixel (px, py) at the wall point (wx, wy), the picture w m wide.
   // at(u, v) is any picture pixel in the wall's own space; the link marks and the painted areas are in picture pixels. The wall's own hole (moment 3) cuts through it too.
-  function paintOn(file, w, [px, py], [wx, wy], z = .002, [pw, ph] = [1536, 960]) { const h = w * ph / pw, k = w / pw, cx = wx - px * k + w / 2, cy = wy + py * k - h / 2, late = !/^assets\/(epa|rvf)_/.test(file), map = tex(file, true, 1, 1, 0, 0, late); map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallBump(new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .55,
-      normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2) - (cx > CX1 ? SEAM_D.x : 0)) / TILE, (cy - h / 2 - GROUND - (cx > CX1 ? SEAM_D.y : 0)) / TILE), normalScale: new THREE.Vector2(.4, .4), polygonOffset: true, polygonOffsetFactor: -2 })));
-    m.position.set(cx, cy, z); scene.add(m);
-    const at = (u, v) => V(cx - w / 2 + u * k, cy + h / 2 - v * k, 0);
-    return { m, at, w, h, k, ready: () => texReady(file), protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y1), at(x1, y0)]) }; }
+  // zw: the wall's own place in depth (the workshop's back wall stands at WZ)
+  function paintOn(file, w, [px, py], [wx, wy], z = .002, [pw, ph] = [1536, 960], zw = 0) { const h = w * ph / pw, k = w / pw, cx = wx - px * k + w / 2, cy = wy + py * k - h / 2, late = !/^assets\/(epa|rvf)_/.test(file), map = tex(file, true, 1, 1, 0, 0, late); map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
+    // the bumps are the street concrete's (its joints included): a painting on the workshop's back wall (zw) gets none, as that wall is smooth blocks
+    // (Tom 11-26: a dark line across the Toolbox paintings at waist height was the street wall's joint, drawn where the block wall has none)
+    const mat = new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .55, polygonOffset: true, polygonOffsetFactor: -2 });
+    if (!zw) Object.assign(mat, { normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2) - (cx > CX1 ? SEAM_D.x : 0)) / TILE, (cy - h / 2 - GROUND - (cx > CX1 ? SEAM_D.y : 0)) / TILE), normalScale: new THREE.Vector2(.4, .4) });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), zw ? mat : wallBump(mat));
+    m.position.set(cx, cy, zw + z); scene.add(m);
+    const at = (u, v) => V(cx - w / 2 + u * k, cy + h / 2 - v * k, zw);
+    return { m, at, w, h, k, ready: () => texReady(file), protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y1), at(x1, y0)]), zw }; }
   // the tap areas over painted link marks (picture pixels): each at least 48 x 48 px; two marks that sit close share the line between them (each grows away from it), so they never overlap.
   // Each shows while its own mark is in view (on), and is out of the tab order otherwise.
   function placeHots(els, boxes, B, on) { const R = boxes.map(([x0, y0, x1, y1]) => { const [ax, ay, oa] = proj(B.at(x0, y0)), [bx, by, ob] = proj(B.at(x1, y1)), l = Math.min(ax, bx), r = Math.max(ax, bx), t = Math.min(ay, by), b = Math.max(ay, by),
@@ -33,8 +37,8 @@
     els.forEach((h, i) => { const g = R[i]; if (!g.ok) { h.style.display = "none"; h.tabIndex = -1; return; }
       Object.assign(h.style, { display: "block", left: g.l + "px", top: g.t + "px", width: g.r - g.l + "px", height: g.b - g.t + "px" }); h.tabIndex = 0; }); }
   // ---- live numbers sprayed on the walls (Tom 11-19). RULE: every visible number comes from a PUBLIC source, asked when the page loads; nothing is typed in or baked into a picture.
-  // If it fails that number is not drawn (no old value, no placeholder) and the wall still looks complete (the stack stays). Self-hosted, EDGE and raddavarfruberga show no numbers:
-  // the first two are private, and raddavarfruberga.se offers no public count (its page is prerendered and sends no CORS header, so a browser can't read it).
+  // If it fails that number is not drawn (no old value, no placeholder) and the wall still looks complete (the stack stays). EDGE and raddavarfruberga show no numbers:
+  // EDGE is private, and raddavarfruberga.se offers no public count (its page is prerendered and sends no CORS header, so a browser can't read it).
   // The page asks this site's /api/github (api/github.ts), which asks GitHub once an hour for everyone: a visitor's own address may make only 60 anonymous asks an hour, and past that every load logged 403 errors in the console.
   const NUMS = fetch("/api/github").then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => ({})); // one ask for all walls; no answer = no numbers
   const numOf = (wall, key) => NUMS.then(d => { const n = d?.[wall]?.[key]; if (!(n > 0)) throw 0; return n; });
@@ -50,15 +54,15 @@
   // a sprayed text on a wall: canvas drawn at runtime (a soft overspray halo, a speckle round the edges, a few drips), laid on the wall like a painting.
   // o: key (LIVE's), colour, stack (words), rect (wall space: x0, y0, x1, y1), row (stats side by side, else one under the other), name (for the plates check)
   const SPRAY_FONT = '"Saira Stencil One", sans-serif';
-  // painted glyphs for live numbers (Tom 11-25): the digits and words in the tag hand, one picture; [x, y, w, h] each, all 160 px tall
-  const GLYPH = new Image(), GLYPH_AT = {"0":[0,0,105,160],"1":[113,0,95,160],"2":[216,0,134,160],"3":[358,0,123,160],"4":[489,0,136,160],"5":[633,0,136,160],"6":[777,0,109,160],"7":[894,0,121,160],"8":[1023,0,109,160],"9":[1140,0,100,160],"commits":[1248,0,614,160],"merged":[0,168,406,160],"pull requests":[414,168,616,160]};
+  // painted glyphs for live numbers (Tom 11-25): the digits and words in the tag hand, one picture; [x, y, w, h] each, all 160 px tall (tests and skills added 11-26 for the Toolbox)
+  const GLYPH = new Image(), GLYPH_AT = {"0":[0,0,105,160],"1":[113,0,95,160],"2":[216,0,134,160],"3":[358,0,123,160],"4":[489,0,136,160],"5":[633,0,136,160],"6":[777,0,109,160],"7":[894,0,121,160],"8":[1023,0,109,160],"9":[1140,0,100,160],"commits":[1248,0,614,160],"merged":[0,168,406,160],"pull requests":[414,168,616,160],"tests":[0,336,379,160],"skills":[387,336,417,160]};
   GLYPH.src = "assets/epa_glyphs.webp"; const glyphsReady = GLYPH.decode().catch(() => {});
   function makeSpray(o) { const FONT = o.font || SPRAY_FONT, WT = o.weight || "", [x0, y0, x1, y1] = o.rect, w = x1 - x0, h = y1 - y0, PPM = 400, W = Math.round(w * PPM), H = Math.round(h * PPM);
     const mk = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return c; }, out = mk(), og = out.getContext("2d", { willReadFrequently: true });
     const map = new THREE.CanvasTexture(out); map.encoding = THREE.sRGBEncoding; map.anisotropy = maxAniso;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .6, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }));
-    mesh.position.set(x0 + w / 2, y0 + h / 2, o.z ?? .004); mesh.visible = false; scene.add(mesh); // o.z: on a raised panel (EDGE)
-    PROT.push([o.name, V(x0, y0, 0), V(x1, y1, 0)]);
+    mesh.position.set(x0 + w / 2, y0 + h / 2, (o.zw || 0) + (o.z ?? .004)); mesh.visible = false; scene.add(mesh); // o.z: on a raised panel (EDGE)
+    PROT.push([o.name, V(x0, y0, o.zw || 0), V(x1, y1, o.zw || 0)]);
     let seed = [...o.key].reduce((a, c) => a + c.charCodeAt(0), 7); const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
     const sp = { mesh, op: 0, at: 0, draw() { seed = [...o.key].reduce((a, c) => a + c.charCodeAt(0), 7);
       const items = (LIVE[o.key] || []).filter((s, i) => s.n != null && (o.only == null || o.only === i)).map(s => [s.n.toLocaleString("en-US"), s.n === 1 ? s.word[0] : s.word[1]]), stack = o.stack, pad = W * .04;
@@ -79,22 +83,23 @@
         if (items.length) { items.forEach(([n, wd], i) => { const cx = pad + cw * (i + .5); parts.push([n, nfs, cx, y, "center"], [wd, Math.min(wfs, fit(wd, 1000, cw * .92)), cx, y + nfs * 1.02, "center"]); }); y += nfs + wfs * 1.5 + sfs * .3; }
         lines.forEach(t => { parts.push([t, sfs, W / 2, y, "center"]); y += sfs * 1.2; });
       } else { let nfs = 1e9; for (const [n] of items) nfs = Math.min(nfs, fit(n, 1000, W - 2 * pad)); nfs = Math.min(nfs, W * .5, H * (stack.length > 4 ? .2 : .17)); const wfs = nfs * .3;
-        let sfs = 1e9; for (const t of stack) sfs = Math.min(sfs, fit(t, 1000, W - 2 * pad)); sfs = Math.min(sfs, W * .1, (H * .98 - items.length * (nfs * 1.5 + H * .02) - (items.length ? H * .03 : 0)) / (stack.length * 1.3));
+        let sfs = 1e9; for (const t of stack) sfs = Math.min(sfs, fit(t, 1000, W - 2 * pad)); sfs = Math.min(sfs, W * (o.cap || .1), (H * .98 - items.length * (nfs * 1.5 + H * .02) - (items.length ? H * .03 : 0)) / (stack.length * 1.3));
         const blockH = items.length * (nfs + wfs * 1.6 + H * .02) + (items.length ? H * .03 : 0) + stack.length * sfs * 1.3; let y = Math.max(0, (H - blockH) / 2);
         for (const [n, wd] of items) { parts.push([n, nfs, pad, y, "left"], [wd, Math.min(wfs, fit(wd, 1000, W - 2 * pad)), pad, y + nfs * 1.02, "left"]); y += nfs + wfs * 1.6 + H * .02; }
         y += items.length ? H * .03 : 0;
         for (const t of stack) { parts.push([t, sfs, pad, y, "left"]); y += sfs * 1.3; } }
-      if (o.glyphs) { parts.length = 0; sp.shown = null; const s = LIVE[o.key]?.[o.only]; if (s && s.n != null && GLYPH.naturalWidth) { sp.shown = s.n; // the number from painted digits, its words beside it (one or two lines)
+      if (o.glyphs) { parts.length = 0; sp.shown = null; const s = LIVE[o.key]?.[o.only]; if (s && s.n != null && s.n !== 1 && GLYPH.naturalWidth && o.glyphs.words.flat().every(g => GLYPH_AT[g])) { sp.shown = s.n; // the number from painted digits, its words beside it (one or two lines); the words are plural glyphs, so a count of 1 is left blank, never "1 commits"
         const digits = String(s.n).split(""), lines = o.glyphs.words, gap = 26, lineH = lines.length > 1 ? .5 : .62; // a small gap between thousands, no comma glyph
         let nw = 0; digits.forEach((d, i) => nw += GLYPH_AT[d][2] * .92 + ((digits.length - 1 - i) % 3 === 0 && i < digits.length - 1 ? gap : 0));
-        const ww = Math.max(...lines.map(l => l.reduce((a, g) => a + GLYPH_AT[g][2], 0))) * lineH, k = Math.min((H * .9) / 160, (W - 2 * pad) / (nw + 30 + ww));
+        const ww = Math.max(...lines.map(l => l.reduce((a, g) => a + GLYPH_AT[g][2], 0))) * lineH, k = Math.min((H * (o.piece ? .78 : .9)) / 160, /* room for the outline and its shadow */ (W - 2 * pad) / (nw + 30 + ww));
         let x = pad, y = (H - 160 * k) / 2; digits.forEach((d, i) => { const [gx, gy, gw, gh] = GLYPH_AT[d]; mg.drawImage(GLYPH, gx, gy, gw, gh, x, y, gw * k, gh * k); x += gw * k * .92 + ((digits.length - 1 - i) % 3 === 0 && i < digits.length - 1 ? gap * k : 0); });
         x += 30 * k; let ly = y + 160 * k - lines.length * 160 * k * lineH; for (const l of lines) { let lx = x; for (const g of l) { const [gx, gy, gw, gh] = GLYPH_AT[g]; mg.drawImage(GLYPH, gx, gy, gw, gh, lx, ly, gw * k * lineH, gh * k * lineH); lx += gw * k * lineH; } ly += 160 * k * lineH; } } }
       for (const [t, px, x, y, al] of parts) { mg.font = `${WT} ${px}px ${FONT}`; mg.textAlign = al; mg.fillText(t, x, y); }
-      if (o.piece) { // (Tom 11-19) painted like the piece's own letters: a thick black outline, a drop shadow in the piece's colour, the fill, overspray in the shadow colour
+      if (o.piece) { // (Tom 11-19) painted like the piece's own letters: a thick black outline, a drop shadow in the piece's colour, the fill, overspray in the shadow colour (typed or painted glyphs)
         const ol = mk(), lg = ol.getContext("2d"); lg.lineJoin = "round"; lg.strokeStyle = lg.fillStyle = "#15110d"; lg.textBaseline = "top";
         for (const [t, px, x, y, al] of parts) { lg.font = `${WT} ${px}px ${FONT}`; lg.textAlign = al; lg.lineWidth = px * .17; lg.strokeText(t, x, y); lg.fillText(t, x, y); }
         const paint = (src, col) => { const c = mk(), g = c.getContext("2d"); g.drawImage(src, 0, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = col; g.fillRect(0, 0, W, H); return c; };
+        if (o.glyphs) { const dk = paint(mask, "#15110d"), r = Math.max(2, H * .028); for (let a = 0; a < 6.28; a += .4) lg.drawImage(dk, Math.cos(a) * r, Math.sin(a) * r); } // painted glyphs (Tom 11-26, the Toolbox): the outline round the painted strokes
         const sh = paint(ol, o.piece), fill = paint(mask, o.colour), d = Math.max(3, H * .035); og.clearRect(0, 0, W, H);
         if ("filter" in og) { og.filter = `blur(${H * .06}px)`; og.globalAlpha = .45; og.drawImage(sh, 0, 0); og.filter = "none"; }
         og.globalAlpha = 1; og.drawImage(sh, d, d); og.drawImage(ol, 0, 0); og.drawImage(fill, 0, 0);
@@ -123,6 +128,8 @@
     const R = ([u0, v0, u1, v1]) => [EPAN.at(u0, 0).x, EPAN.at(0, v1).y, EPAN.at(u1, 0).x, EPAN.at(0, v0).y];
     var EPA_PARTS = [makeSpray({ key: "epa", only: 0, name: "epaRadar's commits", colour: "#ffb03a", glyphs: { words: [["commits"]] }, stack: [], rect: R([80, 28, 650, 178]) }),
       makeSpray({ key: "epa", only: 1, name: "epaRadar's merged pull requests", colour: "#ffb03a", glyphs: { words: [["merged"], ["pull requests"]] }, stack: [], rect: R([950, 22, 1500, 182]) })]; }
+  const inkOf = p => { const c = p.mesh.material.map.image, d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let ink = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 128) ink++; return ink; };
+  window.numsTest = () => Object.fromEntries(["ttoolbox", "dot", "tthermal"].map(k => [k, (SPRAYS[k] || []).map(p => ({ shown: p.shown ?? null, ink: inkOf(p), op: +p.op.toFixed(2) }))])); // for the garage check: each Toolbox number's painted count, paint and how far it has faded in
   window.sprayTest = () => EPA_PARTS.map(p => { const c = p.mesh.material.map.image, d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let ink = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 128) ink++; return { shown: p.shown ?? null, ink }; }); // for the epanums check: the number each painted spray shows, and how much paint it has
   // the underpass (Tom 11-18): the street goes down its second flight under a bridge, from the painting's right edge to just short of
   // raddavarfruberga. The deck rests on its abutment, a wall that stands forward of the street wall: the car drives in behind its corner.
