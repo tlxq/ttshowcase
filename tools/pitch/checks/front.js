@@ -5,7 +5,7 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error' && !/status of (429|403)\b/.test(m.text())) errs.push(m.text()); });
   page.on('response', r => { if (r.status() >= 400 && !/\/api\/contact$/.test(r.url())) errs.push(r.status() + ' ' + r.url()); });
   page.on('requestfailed', r => { const f = r.failure()?.errorText || ''; if (!/ERR_ABORTED/.test(f)) errs.push('failed ' + r.url() + ' ' + f); });
-  await page.route('https://api.github.com/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' })); // GitHub allows 60 asks an hour: no number is drawn, as when it fails
+  await page.route('**/api/github', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' })); // GitHub allows 60 asks an hour: no number is drawn, as when it fails
   await page.addInitScript(() => document.addEventListener('securitypolicyviolation', e => console.error('blocked by the script rule: ' + e.blockedURI + ' ' + e.violatedDirective)));
   await page.goto('__URL__'); await page.waitForTimeout(2500);
   // the page names its icon (audit 4a, 11-25): without one a browser asks for /favicon.ico, which is a 404 and a console error

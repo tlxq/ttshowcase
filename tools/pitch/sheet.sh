@@ -37,8 +37,7 @@ shoot() { # build (base|branch), screen (laptop|phone), hour; a failed shoot lea
   sed -e "s#__URL__#http://127.0.0.1:$port/paint.html?hour=$3#" -e "s#__OUT__#$out/#" tools/pitch/sheet.js > "$js"
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
-  playwright-cli -s="$s" route "https://api.github.com/**" --status=200 --body='[]' >/dev/null 2>&1 # no live numbers: see run.sh
-  playwright-cli -s="$s" route "https://raw.githubusercontent.com/**" --status=200 --body='' >/dev/null 2>&1
+  playwright-cli -s="$s" route "**/api/github" --status=200 --body='{}' >/dev/null 2>&1 # no live numbers: see run.sh
   result=$(playwright-cli --raw -s="$s" run-code --filename="$js" 2>&1 | grep -v '^$' | tail -1)
   playwright-cli -s="$s" close >/dev/null 2>&1; kill "$srv" "$tags" 2>/dev/null; rm -f "$js"
   case "$result" in '"{\"errs\":[]}"') ;; *) echo "$result" > "$out.fail"; echo "$1 $2 hour $3 failed: $result" ;; esac

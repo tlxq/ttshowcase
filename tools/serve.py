@@ -2,7 +2,7 @@
 /next is guarded like on Vercel (middleware.ts, same rules): `/next?key=<PREVIEW_KEY>` once sets a
 cookie, without it /next is the site's 404 page. No PREVIEW_KEY: /next is closed.
 The response headers in vercel.json (security rules, noindex) and each page's Content-Security-Policy (out/csp-manifest.json) are sent here too, so the checks run under them.
-/api/tags and /api/admin go to the local tag store (tools/tags/local.mjs) when TAGS_PORT is set (the pitch); /api/tags-local only from this PC.
+/api/tags, /api/admin and /api/github go to the local tag store (tools/tags/local.mjs) when TAGS_PORT is set (the pitch); /api/tags-local only from this PC.
 SERVE_RELOAD_FILE (the local pitch only, set by serve.sh when SERVE_WATCH is): pages get tools/pitch/reload.js, which waits on /__reload
 until tools/pitch/watch.mjs writes a new version into that file. Without it none of this exists, and nothing is ever added to a build.
 Usage: serve.py <host> <port>"""
@@ -129,9 +129,9 @@ class NoStale(http.server.SimpleHTTPRequestHandler):
     def tags(self):
         """True when the request was for the tag store and is answered (or refused) here."""
         path = urllib.parse.urlsplit(self.path).path
-        if not TAGS_PORT or not (path in ("/api/tags", "/api/admin") or path.startswith("/api/tags-local/")):
+        if not TAGS_PORT or not (path in ("/api/tags", "/api/admin", "/api/github") or path.startswith("/api/tags-local/")):
             return False
-        if path not in ("/api/tags", "/api/admin") and self.client_address[0] not in ("127.0.0.1", "::1"):
+        if path not in ("/api/tags", "/api/admin", "/api/github") and self.client_address[0] not in ("127.0.0.1", "::1"):
             self.send_error(404)  # the checks' doors are for this PC only
             return True
         # the loopback check above trusts the TCP peer: this server must never sit behind a local proxy (tailscale serve would make every peer look like loopback)
