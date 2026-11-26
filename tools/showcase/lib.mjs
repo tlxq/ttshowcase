@@ -54,7 +54,7 @@ export const HELP = {
     "showcase next preview 45",
   ],
   check: [
-    "The whole check before a PR: code, then the walks, then the pitch checks. A part that passed on this commit is skipped.",
+    "The whole check before a PR: code, then the walks, then the pitch checks. A part that passed on these files is skipped.",
     "showcase check",
     "showcase check --quick",
     "showcase check walk look-phone",
