@@ -32,26 +32,17 @@
       else { const [u, d] = a.cx < c.cx ? [a, c] : [c, a], seam = (u.cx + d.cx) / 2; u.r = seam; u.l = Math.min(u.l, seam - 48); d.l = seam; d.r = Math.max(d.r, seam + 48); } }
     els.forEach((h, i) => { const g = R[i]; if (!g.ok) { h.style.display = "none"; h.tabIndex = -1; return; }
       Object.assign(h.style, { display: "block", left: g.l + "px", top: g.t + "px", width: g.r - g.l + "px", height: g.b - g.t + "px" }); h.tabIndex = 0; }); }
-  // ---- live numbers sprayed on the walls (Tom 11-19). RULE: every visible number is fetched from a PUBLIC source when the page loads; nothing is typed in or baked into a picture.
-  // If a fetch fails that number is not drawn (no old value, no placeholder) and the wall still looks complete (the stack stays). Self-hosted, EDGE and raddavarfruberga show no numbers:
+  // ---- live numbers sprayed on the walls (Tom 11-19). RULE: every visible number comes from a PUBLIC source, asked when the page loads; nothing is typed in or baked into a picture.
+  // If it fails that number is not drawn (no old value, no placeholder) and the wall still looks complete (the stack stays). Self-hosted, EDGE and raddavarfruberga show no numbers:
   // the first two are private, and raddavarfruberga.se offers no public count (its page is prerendered and sends no CORS header, so a browser can't read it).
-  // The browser asks GitHub's public API directly (no server, no token): a visitor's IP may make 60 core and 10 search requests an hour; this page makes 6 core + 2 search + 1 raw per load.
-  const GH_API = "https://api.github.com/", GH_RAW = "https://raw.githubusercontent.com/tlxq/";
-  const ghGet = async url => { const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r; };
-  const treeOf = {}; // one tree request per repo
-  const filesOf = (repo, branch) => treeOf[repo] || (treeOf[repo] = ghGet(`${GH_API}repos/tlxq/${repo}/git/trees/${branch}?recursive=1`).then(r => r.json()).then(d => { if (d.truncated) throw 0; return d.tree.filter(t => t.type === "blob").map(t => t.path); }));
-  const positive = n => { if (!(n > 0)) throw 0; return n; };
-  // commits: the page count of a one-per-page listing, from its Link header (exact)
-  const commitsOf = async repo => { const r = await ghGet(`${GH_API}repos/tlxq/${repo}/commits?per_page=1`), last = /[?&]page=(\d+)>; rel="last"/.exec(r.headers.get("Link") || ""); return positive(last ? +last[1] : (await r.json()).length); };
-  const mergedOf = async repo => { const d = await (await ghGet(`${GH_API}search/issues?q=${encodeURIComponent(`repo:tlxq/${repo} is:pr is:merged`)}&per_page=1`)).json(); if (d.incomplete_results) throw 0; return positive(d.total_count); };
-  const testsOf = async (repo, branch) => { const files = (await filesOf(repo, branch)).filter(p => p.endsWith(".bats")); if (!files.length) throw 0;
-    return positive((await Promise.all(files.map(async f => ((await (await ghGet(`${GH_RAW}${repo}/${branch}/${f}`)).text()).match(/^@test\b/gm) || []).length))).reduce((a, b) => a + b, 0)); };
-  const skillsOf = async (repo, branch) => positive((await filesOf(repo, branch)).filter(p => /^plugins\/[^/]+\/skills\/[^/]+\/SKILL\.md$/.test(p)).length);
+  // The page asks this site's /api/github (api/github.ts), which asks GitHub once an hour for everyone: a visitor's own address may make only 60 anonymous asks an hour, and past that every load logged 403 errors in the console.
+  const NUMS = fetch("/api/github").then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => ({})); // one ask for all walls; no answer = no numbers
+  const numOf = (wall, key) => NUMS.then(d => { const n = d?.[wall]?.[key]; if (!(n > 0)) throw 0; return n; });
   const LIVE = { // wall: [singular, plural, how to get it]
-    dot: [["commit", "commits", () => commitsOf("dot")], ["test", "tests", () => testsOf("dot", "main")]],
-    ttoolbox: [["commit", "commits", () => commitsOf("ttoolbox")], ["skill", "skills", () => skillsOf("ttoolbox", "main")]],
-    tthermal: [["commit", "commits", () => commitsOf("tthermal")], ["merged pull request", "merged pull requests", () => mergedOf("tthermal")]],
-    epa: [["commit", "commits", () => commitsOf("eparadar")], ["merged pull request", "merged pull requests", () => mergedOf("eparadar")]] };
+    dot: [["commit", "commits", () => numOf("dot", "commits")], ["test", "tests", () => numOf("dot", "tests")]],
+    ttoolbox: [["commit", "commits", () => numOf("ttoolbox", "commits")], ["skill", "skills", () => numOf("ttoolbox", "skills")]],
+    tthermal: [["commit", "commits", () => numOf("tthermal", "commits")], ["merged pull request", "merged pull requests", () => numOf("tthermal", "merged")]],
+    epa: [["commit", "commits", () => numOf("epa", "commits")], ["merged pull request", "merged pull requests", () => numOf("epa", "merged")]] };
   const SPRAYS = {}, liveHead = document.createElement("p"); liveHead.className = "head"; liveHead.id = "liveHead"; document.querySelector(".hud").append(liveHead);
   const liveText = () => liveHead.textContent = Object.entries(LIVE).map(([k, a]) => { const got = a.filter(s => s.n != null).map(s => `${s.n.toLocaleString("en-US")} ${s.n === 1 ? s.word[0] : s.word[1]}`); return got.length ? `${k}: ${got.join(", ")}.` : ""; }).filter(Boolean).join(" ");
   for (const [key, defs] of Object.entries(LIVE)) { LIVE[key] = defs.map(([one, many, get]) => ({ word: [one, many], n: null })); // fetched now, once per page load

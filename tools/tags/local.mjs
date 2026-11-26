@@ -11,6 +11,7 @@
 import { createServer } from "node:http";
 import { randomBytes } from "node:crypto";
 import { handlers } from "../../api/tags.ts";
+import { GET as githubNumbers } from "../../api/github.ts";
 import { admin } from "../../api/admin.ts";
 import { memoryDeps } from "../../src/tags/memory.ts";
 
@@ -121,6 +122,15 @@ createServer(async (req, res) => {
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const url = new URL(req.url, `http://${req.headers.host || "127.0.0.1:" + port}`);
+    if (url.pathname === "/api/github") {
+      // the walls' live numbers, as Vercel serves them (the checks answer this path themselves, so a run never asks GitHub)
+      const answer = await githubNumbers();
+      res.writeHead(answer.status, {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      });
+      return res.end(Buffer.from(await answer.arrayBuffer()));
+    }
     if (url.pathname.startsWith("/api/tags-local/")) {
       const door = url.pathname.slice("/api/tags-local/".length);
       if (door === "mails") return reply(res, mails);

@@ -514,10 +514,11 @@ __LIBS__
     const flip = () => { const hold = !v.paused; b.classList.toggle("held", hold); v.dataset.held = hold ? "1" : ""; v.dataset.on = hold ? "" : "1";
       if (hold) v.pause(); else { v.preload = "auto"; v.play().catch(() => {}); } };
     b.addEventListener("click", flip); v.addEventListener("click", flip); });
-  // epaRadar's numbers, live from GitHub at load (no token); no answer shows nothing, never an old number
-  const gh = async (u) => { const r = await fetch("https://api.github.com/" + u); if (!r.ok) throw 0; return r; };
-  const commits = gh("repos/tlxq/eparadar/commits?per_page=1").then((r) => { const m = /[?&]page=(\d+)>; rel="last"/.exec(r.headers.get("Link") || ""); if (!m) throw 0; return +m[1]; });
-  const merged = gh("search/issues?q=" + encodeURIComponent("repo:tlxq/eparadar is:pr is:merged") + "&per_page=1").then((r) => r.json()).then((d) => { if (d.incomplete_results || !(d.total_count > 0)) throw 0; return d.total_count; });
+  // epaRadar's numbers, live at load from this site's /api/github (api/github.ts asks GitHub once an hour for everyone); no answer shows nothing, never an old number
+  const nums = fetch("/api/github").then((r) => { if (!r.ok) throw 0; return r.json(); }).catch(() => ({}));
+  const pos = (n) => { if (!(n > 0)) throw 0; return n; };
+  const commits = nums.then((d) => pos(d?.epa?.commits));
+  const merged = nums.then((d) => pos(d?.epa?.merged));
   Promise.allSettled([commits, merged]).then(([c, m]) => {
     const parts = [c.status === "fulfilled" && [c.value, "commits"], m.status === "fulfilled" && [m.value, "merged pull requests"]].filter(Boolean);
     if (!parts.length) return;
