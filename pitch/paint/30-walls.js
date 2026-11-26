@@ -17,12 +17,12 @@
   // concrete keyed out so the wall shows through, 1536 x 960 px each. paintOn puts picture pixel (px, py) at the wall point (wx, wy), the picture w m wide.
   // at(u, v) is any picture pixel in the wall's own space; the link marks and the painted areas are in picture pixels. The wall's own hole (moment 3) cuts through it too.
   // zw: the wall's own place in depth (the workshop's back wall stands at WZ)
-  function paintOn(file, w, [px, py], [wx, wy], z = .002, [pw, ph] = [1536, 960], zw = 0) { const h = w * ph / pw, k = w / pw, cx = wx - px * k + w / 2, cy = wy + py * k - h / 2, map = tex(file, true, 1, 1); map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
+  function paintOn(file, w, [px, py], [wx, wy], z = .002, [pw, ph] = [1536, 960], zw = 0) { const h = w * ph / pw, k = w / pw, cx = wx - px * k + w / 2, cy = wy + py * k - h / 2, late = !/^assets\/(epa|rvf)_/.test(file), map = tex(file, true, 1, 1, 0, 0, late); map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallBump(new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .55,
       normalMap: tex("assets/wall4_nor_gl.jpg", false, w / TILE, h / TILE, (cx - w / 2 - (WX - WW / 2) - (cx > CX1 ? SEAM_D.x : 0)) / TILE, (cy - h / 2 - GROUND - (cx > CX1 ? SEAM_D.y : 0)) / TILE), normalScale: new THREE.Vector2(.4, .4), polygonOffset: true, polygonOffsetFactor: -2 })));
     m.position.set(cx, cy, zw + z); scene.add(m);
     const at = (u, v) => V(cx - w / 2 + u * k, cy + h / 2 - v * k, zw);
-    return { m, at, w, h, k, protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y1), at(x1, y0)]), zw }; }
+    return { m, at, w, h, k, ready: () => texReady(file), protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y1), at(x1, y0)]), zw }; }
   // the tap areas over painted link marks (picture pixels): each at least 48 x 48 px; two marks that sit close share the line between them (each grows away from it), so they never overlap.
   // Each shows while its own mark is in view (on), and is out of the tab order otherwise.
   function placeHots(els, boxes, B, on) { const R = boxes.map(([x0, y0, x1, y1]) => { const [ax, ay, oa] = proj(B.at(x0, y0)), [bx, by, ob] = proj(B.at(x1, y1)), l = Math.min(ax, bx), r = Math.max(ax, bx), t = Math.min(ay, by), b = Math.max(ay, by),

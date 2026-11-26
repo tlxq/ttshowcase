@@ -17,8 +17,8 @@ root="$PWD"
 mkdir -p .cache/shots .cache/walk
 . tools/walk/graphics.sh || exit 1
 
-names="stripe tour garage waits epanums endwaits replay2 reduced contrast plates framed tagsfull scrollup pickspot space tagit tagstore admin nogl startkey startclick startload shape pageinfo front frontstill" # front*: the front page (front.html)
-FRAME_CHECKS=" waits endwaits tagsfull "
+names="startbytes lateload stripe tour garage waits epanums endwaits replay2 reduced contrast plates framed tagsfull scrollup pickspot space tagit tagstore admin nogl startkey startclick startload shape pageinfo front frontstill" # front*: the front page (front.html)
+FRAME_CHECKS=" startbytes lateload waits endwaits tagsfull "
 JOBS="${JOBS:-4}"
 out=$(mktemp -d)
 trap 'kill $(jobs -p) 2>/dev/null; rm -rf "$out"' EXIT
@@ -38,7 +38,8 @@ job() { # check, then "desktop" or "phone": its own servers and browser session;
     sleep 0.1
   done
   local page="paint.html?hour=23"; case "$1" in front*) page=front.html ;; esac # the clock light (Tom 11-23): the checks walk at night, the start's own light; contrast walks at noon too
-  sed -e "s#__URL__#http://127.0.0.1:$port/$page#g" -e "s#__SHOTS__#$root/.cache/shots/#g" "tools/pitch/checks/$1.js" > "$script"
+  budget=$(node -p 'JSON.stringify(require("./tools/walk/budget.json").pitchStart.limits)')
+  sed -e "s#__BUDGET__#$budget#g" -e "s#__URL__#http://127.0.0.1:$port/$page#g" -e "s#__SHOTS__#$root/.cache/shots/#g" "tools/pitch/checks/$1.js" > "$script"
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
   # The walls' live numbers come from GitHub's public API, which a visitor's IP may ask only 60 times an hour: a whole run would use that up
