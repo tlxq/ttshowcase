@@ -29,7 +29,7 @@
   const hotOn = (el, label, glow) => { el.dataset.hl = label; HOTL.push({ el, label, glow }); };
   { EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAN, b, i ? { rect: true, colour: "#ffffff", fill: 0, hole: 1 } : { rect: true })));
     hotOn(hot3, labelOf(hot3), RVF_GLOW());
-    U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}))));
+    U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : u.tile ? { fill: .03, hole: 1 } : {}))));
     const leaveHot = document.getElementById("leave");
     hotOn(leaveHot, "Leave your tag", { build() {}, pulse: -1, op: 0, mesh: null }); // a real can: its tap area is the can itself, no glow drawn from paint
     endS.hots = { leaveHot }; }
