@@ -217,7 +217,7 @@
   // the Toolbox production (Tom 11-26, A5): ONE see-through strip, 5300 x 960 px, painted on the desk's graphics card, cut into four webp tiles (the title tile, then a tile for each piece).
   // The stack words are painted into it as small tags; the live numbers are sprayed in the bare wall above each piece. PK metres a pixel, PC where each piece's middle stands.
   const TILE_TW = [1150, 1300, 1300, 1550], prod = (n, key, link, plate, marks, nums) => tool(PC[n - 1], key, ['', 'ttoolbox', 'dot', 'tthermal'][n], link, plate,
-    { tile: n, nums, art: [`assets/toolbox_${n}.webp`, TILE_TW[n] * .00385, TILE_TW[n] * .0021, [650, 480], 2.1, [[0, 16, 1300, 890]]], marks: [marks] });
+    { tile: n, nums, art: [`assets/toolbox_${n}.webp`, TILE_TW[n] * .00385, TILE_TW[n] * .0021, [650, 480], 2.1, [[0, 190, 1300, 890]]], marks: [marks] });
   const U4 = [
     prod(1, 700, "ttoolbox", "<b>ttoolbox</b>Claude Code plugin with skills and agents to plan, build, review and prove work.", [40, 340, 1250, 660], [[30, 40, 420, 230], [880, 40, 1270, 230]]),
     prod(2, 770, "dot", "<b>dot</b>Keeps one GNU Stow dotfiles repo the same on every Linux PC.", [110, 320, 1270, 800], [[30, 40, 420, 230], [880, 40, 1270, 230]]),

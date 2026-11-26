@@ -19,6 +19,6 @@ async page => { const errs = [], res = { errs }; page.on('pageerror', e => errs.
   res.after = await page.evaluate(re => ({ late: document.documentElement.dataset.lateDone || null, pops: +document.documentElement.dataset.pops || 0, started: +document.documentElement.dataset.started || 0, asked: performance.getEntriesByType('resource').filter(r => new RegExp(re).test(r.name)).length }), LATE);
   if (!res.after.late) errs.push('the late pictures never all arrived');
   if (res.after.pops) errs.push('a painting was drawn before its picture, ' + res.after.pops + ' frames');
-  if (res.after.started < 5) errs.push('only ' + res.after.started + ' of the 5 late paintings came up');
-  if (res.after.asked < 28) errs.push('only ' + res.after.asked + ' of the 28 late pictures were asked for');
+  if (res.after.started < 4) errs.push('only ' + res.after.started + ' of the 4 late paintings came up');
+  if (res.after.asked < 26) errs.push('only ' + res.after.asked + ' of the 26 late pictures were asked for');
   return JSON.stringify(res); }

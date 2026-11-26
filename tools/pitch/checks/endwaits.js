@@ -12,6 +12,6 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     for (let i = 0; i < 60; i++) { const s = await state(name); if (s.plates >= want.plates && s.hots >= want.hots) { t = await page.evaluate(() => performance.now()); break; } await page.waitForTimeout(100); }
     res.fromArrival[name] = t < 0 ? null : +((t - t0) / 1000).toFixed(1); if (t < 0) errs.push(name + ': label or links never showed');
     await page.waitForTimeout(600); }
-  await go(700); await page.waitForTimeout(400); await go(770); await page.waitForTimeout(700);
+  await go(770); await page.waitForTimeout(400); await go(700); await page.waitForTimeout(700);
   const again = await state('ttoolbox'); if (again.plates < 1 || again.hots < 1) errs.push('back at ttoolbox the label and links did not show at once: ' + JSON.stringify(again));
   return JSON.stringify(res); }
