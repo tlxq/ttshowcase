@@ -198,7 +198,7 @@
       u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE; [u.el, u.l, u.c].forEach(e => e.style.opacity = show ? 1 : 0); u.parts.forEach((p, k) => p.fade(show && sec > t0 + .2 + FADE + k * .3));
-        if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (NARROW) u.el.style.top = Math.min(parseFloat(u.el.style.top), innerHeight - u.el.offsetHeight - 92) + "px"; /* above the Write to me sticker */ } }); } // phone: on the floor below the wall, where nothing is painted
+        if (show) { if (NARROW) u.el.style.maxWidth = innerWidth - 24 - 112 + "px"; /* narrower than the Write to me sticker's left edge */ } if (show) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); } }); } // phone: on the floor below the wall, where nothing is painted
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");
