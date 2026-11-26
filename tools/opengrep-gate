@@ -25,9 +25,20 @@ cfg=(--config "$cache/generic/secrets")
 git ls-files -- '*.js' '*.mjs' '*.cjs' '*.jsx' '*.ts' '*.tsx' | grep -q . && cfg+=(--config "$cache/javascript" --config "$cache/typescript")
 git ls-files -- '*.php' | grep -q . && cfg+=(--config "$cache/php")
 
+# Rules that do not fit this site, left out so a new real warning stands out (11-26; each was looked at, none was serious):
+#   jsx-not-internationalized          the site is English only, no i18n
+#   missing-template-string-indicator  "${" in plain strings is meant (code held as text)
+#   no-stringify-keys                  keys are small fixed strings, not objects
+#   no-replaceall                      replaceAll is fine on the browsers and Node this site needs
+# Nothing serious (severity ERROR) is ever listed here: the gate must still stop on those.
+# opengrep names a rule by its file path in the rules checkout, with dots, so the ids are worked out from $cache
+rid() { local f; f=$(find "$cache" -name "$1.yaml" | head -1); [ -n "$f" ] || { echo "opengrep-gate: no rule file for $1 (rules moved? update the skip list)" >&2; exit 2; }; f=${f%.yaml}; f=${f#/}; echo "${f//\//.}"; }
+skip=()
+for r in jsx-not-internationalized missing-template-string-indicator no-stringify-keys no-replaceall; do skip+=(--exclude-rule "$(rid "$r")"); done
+
 out=$(mktemp)
 trap 'rm -f "$out"' EXIT
-opengrep scan --quiet --json "${cfg[@]}" "${files[@]}" >"$out" 2>/dev/null || true
+opengrep scan --quiet --json "${skip[@]}" "${cfg[@]}" "${files[@]}" >"$out" 2>/dev/null || true
 node -e '
 let d; try { d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); } catch { console.error("opengrep-gate: the scan failed (run opengrep by hand to see why)"); process.exit(2); }
 if (!Array.isArray(d.results)) { console.error("opengrep-gate: the scan gave no result"); process.exit(2); }
