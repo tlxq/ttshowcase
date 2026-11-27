@@ -5,9 +5,16 @@
 //  2 epaRadar's commits null and the whole of rvf missing (no token): that one note and both rvf notes show nothing (no number, no paint, no lone word), the other epaRadar notes still show theirs;
 //  3 migrations null, tests 0, merged pull requests 1, commits 4488: no "0", no "1 merged", no lone word; the digit that comes twice is its second form the second time (4, 4b, 8, 8b);
 //  4 the answer fails (500): no note at all;
+//  6 the last known numbers (saved by the build): the answer empty, failing, or lacking some numbers: the saved ones are sprayed where the live ones are missing (a live one still wins); a number in neither is not drawn;
 //  5 big numbers (12345 commits, 999 merged, 1234 tests, 88 migrations, 99999 and 999 for rvf): each note is shrunk into its room and nothing is cut off by its canvas.
 async page => { const errs = [], res = { errs }; page.on('pageerror', e => errs.push(String(e)));
   let answer = null; // null: the answer fails
+  // the page's saved numbers (the build's last known ones, tools/pitch/saved-numbers.mjs) are swapped for this case's own, so the live path alone is what cases 1 to 5 see, and case 6 sees the saved ones (the page's script rule is lifted for the swapped copy)
+  let saved = {};
+  await page.route('**/paint.html*', async route => { const r = await route.fetch(); let body = await r.text(); const at = /const SAVED_NUMBERS = \{.*?\}(?=; \/\/ the last numbers the build saw)/;
+    if (!at.test(body)) return route.fulfill({ status: 500, body: 'the page has no SAVED_NUMBERS line' });
+    body = body.replace(at, () => 'const SAVED_NUMBERS = ' + JSON.stringify(saved)).replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, '');
+    const headers = Object.fromEntries(Object.entries(r.headers()).filter(([k]) => !['content-security-policy', 'content-length', 'content-encoding'].includes(k))); await route.fulfill({ status: r.status(), headers, body }); });
   await page.route('**/api/github', route => answer ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) }) : route.fulfill({ status: 500, body: 'no' }));
   const open = async () => { await page.goto('__URL__'); await page.waitForTimeout(3500);
     const b = await page.evaluate(() => window.bucketAt && window.bucketAt()); if (b && b.x > 0) await page.mouse.click(b.x, b.y);
@@ -40,6 +47,15 @@ async page => { const errs = [], res = { errs }; page.on('pageerror', e => errs.
   answer = { epa: { commits: 12345, merged: 999, tests: 1234, migrations: 88 }, rvf: { commits: 99999, merged: 999 } }; await open(); await page.waitForTimeout(1500); s = by(await settle(a => a.every(p => p.shown != null))); res.big = Object.fromEntries(Object.entries(s).map(([k, p]) => [k, p.fit]));
   for (const [k, n] of [['epa.commits', 12345], ['epa.merged', 999], ['epa.tests', 1234], ['epa.migrations', 88], ['rvf.commits', 99999], ['rvf.merged', 999]]) want(n, k + ' (big)', s[k], errs);
   for (const p of Object.values(s)) fits(p, errs);
+  // 6 the last known numbers (Tom 11-27): where the live answer is empty, fails or lacks a number, the saved number is sprayed; a live number still wins; one the saved set lacks too is not drawn
+  saved = { epa: { commits: 111, merged: 22, tests: 33, migrations: 44 }, rvf: { commits: 55, merged: 66 } }; const all = n => [['epa.commits', n.epa.commits], ['epa.merged', n.epa.merged], ['epa.tests', n.epa.tests], ['epa.migrations', n.epa.migrations], ['rvf.commits', n.rvf.commits], ['rvf.merged', n.rvf.merged]];
+  answer = {}; await open(); await page.waitForTimeout(1500); s = by(await settle(a => a.every(p => p.shown != null))); res.savedForEmpty = s; for (const [k, n] of all(saved)) want(n, k + ' (the answer is empty, the saved number)', s[k], errs);
+  answer = { epa: { commits: 346, merged: null, tests: 0 } }; await open(); await page.waitForTimeout(1500); s = by(await settle(a => a.every(p => p.shown != null))); res.savedForSome = s;
+  for (const [k, n] of [['epa.commits', 346], ['epa.merged', 22], ['epa.tests', 33], ['epa.migrations', 44], ['rvf.commits', 55], ['rvf.merged', 66]]) want(n, k + ' (live where it came, else saved)', s[k], errs);
+  answer = null; await open(); await page.waitForTimeout(2500); s = by(await settle(a => a.every(p => p.shown != null))); res.savedForFailed = s; for (const [k, n] of all(saved)) want(n, k + ' (the answer failed, the saved number)', s[k], errs);
+  saved = { epa: { commits: 111 } }; answer = {}; await open(); await page.waitForTimeout(2500); s = by(await settle(a => a.filter(p => p.shown != null).length === 1)); want(111, 'epa.commits (saved)', s['epa.commits'], errs);
+  for (const k of ['epa.merged', 'epa.tests', 'epa.migrations', 'rvf.commits', 'rvf.merged']) blank(k + ' (in neither the answer nor the saved numbers)', s[k], errs);
+  saved = {};
   // 4
   answer = null; await open(); await page.waitForTimeout(2500); s = by(await read()); res.failed = s;
   if (Object.keys(s).length !== 6) errs.push('no six notes to look at'); for (const k of Object.keys(s)) blank(k + ' (the answer failed)', s[k], errs);

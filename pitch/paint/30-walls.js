@@ -43,11 +43,13 @@
     els.forEach((h, i) => { const g = R[i]; if (!g.ok) { h.style.display = "none"; h.tabIndex = -1; return; }
       Object.assign(h.style, { display: "block", left: g.l + "px", top: g.t + "px", width: g.r - g.l + "px", height: g.b - g.t + "px" }); h.tabIndex = 0; }); }
   // ---- live numbers sprayed on the walls (Tom 11-19). RULE: every visible number comes from a PUBLIC source, asked when the page loads; nothing is typed in or baked into a picture.
-  // If it fails that number is not drawn (no old value, no placeholder) and the wall still looks complete (the stack stays).
+  // If it fails that number is the build's last known one (SAVED_NUMBERS, below), else it is not drawn (no placeholder) and the wall still looks complete (the stack stays).
   // EDGE is private, so it shows no numbers. raddavarfruberga's counts are public-safe counts of a private repository (api/github.ts, with the site's token): without the token the answer has no rvf and its notes are not drawn.
   // The page asks this site's /api/github (api/github.ts), which asks GitHub once an hour for everyone: a visitor's own address may make only 60 anonymous asks an hour, and past that every load logged 403 errors in the console.
   const NUMS = fetch("/api/github").then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => ({})); // one ask for all walls; no answer = no numbers
-  const numOf = (wall, key) => NUMS.then(d => { const n = d?.[wall]?.[key]; if (!(n > 0)) throw 0; return n; });
+  const SAVED_NUMBERS = __SAVED_NUMBERS__; // the last numbers the build saw (tools/pitch/saved-numbers.mjs): used only for a number the live answer lacks
+  const pickNum = (d, saved, wall, key) => { const n = d?.[wall]?.[key] > 0 ? d[wall][key] : saved?.[wall]?.[key]; if (!(n > 0)) throw 0; return n; };
+  const numOf = (wall, key) => NUMS.then(d => pickNum(d, SAVED_NUMBERS, wall, key));
   const LIVE = { // wall: [singular, plural, how to get it]
     dot: [["commit", "commits", () => numOf("dot", "commits")], ["test", "tests", () => numOf("dot", "tests")]],
     ttoolbox: [["commit", "commits", () => numOf("ttoolbox", "commits")], ["skill", "skills", () => numOf("ttoolbox", "skills")]],
