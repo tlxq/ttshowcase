@@ -183,14 +183,22 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
 .start { position: fixed; inset: 0; z-index: 4; pointer-events: none; visibility: hidden; } /* shown once it is placed round the bucket: before the 3D runs it has nowhere to be */
 .start.placed { visibility: visible; }
 #tagBucket:not(:focus-visible), #l5, #c5 { opacity: 0 !important; } /* the start says who: the plate shows only for the keyboard's focus */
-.start img { position: absolute; width: auto; -webkit-mask-image: linear-gradient(#000 78%, transparent); mask-image: linear-gradient(#000 78%, transparent); will-change: transform, filter; }
 .start h2 { position: absolute; margin: 0; white-space: nowrap; font: 900 7vw/.84 "Archivo", "Arial Black", sans-serif; font-stretch: 125%; letter-spacing: -.04em; text-transform: uppercase; color: var(--look-cream); }
 .start h2 span { display: block; }
-/* "portfolio" sprayed by the name (Tom 11-25, generated try B): the paint's blue through the marker's shape, sprayed on left to right as the bucket fills (--p) */
-.start .word { position: absolute; aspect-ratio: 900 / 369; background: var(--front-spray); /* its tilt is in the picture: a rotated masked box shows its edges in Chrome */ --p: -12%;
-  -webkit-mask: url("assets/start/portfolio.webp") center / 100% 100% no-repeat, linear-gradient(90deg, #000 var(--p), transparent calc(var(--p) + 12%)); -webkit-mask-composite: source-in;
-  mask: url("assets/start/portfolio.webp") center / 100% 100% no-repeat, linear-gradient(90deg, #000 var(--p), transparent calc(var(--p) + 12%)); mask-composite: intersect; }
-.start .num { position: absolute; bottom: 4svh; font: 900 min(9vw, 17svh)/.8 "Archivo", "Arial Black", sans-serif; font-stretch: 125%; letter-spacing: -.04em; color: var(--front-spray); font-variant-numeric: tabular-nums; }
+/* the loading screen (pitch/start): the wall with the bucket's blue poured down it behind Tom's portrait, drawn on a canvas by 21-loading.js; the progress is the portrait.
+   It sits over everything until the blue has run off; the tag is Tom's own, written by the pack's tag.css rules (below). */
+.load { position: fixed; inset: 0; z-index: 50; pointer-events: none; background: #0a0b0d; --look-tag-at: 0s; --ease: cubic-bezier(.2, .7, .2, 1); }
+.load canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.load .ld-tag { position: absolute; transform-origin: 50% 50%; }
+.load .ld-tag svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ld-tag .lk-paint, .ld-tag .lk-drip { fill: var(--look-cream, #efebe1); }
+.ld-tag .lk-reveal { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: 1;
+  animation: lk-write var(--runs) var(--pen) calc(var(--look-tag-at) + var(--from)) both; animation-play-state: paused; }
+.ld-tag .lk-drip { transform-box: fill-box; transform-origin: top; animation: lk-write-drip var(--grows) var(--ease) calc(var(--look-tag-at) + var(--at)) both; animation-play-state: paused; }
+.ld-tag.on .lk-reveal, .ld-tag.on .lk-drip { animation-play-state: running; }
+@keyframes lk-write { to { stroke-dashoffset: 0; } }
+@keyframes lk-write-drip { from { transform: scaleY(0); } }
+@media (prefers-reduced-motion: reduce) { .ld-tag .lk-reveal, .ld-tag .lk-drip { animation: none; stroke-dashoffset: 0; } }
 .start .go { position: absolute; bottom: 5svh; font: 700 15px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .02em; color: var(--look-cream); opacity: 0; transition: opacity .4s; }
 
 .stripe { position: fixed; left: 0; right: 0; top: 0; height: var(--look-stripe); z-index: 7; pointer-events: none; font-family: "Inter", system-ui, sans-serif; color: var(--look-soft); }

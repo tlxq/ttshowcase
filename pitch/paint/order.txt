@@ -1,6 +1,7 @@
 00-setup.js
 10-stickers.js
 20-intro.js
+21-loading.js
 30-walls.js
 35-tag-render.js
 38-site.js

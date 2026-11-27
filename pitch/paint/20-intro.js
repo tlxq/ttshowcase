@@ -155,31 +155,29 @@
   addEventListener("pageshow", () => { if (!introOver) scrollTo(0, upPx()); });
   const root = document.documentElement; root.style.overflow = "hidden"; root.style.touchAction = "none";
   const go = () => { if (!goAt) { goAt = performance.now(); tilt0 = tilt; tagBucket.tabIndex = -1; tagBucket.removeAttribute("role"); tagBucket.blur(); } };
-  addEventListener("pointerdown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && onBucket(e)) go(); }); // only the bucket tips it (Tom 11-25); a tap anywhere still skips the camera's ride
-  addEventListener("pointermove", e => { const c = readyAt && !goAt && onBucket(e) ? "pointer" : ""; if (document.body.style.cursor !== c) document.body.style.cursor = c; }, { passive: true });
-  addEventListener("keydown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && !goAt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } }); // only while the bucket waits: later Enter and Space belong to the form and its links
+  addEventListener("pointerdown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && startOpen && onBucket(e)) go(); }); // only the bucket tips it (Tom 11-25); a tap anywhere still skips the camera's ride
+  addEventListener("pointermove", e => { const c = readyAt && startOpen && !goAt && onBucket(e) ? "pointer" : ""; if (document.body.style.cursor !== c) document.body.style.cursor = c; }, { passive: true });
+  addEventListener("keydown", e => { if (goAt && !introOver) skipped = true; else if (readyAt && startOpen && !goAt && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); go(); } }); // only while the bucket waits: later Enter and Space belong to the form and its links
   addEventListener("wheel", () => { if (goAt && !introOver) skipped = true; }, { passive: true });
   const tagBucket = document.getElementById("tagBucket"); let tagText = "";
   // the start's page layer: the photo beside the bucket (a phone: above it), the name, the loading number. Measured from where the bucket is on screen.
   // The photo is lit with the bucket: the work light warms up on both (lampOn), and both lean a little with the mouse or the phone's tilt.
-  let startDay = 0, START_T = 0; const startEl = document.querySelector(".start"), stIm = startEl.querySelector("img"), stNm = startEl.querySelector("h2"), stNum = startEl.querySelector(".num"), stGo = startEl.querySelector(".go"), stWd = startEl.querySelector(".word");
+  let startDay = 0, START_T = 0; const startEl = document.querySelector(".start"), stNm = startEl.querySelector("h2"), stGo = startEl.querySelector(".go");
   let stPx = 0, stPy = 0, stTx = 0, stTy = 0, lampOn = 0;
   addEventListener("pointermove", e => { stTx = e.clientX / innerWidth - .5; stTy = e.clientY / innerHeight - .5; }, { passive: true });
   addEventListener("deviceorientation", e => { if (e.gamma == null) return; stTx = Math.max(-.5, Math.min(.5, e.gamma / 50)); stTy = Math.max(-.5, Math.min(.5, (e.beta - 50) / 80)); }, { passive: true });
   let nameW = 0, tomR = .45; const nameEm = () => { if (!nameW) { stNm.style.fontSize = "100px"; nameW = stNm.getBoundingClientRect().width / 100; const rg = document.createRange(); rg.selectNodeContents(stNm.firstChild); tomR = rg.getBoundingClientRect().width / 100 / nameW; } return 1 / nameW; }; // and TOM's width as a share of LARSSON's, for the word beside it // font size per px of width: LARSSON's real width
   document.fonts.load('900 100px "Archivo"').then(() => { nameW = 0; }, () => {});
-  function startTick(now, ic) { const wt = START_T ? (now - START_T) / 1000 : 0; // the lamp warms up: off, two flickers, on
+  function startTick(now, ic) { loadTick(now); const wt = START_T ? (now - START_T) / 1000 : 0; // the lamp warms up: off, two flickers, on
     lampOn = REDUCED ? 1 : wt < .3 ? 0 : wt < 1.3 ? sm(cl((wt - .3) / .9)) * (Math.random() < .3 ? .25 : 1) : 1;
     const f = ic < 0 ? 0 : sm(cl(ic / 1.2)); if (f >= 1) { if (startEl.style.display !== "none") startEl.style.display = "none"; return; }
     const op = (1 - f).toFixed(3); if (startEl.style.opacity !== op) startEl.style.opacity = op; // opacity only: a full-screen blur each frame is heavy on a phone
     stPx += (stTx - stPx) * .06; stPy += (stTy - stPy) * .06;
     startLayout(innerWidth, innerHeight, Math.max(16, innerWidth * .03)); // measured every frame (cheap): the bucket's place can change while the page loads; styles are written only when they change
     const tf = (e, k, v) => { const m = stW.get(e) || stW.set(e, {}).get(e), kk = k.slice(2); if (m[kk] !== v) { m[kk] = v; if (kk === "textContent") e.textContent = v; else e.style[kk] = v; } }; // each style written only when it changes: no per-frame style work on a phone
-    tf(stIm, "i.transform", `translate(${(-stPx * 14).toFixed(0)}px, ${(-stPy * 8).toFixed(0)}px)`); tf(stIm, "i.filter", lampOn < 1 ? `brightness(${(.15 + .85 * lampOn).toFixed(2)})` : "none");
-    tf(stNm, "n.transform", `translate(${(-stPx * 6).toFixed(0)}px, ${(-stPy * 4).toFixed(0)}px)`); tf(stWd, "w.transform", stNm.style.transform);
-    const sp = (REDUCED ? 112 : -12 + 124 * Math.min(1, level / .9)).toFixed(0) + "%"; const wm = stW.get(stWd) || stW.set(stWd, {}).get(stWd); if (wm.p !== sp) { wm.p = sp; stWd.style.setProperty("--p", sp); } // sprayed on as the bucket fills, whole a little before it is full
-    stShown = Math.max(stShown, Math.round(level * 100)); tf(stNum, "u.textContent", String(stShown)) /* never counts down */; tf(stNum, "u.opacity", readyAt ? "0" : "1"); tf(stGo, "g.opacity", readyAt && !goAt ? "1" : "0"); }
-  const stW = new Map(); let stShown = 0, stBox = [0, 0, 0, 0];
+    tf(stNm, "n.transform", `translate(${(-stPx * 6).toFixed(0)}px, ${(-stPy * 4).toFixed(0)}px)`);
+    tf(stGo, "g.opacity", startOpen && !goAt ? "1" : "0"); } // the loading screen (21-loading.js) is drawn from the top of this, on its own canvas, over all of this until it has run off
+  const stW = new Map(); let stBox = [0, 0, 0, 0];
   const onBucket = e => e.clientX >= stBox[0] && e.clientX <= stBox[2] && e.clientY >= stBox[1] && e.clientY <= stBox[3];
   window.bucketAt = () => ({ x: (stBox[0] + stBox[2]) / 2, y: (stBox[1] + stBox[3]) / 2 }); // the checks click the bucket, not the middle
   function startLayout(W, H, gu) { bucketHome.updateWorldMatrix(true, false); camera.updateMatrixWorld(); // placed now, not as of the last render: the first frames come before it
@@ -188,19 +186,12 @@
     const set = (e, o) => { const m = stW.get(e) || stW.set(e, {}).get(e); for (const k in o) { const v = typeof o[k] === "number" ? o[k].toFixed(0) + "px" : o[k]; if (m[k] !== v) { m[k] = v; e.style[k] = v; } } };
     if (room > W * .3) { // beside: the photo fills the room left of the bucket, his chest level with it; the name top right
       const ph = Math.min(H * .94, (room - gu) / AR), fs = Math.min(H * .15, (W - gu * 3 - ph * AR) * nameEm()); // the room right of the photo
-      set(stIm, { left: gu, top: Math.max(H * .03, Math.min(H - ph, (ty + by) / 2 - ph * .42)), height: ph, translate: "0 0" });
       set(stNm, { left: "auto", right: gu, top: H * .06, bottom: "auto", textAlign: "right", fontSize: fs });
-      const lw = fs / nameEm(), ww = lw * .46; // the word left of TOM, level with it
-      set(stWd, { left: "auto", right: gu + lw * tomR + lw * .025, top: H * .06 + fs * .22 - ww * 369 / 900 / 2, bottom: "auto", width: ww });
-      for (const e of [stNum, stGo]) set(e, { left: "auto", right: gu }); set(stNum, { fontSize: Math.min(W * .09, H * .17) });
-      { const nt = H * .06 + fs * .84 * 2 + gu; set(stNum, { top: nt, bottom: "auto" }); set(stGo, { right: W - (cx - Math.abs(ex - cx)) + gu, top: (ty + by) / 2, bottom: "auto" }); } // the bucket has the bottom: the number goes under the name, the line beside the bucket
+      set(stGo, { left: "auto", right: W - (cx - Math.abs(ex - cx)) + gu, top: (ty + by) / 2, bottom: "auto" }); // the line beside the bucket // the bucket has the bottom: the number goes under the name, the line beside the bucket
     } else { // stacked: the photo above the bucket, the name low, clear of the paint's fall
       const ph = Math.max(0, ty - H * .03), fs = (W - gu * 2) * nameEm();
-      set(stIm, { left: "50%", top: H * .02, height: ph, translate: "-50% 0" });
       const nb = H * .04 + W * .2 * .8 + gu; set(stNm, { left: gu, right: "auto", top: "auto", bottom: nb, textAlign: "left", fontSize: fs }); // above the number
-      const lw = W - gu * 2, wl = gu + lw * tomR + lw * .06; // the word right of TOM, on its line
-      set(stWd, { left: wl, right: "auto", top: "auto", bottom: nb + fs * .84 + fs * .1, width: W - gu - wl });
-      for (const e of [stNum, stGo]) set(e, { left: gu, right: "auto" }); set(stNum, { fontSize: W * .2 }); }
+      set(stGo, { left: gu, right: "auto" }); }
     const hw = Math.abs(ex - cx), pad = Math.max(16, hw * .25); stBox = [cx - hw - pad, ty - pad, cx + hw + pad, by + pad]; // where a click tips it
     if (!START_T) { START_T = performance.now(); startEl.classList.add("placed"); } } // the lamp warms up from the moment the start shows
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
