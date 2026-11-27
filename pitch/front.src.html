@@ -183,7 +183,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .count .n { font: 900 min(7vw, 12.5svh)/.8 var(--f-big); font-stretch: 125%; letter-spacing: -.03em; color: var(--look-cream); font-variant-numeric: tabular-nums; }
 .count .w { font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.proj.b .txt h3 { font-size: min(2.9vw, 5.6svh); } /* VÅRFRUBERGA is one long word: it fits its column */
+.proj.b .txt h3, .proj.c .txt h3 { font-size: min(2.9vw, 5.6svh); } /* VÅRFRUBERGA and EDGEFLOW.SE are one long word: it fits its column */
 /* EDGE shown its own way (award step 4): one screen that is app-utveckling.se and becomes mjukvaruutvecklare.com as you
    scroll; same layout, same code, other words ("appar som används" -> "system som håller") */
 .morph { aspect-ratio: 16 / 10; overflow: hidden; }
@@ -292,7 +292,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .proj.a .film { width: 100vw; margin-left: calc(-1 * max(var(--gutter), env(safe-area-inset-left))); border-radius: 0; }
   .note { order: -1; margin-bottom: -6px; }
   .note span { font-size: 30px; }
-  .proj.b .txt h3 { font-size: 7.6vw; }
+  .proj.b .txt h3, .proj.c .txt h3 { font-size: 7.6vw; }
 }
 
 
