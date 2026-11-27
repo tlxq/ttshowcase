@@ -1,41 +1,19 @@
-  // ---- moment 3: raddavarfruberga (Tom 11-19): one graffiti piece, soft pastel community mural: the name, the preschool sprayed in the name's style and
-  // the parents' banner painted in. The banner's words are set by hand and sprayed on when you arrive; the banner is the link. No signers' names (never public).
-  const RX = 31; // 4.5 m further on than the first version, so the sign beside it is clear of the underpass
-  const RVP = paintOn("assets/rvf_wall.webp", NARROW ? 8 : 9.6, [1186, 905], [RX, G3]); // one painting (Tom 11-25): the piece at .8 inside its own dark backdrop, whose foot (row 905) stands on the street
-  const RVM = ([u0, v0, u1, v1]) => [u0 * .8 + 154, v0 * .8 + 110, u1 * .8 + 154, v1 * .8 + 110]; // the piece's old picture boxes, in the new picture
-  for (const [n, b] of [["raddavarfruberga's name", [20, 180, 1000, 480]], ["raddavarfruberga's preschool", [860, 230, 1535, 872]], ["raddavarfruberga's banner", [77, 520, 842, 775]]]) RVP.protect(n, RVM(b));
-  let RVF_TAGS, RVF_PAINT; // the stack is painted into the picture now (Tom 11-25); the banner's words sprayed on (k: 0 to 1)
-  const RVF_BOX = RVM([77, 520, 842, 775]), RVF_GLOW = () => makeGlow("assets/rvf_wall.webp", RVP, RVF_BOX, { cloth: true, colour: "#ffe9a8", fill: 0, hole: 1 }); // the banner: the link's tap area and its glow, round the cloth's own edge
-  { // the banner's words, drawn once and sprayed on left to right; then the stack: each tool its own small tag round the piece, in its colours
-    const BB = RVF_BOX, tl = RVP.at(BB[0] + 16, BB[1] + 18), br = RVP.at(BB[2] - 16, BB[3] - 10), TW = br.x - tl.x, TH = tl.y - br.y, CW = 1400, CH = Math.round(CW * TH / TW);
-    const full = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), show = Object.assign(document.createElement("canvas"), { width: CW, height: CH }), bt = new THREE.CanvasTexture(show);
-    bt.encoding = THREE.sRGBEncoding; bt.anisotropy = maxAniso;
-    const banWords = new Image(); // "Don't kick / our kids out" in the stack's street-tag hand (Tom 11-25), a mask painted red
-    const words = () => { const g = full.getContext("2d"); g.clearRect(0, 0, CW, CH); g.globalAlpha = .93; g.drawImage(banWords, 0, 0, CW, CH); g.globalAlpha = 1;
-      g.globalCompositeOperation = "source-in"; g.fillStyle = "#b0231c"; g.fillRect(0, 0, CW, CH); g.globalCompositeOperation = "source-over"; shown = -1; };
-    let shown = -1; banWords.onload = words; banWords.src = "assets/rvf_banner.webp";
-    const ban = new THREE.Mesh(new THREE.PlaneGeometry(TW, TH), new THREE.MeshStandardMaterial({ map: bt, transparent: true, depthWrite: false, roughness: .7, polygonOffset: true, polygonOffsetFactor: -3 }));
-    ban.position.set(tl.x + TW / 2, br.y + TH / 2, .005); ban.renderOrder = 2; scene.add(ban); // after the painting: both are see-through layers on the wall
-    RVF_PAINT = k => { k = Math.round(k * 60) / 60; if (k === shown) return; shown = k; const g = show.getContext("2d"); g.clearRect(0, 0, CW, CH); if (k <= 0) { bt.needsUpdate = true; return; }
-      const x = k * CW * 1.1; g.drawImage(full, 0, 0); g.globalCompositeOperation = "destination-in"; const gr = g.createLinearGradient(x - CW * .1, 0, x, 0); gr.addColorStop(0, "#000"); gr.addColorStop(1, "rgba(0,0,0,0)");
-      g.fillStyle = gr; g.fillRect(0, 0, CW, CH); g.globalCompositeOperation = "source-over"; bt.needsUpdate = true; }; // left to right, a soft front like a can moving along
-    RVF_TAGS = []; // the stack is in the painting
-  }
-  const lamp3 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp3.position.set(RX - 9, 3.8 - 2 * DROP, 4.4); lamp3.target.position.set(RX - 1.6, .3 - 2 * DROP, 0); lamp3.castShadow = false; scene.add(lamp3, lamp3.target);
+  // ---- moment 3: raddavarfruberga: the right picture of the street's one production (30-walls.js), its piece and its house on the street at G3, the numbers on it in the notes there.
+  // No signers' names (never public). The piece's name is the link.
+  const lamp3 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp3.position.set(RX - 9, 3.8 - 2 * DROP, 4.4); lamp3.target.position.set(RX - .3, .3 - 2 * DROP, 0); lamp3.castShadow = false; scene.add(lamp3, lamp3.target);
   document.querySelector(".hud").insertAdjacentHTML("beforeend", '<a class="hot" id="hot3" href="https://raddavarfruberga.se" target="_blank" rel="noopener" aria-label="Open the site" tabindex="-1"></a>'
     + '<div class="tag facts" id="tagRvf"><b>raddavarfruberga.se</b>A site to collect signatures so 20 children keep their preschool places.</div>');
   const hot3 = document.getElementById("hot3"), tagRvf = document.getElementById("tagRvf");
   svg.insertAdjacentHTML("beforeend", '<line id="l7"/><circle id="c7" r="4"/>'); const l7 = svg.querySelector("#l7"), c7 = svg.querySelector("#c7");
-  let rvfStart = 0; const RVF_END = 1.1; // the label comes once the banner's words are on
+  let rvfStart = 0; const RVF_END = .6; // the label comes a moment after the camera is at the wall, then the numbers
   let endK = 0; // how far the camera has left raddavarfruberga for the garage door
   function rvfAt(now, walk3, end3) {
-    lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3));
-    if (introOver && walk3 > .3 && !rvfStart) rvfStart = now; // once per visit, while the camera is still coming in, so the cloth is never seen empty (Tom 11-25)
+    lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3)) * (1 - dayNow() * (1 - end3)); // by day it adds nothing on the street (the other lamps are off by day too, clockLight): the right half held its paint's colour; from the garage's way in on (end3) it is as it was
+    if (introOver && walk3 > .3 && !rvfStart) rvfStart = now; // once per visit, while the camera is still coming in
     const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1;
     const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0);
-    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - .84, G3 + .1, .3) : RVP.at(1194, 905), NARROW ? 14 : 8, NARROW ? 70 : 34); // below the painting's foot, on the dark street, where the neon box has room
-    RVF_PAINT(REDUCED ? 1 : sec < 0 ? 0 : cl(sec / .9)); RVF_TAGS.forEach((t, i) => t.fade(showL && sec > RVF_END + .2 + i * .3));
-    placeHots([hot3], [RVF_BOX], RVP, sec >= .3 && walk3 > .5 && endK < .5); } // the banner is the link, once the camera is at the wall
+    if (on) pin(tagRvf, l7, c7, NARROW ? V(camera.position.x - .6, G3 + .1, .3) : RVP.at(TB(2895), WALL_FOOT), NARROW ? 14 : 8, NARROW ? 70 : 34); // below the piece's foot, on the dark street, where the neon box has room
+        placeHots([hot3], [RVF_BOX], RVP, ST[1].k >= 1 && stencilAt > 0 && endK < .5); } // the piece's name is the link, once the camera is at the wall
 
   // ---- the ending (Tom 11-26): past raddavarfruberga a garage door in the street wall rolls up and the camera walks into a workshop: a workbench at the door end, a shelf and a
   // tool chest at the far end, fluorescent tubes. On its back wall the Toolbox production: ttoolbox, dot, tthermal. A second door at the far end is open: the way out to EDGE, on its own clean wall (client work, the next round); then on along the wall, in close
@@ -272,7 +250,7 @@
     spill.position.set(dx + (ex - dx) * sx, G3 + DOOR_H - .15, -.35); spill.target.position.set(dx + (ex - dx) * sx + .4, G3, 6);
     spill.intensity = 9 * shop.lit * (1 - .6 * shop.ins); exitL.intensity = 15 * shop.lit * sm(cl((sv - 820) / 40));
 }
-  window.garageTest = () => ({ open: +shop.open.toFixed(3), lit: +shop.lit.toFixed(3), inside: +shop.ins.toFixed(3), cam: [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)],
+  window.garageTest = () => ({ ground: +groundAt(camera.position.x).toFixed(2), open: +shop.open.toFixed(3), lit: +shop.lit.toFixed(3), inside: +shop.ins.toFixed(3), cam: [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)],
     eye: +(camera.position.y - G3).toFixed(2), pitch: +THREE.MathUtils.radToDeg(Math.asin(camera.getWorldDirection(V()).y)).toFixed(1), face: +THREE.MathUtils.radToDeg(Math.atan2(...(d => [d.x, -d.z])(camera.getWorldDirection(V())))).toFixed(1), // the camera's height over the floor and how far it looks up (+) or down (-), in degrees; which way it faces (0 = the back wall, 90 = along the street, 180 = out over the street)
     // for the garage check: the door, the light, where the camera is
     paintings: U4.slice(0, 3).map(u => ({ name: u.name, x: u.x, shown: u.B.m.visible && u.B.m.material.opacity > .99, wall: u.zw, bump: !!u.B.m.material.normalMap })) }); // bump: the street concrete's joints drawn on it
@@ -349,7 +327,7 @@
         dot: ["dot", "#25407a", ["Bash", "bats", "GNU Stow", "mise"]], tthermal: ["tthermal", "#d8435f", ["JavaScript", "QML", "Shell"]], "app-utveckling.se": ["edge", "#1f5fc4", ["Astro", "TypeScript"]] }[u.name];
       const stack = u.painted || u.tile ? [] : stack0, yb = u.B.at(0, u.bb[3]).y; // painted: the picture has its stack written in // beside the painting on a laptop; under it, above the floor, on a phone
       if (u.tile) { // (Tom 11-26) the production: the live numbers sprayed in the bare wall above the piece, clear of its clouds and words (the stack words are painted into the strip),
-        // in painted digits and words (assets/epa_glyphs.webp, the tag hand epaRadar's numbers use), outlined and shadowed like the production's own tags
+        // in painted digits and words (assets/toolbox_glyphs.webp, the tag hand), outlined and shadowed like the production's own tags
         const GW = { commits: [["commits"]], tests: [["tests"]], skills: [["skills"]], "merged pull requests": [["merged"], ["pull requests"]] };
         u.parts = (LIVE[key] || []).map((s, i) => makeSpray({ key, only: i, name: u.name + "'s number " + (i + 1), colour: "#f3ead8", piece: colour, glyphs: { words: GW[s.word[1]] }, stack: [], zw: u.zw, z: .004,
           rect: ((p, q, p1, q1) => [u.B.at(p, 0).x, u.B.at(0, q1).y, u.B.at(p1, 0).x, u.B.at(0, q).y])(...u.nums[i]) })); }

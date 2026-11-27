@@ -23,28 +23,35 @@
   // the steps (edges blended over at least a pixel, fwidth: a hard 1 cm edge stair-stepped from a few metres away, design review 11-23): worn yellow paint on each edge, a handrail by the wall, a wall lamp over each flight; one light, moved to the flight in view
   { const prev = ground.material.onBeforeCompile; ground.material.onBeforeCompile = sh => { prev(sh);
     sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", `float nose = 0.;
-          ${STAIRS.map(([a, b]) => `if (vWP.x > ${a.toFixed(3)} && vWP.x < ${(b + .001).toFixed(3)} && (${a.toFixed(3)} < ${RA.toFixed(3)} || vWP.z < ${SW.toFixed(2)})) { float f = fract((vWP.x - ${a.toFixed(3)}) / ${((b - a) / NSTEP).toFixed(4)}), aa = fwidth(f) * 1.5; nose = max(nose, smoothstep(.8 - aa, .84 + aa, f) + (1. - smoothstep(.0, .02 + aa, f))); }`).join("\n")}
+          ${STAIRS.map(([a, b]) => `if (vWP.x > ${a.toFixed(3)} && vWP.x < ${(b + .001).toFixed(3)}) { float f = fract((vWP.x - ${a.toFixed(3)}) / ${((b - a) / NSTEP).toFixed(4)}), aa = fwidth(f) * 1.5; nose = max(nose, smoothstep(.8 - aa, .84 + aa, f) + (1. - smoothstep(.0, .02 + aa, f))); }`).join("\n")}
           nose *= smoothstep(.42, .62, gf(vWP.xz * 4.1 + 7.)) * (1. - gWet) * .8;
           diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.5, .39, .09) * (.6 + .4 * gn(vWP.xz * 40.)), clamp(nose, 0., 1.));
           #include <emissivemap_fragment>`); }; }
   const stairLamps = STAIRS.map(([a, b, h0, h1]) => { const m = new THREE.Group(), x = (a + b) / 2;
     const box = new THREE.Mesh(new THREE.BoxGeometry(.32, .18, .12), postM), lens = new THREE.Mesh(new THREE.BoxGeometry(.26, .04, .1), new THREE.MeshStandardMaterial({ color: 0, emissive: 0xffd9a8, emissiveIntensity: 2 }));
-    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, h1 + 2.5, a >= RA ? .29 : .07); scene.add(m); // the second flight's lamp hangs on the bridge's abutment
+    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, h1 + 2.5, .07); scene.add(m);
     const pts = [V(a - .4, h0 + .9, .3), V(a, h0 + .9, .3), V(b, h1 + .9, .3), V(b + .4, h1 + .9, .3)];
     for (let i = 0; i < 3; i++) { const d = pts[i + 1].clone().sub(pts[i]), r = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, d.length(), 8), postM);
       r.position.copy(pts[i]).addScaledVector(d, .5); r.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize()); scene.add(r); }
     for (const [px, py] of [[a - .35, h0], [(a + b) / 2, groundAt((a + b) / 2)], [b + .35, h1]]) {
       const yTop = px <= a ? h0 + .9 : px >= b ? h1 + .9 : h0 + .9 + (h1 - h0) * (px - a) / (b - a), po = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, yTop - py, 8), postM); po.position.set(px, (yTop + py) / 2, .3); scene.add(po); }
     return { x, y: h1 + 2.4 }; });
-  { const L = Math.hypot(RB - RA, RH0 - RH1), cw = new THREE.Mesh(new THREE.BoxGeometry(L + .5, 1.1, .22), new THREE.MeshStandardMaterial({ color: 0x8a8780, roughness: .92,
-      map: tex("assets/wall4_diff.jpg", true, (L + .5) / TILE, 1.1 / TILE), normalMap: tex("assets/wall4_nor_gl.jpg", false, (L + .5) / TILE, 1.1 / TILE) }));
-    cw.rotation.z = Math.atan2(RH1 - RH0, RB - RA); cw.position.set((RA + RB) / 2, (RH0 + RH1) / 2 + .35, SW + .11); scene.add(cw); } // the stairs' side wall, its top .9 m over the steps
   const stairLight = new THREE.SpotLight(0xffd9a8, 0, 7, .95, .8, 1.4); scene.add(stairLight, stairLight.target);
-  function stairsAt(cx) { const i = cx < 12 ? 0 : 1, s = stairLamps[i];
-    const w = i === 0 ? 1 - sm(cl((cx - 10) / 2)) : sm(cl((cx - 12) / 2)) * (1 - sm(cl((cx - 27) / 2)));
-    if (i) { stairLight.position.set((UP0 + UP1) / 2, DECK - .15, 2.2); stairLight.target.position.set((UP0 + UP1) / 2, G3 + .8, 0); stairLight.angle = 1.2; stairLight.distance = 10; } // under the bridge: the deck's own tubes light the abutment and the steps (Tom 11-24: no dark block)
-    else { stairLight.position.set(s.x, s.y, .4); stairLight.target.position.set(s.x, s.y - 3, 1.6); stairLight.angle = .95; stairLight.distance = 7; }
-    stairLight.intensity = (i ? 9 : 7) * w * (introOver ? 1 : 0); }
+  // two more wall lamps over the ramp (the street's way down to the wall: the ramp has 8 m of dark wall to walk along). Each throws a warm pool on the wall, like the street's own lamps (a soft glow, not a light: every
+  // light costs a frame on the T14s); the one real light follows the camera along the steps and the ramp, then hands over to the street light at the wall. At the start (camera x under 3) it is the flight's own
+  // lamp as it always was, so the start's frame is the one it was; by day the lamps and pools are off.
+  const POOL_TEX = (() => { const c = Object.assign(document.createElement("canvas"), { width: 128, height: 128 }), g = c.getContext("2d"), r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    r.addColorStop(0, "rgba(255,214,160,.85)"); r.addColorStop(.35, "rgba(255,200,140,.4)"); r.addColorStop(1, "rgba(255,190,120,0)"); g.fillStyle = r; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t; })();
+  const RAMP_POOLS = [11.6, 15].map(x => { const m = new THREE.Group(), box = new THREE.Mesh(new THREE.BoxGeometry(.32, .18, .12), postM), lens = new THREE.Mesh(new THREE.BoxGeometry(.26, .04, .1), new THREE.MeshStandardMaterial({ color: 0, emissive: 0xffd9a8, emissiveIntensity: 2 }));
+    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, groundAt(x) + 2.5, .07); scene.add(m);
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 4.4), new THREE.MeshBasicMaterial({ map: POOL_TEX, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false, toneMapped: false }));
+    pl.position.set(x, groundAt(x) + 2.5 - 1.5, .03); pl.visible = false; scene.add(pl); return { x, pl }; });
+  { const x = stairLamps[0].x, pl = RAMP_POOLS[0].pl.clone(); pl.material = RAMP_POOLS[0].pl.material.clone(); pl.position.set(x, stairLamps[0].y + .1 - 1.5, .03); scene.add(pl); RAMP_POOLS.unshift({ x, pl }); } // the flight's own lamp gets its pool once the camera is past the start
+  function stairsAt(cx) { const night = (1 - dayNow()) * (introOver ? 1 : 0), m = sm(cl((cx - 3) / 3)), w = 1 - sm(cl((cx - 17) / 3));
+    const fx = cl(cx + 1.2, 6.6, 16), fy = groundAt(fx) + 2.4, s0 = stairLamps[0]; // follow mode, and the flight's own lamp at the start
+    stairLight.position.set(s0.x + (fx - s0.x) * m, s0.y + (fy - s0.y) * m, .4); stairLight.target.position.set(s0.x + (fx + 1.5 - s0.x) * m, s0.y - 3 + (fy - 1.4 - s0.y + 3) * m, 1.6 * (1 - m));
+    stairLight.angle = .95 + .15 * m; stairLight.distance = 7 + 2 * m; stairLight.intensity = (7 + 3 * m) * w * (introOver ? 1 : 0);
+    for (const { x, pl } of RAMP_POOLS) { const k = night * sm(cl((cx - (x - 9)) / 3)) * (1 - sm(cl((cx - (x + 7)) / 3))) * m; pl.material.opacity = .55 * k; pl.visible = k > .01; } }
   const pool = new THREE.SpotLight(0xffd2a0, 0, 14, .62, .85, 1.6); pool.position.set(POST.x, GROUND + 6.3, POST.z + 1.25); pool.target.position.set(POST.x + .3, GROUND, POST.z + 1.6); scene.add(pool, pool.target); // a curb stone at the pavement's edge; the darker band beyond is the road
   ground.receiveShadow = true; scene.add(ground);
 

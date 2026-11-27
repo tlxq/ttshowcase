@@ -5,9 +5,11 @@ async page => { const errs = [], res = { errs, walls: ["epaRadar", "raddavarfrub
   const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd), epa = await page.evaluate(sv => Math.round(svY(sv)), 128), rvf = await page.evaluate(sv => Math.round(svY(sv)), 540);
   const shown = ids => page.evaluate(ids => ids.every(i => document.getElementById('hot' + i).style.display === 'block'), ids);
   await page.evaluate(y => scrollTo(0, y), epa); await page.waitForTimeout(13500);
-  if (!(await shown([0, 1]))) errs.push('epaRadar: links not shown 13.5 s after arriving');
+  const epaIds = page.viewportSize().width < 600 ? [0] : [0, 1]; // a phone's first view of the street's wall has epaRadar's name; its car (the code link) comes with the pan
+  if (!(await shown(epaIds))) errs.push('epaRadar: links not shown 13.5 s after arriving');
   await page.evaluate(() => scrollTo(0, svY(0))); await page.waitForTimeout(1500); await page.evaluate(y => scrollTo(0, y), epa); await page.waitForTimeout(800);
-  if (!(await shown([0, 1]))) errs.push('epaRadar: back again, links not shown within 0.8 s (painted twice?)');
+  if (!(await shown(epaIds))) errs.push('epaRadar: back again, links not shown within 0.8 s (painted twice?)');
+  if (page.viewportSize().width < 600) { await page.evaluate(() => scrollTo(0, svY(270))); await page.waitForTimeout(3000); if (!(await shown([1]))) errs.push('epaRadar: the car\'s code link is not shown where the phone\'s pan has the car in view (sv 270)'); }
   await page.evaluate(y => scrollTo(0, y), rvf); await page.waitForTimeout(14000);
   if (!(await shown([3]))) errs.push('raddavarfruberga: link not shown 14 s after arriving');
   await page.evaluate(y => scrollTo(0, y), epa); await page.waitForTimeout(1500); await page.evaluate(y => scrollTo(0, y), rvf); await page.waitForTimeout(800);

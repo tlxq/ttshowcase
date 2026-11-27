@@ -13,13 +13,11 @@ The paint pitch (pitch/):
   three.js 0.147.0 (MIT), loaded from jsDelivr.
   Clash Display by Indian Type Foundry (ITF Free Font License, fontshare.com) and Saira Stencil One
   (SIL Open Font License, Google Fonts): fetched at build time, never stored in this repo.
-  The epaRadar painting (pitch/assets/epa_wall.webp) was made by Tom on his own computer with
-  stable-diffusion.cpp (MIT) and the Z-Image Turbo model (Apache 2.0), around the car from epaRadar's
-  own photo (its public repo). Its green exit sign was painted the same way (the blank sign) and its
-  text is set by hand; the number plate on the car is drawn by hand (Nimbus Sans, URW base-35 fonts, AGPL
-  with the font exception).
+  The street's painting (pitch/assets/street_0.webp and street_1.webp: epaRadar with its car, and raddavarfruberga with its house, one wall in two pictures) was made by Tom on his own computer with
+  stable-diffusion.cpp (MIT) and the Z-Image Turbo model (Apache 2.0). The wall round it is keyed out to transparency and the small stack tags are painted into it. The numbers written on it are in a second
+  handwriting (pitch/assets/street_glyphs.webp: digits and words, made the same way and cleaned by hand), put together in the browser from the live GitHub counts.
   The Toolbox paintings (ttoolbox, dot and tthermal) are one long painting, cut into four pieces
-  (pitch/assets/toolbox_0.webp to toolbox_3.webp). That painting, raddavarfruberga's (rvf_wall.webp) and
+  (pitch/assets/toolbox_0.webp to toolbox_3.webp). That painting and
   EDGE's (edge_wall.webp) were made by Tom the same way, on his own computer with stable-diffusion.cpp
   (MIT) and the Z-Image Turbo model (Apache 2.0). The wall round each is keyed out to transparency. The link mark over EDGE's painting (pitch/assets/edge_banner.webp) is drawn by hand in code, and
   all its text is set by hand (Nimbus Sans and URW Gothic from the URW base-35 fonts).

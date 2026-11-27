@@ -1,5 +1,5 @@
 // What the bucket waits for (plan zesty-squishing-hippo, Track B): the bytes the page has fetched, and the ms it took, when the bucket is full and can be
-// tipped (dataset.readyAt). Only the start set counts: the start wall, the street, epaRadar, raddavarfruberga. Everything else loads after the tip.
+// tipped (dataset.readyAt). Only the start set counts: the start wall and the street's own concrete. Everything else (the street's production, the workshop, EDGE, the stencil) loads after the tip.
 // Two loads: on a fast line (bytes and ms), and on a phone's line (1 MB/s, 100 ms away, a CPU six times slower, nothing cached; slowMs, reported but not a gate: it moves with the desk's load, the bytes do not). The fast line's ms is mostly the
 // bucket's own filling (about 2.2 s); the phone's line is where the bytes show. The limits are tools/walk/budget.json's "pitchStart" (desktop or phone), put in by run.sh.
 // Bytes are as served by the plain server (no compression).

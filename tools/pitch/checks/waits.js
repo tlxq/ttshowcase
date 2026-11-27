@@ -13,11 +13,14 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   for (let i = 0; i < 40 && !(await page.evaluate(() => window.__T.free)); i++) await page.waitForTimeout(250);
   const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
   const a2 = await page.evaluate(y => { scrollTo(0, y); return performance.now(); }, await page.evaluate(sv => Math.round(svY(sv)), 128));
-  for (let i = 0; i < 80 && !(await page.evaluate(() => window.__T.hot1 && window.__T.tagFacts)); i++) await page.waitForTimeout(250);
+  for (let i = 0; i < 80 && !(await page.evaluate(narrow => window.__T[narrow ? 'hot0' : 'hot1'] && window.__T.tagFacts, page.viewportSize().width < 600)); i++) await page.waitForTimeout(250);
+  // a phone pans: epaRadar's car (the code link) comes into view at sv 270, its time is counted from there
+  const a4 = page.viewportSize().width < 600 ? await page.evaluate(y => { scrollTo(0, y); return performance.now(); }, await page.evaluate(sv => Math.round(svY(sv)), 270)) : a2;
+  if (a4 !== a2) for (let i = 0; i < 80 && !(await page.evaluate(() => window.__T.hot1)); i++) await page.waitForTimeout(250);
   const a3 = await page.evaluate(y => { scrollTo(0, y); return performance.now(); }, await page.evaluate(sv => Math.round(svY(sv)), 432));
   for (let i = 0; i < 80 && !(await page.evaluate(() => window.__T.hot3 && window.__T.tagRvf)); i++) await page.waitForTimeout(250);
-  const r = await page.evaluate(([a2, a3]) => { const T = window.__T, c = window.__c, s = (v, from) => v ? +((v - from) / 1000).toFixed(1) : null;
-    return { scrollFree: s(T.free, 0), epaLabel: s(T.tagFacts, a2 - c), epaLink1: s(T.hot0, a2 - c), epaLink2: s(T.hot1, a2 - c), rvfLink: s(T.hot3, a3 - c), rvfLabel: s(T.tagRvf, a3 - c) }; }, [a2, a3]);
+  const r = await page.evaluate(([a2, a3, a4]) => { const T = window.__T, c = window.__c, s = (v, from) => v ? +((v - from) / 1000).toFixed(1) : null;
+    return { scrollFree: s(T.free, 0), epaLabel: s(T.tagFacts, a2 - c), epaLink1: s(T.hot0, a2 - c), epaLink2: s(T.hot1, a4 - c), rvfLink: s(T.hot3, a3 - c), rvfLabel: s(T.tagRvf, a3 - c) }; }, [a2, a3, a4]);
   Object.assign(res, r);
-  for (const [k, v] of Object.entries(r)) if (v === null) errs.push(k + ' never showed');
+  for (const [k, v] of Object.entries(r)) if (v === null) errs.push(k + ' never showed'); // a phone's first view has epaRadar's name; the car link comes with the pan (the reduced check looks at it)
   return JSON.stringify(res); }

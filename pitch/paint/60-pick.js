@@ -28,8 +28,9 @@
   const labelOf = el => el.protocol === "mailto:" ? "Opens your email" : el.hostname === "github.com" ? "Opens GitHub" : el.hostname.includes("linkedin") ? "Opens LinkedIn" : "Opens " + hostOf(el.href);
   const hotOn = (el, label, glow, avoid, fixed) => { el.dataset.hl = label; HOTL.push({ el, label, glow, avoid, fixed }); }; // avoid: the painted words round the mark (screen boxes), which its label must not cover
   const boxesOn = (B, boxes) => () => boxes.map(([x0, y0, x1, y1]) => { const [ax, ay] = proj(B.at(x0, y0)), [bx, by] = proj(B.at(x1, y1)); return [Math.min(ax, bx), Math.min(ay, by), Math.max(ax, bx), Math.max(ay, by)]; });
-  { EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), makeGlow("assets/epa_wall.webp", EPAN, b, i ? { rect: true, colour: "#ffffff", fill: 0, hole: 1 } : { rect: true })));
-    hotOn(hot3, labelOf(hot3), RVF_GLOW());
+  { const NOGLOW = () => ({ build() {}, pulse: -1, op: 0, mesh: null }); // the street's words are its links (like the production's): no glow over them, and "Opens ..." in the one place
+    EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), NOGLOW(), null, true));
+    hotOn(hot3, labelOf(hot3), NOGLOW(), null, true);
     U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), u.tile ? { build() {}, pulse: -1, op: 0, mesh: null } /* the production's words are the link: no glow over them (it hazed the piece on a phone) */ : makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}), u.text && boxesOn(u.B, [...u.text, ...u.nums]), !!u.tile)));
     const leaveHot = document.getElementById("leave");
     hotOn(leaveHot, "Leave your tag", { build() {}, pulse: -1, op: 0, mesh: null }); // a real can: its tap area is the can itself, no glow drawn from paint
