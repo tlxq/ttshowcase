@@ -187,6 +187,7 @@
     STEN.meshes.forEach((m, k) => { m.position.set(STEN.x + j[0] + (k ? SEAM_D.x : 0), STEN.y + j[1] + (k ? SEAM_D.y : 0), .002); m.rotation.z = j[2]; }); }
   // the way through the workshop (Tom 11-26): to the door, through it, then a stop in front of each tool, out by the far door
   const DOOR_X = (DOOR_A[0] + DOOR_A[1]) / 2, EXIT_X = (DOOR_B[0] + DOOR_B[1]) / 2;
+  const STICKER_LEFT = parseFloat(tok("--look-sticker-left")); if (!(STICKER_LEFT >= 104)) throw new Error("Couldn't read --look-sticker-left from tokens.css (the Write to me sticker's left edge, 104 px at the least)"); // read once at load, as the colours are (tokHex)
   const TOOL_D = 7.6; // (Tom 11-27) phone: 7.6 m from the wall, not 8.2: a piece fills the screen's width whole, the one next to it is all but out of view, and the scroll pans across (panAt)
   const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + TOOL_D, floor + 1.95, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
   // the two moves through the door (Tom 11-26, cause D: "the camera dips to the floor going in", and the same coming out): each is ONE glide from one stop to
@@ -238,7 +239,7 @@
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE, plate = show && (!u.tile || i === most); [u.el, u.l, u.c].forEach(e => e.style.opacity = plate ? 1 : 0);
         u.on = u.tile ? here && shown && (u.on ? view[i] > 0 : view[i] > .5) : show; u.parts.forEach((p, k) => p.fade(u.on && sec > t0 + .2 + FADE + k * .3)); // numbers sprayed on stay while any of the piece is on the screen
-        if (plate) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - parseFloat(tok("--look-sticker-left")), 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (plate) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (plate && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
+        if (plate) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - STICKER_LEFT, 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (plate) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (plate && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");

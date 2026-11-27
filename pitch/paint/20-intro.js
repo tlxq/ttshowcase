@@ -216,7 +216,7 @@
       { if (readyAt && Math.floor((now - readyAt) / 3200) > rocks) { rocks++; tiltV += .55; } tiltV += (-42 * tilt - 6 * tiltV) * dt; tilt = Math.max(-.04, tilt + tiltV * dt); }
     } else if (skipped && now - goAt < 60000) goAt = now - 60000;
     const ic = goAt ? (now - goAt) / 1000 * TS : -1; // the pour clock: 0.8 of real time, so the whole pour is calmer
-    if (pourReady && !CAM_IN[1]) CAM_IN[1] = Math.min(FREE_AT - .3, Math.max(CAM_IN[0] + 1.5, pourDone - .7));
+    if (pourReady && !CAM_IN[1]) CAM_IN[1] = FREE_AT - .3; // the camera's ride ends .3 s (pour clock) before the scroll opens: 1.7. With FREE_AT 3.2 it was min(2.9, max(1.9, pourDone - .7)), so the ride is shorter now
     if (!introOver && (scrollX || Math.abs(scrollY - upPx()) > 1)) scrollTo(0, upPx());
     if (!introOver && ic > Math.min(pourDone + .3, FREE_AT)) { scrollTo(0, upPx()); introOver = true; root.style.overflow = ""; root.style.touchAction = ""; document.body.style.cursor = "";  if (RESUME !== null) scrollTo(0, upPx() + RESUME * Math.max(0, root.scrollHeight - innerHeight - upPx()));}
     if (goAt && document.body.style.cursor === "pointer") document.body.style.cursor = ""; // the hand is only over the bucket (pointermove), and gone once it tips

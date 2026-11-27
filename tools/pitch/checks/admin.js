@@ -48,6 +48,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     if (w !== W) { await page.setViewportSize({ width: w, height: H }); await page.waitForTimeout(500); }
     const r = await page.evaluate(() => { const a = document.getElementById('adm').getBoundingClientRect(), bs = [...document.querySelectorAll('#adm button')].map(b => Math.round(b.getBoundingClientRect().height)); return { sticker: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--look-sticker-left')), w: innerWidth, left: Math.round(a.left), right: Math.round(a.right), bottom: Math.round(a.bottom), minBtn: Math.min(...bs) }; });
     res.chipBox.push(r);
+    if (!Number.isFinite(r.sticker) || r.sticker < 104) errs.push('--look-sticker-left is missing or under 104 px (the sticker is 12 px in from the right and 92 px wide): ' + r.sticker); // a missing token is NaN, and every check against it passes
     if (!wide && r.right > r.w - r.sticker) errs.push('the admin bar runs under the Write to me sticker at ' + r.w + ' wide: ' + JSON.stringify(r));
     if (r.minBtn < 48) errs.push('the admin bar\'s button is under 48 px at ' + r.w + ' wide: ' + JSON.stringify(r)); }
   if (!wide && page.viewportSize().width !== W) { await page.setViewportSize({ width: W, height: H }); await page.waitForTimeout(500); }
