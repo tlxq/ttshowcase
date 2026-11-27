@@ -17,13 +17,14 @@ cleanup() { kill $(jobs -p) 2>/dev/null; for s in $SESSIONS; do playwright-cli -
 trap cleanup EXIT
 cleanup # a browser left by an interrupted run would point at a dead server
 
+# both builds carry no saved numbers (PITCH_NUMBERS=off): the sheet feeds them the same stand-ins below, so nothing else can differ
 # the base build: its files from git (no worktree), with this checkout's packages and fonts
 rm -rf "$sheet" && mkdir -p "$src/.cache" "$sheet"
 git archive "$base" pitch tools/pitch api src | tar -x -C "$src" || { echo "Couldn't copy $base's files: it may be older than the paint pitch" >&2; exit 1; }
 # this branch first: its build fetches the fonts once into .cache/fonts, which the base build borrows (a fresh worktree has none yet)
-node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
+PITCH_NUMBERS=off node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
 ln -s "$root/node_modules" "$src/node_modules"; ln -s "$root/.cache/fonts" "$src/.cache/fonts"
-node "$src/tools/pitch/build.mjs" >/dev/null || { echo "The build of $base failed. To see why: git switch $base && mise run pitch:build" >&2; exit 1; }
+PITCH_NUMBERS=off node "$src/tools/pitch/build.mjs" >/dev/null || { echo "The build of $base failed. To see why: git switch $base && mise run pitch:build" >&2; exit 1; }
 
 free_port() { python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])'; }
 shoot() { # build (base|branch), screen (laptop|phone), hour; a failed shoot leaves <dir>.fail with the reason
@@ -34,10 +35,10 @@ shoot() { # build (base|branch), screen (laptop|phone), hour; a failed shoot lea
   TAGS_PORT="$tport" SERVE_DIR="$dir" python3 -I tools/serve.py 127.0.0.1 "$port" >/dev/null 2>&1 & srv=$!
   for _ in $(seq 1 50); do curl -fs "http://127.0.0.1:$port/paint.html" >/dev/null 2>&1 && curl -fs "http://127.0.0.1:$port/api/tags" >/dev/null 2>&1 && break; sleep 0.1; done
   mkdir -p "$out"
-  sed -e "s#__URL__#http://127.0.0.1:$port/paint.html?hour=$3#" -e "s#__OUT__#$out/#" tools/pitch/sheet.js > "$js"
+  sed -e "s#__URL__#http://127.0.0.1:$port/paint.html?hour=$3#" -e "s#__OUT__#$out/#" tools/pitch/sheet.js | node tools/pitch/wrap.mjs /dev/stdin > "$js" # three.js from tools/pitch/vendor, no network
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
-  playwright-cli -s="$s" route "**/api/github" --status=200 --body='{}' >/dev/null 2>&1 # no live numbers: see run.sh
+  playwright-cli -s="$s" route "**/api/github" --status=200 --body="$(cat tools/pitch/standin-numbers.json)" >/dev/null 2>&1 # the same fixed stand-in numbers on both builds (the epanums check's), never the live ones: they would differ between the two runs, and a missing answer leaves the lobes empty
   result=$(playwright-cli --raw -s="$s" run-code --filename="$js" 2>&1 | grep -v '^$' | tail -1)
   playwright-cli -s="$s" close >/dev/null 2>&1; kill "$srv" "$tags" 2>/dev/null; rm -f "$js"
   case "$result" in '"{\"errs\":[]}"') ;; *) echo "$result" > "$out.fail"; echo "$1 $2 hour $3 failed: $result" ;; esac

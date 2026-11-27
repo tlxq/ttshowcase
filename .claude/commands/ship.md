@@ -17,5 +17,5 @@ Ship the current branch. Rules: `CLAUDE.md`. GitHub runs `mise run check` on eve
 7. While the checks run, Tom can already judge on the PR's preview: `mise run next preview` prints its /next link and a QR for the S23. Changes what a visitor sees or how it moves: Tom judges it on the T14s and the S23 before the merge. Until he
    says it feels right, stop here with the link.
 8. `gh pr merge --squash --delete-branch`, `git switch master && git pull`, then the `verifier` agent on the result.
-9. Write the result in the plan (`~/.claude/plans/ttshowcase.md`) and the board line: PR number, what Tom said, the
-   verifier's verdict.
+9. Write the result in the ttshowcase plan changed most recently in `~/.claude/plans/` (session start lists them): PR
+   number, what Tom said, the verifier's verdict.
