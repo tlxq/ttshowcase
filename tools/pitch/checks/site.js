@@ -32,13 +32,22 @@ async page => { const W = page.viewportSize().width, phone = W < 600, errs = [],
       chips.push(c); if (!c || !c.on || c.text !== 'Opens ' + LINKS[i][0]) errs.push('hovering ' + LINKS[i][0] + ' shows ' + JSON.stringify(c) + ', not "Opens ' + LINKS[i][0] + '"'); }
     res.chips = chips; if (chips.every(Boolean) && chips.some(c => Math.abs(c.l - chips[0].l) > 2 || Math.abs(c.t - chips[0].t) > 2)) errs.push('the hover chip is not in one place for the three links: ' + JSON.stringify(chips)); }
   await page.screenshot({ path: '__SHOTS__pitch-site-' + W + '-night.png' });
+  // ---- the door view: while the camera is still inside the workshop (z under 0), the open back door frames the painting: its middle is on the screen, in the middle half across (both lights, both devices)
+  const doorView = async tag => { const seen = []; for (let sv = 905; sv <= 940; sv += 5) { await go(sv); await page.waitForTimeout(900); const m = (await page.evaluate(() => siteTest())).mid; seen.push(sv + ':' + [m.x, m.y, m.inside, m.z].join('/'));
+      if (m.ok && m.inside > .5 && m.z < -.5 && m.x > W * .25 && m.x < W * .75 && m.y > 0 && m.y < page.viewportSize().height) { res['door ' + tag] = seen; return; } }
+    res['door ' + tag] = seen; errs.push('the open back door does not frame the painting while the camera is inside (' + tag + ', sv 905 to 940: x/y/inside/z ' + seen.join(' ') + ')'); };
+  await doorView('night');
   // ---- day
   await open('__URL__'.replace('hour=23', 'hour=13')); await go(990);
   s = await state(s => s.shown); res.day = { lamps: s.lamps, face: s.face, work: s.work };
   if (s.lamps.some(v => v > 0) || s.face > 0 || s.work > 0) errs.push('by day the site lamps or the work lights are on: ' + JSON.stringify(res.day));
-  res.door = []; for (const sv of [936, 940]) { await go(sv); await page.waitForTimeout(3500); // the sky and the street across the door: the top 40 % of the frame
+  await doorView('day');
+  res.sky = []; for (const sv of [936, 940]) { await go(sv); await page.waitForTimeout(3500); // the sky and the street across the door: the top 40 % of the frame
     const b64 = (await page.screenshot({ type: 'jpeg', quality: 40 })).toString('base64');
-    res.door.push(await page.evaluate(async b64 => { const im = new Image(); im.src = 'data:image/jpeg;base64,' + b64; await im.decode(); const c = document.createElement('canvas'); c.width = 64; c.height = 40; const g = c.getContext('2d'); g.drawImage(im, 0, 0, 64, 40); const d = g.getImageData(0, 0, 64, 16).data; let t = 0; for (let i = 0; i < d.length; i += 4) t += (d[i] + d[i + 1] + d[i + 2]) / 3; return Math.round(t / (d.length / 4)); }, b64)); }
-  if (Math.min(...res.door) < DOOR_FLOOR) errs.push('the view out of the back door by day is a dark frame: the sky and the street show a mean brightness of ' + Math.min(...res.door) + ' of 255 (sv 936, 940: ' + res.door.join(', ') + '), under ' + DOOR_FLOOR);
+    res.sky.push(await page.evaluate(async b64 => { const im = new Image(); im.src = 'data:image/jpeg;base64,' + b64; await im.decode(); const c = document.createElement('canvas'); c.width = 64; c.height = 40; const g = c.getContext('2d'); g.drawImage(im, 0, 0, 64, 40); const d = g.getImageData(0, 0, 64, 16).data; let t = 0; for (let i = 0; i < d.length; i += 4) t += (d[i] + d[i + 1] + d[i + 2]) / 3; return Math.round(t / (d.length / 4)); }, b64)); }
+  if (Math.min(...res.sky) < DOOR_FLOOR) errs.push('the view out of the back door by day is a dark frame: the sky and the street show a mean brightness of ' + Math.min(...res.sky) + ' of 255 (sv 936, 940: ' + res.sky.join(', ') + '), under ' + DOOR_FLOOR);
   await page.screenshot({ path: '__SHOTS__pitch-site-' + W + '-door-day.png' });
+  // ---- the narrowest phone, 320 x 568 (the link rows are 0.41 m apart: a stop too far back shows them 43 px apart): each tap area 48 px or more, none over another
+  if (phone) { await page.setViewportSize({ width: 320, height: 568 }); await open('__URL__'); await go(990); const n = await state(s => s.shown && s.hots.every(h => h.shown)); res.narrow = n.hots.map(h => [Math.round(h.t), Math.round(h.w), Math.round(h.h)]);
+    n.hots.forEach((h, i) => { if (h.w < 47.5 || h.h < 47.5) errs.push('at 320 x 568 ' + LINKS[i][0] + "'s tap area is " + Math.round(h.w) + ' x ' + Math.round(h.h) + ' px, under 48 x 48'); if (i && h.t < n.hots[i - 1].t + n.hots[i - 1].h - 1) errs.push('at 320 x 568 the tap areas of ' + LINKS[i - 1][0] + ' and ' + LINKS[i][0] + ' overlap'); }); }
   return JSON.stringify(res); }
