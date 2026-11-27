@@ -3,7 +3,8 @@
 // The file is committed; public/ goes to the site as it is. Run: node tools/icons/favicon.mjs
 // If the tab icon itself changes (app/icon.svg), the guard in tools/header-check.sh fails: make new mark pictures with
 //   node tools/icons/favicon.mjs --render   (needs a build, `npm run build`, and rsvg-convert; writes mark-16/32.png from out/icon.svg)
-// and have Tom approve them.
+// and have Tom approve them. Note: the two mark PNGs are rendered from mark.svg by --render, and nothing checks that they match
+// if someone edits mark.svg and the hash by hand.
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";

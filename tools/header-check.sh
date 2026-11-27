@@ -130,7 +130,7 @@ alt=$(node -e 'import("./src/head/head.ts").then((m) => process.stdout.write(m.S
 # favicon.ico is made from the approved mark pictures, which were made from the built icon.svg; a changed icon with old pictures fails here
 want=$(cat tools/icons/favicon.source.sha256 2>/dev/null || true)
 [ "$(sha256sum out/icon.svg | cut -d' ' -f1)" = "$want" ] ||
-  no "public/favicon.ico is stale: the icon changed. Run: node tools/icons/favicon.mjs --render (after npm run build), have Tom approve the new tools/icons/mark-*.png, and commit them with public/favicon.ico and tools/icons/favicon.source.sha256"
+  no "public/favicon.ico is stale: the tab icon changed. Run: npm run build; node tools/icons/favicon.mjs --render (re-makes tools/icons/assets/mark-16.png and mark-32.png, the hash and public/favicon.ico); cp out/icon.svg tools/icons/mark.svg; have Tom approve the new marks; commit all of them. The 48 px piece (tools/icons/assets/piece-48.png) and the apple piece (app/apple-icon.png/assets/piece-180.png) are approved pictures: they stay until Tom approves new ones"
 DESC="$desc" ALT="$alt" python3 -I - out <<'PY' || fail=1
 import html as htmllib, os, pathlib, re, sys, json
 out = pathlib.Path(sys.argv[1])

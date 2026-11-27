@@ -30,7 +30,7 @@ export const NOINDEX = { index: false, follow: false } as const;
 export const SHARE_IMAGE = `${SITE}/share.jpg`;
 
 /** What the share picture shows, for og:image:alt and twitter:image:alt (picture and text approved by Tom 11-27). The new
- * front's pages (pitch/*.src.html) carry the same words; head.test.ts holds them equal. */
+ * front's pages (pitch/*.src.html) carry the same words; src/head/icons.test.ts holds them equal. */
 export const SHARE_ALT =
   "Tom Larsson, product engineer: a black and white portrait in front of a concrete wall with blue paint poured down it, signed with his tlxq tag.";
 
