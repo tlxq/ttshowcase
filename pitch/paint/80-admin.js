@@ -130,10 +130,10 @@
     lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * k); skyU.uBg.value.copy(scene.background); }
   document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
   function morning(now, sv, cp, look) { // after endCam: past EDGE, in close to the bare wall, the change to the visitors' wall, the light
-    paintTone(dayNow()); // the spray's colour follows the clock, as the light does
+    const dn = dayNow(); paintTone(dn); // the spray's colour follows the clock, as the light does (the clock read once a frame)
     // by day the start wall's haze is thinner (as at the end, where the painting is 16 m away and the opening's haze would wash it out): the start's line is 16 m from the camera and the day's pale fog
     // lifted its dark paint to a mid blue as light as the wall (1.1:1); by sv ~50 the walk's own haze is back
-    if (sv < 1060 && !pick.mode && !endS.show) scene.fog.density = .04 - .026 * dayNow() * (1 - sm(cl((sv - 12) / 36)));
+    if (sv < 1060 && !pick.mode && !endS.show) scene.fog.density = .04 - .026 * dn * (1 - sm(cl((sv - 12) / 36)));
     const day = sv >= CUT; endVisit = 0;
     // no landing, no flash (Tom 11-23, no zoom 11-24): past EDGE the street is the bare stretch's twin, moved by SEAM_D (the same concrete, the same lamp over it),
     // and its end is the visitors' wall, the page's seam. The page's top shows
@@ -144,8 +144,8 @@
       lamp.intensity = 5.5; pool.intensity = 9; bulbM.emissiveIntensity = 2.2; work.intensity = 4.2 * .3; stairLight.intensity = 0;
       sky.color.copy(SKY0); sky.groundColor.copy(GND0); sky.intensity = .35; sun.intensity = 0; scene.background.copy(BG0); scene.fog.color.copy(FOG0); lens.uniforms.uAper.value = 1; cityFar.material.color.setScalar(.25);
       if (sv >= SV_MAX - 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, 8); // the loop: the page's top shows the same wall, then the pole, the start
-      clockLight(dayNow()); }
-    else { endVisit = 0; sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); clockLight(dayNow() * startDay * (1 - shop.ins)); } // by day the sun comes up only as the start's paint shows the wall // the street is in the clock's light all along; inside the workshop it has its own warm light (Tom 11-26)
+      clockLight(dn); }
+    else { endVisit = 0; sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); clockLight(dn * startDay * (1 - shop.ins)); } // by day the sun comes up only as the start's paint shows the wall // the street is in the clock's light all along; inside the workshop it has its own warm light (Tom 11-26)
     endReady = false; // no end landing any more (Tom 11-23): Leave your tag lives on the visitors' wall
     if (document.documentElement.dataset.endReady !== (endReady ? "1" : "0")) document.documentElement.dataset.endReady = endReady ? "1" : "0"; // the checks wait for it
     endWallState(now, false);
@@ -202,7 +202,7 @@
   // It was a smoothstep, which crawls to nothing at both ends: a swipe just after a stop moved the camera almost not at all.
   const GLIDE_SLOW = .35, glideEase = t => t - (1 - GLIDE_SLOW) * Math.sin(2 * Math.PI * t) / (2 * Math.PI);
   function glideAt(w, t, cp, look) { const u = glideEase(t), at = w.path.getPointAt(u), y = w.P0.y + (w.P1.y - w.P0.y) * u;
-    const h = w.h0 + (w.h1 - w.h0) * u + turnAt(w.turn, u), d = w.d0 + (w.d1 - w.d0) * u;
+    const dh = Math.atan2(Math.sin(w.h1 - w.h0), Math.cos(w.h1 - w.h0)), /* the turn between the two headings, wrapped into (-pi, pi]: the short way round, never the long */ h = w.h0 + dh * u + turnAt(w.turn, u), d = w.d0 + (w.d1 - w.d0) * u;
     cp.set(at.x, y, at.z); look.set(at.x + Math.sin(h) * d, y + Math.tan(w.p0 + (w.p1 - w.p0) * u) * d, at.z - Math.cos(h) * d); }
   // in: from raddavarfruberga's stop (CAM.F: the camera stands there from sv 540 on) to ttoolbox's, facing the back wall all the way
   const IN_A = 540, IN_B = U4[0].key, IN_END = toolStop(U4[0].x, WF); let inWay = null;

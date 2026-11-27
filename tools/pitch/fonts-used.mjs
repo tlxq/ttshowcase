@@ -15,7 +15,12 @@ export function fontProblems(html, page) {
   const embedded = new Set(
     [...html.matchAll(/@font-face\{font-family:'([^']+)'/g)].map((m) => m[1]),
   );
-  const rest = html.replace(/@font-face\{[^}]*\}/g, "");
+  // a family named only in a comment is not used: comments (/* */, <!-- -->, and // to the end of a line after a space or a line's start) go first
+  const rest = html
+    .replace(/@font-face\{[^}]*\}/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/(^|[\s;{}])\/\/[^\n]*/g, "$1");
   const problems = [];
   for (const family of FAMILIES) {
     const used = new RegExp(`["'\`]${family}["'\`]`).test(rest);

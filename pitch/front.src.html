@@ -584,7 +584,7 @@ __LIBS__
     }).catch(() => {});
     return st;
   })();
-  addEventListener("resize", () => bloom.place()); document.fonts?.ready.then(() => bloom.place()); // Clash Display moves the words when it arrives
+  addEventListener("resize", () => bloom.place()); document.fonts?.ready.then(() => bloom.place()); // the display font moves the words when it arrives
 
   // the form: the same fields and words as the live site's, sent by the server (api/contact.ts); signum W3, W5, W6
   { const mail = document.getElementById("mail"), err = mail.querySelector(".err"), btn = mail.querySelector("button");
