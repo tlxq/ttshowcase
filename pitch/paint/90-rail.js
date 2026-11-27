@@ -104,8 +104,8 @@
     tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
     // the label and the links on the painted marks, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
-    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn); 
-    pin(tagFacts, l6, c6, NARROW ? V(camera.position.x - .6, G3 + .1, 0) : V(EX - EW * .3, EY - EH / 2 + .1, 0), NARROW ? 18 : 24, 60); // phone: the plate and its line follow the camera along the wall // phone: under the painting, on the empty floor
+    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn);
+    pin(tagFacts, l6, c6, NARROW ? V(camera.position.x - .6, G3 + .1, 0) : V(EX - EW * .3, EY - EH / 2 + .1, 0), NARROW ? 18 : 24, 60); // phone: under the wall on the floor, the plate and its line follow the camera along it
     placeHots(hots, EPA_MARKS, EPAB, ST[0].k >= 1 && sec >= .3 && pan > .5 && endK < .5); // at this wall, each mark that is in view
     const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
     [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);

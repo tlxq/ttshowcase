@@ -2,12 +2,17 @@
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('pageerror', e => errs.push(String(e))); page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.route('**/api/github', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ epa: { commits: 346, merged: 14, tests: 73, migrations: 6 }, rvf: { commits: 406, merged: 26 } }) }));
   await page.goto('__URL__'); await page.waitForTimeout(3500);
   const t0 = await page.evaluate(() => performance.now()); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && (b.x > 0 ? b : matchMedia("(prefers-reduced-motion: reduce)").matches && getComputedStyle(document.querySelector(".start")).display === "none" && b); /* reduced motion: no start screen, nothing to tip */ }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(100);
   res.scrollFree = +(((await page.evaluate(() => performance.now())) - t0) / 1000).toFixed(1);
   if (res.scrollFree > 1.5) errs.push('scroll held ' + res.scrollFree + ' s after the tap');
   const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
+  // the street's numbers appear at once, no spray-in (the notes' opacity is 0 or 1, never between), and the ones in view are all there
+  { await page.evaluate(() => scrollTo(0, svY(128))); const seen = []; for (let i = 0; i < 24; i++) { await page.waitForTimeout(50); seen.push(await page.evaluate(() => window.sprayTest ? window.sprayTest().map(p => [p.key, p.op, p.shown]) : null)); }
+    res.notes = seen[seen.length - 1];
+    if (seen.some(t => !t)) errs.push('no window.sprayTest'); else { if (seen.some(t => t.some(([, op]) => op > 0 && op < 1))) errs.push('reduced motion: a note fades in, it should be there at once'); if (!seen[seen.length - 1].some(([, op, shown]) => op === 1 && shown)) errs.push('reduced motion: no number is on the wall at epaRadar'); } }
   for (const [name, sv, ids] of [['epaRadar', 128, W < 600 ? [0] : [0, 1]], ...(W < 600 ? [['epaRadar (the car, on the phone\'s pan)', 270, [1]]] : []), ['raddavarfruberga', 432, [3]]]) {
     await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(1200);
     if (!(await page.evaluate(ids => ids.every(i => document.getElementById('hot' + i).style.display === 'block'), ids))) errs.push(name + ': links not shown 1.2 s after arriving');

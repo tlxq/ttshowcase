@@ -22,7 +22,7 @@
   // the street's two pictures and what is on them, in the picture's own pixels (the wall's pixel minus ST_A0 / ST_B0)
   const EP = paintOn("assets/street_0.webp", 1980 * SPX, [0, WALL_FOOT], [WX_(ST_A0), G3], .002, [1980, 1120]), RVP = paintOn("assets/street_1.webp", 2050 * SPX, [0, WALL_FOOT], [WX_(ST_B0), G3], .002, [2050, 1120]);
   RVP.m.renderOrder = 1; // over the left picture: in the overlap the two add up to the painted alpha only when the right one is drawn second
-  const EPAN = EP, EPA_MARKS = [[TA(318), 418, TA(1632), 822], [TA(1632), 500, TA(2002), 812]], EPAB = EP, RVF_BOX = [TB(1998), 428, TB(3472), 852]; // the links: epaRadar's name (the site) and its car (the code); raddavarfruberga's name (the site)
+  const EPA_MARKS = [[TA(318), 418, TA(1632), 822], [TA(1632), 500, TA(2002), 812]], EPAB = EP, RVF_BOX = [TB(1998), 428, TB(3472), 852]; // the links: epaRadar's name (the site) and its car (the code); raddavarfruberga's name (the site)
   EP.protect("epaRadar's name", EPA_MARKS[0]); EP.protect("epaRadar's car", EPA_MARKS[1]); RVP.protect("raddavarfruberga's name", RVF_BOX); RVP.protect("raddavarfruberga's house", [TB(3478), 520, TB(3792), 812]);
   EP.protect("epaRadar's production", [TA(134), 12, TA(2002), 1120]); RVP.protect("raddavarfruberga's production", [TB(2000), 12, TB(3999), 1120]); // each whole piece with its clouds and tags (the framing check: the whole piece is on the screen at its stop)
   // the pictures come up on the wall together once both are in (like the garage's pieces, 80-admin.js): never before their picture, and not before the tip
@@ -147,28 +147,36 @@
     ["rvf", 1, "rvf.merged", [3462, 910], 3, 88, [["#", "merged"], ["pull requests"]], 80.5, [3465, 830, 3871, 1019]] ];
   const NOTE_AT = { epa: [WX_, G3], rvf: [WX_, G3] }; // the wall's pixel x to the scene, and the street under the piece
   // glyphs of a note for a count n, in the note's own space (x from the anchor, y from the first baseline): [glyph, x, y, scale]
-  function noteGlyphs(n, [, , , , , hd, lines, pitch]) { const k = hd * NOTE_SCALE / 160, kk = k * NOTE_WORD, seen = {}, out = [];
+  function noteGlyphs(n, [, , , , , hd, lines, pitch], mult = 1) { const k = hd * NOTE_SCALE * mult / 160, kk = k * NOTE_WORD, seen = {}, out = [];
     lines.forEach((line, li) => { let x = li ? 26 * k : 0; const by = li * pitch;
       for (const part of line) { if (part === "#") { for (const d of String(n)) { const c = seen[d] || 0; seen[d] = c + 1; const g = c % 2 === 1 && NOTE_GLYPH[d + "b"] ? d + "b" : d; out.push([g, x, by - 127 * k, k]); x += NOTE_GLYPH[g][2] * k * .9; } x += 22 * k; }
         else { out.push([part, x, by - 106 * kk, kk]); x += NOTE_GLYPH[part][2] * kk + 16 * k; } } });
     return out; }
+  // a note for a count n, fitted to its room (Tom 11-27: a number must fit its spot): the glyphs, shrunk about the anchor by the least amount that puts every glyph's cell inside the slot's room
+  // across (a digit more than the stand-in has room, two more would run into the painting); lo and hi are where the drawn note ends, in wall pixels
+  function noteLay(n, N) { const [, , , [ax], tilt, , , , [bx0, , bx1]] = N, th = tilt * Math.PI / 180, c = Math.cos(th), sn = Math.sin(th), reach = gl => { let lo = 0, hi = 0, s = 1;
+      for (const [g, x, y, k] of gl) { const [, , gw, gh] = NOTE_GLYPH[g]; for (const [px, py] of [[x, y], [x + gw * k, y], [x, y + gh * k], [x + gw * k, y + gh * k]]) { const dx = px * c + py * sn; lo = Math.min(lo, dx); hi = Math.max(hi, dx);
+          if (dx > 0) s = Math.min(s, (bx1 - ax) / dx); else if (dx < 0 && bx0 < ax) s = Math.min(s, (bx0 - ax) / dx); } } // (a room that starts right of the anchor, by the few px a tilted cell's empty corner sticks out, is left alone; the check allows 12 px there)
+      return { lo, hi, s: Math.min(1, s) }; };
+    let gl = noteGlyphs(n, N), r = reach(gl); if (r.s < 1) { gl = noteGlyphs(n, N, r.s); r = { ...reach(gl), s: r.s }; } return { gl, s: r.s, lo: ax + r.lo, hi: ax + r.hi, room: [bx0, bx1] }; }
   const NOTE_PARTS = NOTES.map((N, i) => { const [proj, nth, key, [ax, ay], tilt, , , , [bx0, by0, bx1, by1]] = N, [ST_X, street] = NOTE_AT[proj], pad = NARROW ? 48 : 12, X0 = bx0 - pad, Y0 = by0 - pad, W = Math.ceil((bx1 - bx0 + 2 * pad) * NOTE_PPW), H = Math.ceil((by1 - by0 + 2 * pad) * NOTE_PPW);
     const cv = Object.assign(document.createElement("canvas"), { width: W, height: H }), g = cv.getContext("2d", { willReadFrequently: true }), map = new THREE.CanvasTexture(cv); map.encoding = THREE.sRGBEncoding; map.anisotropy = maxAniso;
     const wx0 = ST_X(X0), wx1 = ST_X(X0 + W / NOTE_PPW), wy1 = street + (WALL_FOOT - Y0) * SPX, wy0 = street + (WALL_FOOT - (Y0 + H / NOTE_PPW)) * SPX;
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(wx1 - wx0, wy1 - wy0), new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .6, opacity: 0, polygonOffset: true, polygonOffsetFactor: -2 }));
     mesh.position.set((wx0 + wx1) / 2, (wy0 + wy1) / 2, .004); mesh.renderOrder = 2; mesh.visible = false; scene.add(mesh); // after the picture: both are see-through layers, and a note off to the side is farther than the picture's middle
     PROT.push([{ epa: "epaRadar's ", rvf: "raddavarfruberga's " }[proj] + key.split(".")[1], V(wx0, wy0, 0), V(wx1, wy1, 0)]);
-    const sp = { mesh, op: 0, at: 0, key, shown: null, draw() { g.clearRect(0, 0, W, H); sp.shown = null; sp.used = []; const s = LIVE[proj][nth];
-        if (s.n != null && s.n !== 1 && NOTE_SHEET.naturalWidth && noteGlyphs(s.n, N).every(([c]) => NOTE_GLYPH[c])) { sp.shown = s.n; sp.used = noteGlyphs(s.n, N).map(q => q[0]);
+    const sp = { mesh, op: 0, at: 0, key, shown: null, draw() { g.clearRect(0, 0, W, H); sp.shown = null; sp.used = []; sp.fit = null; const s = LIVE[proj][nth];
+        if (s.n != null && s.n !== 1 && NOTE_SHEET.naturalWidth && noteGlyphs(s.n, N).every(([c]) => NOTE_GLYPH[c])) { const lay = noteLay(s.n, N); sp.shown = s.n; sp.used = lay.gl.map(q => q[0]); sp.fit = { s: +lay.s.toFixed(3), lo: Math.round(lay.lo), hi: Math.round(lay.hi), room: lay.room, canvas: [X0, X0 + W / NOTE_PPW] };
           g.save(); g.imageSmoothingQuality = "high"; g.translate((ax - X0) * NOTE_PPW, (ay - Y0) * NOTE_PPW); g.rotate(-tilt * Math.PI / 180); g.scale(NOTE_PPW, NOTE_PPW);
-          for (const [c, x, y, k] of noteGlyphs(s.n, N)) { const [gx, gy, gw, gh] = NOTE_GLYPH[c]; g.drawImage(NOTE_SHEET, gx, gy, gw, gh, x, y, gw * k, gh * k); }
+          for (const [c, x, y, k] of lay.gl) { const [gx, gy, gw, gh] = NOTE_GLYPH[c]; g.drawImage(NOTE_SHEET, gx, gy, gw, gh, x, y, gw * k, gh * k); }
           g.restore(); g.globalCompositeOperation = "source-in"; g.fillStyle = NOTE_INK; g.fillRect(0, 0, W, H); g.globalCompositeOperation = "source-over"; }
         map.needsUpdate = true; },
-      fade(on) { const now = performance.now(), dt = Math.min(.1, (now - sp.at) / 1000 || 0); sp.at = now; sp.op = cl(sp.op + (on ? dt / .6 : -dt / .6)); sp.mesh.visible = sp.op > .01; sp.mesh.material.opacity = sp.op; } }; // the spray-in: it comes up in .6 s
+      fade(on) { const now = performance.now(), dt = Math.min(.1, (now - sp.at) / 1000 || 0); sp.at = now; sp.op = REDUCED ? +on : cl(sp.op + (on ? dt / .6 : -dt / .6)); sp.mesh.visible = sp.op > .01; sp.mesh.material.opacity = sp.op; } }; // the spray-in: it comes up in .6 s (reduced motion: at once)
     (SPRAYS[proj] ||= []).push(sp); noteSheetReady.then(() => sp.draw()); return sp; });
     const inkOf = p => { const c = p.mesh.material.map.image, d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let ink = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 128) ink++; return ink; };
   window.numsTest = () => Object.fromEntries(["ttoolbox", "dot", "tthermal"].map(k => [k, (SPRAYS[k] || []).map(p => ({ shown: p.shown ?? null, ink: inkOf(p), op: +p.op.toFixed(2) }))])); // for the garage check: each Toolbox number's painted count, paint and how far it has faded in
-  window.sprayTest = () => NOTE_PARTS.map(p => ({ key: p.key, shown: p.shown ?? null, used: p.used || [], ink: inkOf(p), op: +p.op.toFixed(2) })); // for the epanums check: the number each of the street's six notes shows, how much paint it has and how far it has faded in
+  const edgeOf = p => { const c = p.mesh.material.map.image, d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) if ((x < 2 || y < 2 || x >= c.width - 2 || y >= c.height - 2) && d[(y * c.width + x) * 4 + 3] > 10) n++; return n; }; // paint on the canvas's outer 2 px: the note was cut off
+  window.sprayTest = () => NOTE_PARTS.map(p => ({ key: p.key, shown: p.shown ?? null, used: p.used || [], fit: p.fit || null, edge: edgeOf(p), ink: inkOf(p), op: +p.op.toFixed(2) })); // for the epanums check: the number each of the street's six notes shows, its fit in its room, paint on the canvas's edge, how much paint it has and how far it has faded in
   // a second street light for the second piece; it flickers on as the camera arrives
   const lamp2 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp2.position.set(EX - 6.5, 3.8 - 2 * DROP, 3.4); lamp2.target.position.set(EX + .4, EY, 0); scene.add(lamp2, lamp2.target);
   const head = document.getElementById("head");

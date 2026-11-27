@@ -8,7 +8,7 @@
   let rvfStart = 0; const RVF_END = .6; // the label comes a moment after the camera is at the wall, then the numbers
   let endK = 0; // how far the camera has left raddavarfruberga for the garage door
   function rvfAt(now, walk3, end3) {
-    lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3));
+    lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3)) * (1 - dayNow() * (1 - end3)); // by day it adds nothing on the street (the other lamps are off by day too, clockLight): the right half held its paint's colour; from the garage's way in on (end3) it is as it was
     if (introOver && walk3 > .3 && !rvfStart) rvfStart = now; // once per visit, while the camera is still coming in
     const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1;
     const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0);

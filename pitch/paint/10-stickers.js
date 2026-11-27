@@ -37,12 +37,21 @@
       const yTop = px <= a ? h0 + .9 : px >= b ? h1 + .9 : h0 + .9 + (h1 - h0) * (px - a) / (b - a), po = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, yTop - py, 8), postM); po.position.set(px, (yTop + py) / 2, .3); scene.add(po); }
     return { x, y: h1 + 2.4 }; });
   const stairLight = new THREE.SpotLight(0xffd9a8, 0, 7, .95, .8, 1.4); scene.add(stairLight, stairLight.target);
-  // two more wall lamps over the ramp (the street's way down to the wall: the ramp has 8 m of dark wall to walk along); the one light follows the camera along the steps and the ramp, then hands over to the street light at the wall
-  for (const x of [11.6, 15]) { const m = new THREE.Group(), box = new THREE.Mesh(new THREE.BoxGeometry(.32, .18, .12), postM), lens = new THREE.Mesh(new THREE.BoxGeometry(.26, .04, .1), new THREE.MeshStandardMaterial({ color: 0, emissive: 0xffd9a8, emissiveIntensity: 2 }));
-    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, groundAt(x) + 2.5, .07); scene.add(m); }
-  function stairsAt(cx) { const x = cl(cx + 1.2, 6.6, 16), y = groundAt(x) + 2.4, w = 1 - sm(cl((cx - 17) / 3));
-    stairLight.position.set(x, y, .4); stairLight.target.position.set(x + 1.5, y - 1.4, 0); stairLight.angle = 1.1; stairLight.distance = 9;
-    stairLight.intensity = 10 * w * (introOver ? 1 : 0); }
+  // two more wall lamps over the ramp (the street's way down to the wall: the ramp has 8 m of dark wall to walk along). Each throws a warm pool on the wall, like the street's own lamps (a soft glow, not a light: every
+  // light costs a frame on the T14s); the one real light follows the camera along the steps and the ramp, then hands over to the street light at the wall. At the start (camera x under 3) it is the flight's own
+  // lamp as it always was, so the start's frame is the one it was; by day the lamps and pools are off.
+  const POOL_TEX = (() => { const c = Object.assign(document.createElement("canvas"), { width: 128, height: 128 }), g = c.getContext("2d"), r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    r.addColorStop(0, "rgba(255,214,160,.85)"); r.addColorStop(.35, "rgba(255,200,140,.4)"); r.addColorStop(1, "rgba(255,190,120,0)"); g.fillStyle = r; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t; })();
+  const RAMP_POOLS = [11.6, 15].map(x => { const m = new THREE.Group(), box = new THREE.Mesh(new THREE.BoxGeometry(.32, .18, .12), postM), lens = new THREE.Mesh(new THREE.BoxGeometry(.26, .04, .1), new THREE.MeshStandardMaterial({ color: 0, emissive: 0xffd9a8, emissiveIntensity: 2 }));
+    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, groundAt(x) + 2.5, .07); scene.add(m);
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 4.4), new THREE.MeshBasicMaterial({ map: POOL_TEX, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false, toneMapped: false }));
+    pl.position.set(x, groundAt(x) + 2.5 - 1.5, .03); pl.visible = false; scene.add(pl); return { x, pl }; });
+  { const x = stairLamps[0].x, pl = RAMP_POOLS[0].pl.clone(); pl.material = RAMP_POOLS[0].pl.material.clone(); pl.position.set(x, stairLamps[0].y + .1 - 1.5, .03); scene.add(pl); RAMP_POOLS.unshift({ x, pl }); } // the flight's own lamp gets its pool once the camera is past the start
+  function stairsAt(cx) { const night = (1 - dayNow()) * (introOver ? 1 : 0), m = sm(cl((cx - 3) / 3)), w = 1 - sm(cl((cx - 17) / 3));
+    const fx = cl(cx + 1.2, 6.6, 16), fy = groundAt(fx) + 2.4, s0 = stairLamps[0]; // follow mode, and the flight's own lamp at the start
+    stairLight.position.set(s0.x + (fx - s0.x) * m, s0.y + (fy - s0.y) * m, .4); stairLight.target.position.set(s0.x + (fx + 1.5 - s0.x) * m, s0.y - 3 + (fy - 1.4 - s0.y + 3) * m, 1.6 * (1 - m));
+    stairLight.angle = .95 + .15 * m; stairLight.distance = 7 + 2 * m; stairLight.intensity = (7 + 3 * m) * w * (introOver ? 1 : 0);
+    for (const { x, pl } of RAMP_POOLS) { const k = night * sm(cl((cx - (x - 9)) / 3)) * (1 - sm(cl((cx - (x + 7)) / 3))) * m; pl.material.opacity = .55 * k; pl.visible = k > .01; } }
   const pool = new THREE.SpotLight(0xffd2a0, 0, 14, .62, .85, 1.6); pool.position.set(POST.x, GROUND + 6.3, POST.z + 1.25); pool.target.position.set(POST.x + .3, GROUND, POST.z + 1.6); scene.add(pool, pool.target); // a curb stone at the pavement's edge; the darker band beyond is the road
   ground.receiveShadow = true; scene.add(ground);
 

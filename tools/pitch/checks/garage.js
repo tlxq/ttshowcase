@@ -12,6 +12,7 @@
 // No Toolbox painting may carry the street concrete's bump map (Tom 11-26: its joint drew a dark line across them at waist height; the block wall has none).
 async page => { const W = page.viewportSize().width, errs = [], res = { errs, stops: {} };
   page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('THREE.'))) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
+  const LIGHT_FLOOR = { desktop: 17, phone: 13 }; // half of the dimmer lit end of the way (measured 35.2 and 79.7 on a laptop, 26.9 and 72.5 on a phone, night); the lamps and pools of the way are at 25 and 17 at their darkest
   const NUMS = { ttoolbox: [9, 10], dot: [5, 92], tthermal: [8, 7] };
   await page.route('**/api/github', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ttoolbox: { commits: 9, skills: 10 }, dot: { commits: 5, tests: 92 }, tthermal: { commits: 8, merged: 7 } }) }));
   const nums = async (key, want) => { let n = null; for (let i = 0; i < 20; i++) { n = await page.evaluate(k => window.numsTest ? numsTest()[k] : null, key); if (n && n.every((p, j) => p.shown === want[j] && p.ink > 200 && p.op > .9)) return null; await page.waitForTimeout(250); }
@@ -47,6 +48,12 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
     for (let i = 0; i < way.length; i++) { const [sv, [c, gr]] = way[i], eye = c[1] - gr; if (eye < 1.1 || eye > 4.5) errs.push('on the way to epaRadar the camera is ' + eye.toFixed(2) + ' m over the street at sv ' + sv + ' (between 1.1 and 4.5)');
       if (i && c[1] - way[i - 1][1][0][1] > .03) errs.push('on the way to epaRadar the camera rises ' + (c[1] - way[i - 1][1][0][1]).toFixed(2) + ' m between sv ' + way[i - 1][0] + ' and ' + sv + ': the way only goes down, so a rise is a dip and a climb');
       if (i && Math.abs(c[1] - way[i - 1][1][0][1]) > .8) errs.push('on the way to epaRadar the camera jumps ' + Math.abs(c[1] - way[i - 1][1][0][1]).toFixed(2) + ' m in height between sv ' + way[i - 1][0] + ' and ' + sv); }
+    // at night no frame of the way is a black one (Tom 11-27: the dark stretch at sv 25 to 40): the mean brightness (0 to 255, the mean of the three colours over a 64 x 40 picture of the screenshot) of each stop of the way stays above
+    // LIGHT_FLOOR, which is half of the dimmest of the two lit ends (the start wall at sv 8, epaRadar's wall at sv 56)
+    { const lum = []; for (let sv = 8; sv <= 56; sv += 4) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(500);
+        const b64 = (await page.screenshot({ type: 'jpeg', quality: 40 })).toString('base64'); lum.push([sv, await page.evaluate(async b64 => { const im = new Image(); im.src = 'data:image/jpeg;base64,' + b64; await im.decode(); const c = document.createElement('canvas'); c.width = 64; c.height = 40; const g = c.getContext('2d'); g.drawImage(im, 0, 0, 64, 40); const d = g.getImageData(0, 0, 64, 40).data; let t = 0; for (let i = 0; i < d.length; i += 4) t += d[i] + d[i + 1] + d[i + 2]; return +(t / (d.length / 4) / 3).toFixed(1); }, b64)]); }
+      res.light = lum.map(([sv, v]) => sv + ':' + v); const floor = LIGHT_FLOOR[page.viewportSize().width < 600 ? 'phone' : 'desktop'];
+      for (const [sv, v] of lum) if (v < floor) errs.push('on the way to epaRadar the screen is nearly black at sv ' + sv + ': mean brightness ' + v + ' of 255, under ' + floor); }
     const all = way.slice(1).map(([, [c]], i) => Math.hypot(c[0] - way[i][1][0][0], c[2] - way[i][1][0][2])), mean = all.reduce((a, d) => a + d, 0) / all.length, k = all.findIndex(d => d < .2 * mean);
     if (k >= 0) errs.push('on the way to epaRadar the scroll moves the camera almost not at all at sv ' + way[k][0] + '-' + way[k + 1][0] + ': ' + all[k].toFixed(2) + ' m in 4 sv (the mean is ' + mean.toFixed(2) + '): it feels stuck'); }
   let g = await at(540); if (g.open > .05 || g.inside > .05) errs.push('before the workshop the garage door should be shut and the camera in the street: ' + JSON.stringify(g));

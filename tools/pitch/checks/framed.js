@@ -16,4 +16,13 @@ async page => { const W0 = page.viewportSize().width, H0 = page.viewportSize().h
       if (!r) errs.push('no painting in view at stop ' + sv + ' (' + w + ' x ' + h + ')');
       else { seen.push(r.name.split(' ')[0] + ' ' + r.out); if (r.out > 4) errs.push(r.name + ' runs ' + r.out + ' px past the screen at stop ' + sv + ' (' + w + ' x ' + h + ')'); } }
     res.sizes.push(w + 'x' + h + ': ' + seen.join(', ')); }
+  // A phone pans along the street's wall (Tom 11-27): every box on it (each piece, its name, car and house, each number note) is whole across the screen at some sv from 60 (where the pan starts) to 486,
+  // or, when it is wider than the screen (the two names and the two pieces), both its ends come into the screen along the pan.
+  if (W0 < 600) { await page.setViewportSize({ width: W0, height: H0 }); await page.waitForTimeout(800); const best = {};
+    for (let sv = 60; sv <= 486; sv += 22) { await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(500);
+      for (const p of await page.evaluate(() => window.plateTest.pictures().filter(p => /^(epaRadar|raddavarfruberga)'s /.test(p.name)).map(p => ({ name: p.name, l: p.l, r: p.r, w: innerWidth })))) { const b = best[p.name] ||= { fit: false, left: false, right: false };
+        if (p.l >= -4 && p.r <= p.w + 4) b.fit = true; if (p.l >= -4 && p.l <= p.w) b.left = true; if (p.r >= 0 && p.r <= p.w + 4) b.right = true; } }
+    res.pan = Object.fromEntries(Object.entries(best).map(([k, b]) => [k, b.fit ? 'whole' : b.left && b.right ? 'both ends' : 'no']));
+    if (Object.keys(best).length < 12) errs.push('the street has ' + Object.keys(best).length + ' boxes on the pan, not 12 (4 parts, 2 pieces, 6 notes)');
+    for (const [k, b] of Object.entries(best)) if (!b.fit && !(b.left && b.right)) errs.push(k + ' is never whole across the screen, nor both its ends, on the phone\'s pan (sv 128 to 486)'); }
   return JSON.stringify(res); }
