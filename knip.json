@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "api/*.ts",
+    "src/**/*.test.ts",
+    "tools/**/*.test.mjs",
+    ".claude/hooks/*.test.mjs",
+    "tools/**/*.mjs",
+    "tools/pitch/*.js",
+    "tools/pitch/checks/*.js",
+    "tools/pictures/*.js",
+    "tools/walk/*.js",
+    "pitch/pace.js",
+    "pitch/paint/*.js"
+  ],
+  "ignore": ["tools/pitch/vendor/**", "**/*.d.mts"],
+  "ignoreDependencies": ["gsap", "lenis", "prettier", "axe-core"],
+  "ignoreBinaries": ["rsvg-convert", "flock", "xdg-open"],
+  "ignoreUnresolved": ["tools/next.sh"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreIssues": { ".claude/hooks/*.mjs": ["exports"], "src/head/head.ts": ["exports"] }
+}
