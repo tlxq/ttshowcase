@@ -133,7 +133,7 @@
     const dn = dayNow(); paintTone(dn); // the spray's colour follows the clock, as the light does (the clock read once a frame)
     // by day the start wall's haze is thinner (as at the end, where the painting is 16 m away and the opening's haze would wash it out): the start's line is 16 m from the camera and the day's pale fog
     // lifted its dark paint to a mid blue as light as the wall (1.1:1); by sv ~50 the walk's own haze is back
-    if (sv < 1060 && !pick.mode && !endS.show) scene.fog.density = .04 - .026 * dn * (1 - sm(cl((sv - 12) / 36)));
+    if (sv < 1060 && !pick.mode && !endS.show) scene.fog.density = .04 - .026 * dn * (1 - sm(cl((sv - 12) / 36)) * (1 - sm(cl((sv - 40) / 20)) * (1 - sm(cl((sv - 486) / 54))))); // (Tom 11-27) and the street's wall, 13 m from a phone, is as thin as the start's from sv 60 to 486, back to the walk's own by the garage's way in (540): the day's haze made its paint pale
     const day = sv >= CUT; endVisit = 0;
     // no landing, no flash (Tom 11-23, no zoom 11-24): past EDGE the street is the bare stretch's twin, moved by SEAM_D (the same concrete, the same lamp over it),
     // and its end is the visitors' wall, the page's seam. The page's top shows
@@ -242,5 +242,5 @@
   const lerpV = (a, b, t) => a.clone().lerp(b, t);
   const CAM = NARROW
     ? { A: [V(.4, 1.6, 18), V(0, 1.5, 0)], /* a third wider (Tom 11-23): tags above and round the mural are in the first picture */ B: [V(2.9, 2.1, 18), V(.6, .65, 0)], /* phone (Tom 11-27): the street's wall is one slow pan (90-rail.js sets the camera's x from the scroll between sv 60 and 486): 5 m of it across the screen, letters, tags and numbers sharp; C and E are the left and the right end of the pan */
-      C: [V(WX_(134) + 2.65, G3 + 2, 13.1), V(WX_(134) + 2.65, G3 + 1.9, 0)], D: [V(WX_(2000), G3 + 2, 13.1), V(WX_(2000), G3 + 1.9, 0)], E: [V(WX_(4000) - 2.7, G3 + 2, 13.1), V(WX_(4000) - 2.7, G3 + 1.9, 0)], F: [V(28.8, -.5 - 2 * DROP, 17.5), V(28.8, -.7 - 2 * DROP, -1)] }
+      C: [V(WX_(134) + 2.65, G3 + 2, 12.9), V(WX_(134) + 2.65, G3 + 1.9, 0)], D: [V(WX_(2000), G3 + 2, 12.9), V(WX_(2000), G3 + 1.9, 0)], E: [V(WX_(4000) - 2.7, G3 + 2, 12.9), V(WX_(4000) - 2.7, G3 + 1.9, 0)], F: [V(28.8, -.5 - 2 * DROP, 17.5), V(28.8, -.7 - 2 * DROP, -1)] }
     : { A: [V(1.3, 1.4, 14.6), V(.1, 1.3, 0)], /* a third wider (Tom 11-23): the wall round the mural, where the visitors' tags go, is in the first picture */ B: [V(5, 3.2, 15.6), V(1.2, -.4, 2)], C: [V(EX + .4, EY + .5, 12.2), V(EX + .3, EY + .2, 0)], D: [V(EX + 1.8, EY + .4, 11.8), V(EX + 1.7, EY + .1, 0)], E: [V(RX + .2, .1 - 2 * DROP, 13.2), V(RX + .3, -.5 - 2 * DROP, 0)], F: [V(29.5, -.1 - 2 * DROP, 11.4), V(29.6, -.7 - 2 * DROP, -1)] }; // the two pieces, each whole; F is where the camera stood before the street was one wall (x 29.5), so the way into the garage is the one it was

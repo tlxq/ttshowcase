@@ -51,7 +51,7 @@
       THREE.ShaderChunk.normal_fragment_maps.replaceAll("texture2D( normalMap, vUv )", "texture2D( normalMap, ( uNorT * vec3( vUv, 1. ) ).xy )")); };
     m.customProgramCacheKey = () => "wallBump"; return m; };
   // downhill (Tom 11-16: scrolling down should go down): the street steps down 1.8 m twice, between the scenes
-  const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, STAIRS = [[5, 8, GROUND, G2], [12.5, 15.5, G2, G3]], NSTEP = 12; // (Tom 11-27) both flights come before the street's wall: no stairs or bridge between its two pieces
+  const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, STAIRS = [[5, 8, GROUND, G2]], RAMP = [8, 16], NSTEP = 12; // (Tom 11-27) the street goes down one flight of steps (5 to 8) and then a gentle ramp (8 to 16, 1.8 m over 8 m) to the street's wall at G3: no stairs or bridge between its two pieces
   // the workshop (Tom 11-26: a garage workshop, not a way down under the ground). A room built behind the street wall from HX0 to CX1: BD deep, RH high, its
   // floor the street's (WF = G3). A garage door in the street wall (DOOR_A) rolls up as you come; the far one (DOOR_B) is open, the way out. The four tools'
   // walls hang on the room's back wall, at z = WZ. The street stays at G3 all along.
@@ -62,8 +62,8 @@
   // the scroll's own pace (R2, Tom 11-24: "a lot of scrolling"): the walk keeps its own count (sv, 0..SV_MAX: every moment, light and check is set in it),
   // but the page is shorter: a wall holds ~20-25 vh of scroll, a move between walls about half what it took. PACE: [sv, vh down the page below the park];
   // straight between pairs, so a move keeps its own easing. The checks scroll with svY(sv), which reads it.
-  const PACE = [[0, 0], [60, 50], [240, 75], [304, 95], [340, 100], [416, 125], [486, 150], [529, 170], [548, 175], [612, 197], [656, 210], [700, 228], /* 612-656: through the garage door, a little quicker */ [725, 242], [770, 270], [795, 290],
-    [840, 320], [865, 340], [910, 370], [935, 390], [1045, 440], [1058, 465], /* the street past EDGE (Tom 11-27, audit N-2): the camera walks 16 m along a dark street to the end wall; it had 50 vh, 23 of them in the black middle, now 14 at one even rate (the move itself is eased in 80-admin.js) */ [SV_MAX - 10, 479], [SV_MAX, 487]], WALK = PACE[PACE.length - 1][1];
+  const PACE = [[0, 0], [60, 61], [240, 86], [304, 106], [340, 111], [416, 136], [486, 161], [529, 181], [548, 186], [612, 208], [656, 221], [700, 239], /* 612-656: through the garage door, a little quicker */ [725, 253], [770, 281], [795, 301],
+    [840, 331], [865, 351], [910, 381], [935, 401], [1045, 451], [1058, 476], /* the street past EDGE (Tom 11-27, audit N-2): the camera walks 16 m along a dark street to the end wall; it had 50 vh, 23 of them in the black middle, now 14 at one even rate (the move itself is eased in 80-admin.js) */ [SV_MAX - 10, 490], [SV_MAX, 498]], WALK = PACE[PACE.length - 1][1];
   const paceOf = (v, a, b) => { if (v <= PACE[0][a]) return PACE[0][b]; for (let i = 1; i < PACE.length; i++) if (v <= PACE[i][a]) { const [p, q] = [PACE[i - 1], PACE[i]]; return p[b] + (q[b] - p[b]) * (v - p[a]) / (q[a] - p[a]); } return PACE[PACE.length - 1][b]; };
   const UP = 90, TOP = 50, PAGE = TOP + UP + WALK + 100, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / PAGE, topPx = () => track.offsetHeight * TOP / PAGE;
   track.style.height = PAGE + "vh"; // the stylesheet says the same, for the first paint
@@ -85,13 +85,10 @@
     const cap = new THREE.Mesh(new THREE.BoxGeometry(w, .14, .46), new THREE.MeshStandardMaterial({ color: 0x55585c, roughness: .85, envMapIntensity: .3 })); cap.position.set((x0 + x1) / 2, yt - .02, -.17); scene.add(cap); return m; };
   const bareL = WALL_ADD(-39, WX - WW / 2, GROUND - 2 * TILE, GROUND + WH, V());
   const PROF = (() => { const pts = [[-40, GROUND]]; for (const [a, b, h0, h1] of STAIRS) { const t = (b - a) / NSTEP, r = (h0 - h1) / NSTEP;
-      pts.push([a, h0]); for (let k = 0; k < NSTEP; k++) { pts.push([a + k * t, h0 - (k + 1) * r], [a + (k + 1) * t, h0 - (k + 1) * r]); } } pts.push([END_X, G3]); return pts; })();
-  const groundAt = x => { let h = GROUND; for (const [a, b, h0, h1] of STAIRS) { if (x >= b) h = h1; else if (x >= a) h = h0 - (Math.floor((x - a) / ((b - a) / NSTEP)) + 1) * (h0 - h1) / NSTEP; } return h; };
-  // under the bridge (Tom 11-18: a 20 m wide field of steps looked painful) the second flight is only SW wide, along the wall; beside it
-  // the street runs down as a smooth ramp, a low side wall between them
-  const SW = 3, [RA, RB, RH0, RH1] = STAIRS[1], PROF_R = PROF.filter(([x, y]) => x < RA || x >= RB || (x === RA && y === RH0));
+      pts.push([a, h0]); for (let k = 0; k < NSTEP; k++) { pts.push([a + k * t, h0 - (k + 1) * r], [a + (k + 1) * t, h0 - (k + 1) * r]); } } pts.push([RAMP[1], G3], [END_X, G3]); return pts; })();
+  const groundAt = x => { let h = GROUND; for (const [a, b, h0, h1] of STAIRS) { if (x >= b) h = h1; else if (x >= a) h = h0 - (Math.floor((x - a) / ((b - a) / NSTEP)) + 1) * (h0 - h1) / NSTEP; } if (x >= RAMP[1]) h = G3; else if (x > RAMP[0]) h = G2 + (G3 - G2) * (x - RAMP[0]) / (RAMP[1] - RAMP[0]); return h; };
   const groundGeo = (() => { const P = [], N = [], U = [];
-    for (const [prof, z0, z1] of [[PROF, 0, SW], [PROF_R, SW, 20]]) for (let i = 0; i < prof.length - 1; i++) { const [x0, y0] = prof[i], [x1, y1] = prof[i + 1]; if (x0 === x1 && y0 === y1) continue;
+    for (const [prof, z0, z1] of [[PROF, 0, 20]]) for (let i = 0; i < prof.length - 1; i++) { const [x0, y0] = prof[i], [x1, y1] = prof[i + 1]; if (x0 === x1 && y0 === y1) continue;
       const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy), n = [-dy / l, dx / l, 0], u0 = (x0 + 28 + (GROUND - y0)) / 64, u1 = (x1 + 28 + (GROUND - y1)) / 64, v0 = 1 - z0 / 20, v1 = 1 - z1 / 20;
       const q = [[x0, y0, z0, u0, v0], [x0, y0, z1, u0, v1], [x1, y1, z1, u1, v1], [x0, y0, z0, u0, v0], [x1, y1, z1, u1, v1], [x1, y1, z0, u1, v0]];
       for (const [x, y, z, u, v] of q) { P.push(x, y, z); N.push(...n); U.push(u, v); } }
@@ -138,8 +135,9 @@
   // the curb has a broken gap; the paint from one puddle finds it and runs along the gutter into the drain (Tom 11-16)
   const GAP_X = NARROW ? .7 : 1.25, DRAIN_X = NARROW ? 1.55 : 2.3, X0 = WX - WW / 2, X1 = END_X; // the curb runs on over the workshop and past the exit
   const curbM = new THREE.MeshStandardMaterial({ color: 0x8a8c90, roughness: .85, map: tex("assets/wall4_diff.jpg", true, WW / TILE, .3), normalMap: tex("assets/wall4_nor_gl.jpg", false, WW / TILE, .3), envMapIntensity: .3 });
-  for (let i = 0; i < PROF.length - 1; i++) { const [p0, h] = PROF[i], [p1, h1] = PROF[i + 1]; if (h !== h1 || p1 <= p0 || (p0 >= RA && p1 <= RB)) continue; // each flat piece of street; not on the narrow flight's treads
+  for (let i = 0; i < PROF.length - 1; i++) { const [p0, h] = PROF[i], [p1, h1] = PROF[i + 1]; if (h !== h1 || p1 <= p0) continue; // each flat piece of street; not on the treads or the ramp
     for (const [a, b] of [[X0, GAP_X - .22], [GAP_X + .2, X1]]) { const x0 = Math.max(a, p0), x1 = Math.min(b, p1); if (x1 - x0 < .01) continue; const c = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, .16, .34), curbM); c.position.set((x0 + x1) / 2, h + .02, CURB_Z + .17); scene.add(c); } }
+  { const L = Math.hypot(RAMP[1] - RAMP[0], G3 - G2), c = new THREE.Mesh(new THREE.BoxGeometry(L, .16, .34), curbM); c.rotation.z = Math.atan2(G3 - G2, RAMP[1] - RAMP[0]); c.position.set((RAMP[0] + RAMP[1]) / 2, (G2 + G3) / 2 + .02, CURB_Z + .17); scene.add(c); } // the curb follows the ramp
   for (const [x, z, r, sy] of [[GAP_X - .27, CURB_Z + .5, .07, .6], [GAP_X + .3, CURB_Z + .1, .05, .7], [GAP_X - .1, CURB_Z - .12, .035, .8]]) { // broken bits of the curb
     const b = new THREE.Mesh(new THREE.DodecahedronGeometry(r), curbM); b.scale.y = sy; b.position.set(x, GROUND + r * sy * .7, z); b.rotation.set(x * 3, z * 5, 1); scene.add(b); }
   // a street light on the pavement's edge, its pool of light on the road; the rain in the dips reflects it (Tom 11-16)

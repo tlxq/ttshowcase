@@ -40,6 +40,15 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
       for (const jx of [62.7, 67.1]) if (name === 'going out' && Math.hypot(x - jx, Math.max(0, Math.max(-.3 - z, z))) < .6) errs.push(name + ', the camera is within 0.6 m of a door jamb at sv ' + sv + ': ' + x + ', ' + z);
       if (name === 'going out' && Math.abs(face) > 100) errs.push(name + ', the camera turns out over the street at sv ' + sv + ': faces ' + face + ' degrees (0 = the back wall, 90 = along the street, 180 = out over it)'); } };
   await oneMove('going in', 540, 700);
+  // The way down to epaRadar (Tom 11-27: one flight of steps and a ramp, then the street's wall): from the start wall (sv 8, past its own slow start) to epaRadar's stop (60) the camera never stands still while the visitor scrolls (the same rule as
+  // the garage's), never goes under 1.1 m or over 4.5 m above the street it stands on, and only goes down (no dip and climb over the steps or the ramp), by at most 0.8 m in 4 sv.
+  { const way = []; for (let sv = 8; sv <= 56; sv += 4) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(150); way.push([sv, await page.evaluate(() => { const g = garageTest(); return [g.cam, g.ground]; })]); }
+    res.arrival = way.map(([sv, [c, gr]]) => sv + ':' + (c[1] - gr).toFixed(2));
+    for (let i = 0; i < way.length; i++) { const [sv, [c, gr]] = way[i], eye = c[1] - gr; if (eye < 1.1 || eye > 4.5) errs.push('on the way to epaRadar the camera is ' + eye.toFixed(2) + ' m over the street at sv ' + sv + ' (between 1.1 and 4.5)');
+      if (i && c[1] - way[i - 1][1][0][1] > .03) errs.push('on the way to epaRadar the camera rises ' + (c[1] - way[i - 1][1][0][1]).toFixed(2) + ' m between sv ' + way[i - 1][0] + ' and ' + sv + ': the way only goes down, so a rise is a dip and a climb');
+      if (i && Math.abs(c[1] - way[i - 1][1][0][1]) > .8) errs.push('on the way to epaRadar the camera jumps ' + Math.abs(c[1] - way[i - 1][1][0][1]).toFixed(2) + ' m in height between sv ' + way[i - 1][0] + ' and ' + sv); }
+    const all = way.slice(1).map(([, [c]], i) => Math.hypot(c[0] - way[i][1][0][0], c[2] - way[i][1][0][2])), mean = all.reduce((a, d) => a + d, 0) / all.length, k = all.findIndex(d => d < .2 * mean);
+    if (k >= 0) errs.push('on the way to epaRadar the scroll moves the camera almost not at all at sv ' + way[k][0] + '-' + way[k + 1][0] + ': ' + all[k].toFixed(2) + ' m in 4 sv (the mean is ' + mean.toFixed(2) + '): it feels stuck'); }
   let g = await at(540); if (g.open > .05 || g.inside > .05) errs.push('before the workshop the garage door should be shut and the camera in the street: ' + JSON.stringify(g));
   g = await at(590); if (g.open <= .05 || g.open >= .95) errs.push('the door should be rolling up at 590: ' + JSON.stringify(g));
   g = await at(625); if (g.open < .95) errs.push('the garage door did not roll up: ' + JSON.stringify(g));
