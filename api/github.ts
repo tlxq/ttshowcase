@@ -4,9 +4,15 @@
  * the console. Vercel's edge keeps the answer (s-maxage), so GitHub is asked about once an hour whoever comes.
  * A number GitHub didn't give is null: the page draws nothing for it, never an old or made-up number.
  *
- *   GET /api/github   { dot: { commits, tests }, ttoolbox: { commits, skills }, tthermal: { commits, merged }, epa: { commits, merged } }
+ *   GET /api/github   { dot: { commits, tests }, ttoolbox: { commits, skills }, tthermal: { commits, merged },
+ *                       epa: { commits, merged, tests, migrations }, rvf?: { commits, merged } }
  *
- * GITHUB_TOKEN (optional, Vercel setting): a read-only token raises the limit to 5,000 an hour. Tests: src/github/github.test.ts.
+ * epa.tests counts files, not cases: every *.test.ts(x) plus every supabase/tests/**\/*.sql (pgTAP); epa.migrations counts
+ * the files under supabase/migrations/. Both are one `find` away from the repo. dot.tests counts @test cases in .bats files.
+ *
+ * GITHUB_TOKEN (optional, Vercel setting): a read-only token raises the limit to 5,000 an hour. rvf is a private repo:
+ * it is asked only with a token, and is left out (never an error) when there is none or the token can't see the repo.
+ * The token only goes to GitHub: it is never in an answer, an error or a log line. Tests: src/github/github.test.ts.
  */
 const API = "https://api.github.com/";
 const RAW = "https://raw.githubusercontent.com/tlxq/";
@@ -65,6 +71,17 @@ export async function numbers(get: Get, token?: string): Promise<Numbers> {
     );
     return positive(counts.reduce((a, b) => a + b, 0));
   };
+  const epaTestsOf = async () =>
+    positive(
+      (await filesOf("eparadar", "master")).filter((p) =>
+        /\.test\.tsx?$|^supabase\/tests\/.+\.sql$/.test(p),
+      ).length,
+    );
+  const migrationsOf = async () =>
+    positive(
+      (await filesOf("eparadar", "master")).filter((p) => p.startsWith("supabase/migrations/"))
+        .length,
+    );
   const skillsOf = async (repo: string, branch: string) =>
     positive(
       (await filesOf(repo, branch)).filter((p) =>
@@ -76,8 +93,19 @@ export async function numbers(get: Get, token?: string): Promise<Numbers> {
     dot: { commits: () => commitsOf("dot"), tests: () => testsOf("dot", "main") },
     ttoolbox: { commits: () => commitsOf("ttoolbox"), skills: () => skillsOf("ttoolbox", "main") },
     tthermal: { commits: () => commitsOf("tthermal"), merged: () => mergedOf("tthermal") },
-    epa: { commits: () => commitsOf("eparadar"), merged: () => mergedOf("eparadar") },
+    epa: {
+      commits: () => commitsOf("eparadar"),
+      merged: () => mergedOf("eparadar"),
+      tests: epaTestsOf,
+      migrations: migrationsOf,
+    },
   };
+  // a private repo: only asked with a token
+  if (token)
+    wanted.rvf = {
+      commits: () => commitsOf("raddavarfruberga"),
+      merged: () => mergedOf("raddavarfruberga"),
+    };
   const out: Numbers = {};
   await Promise.all(
     Object.entries(wanted).flatMap(([wall, gets]) => {
@@ -87,6 +115,8 @@ export async function numbers(get: Get, token?: string): Promise<Numbers> {
       });
     }),
   );
+  // a token that can't see the private repo: leave it out, whole
+  if (out.rvf && Object.values(out.rvf).every((n) => n == null)) delete out.rvf;
   return out;
 }
 
