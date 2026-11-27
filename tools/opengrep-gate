@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
-# Repo kit (~/.1dot/kit, copied by `dot kit`; change it there). Stops `mise run check` (so a push) when the code has a
-# serious security finding (rule severity ERROR: injection, unsafe eval, a key in the code), using opengrep (the open
-# fork of Semgrep) with community rules pinned by commit. Warnings are counted, never fatal.
+# Repo kit (~/.1dot/kit, copied by `dot kit`; change it there). Fails the repo's check (`mise run check`, or a step
+# in its own CI script) when the code has a serious security finding (rule severity ERROR: injection, unsafe eval, a
+# key in the code), using opengrep (the open fork of Semgrep) with community rules pinned by commit. Warnings are
+# counted, never fatal. Exit 0 = clean, 1 = a serious finding, 2 = the scan itself failed (never counted as clean).
+# Needs bash 4+ (mapfile; macOS ships 3.2), node, and opengrep on PATH (mise). The first run downloads the rules
+# from GitHub into ~/.cache/opengrep-rules (needs network once per rules commit).
 #   tools/opengrep-gate          scan the files git tracks (JS/TS, PHP, and every file for keys)
 # A finding that is safe on purpose gets `// nosemgrep: <rule id>` on its line, with the reason next to it.
+# A rule that doesn't fit the repo at all goes in tools/opengrep-exclude.txt (the repo's own file, optional): one rule
+# id per line (the short id, like no-replaceall), with the reason after `#`. Only warning rules: a serious rule
+# (severity ERROR) listed there fails the scan (2), so the gate always stops on those.
 set -euo pipefail
 
 RULES_SHA=f1d2b562b414783763fd02a6ed2736eaed622efa # github.com/opengrep/opengrep-rules, 2025-01-26
@@ -25,16 +31,29 @@ cfg=(--config "$cache/generic/secrets")
 git ls-files -- '*.js' '*.mjs' '*.cjs' '*.jsx' '*.ts' '*.tsx' | grep -q . && cfg+=(--config "$cache/javascript" --config "$cache/typescript")
 git ls-files -- '*.php' | grep -q . && cfg+=(--config "$cache/php")
 
-# Rules that do not fit this site, left out so a new real warning stands out (11-26; each was looked at, none was serious):
-#   jsx-not-internationalized          the site is English only, no i18n
-#   missing-template-string-indicator  "${" in plain strings is meant (code held as text)
-#   no-stringify-keys                  keys are small fixed strings, not objects
-#   no-replaceall                      replaceAll is fine on the browsers and Node this site needs
-# Nothing serious (severity ERROR) is ever listed here: the gate must still stop on those.
-# opengrep names a rule by its file path in the rules checkout, with dots, so the ids are worked out from $cache
-rid() { local f; f=$(find "$cache" -name "$1.yaml" | head -1); [ -n "$f" ] || { echo "opengrep-gate: no rule file for $1 (rules moved? update the skip list)" >&2; exit 2; }; f=${f%.yaml}; f=${f#/}; echo "${f//\//.}"; }
+# The repo's exclude list. opengrep names a rule by the rule file's folder in the rules checkout, with dots, then the
+# short id, so the full ids are worked out from $cache. A line is only ever data: it must look like a rule id
+# (anything else stops the scan) and is passed as one argument, never run.
 skip=()
-for r in jsx-not-internationalized missing-template-string-indicator no-stringify-keys no-replaceall; do skip+=(--exclude-rule "$(rid "$r")"); done
+if [ -f tools/opengrep-exclude.txt ]; then
+  n=0
+  while IFS= read -r line || [ -n "$line" ]; do
+    n=$((n + 1))
+    line=${line%%#*}
+    line=${line#"${line%%[!$' \t\r']*}"}
+    line=${line%"${line##*[!$' \t\r']}"}
+    [ -n "$line" ] || continue
+    [[ $line =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || { echo "opengrep-gate: tools/opengrep-exclude.txt line $n is not a rule id (letters, digits, . _ - only)" >&2; exit 2; }
+    mapfile -t hits < <(grep -rlxE --include='*.yaml' --include='*.yml' -e "[[:space:]]*-[[:space:]]+id:[[:space:]]+${line//./\\.}[[:space:]]*" "$cache" || true)
+    [ "${#hits[@]}" -gt 0 ] || { echo "opengrep-gate: tools/opengrep-exclude.txt line $n: no rule named $line (rules moved? update the list)" >&2; exit 2; }
+    for f in "${hits[@]}"; do
+      sev=$(awk -v id="$line" '$1 == "-" && $2 == "id:" { on = ($3 == id) } on && $1 == "severity:" { print $2; exit }' "$f")
+      [ "$sev" != ERROR ] || { echo "opengrep-gate: tools/opengrep-exclude.txt line $n: $line is a serious rule, it can't be excluded (use nosemgrep on the line)" >&2; exit 2; }
+      d=$(dirname "$f"); d=${d#/}
+      skip+=(--exclude-rule "${d//\//.}.$line")
+    done
+  done <tools/opengrep-exclude.txt
+fi
 
 out=$(mktemp)
 trap 'rm -f "$out"' EXIT

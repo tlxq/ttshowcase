@@ -103,21 +103,64 @@ for (const status of [404, 403]) {
   });
 }
 
-test("the token never reaches an answer, even when GitHub echoes it back", async () => {
-  const get = async (_: string, init?: RequestInit) =>
-    new Response(
-      JSON.stringify({
-        message: "bad",
-        echo: (init?.headers as Record<string, string>).Authorization,
-      }),
-      {
-        status: 401,
-      },
+test("the token never reaches an answer or a log, even when GitHub echoes it back", async () => {
+  const heard: string[] = [];
+  const keep = (...a: unknown[]) =>
+    void heard.push(
+      a.map((x) => (x instanceof Error ? `${x.message}\n${x.stack}` : String(x))).join(" "),
     );
-  const r = await answer(get, "ghp_SECRET123");
-  const text = JSON.stringify(await r.json()) + [...r.headers].join();
-  assert.ok(!text.includes("SECRET123"));
-  assert.ok(!text.includes("Bearer"));
+  const methods = ["log", "info", "warn", "error", "debug", "trace"] as const;
+  const saved = methods.map((m) => console[m]);
+  const writeOut = process.stdout.write;
+  const writeErr = process.stderr.write;
+  methods.forEach((m) => (console[m] = keep));
+  process.stdout.write = ((c: unknown) => (keep(c), true)) as typeof process.stdout.write;
+  process.stderr.write = ((c: unknown) => (keep(c), true)) as typeof process.stderr.write;
+  let calls = 0;
+  let body = "";
+  let headers = "";
+  try {
+    // refused, with the token echoed in the body and in a header; every third ask throws an error that holds it too
+    const get = async (_: string, init?: RequestInit) => {
+      const auth = (init?.headers as Record<string, string>).Authorization ?? "";
+      if (++calls % 3 === 0) throw new Error(`network down for ${auth}`);
+      return new Response(JSON.stringify({ message: "bad", echo: auth }), {
+        status: 401,
+        headers: { "X-Echo": auth },
+      });
+    };
+    const r = await answer(get, "ghp_SECRET123");
+    body = JSON.stringify(await r.json());
+    headers = [...r.headers].join();
+  } finally {
+    methods.forEach((m, i) => (console[m] = saved[i] as never));
+    process.stdout.write = writeOut;
+    process.stderr.write = writeErr;
+  }
+  assert.ok(calls > 3, "the failing asks really ran");
+  const places: [string, string][] = [
+    ["body", body],
+    ["headers", headers],
+    ["console", heard.join("\n")],
+  ];
+  for (const [where, text] of places) {
+    assert.ok(!text.includes("SECRET123"), `the token is in the ${where}`);
+    assert.ok(!text.includes("Bearer"), `the token's header is in the ${where}`);
+  }
+});
+
+test("a cut-off file list gives null for every number that counts files, never a too-low one", async () => {
+  const ok = github();
+  const get = async (url: string) =>
+    /\/trees\//.test(url)
+      ? json({ truncated: true, tree: [{ type: "blob", path: "supabase/migrations/1_a.sql" }] })
+      : ok(url);
+  const n = await numbers(get);
+  assert.deepEqual(n.epa, { commits: 346, merged: 14, tests: null, migrations: null });
+  assert.deepEqual(n.dot, { commits: 346, tests: null });
+  assert.deepEqual(n.ttoolbox, { commits: 346, skills: null });
+  // the numbers that don't read the list stay whole, and the answer is asked again in five minutes
+  assert.match((await answer(get)).headers.get("Cache-Control")!, /s-maxage=300$/);
 });
 
 test("a passing fault on the private repo (500) keeps rvf empty and asks again in five minutes", async () => {

@@ -1,0 +1,5 @@
+# Rules that do not fit this site, left out so a new real warning stands out (each was looked at 11-26, none was serious).
+jsx-not-internationalized # the site is English only, no i18n
+missing-template-string-indicator # "${" in plain strings is meant (code held as text)
+no-stringify-keys # keys are small fixed strings, not objects
+no-replaceall # replaceAll is fine on the browsers and Node this site needs
