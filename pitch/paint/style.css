@@ -61,7 +61,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the way round to
 .pick .top button { flex: none; }
 .pick .bar button:focus-visible, .pick .top button:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }
 /* Tom's wall (PR7b): only he ever sees these */
-.adm { position: fixed; left: 16px; bottom: 16px; box-sizing: border-box; max-width: calc(100vw - 16px - 112px - 8px); /* ends clear of the Write to me sticker (its left edge is 112 px in from the right, as in 80-admin.js) */ flex-wrap: wrap; z-index: 40; display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 14px; font-weight: 500; line-height: 1.5; }
+.adm { position: fixed; left: 16px; bottom: 16px; box-sizing: border-box; max-width: calc(100vw - 16px - var(--look-sticker-left) - 8px); /* ends clear of the Write to me sticker (its left edge is --look-sticker-left in from the right) */ flex-wrap: wrap; z-index: 40; display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 14px; font-weight: 500; line-height: 1.5; }
 .adm[hidden] { display: none; }
 .adm button, #admSel button, #admFrames button { font: inherit; color: var(--look-text); background: transparent; border: 1px solid transparent; border-radius: 2px; min-height: 48px; padding: 0 14px; cursor: pointer; }
 .adm button:focus-visible, #admSel button:focus-visible, #admFrames button:focus-visible { outline: 2px solid var(--front-spray); outline-offset: 3px; }

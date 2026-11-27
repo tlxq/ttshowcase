@@ -40,18 +40,26 @@
   // two more wall lamps over the ramp (the street's way down to the wall: the ramp has 8 m of dark wall to walk along). Each throws a warm pool on the wall, like the street's own lamps (a soft glow, not a light: every
   // light costs a frame on the T14s); the one real light follows the camera along the steps and the ramp, then hands over to the street light at the wall. At the start (camera x under 3) it is the flight's own
   // lamp as it always was, so the start's frame is the one it was; by day the lamps and pools are off.
-  const POOL_TEX = (() => { const c = Object.assign(document.createElement("canvas"), { width: 128, height: 128 }), g = c.getContext("2d"), r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-    r.addColorStop(0, "rgba(255,214,160,.85)"); r.addColorStop(.35, "rgba(255,200,140,.4)"); r.addColorStop(1, "rgba(255,190,120,0)"); g.fillStyle = r; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t; })();
+  // (Tom 11-27, "soft blobs") a wall lamp's pool as a lamp throws it: a hot spot at the fixture, a cone of light widening down the wall and ending in a soft arc, a short cone up, and a faint lift
+  // over the whole tall strip, so the wall above the fixture is not black. 256 x 256 px for a POOL_W x POOL_H m plane; the fixture sits POOL_F down from the top of it.
+  const POOL_W = 5.6, POOL_H = 7.2, POOL_F = .3;
+  let poolTex = null; const poolTexOf = () => poolTex ||= (() => { const N = 256, c = Object.assign(document.createElement("canvas"), { width: N, height: N }), g = c.getContext("2d"), img = g.createImageData(N, N), fy = POOL_F * N, ss = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const dx = (x - N / 2) / (N / 2), dn = (y - fy) / (N - fy), up = (fy - y) / fy;
+      const w = y >= fy ? .16 + .7 * Math.pow(dn, .7) : .14 + .4 * up; // the cone's half width at this height: narrow at the lens, wider the further it goes; its edge is a Gaussian, so it is a soft arc, not a cut
+      let b = Math.exp(-Math.pow(dx / w, 2) * 1.3) * (y >= fy ? Math.pow(1 - dn, 1.8) : .7 * Math.pow(1 - up, 2.2));
+      b += .5 * Math.exp(-(dx * dx * 60 + ((y - fy - 6) / N) ** 2 * 300)) + .16 * Math.exp(-(dx * dx * 2.2)) * (1 - ss(.55, 1, Math.abs(y - N * .5) / (N * .5))); // the hot spot at the lens, and a faint lift
+      const o = (y * N + x) * 4; img.data[o] = 255; img.data[o + 1] = 205; img.data[o + 2] = 140; img.data[o + 3] = Math.min(255, 255 * b); }
+    g.putImageData(img, 0, 0); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t; })(); // built the first time a pool shows (night, on the ramp), not at load
   const RAMP_POOLS = [11.6, 15].map(x => { const m = new THREE.Group(), box = new THREE.Mesh(new THREE.BoxGeometry(.32, .18, .12), postM), lens = new THREE.Mesh(new THREE.BoxGeometry(.26, .04, .1), new THREE.MeshStandardMaterial({ color: 0, emissive: 0xffd9a8, emissiveIntensity: 2 }));
     lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, groundAt(x) + 2.5, .07); scene.add(m);
-    const pl = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 4.4), new THREE.MeshBasicMaterial({ map: POOL_TEX, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false, toneMapped: false }));
-    pl.position.set(x, groundAt(x) + 2.5 - 1.5, .03); pl.visible = false; scene.add(pl); return { x, pl }; });
-  { const x = stairLamps[0].x, pl = RAMP_POOLS[0].pl.clone(); pl.material = RAMP_POOLS[0].pl.material.clone(); pl.position.set(x, stairLamps[0].y + .1 - 1.5, .03); scene.add(pl); RAMP_POOLS.unshift({ x, pl }); } // the flight's own lamp gets its pool once the camera is past the start
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(POOL_W, POOL_H), new THREE.MeshBasicMaterial({ map: null, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0, fog: false, toneMapped: false }));
+    pl.position.set(x, groundAt(x) + 2.5 - (.5 - POOL_F) * POOL_H, .03); pl.visible = false; scene.add(pl); return { x, pl }; });
+  { const x = stairLamps[0].x, pl = RAMP_POOLS[0].pl.clone(); pl.material = RAMP_POOLS[0].pl.material.clone(); pl.position.set(x, stairLamps[0].y + .1 - (.5 - POOL_F) * POOL_H, .03); scene.add(pl); RAMP_POOLS.unshift({ x, pl }); } // the flight's own lamp gets its pool once the camera is past the start
   function stairsAt(cx) { const night = (1 - dayNow()) * (introOver ? 1 : 0), m = sm(cl((cx - 3) / 3)), w = 1 - sm(cl((cx - 17) / 3));
     const fx = cl(cx + 1.2, 6.6, 16), fy = groundAt(fx) + 2.4, s0 = stairLamps[0]; // follow mode, and the flight's own lamp at the start
     stairLight.position.set(s0.x + (fx - s0.x) * m, s0.y + (fy - s0.y) * m, .4); stairLight.target.position.set(s0.x + (fx + 1.5 - s0.x) * m, s0.y - 3 + (fy - 1.4 - s0.y + 3) * m, 1.6 * (1 - m));
     stairLight.angle = .95 + .15 * m; stairLight.distance = 7 + 2 * m; stairLight.intensity = (7 + 3 * m) * w * (introOver ? 1 : 0);
-    for (const { x, pl } of RAMP_POOLS) { const k = night * sm(cl((cx - (x - 9)) / 3)) * (1 - sm(cl((cx - (x + 7)) / 3))) * m; pl.material.opacity = .55 * k; pl.visible = k > .01; } }
+    for (const { x, pl } of RAMP_POOLS) { const k = night * sm(cl((cx - (x - 9)) / 3)) * (1 - sm(cl((cx - (x + 7)) / 3))) * m; pl.material.opacity = .55 * k; pl.visible = k > .01; if (pl.visible && !pl.material.map) { pl.material.map = poolTexOf(); pl.material.needsUpdate = true; } } }
   const pool = new THREE.SpotLight(0xffd2a0, 0, 14, .62, .85, 1.6); pool.position.set(POST.x, GROUND + 6.3, POST.z + 1.25); pool.target.position.set(POST.x + .3, GROUND, POST.z + 1.6); scene.add(pool, pool.target); // a curb stone at the pavement's edge; the darker band beyond is the road
   ground.receiveShadow = true; scene.add(ground);
 

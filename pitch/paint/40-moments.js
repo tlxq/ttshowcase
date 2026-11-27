@@ -7,8 +7,9 @@
   svg.insertAdjacentHTML("beforeend", '<line id="l7"/><circle id="c7" r="4"/>'); const l7 = svg.querySelector("#l7"), c7 = svg.querySelector("#c7");
   let rvfStart = 0; const RVF_END = .6; // the label comes a moment after the camera is at the wall, then the numbers
   let endK = 0; // how far the camera has left raddavarfruberga for the garage door
+  window.lampTest = () => ({ rvf: lamp3.intensity }); // for the contrast check: by day the street's right lamp is off at the garage's way in too
   function rvfAt(now, walk3, end3) {
-    lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3)) * (1 - dayNow() * (1 - end3)); // by day it adds nothing on the street (the other lamps are off by day too, clockLight): the right half held its paint's colour; from the garage's way in on (end3) it is as it was
+    lens.uniforms.uAper.value = 1 - .8 * walk3; const on = walk3 > .02; lamp3.intensity = 5 * sm(cl((walk3 - .1) / .3)) * (1 - dayNow()); // by day it adds nothing on the street (the other lamps are off by day too, clockLight): the right half held its paint's colour. Not back on for the garage's way in (Tom 11-27): it blended on from sv 486 to 529 and the day's wall lit up while the camera stood still
     if (introOver && walk3 > .3 && !rvfStart) rvfStart = now; // once per visit, while the camera is still coming in
     const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1;
     const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0);
@@ -138,6 +139,13 @@
       img.data[(y * W + x) * 4 + 3] = 255 * (1 - d) * (1 - d); } g.putImageData(img, 0, 0); });
     const shC = new THREE.MeshBasicMaterial({ map: SHC, color: 0x000000, transparent: true, opacity: .8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -5 });
     const contact = (w, d, x, z) => { const m = put(new THREE.PlaneGeometry(w + .1, d + .1), shC, x, G3 + .006, z); m.rotation.x = -Math.PI / 2; };
+    // (Tom 11-27, "the tyre shadow is not round") a round thing gets a round shadow: the same two shadows with a circle for their shape (dark to `core` of the radius, then a feather to nothing), one plane a side
+    const roundTex = core => canv(128, 128, (g, W) => { const img = g.createImageData(W, W); for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) { const d = Math.min(1, Math.max(0, Math.hypot(x - 63.5, y - 63.5) / 64 - core) / (1 - core));
+      img.data[(y * W + x) * 4 + 3] = 255 * (1 - d) * (1 - d); } g.putImageData(img, 0, 0); });
+    const SHR = roundTex(.5), SHCR = roundTex(.875), shMR = shM.clone(), shCR = shC.clone(); shMR.map = SHR; shCR.map = SHCR;
+    const shadowRound = (r, x, z) => { const m = put(new THREE.PlaneGeometry(2 * r, 2 * r), shMR, x, G3 + .004, z); m.rotation.x = -Math.PI / 2; return m; };
+    const contactRound = (r, x, z) => { const m = put(new THREE.PlaneGeometry(2 * r + .1, 2 * r + .1), shCR, x, G3 + .006, z); m.rotation.x = -Math.PI / 2; return m; }, TYRE_SH = [];
+    window.roundTest = () => { const a = (m, r) => { const g = m.material.map.image.getContext("2d"), at = (x, y) => g.getImageData(Math.round(63.5 + x), Math.round(63.5 + y), 1, 1).data[3], q = r / Math.SQRT2; return [at(r, 0), at(0, r), at(q, q), at(-q, -q)]; }; return { soft: a(TYRE_SH[0], 44), contact: a(TYRE_SH[1], 60) }; }; // the opacity of the tyres' own two shadows on the same ring: along the axes and along the diagonals (a round shadow's four match, a rectangle's do not)
     { const skirtM = new THREE.MeshStandardMaterial({ color: 0x2b2e33, roughness: .75, metalness: .1 }), SKH = .14;
       const band = (x0, x1, z0, z1) => slab(x0, x1, G3, G3 + SKH, z0, z1, skirtM);
       band(HX0, CX1, WZ, WZ + .025); band(HX0, HX0 + .025, WZ, -.3); band(CX1 - .025, CX1, WZ, -.3); // the back wall and the two ends
@@ -215,7 +223,7 @@
     { const hose = put(new THREE.TorusGeometry(.19, .024, 8, 28), worn(0x2e6a3a, 0, .55), SX0 + 1.65, G3 + LV[2] + .042, SZ); hose.rotation.x = Math.PI / 2; const h2 = hose.clone(); h2.position.y += .045; h2.rotation.z = .5; h2.scale.setScalar(.92); scene.add(h2); } // a garden hose, coiled flat
     on(3, .3, .4, .26, .38, kraft, -.05); on(3, .85, .36, .2, .34, kraft, .1); on(3, 1.45, .55, .32, .42, worn(0x56606b, 0, .7), 0, .02);
     // a stack of worn tyres on the floor beside it, each a little off the one under it
-    { const tx = SX0 + SW + .45, tz = WZ + .5, tm = new THREE.MeshStandardMaterial({ color: 0x18181a, map: WEAR, roughness: .9 }), rim = worn(0x7e8389, .7, .4); shadow(.95, .95, tx, tz, 1); contact(.7, .7, tx, tz);
+    { const tx = SX0 + SW + .45, tz = WZ + .5, tm = new THREE.MeshStandardMaterial({ color: 0x18181a, map: WEAR, roughness: .9 }), rim = worn(0x7e8389, .7, .4); TYRE_SH.push(shadowRound(.55, tx, tz), contactRound(.36, tx, tz));
       [[0, 0, 0], [.03, -.02, .4], [-.02, .03, .9], [.02, .01, 1.3]].forEach(([dx, dz, r], i) => { const y = G3 + .1 + i * .2; const t = put(new THREE.TorusGeometry(.26, .1, 12, 30), tm, tx + dx, y, tz + dz); t.rotation.set(Math.PI / 2, 0, r); t.scale.set(1, 1, .95);
         if (i === 3) { const w = put(new THREE.CylinderGeometry(.19, .19, .16, 24, 1, true), rim, tx + dx, y, tz + dz); w.material.side = THREE.DoubleSide; } }); }
     // the tool chest on castors, in the far corner: a roll cabinet with a top chest on it, drawers with steel pulls
