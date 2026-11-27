@@ -7,6 +7,7 @@
     "node": ">=22.18.0"
   },
   "scripts": {
+    "predev": "node tools/csp/manifest.mjs --stub",
     "dev": "next dev",
     "build": "next build && node tools/pitch/build.mjs --site && node tools/csp/manifest.mjs",
     "typecheck": "rm -rf .next/types .next/dev/types && next typegen && tsc --noEmit",

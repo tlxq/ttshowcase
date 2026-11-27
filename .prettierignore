@@ -1,5 +1,6 @@
 .next/
 out/
+csp-manifest.generated.js
 node_modules/
 .claude/
 src/scene/logo-outlines.json

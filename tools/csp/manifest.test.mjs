@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { inlineHashes, pathOf, policy } from "./manifest.mjs";
+import { readFileSync } from "node:fs";
+import { inlineHashes, moduleSource, pathOf, policy } from "./manifest.mjs";
 
 const h = (s) => "sha256-" + createHash("sha256").update(s).digest("base64");
 
@@ -30,4 +31,24 @@ test("file names become the addresses Vercel serves", () => {
   assert.equal(pathOf("privacy.html"), "/privacy");
   assert.equal(pathOf("next/front.html"), "/next/front");
   assert.equal(pathOf("a/index.html"), "/a");
+});
+
+test("the manifest is a module the middleware imports, and it round-trips whole", async () => {
+  const manifest = { "/": policy([h("a()")]), "/admin": policy([]), default: policy([]) };
+  const url = "data:text/javascript," + encodeURIComponent(moduleSource(manifest));
+  assert.deepEqual((await import(url)).default, manifest);
+  assert.equal(
+    (await import("data:text/javascript," + encodeURIComponent(moduleSource(null)))).default,
+    null,
+  );
+});
+
+test("the middleware reads the manifest from its own module, never from a public file", () => {
+  const src = readFileSync(new URL("../../middleware.ts", import.meta.url), "utf8");
+  assert.match(src, /import\("\.\/csp-manifest\.generated\.js"\)/);
+  assert.doesNotMatch(
+    src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*/g, ""),
+    /csp-manifest\.json/,
+  );
+  assert.doesNotMatch(src, /fetch\(new URL\("\/csp-manifest/);
 });

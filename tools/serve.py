@@ -1,7 +1,7 @@
 """Serves a folder (SERVE_DIR, default out/) like http.server, but browsers always check for a newer build.
 /next is guarded like on Vercel (middleware.ts, same rules): `/next?key=<PREVIEW_KEY>` once sets a
 cookie, without it /next is the site's 404 page. No PREVIEW_KEY: /next is closed.
-The response headers in vercel.json (security rules, noindex) and each page's Content-Security-Policy (out/csp-manifest.json) are sent here too, so the checks run under them.
+The response headers in vercel.json (security rules, noindex) and each page's Content-Security-Policy (.cache/csp-manifest.json, written by the build; never inside out/) are sent here too, so the checks run under them.
 /api/tags, /api/admin and /api/github go to the local tag store (tools/tags/local.mjs) when TAGS_PORT is set (the pitch); /api/tags-local only from this PC.
 SERVE_RELOAD_FILE (the local pitch only, set by serve.sh when SERVE_WATCH is): pages get tools/pitch/reload.js, which waits on /__reload
 until tools/pitch/watch.mjs writes a new version into that file. Without it none of this exists, and nothing is ever added to a build.
@@ -65,9 +65,12 @@ BOTID = re.compile(r"/[0-9a-f-]{36}/[0-9a-f-]{36}/a-4-a/c\.js")
 
 def csp_for(path):
     """The page's Content-Security-Policy from the build's manifest (tools/csp/manifest.mjs), like middleware.ts sends it
-    on Vercel: the page's own, or the 404 page's for a path without a page. None when the folder has no manifest."""
+    on Vercel: the page's own, or the 404 page's for a path without a page. None when the folder is not the site's build (out/)
+    or has no manifest."""
+    if os.path.basename(os.path.abspath(DIR)) != "out":
+        return None
     try:
-        with open(os.path.join(DIR, "csp-manifest.json"), encoding="utf-8") as f:
+        with open(os.path.join(DIR, "..", ".cache", "csp-manifest.json"), encoding="utf-8") as f:
             manifest = json.load(f)
     except (OSError, ValueError):
         return None
