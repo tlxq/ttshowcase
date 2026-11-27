@@ -1,8 +1,11 @@
 // The last known numbers for the street wall's notes and the Toolbox's counts (Tom 11-27): when the live /api/github answer is missing or
 // lacks a number, the page draws the number its build saw instead of leaving the lobe empty. Absent in both = not drawn, as before.
 // Each build asks GitHub with the same code the site's /api/github uses (api/github.ts, with GITHUB_TOKEN for raddavarfruberga's if the
-// build has one), keeps what it got in .cache/numbers.saved.json, falls back per number to that file and then to the committed
-// pitch/numbers.seed.json, and puts the result into the page as plain text (__SAVED_NUMBERS__). It never fails the build.
+// build has one), keeps what it got in .cache/numbers.saved.json, falls back per number to that file (an earlier build on this machine),
+// and puts the result into the page as plain text (__SAVED_NUMBERS__). It never fails the build. So "last known" is only what this build
+// got from GitHub, else what an earlier build on the same machine saved, else nothing: on Vercel a number is at most one deploy old
+// (there is no file from before), and a double failure leaves the lobe empty, never an old number. No committed copy of numbers exists.
+// PITCH_NUMBERS=off (the checks and the sheet) puts in none at all: no GitHub ask, no file read, so they are the same on every run.
 // Only names and positive whole numbers are ever saved: the token goes to GitHub and nowhere else. Tests: tools/pitch/saved-numbers.test.mjs.
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -51,24 +54,24 @@ const readJson = (file) => {
 
 /**
  * The numbers to put into the page, as one line of JSON. `ask` is api/github.ts's numbers(get, token); a build that can't
- * reach GitHub (or has `skip`) keeps the saved file's numbers, then the committed seed, then none.
+ * reach GitHub (or has `skip`) keeps the saved file's numbers, then none; `skip` puts in none and reads nothing.
  */
 export async function savedNumbers({
   cache,
-  seed,
   ask,
   token,
   skip = false,
   maxAgeMs = 6 * 3600e3,
   log = () => {},
 }) {
-  const older = mergeNumbers(readJson(cache), readJson(seed));
+  if (skip) return "{}";
+  const older = mergeNumbers(readJson(cache), {});
   let fresh = {};
   let age = Infinity;
   try {
     age = Date.now() - statSync(cache).mtimeMs;
   } catch {}
-  if (!skip && age > maxAgeMs) {
+  if (age > maxAgeMs) {
     try {
       const signal = AbortSignal.timeout(15000);
       fresh = cleanNumbers(await ask((url, init) => fetch(url, { ...init, signal }), token));
@@ -92,5 +95,4 @@ export async function savedNumbers({
 
 export const paths = (root) => ({
   cache: join(root, ".cache/numbers.saved.json"),
-  seed: join(root, "pitch/numbers.seed.json"),
 });

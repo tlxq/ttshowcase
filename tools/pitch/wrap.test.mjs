@@ -65,6 +65,41 @@ test("the wrapper answers three.js from disk, stops any other outside request an
   ]);
 });
 
+test("a pinned three.js file with no copy here is an outside request, named in the result, and does not throw", async () => {
+  const f = fake("async page => { await globalThis.__go(); return JSON.stringify({ errs: [] }); }");
+  let seen;
+  globalThis.__go = async () => {
+    seen = await f.request(CDN + "examples/js/postprocessing/NoSuchPass.js");
+  };
+  const res = JSON.parse(await f.run());
+  assert.equal(seen.aborted, "blockedbyclient");
+  assert.deepEqual(res.errs, [
+    "a check made an outside request: " + CDN + "examples/js/postprocessing/NoSuchPass.js",
+  ]);
+});
+
+test("an outside request is named even when the check throws or returns something that is not a result", async () => {
+  for (const [body, then] of [
+    ["throw new Error('boom')", /the check stopped with: boom/],
+    ["return 'plain text'", /not a result: plain text/],
+    ["return JSON.stringify({ ok: true })", /not a result: \{"ok":true\}/],
+    ["return undefined", /not a result/],
+  ]) {
+    const f = fake("async page => { await globalThis.__go(); " + body + "; }");
+    globalThis.__go = async () => {
+      await f.request("https://example.com/x.js");
+    };
+    const res = JSON.parse(await f.run());
+    assert.equal(res.errs[0], "a check made an outside request: https://example.com/x.js", body);
+    assert.match(res.errs[1], then, body);
+  }
+});
+
+test("without an outside request a throw is the check's own and a plain result is left alone", async () => {
+  await assert.rejects(fake("async page => { throw new Error('boom'); }").run(), /boom/);
+  assert.equal(await fake("async page => 'plain text'").run(), "plain text");
+});
+
 test("a check that made no outside request keeps its own result", async () => {
   const f = fake("async page => JSON.stringify({ errs: ['its own'], n: 1 })");
   assert.equal(await f.run(), JSON.stringify({ errs: ["its own"], n: 1 }));
@@ -89,6 +124,11 @@ test("the runners use the wrapper and the one set of stand-in numbers", () => {
   const epa = readFileSync(join(root, "tools/pitch/checks/epanums.js"), "utf8");
   assert.match(epa, /const full = __STANDIN__/);
   const nums = JSON.parse(readFileSync(join(root, "tools/pitch/standin-numbers.json"), "utf8"));
+  assert.deepEqual(
+    Object.keys(nums),
+    ["dot", "ttoolbox", "tthermal", "epa", "rvf"],
+    "the sheet feeds every wall the same numbers",
+  );
   assert.deepEqual(Object.keys(nums.epa), ["commits", "merged", "tests", "migrations"]);
   assert.deepEqual(Object.keys(nums.rvf), ["commits", "merged"]);
 });

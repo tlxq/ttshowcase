@@ -17,13 +17,14 @@ cleanup() { kill $(jobs -p) 2>/dev/null; for s in $SESSIONS; do playwright-cli -
 trap cleanup EXIT
 cleanup # a browser left by an interrupted run would point at a dead server
 
+# both builds carry no saved numbers (PITCH_NUMBERS=off): the sheet feeds them the same stand-ins below, so nothing else can differ
 # the base build: its files from git (no worktree), with this checkout's packages and fonts
 rm -rf "$sheet" && mkdir -p "$src/.cache" "$sheet"
 git archive "$base" pitch tools/pitch api src | tar -x -C "$src" || { echo "Couldn't copy $base's files: it may be older than the paint pitch" >&2; exit 1; }
 # this branch first: its build fetches the fonts once into .cache/fonts, which the base build borrows (a fresh worktree has none yet)
-node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
+PITCH_NUMBERS=off node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
 ln -s "$root/node_modules" "$src/node_modules"; ln -s "$root/.cache/fonts" "$src/.cache/fonts"
-node "$src/tools/pitch/build.mjs" >/dev/null || { echo "The build of $base failed. To see why: git switch $base && mise run pitch:build" >&2; exit 1; }
+PITCH_NUMBERS=off node "$src/tools/pitch/build.mjs" >/dev/null || { echo "The build of $base failed. To see why: git switch $base && mise run pitch:build" >&2; exit 1; }
 
 free_port() { python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])'; }
 shoot() { # build (base|branch), screen (laptop|phone), hour; a failed shoot leaves <dir>.fail with the reason

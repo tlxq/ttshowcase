@@ -14,6 +14,7 @@ cd "$(dirname "$0")/../.."
 [ -n "$only" ] || ! tools/passes/passes.sh skip pitch || exit 0
 root="$PWD"
 [ -f .cache/pitch/paint.html ] || { echo "Couldn't find the pitch build. Run: mise run pitch:build" >&2; exit 1; }
+grep -q "const SAVED_NUMBERS = {};" .cache/pitch/paint.html || { echo "The pitch build carries saved numbers, which the checks must not see. Run: PITCH_NUMBERS=off mise run pitch:build (mise run pitch:check does it)" >&2; exit 1; }
 mkdir -p .cache/shots .cache/walk
 . tools/walk/graphics.sh || exit 1
 
