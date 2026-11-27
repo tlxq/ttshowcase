@@ -6,19 +6,20 @@
   // laid FLAT over the crests, and the ribs reach it as light (its normals lean over each flank like the metal's), so it can never slide or break across them (the rib test, 11-27).
   const SITE = (() => {
     const L = 8, H = 2.6, D = 2.44, CX = 64.9, ZF = 9.5, X0 = CX - L / 2, X1 = CX + L / 2, Y0 = G3; // ZF: the container's front (rib crests); the camera is on the street side, at smaller z
-    const P = .2874, NR = 27, XR0 = X0 + .12, RIB_D = .012, YF0 = Y0 + .14, YF1 = Y0 + H - .12; // 27 ribs of 287.4 mm between the corner posts, 12 mm deep
+    const P = .2874, NR = 27, XR0 = X0 + .12, RIB_D = .012, YF0 = Y0 + .14, YF1 = Y0 + H - .14; // 27 ribs of 287.4 mm between the corner posts, 12 mm deep
     const rnd = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(7919);
     const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
     const rib = s => s < .27 ? 1 : s < .5 ? 1 - (s - .27) / .23 : s < .77 ? 0 : (s - .77) / .23; // 1 in a valley, 0 on a crest, along one rib (s: 0..1)
     const tex2 = (c, rep) => { const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; if (rep) t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; };
     // the container's paint: off-white, a little dirty and warm (Tom: worn, not clean white), rain streaks from the top rail, splash dirt low down, scuffs, a few rust specks at the edges
-    const bodyCanvas = (w, h, seed) => { const c = mk(w, h), g = c.getContext("2d"); g.fillStyle = "#cfc9b9"; g.fillRect(0, 0, w, h);
+    const bodyCanvas = (w, h, seed) => { const c = mk(w, h), g = c.getContext("2d"); g.fillStyle = "#e0dccf"; g.fillRect(0, 0, w, h);
       for (let i = 0; i < 520; i++) { const x = rnd() * w, y = rnd() * h * .85, l = 30 + rnd() * h * .55; g.fillStyle = `rgba(${rnd() < .5 ? "92,84,66" : "245,240,226"},${.02 + rnd() * .05})`; g.fillRect(x, y, 1 + rnd() * 3, l); }
       const sp = g.createLinearGradient(0, h * .55, 0, h); sp.addColorStop(0, "rgba(96,86,66,0)"); sp.addColorStop(1, "rgba(96,86,66,.34)"); g.fillStyle = sp; g.fillRect(0, h * .55, w, h * .45);
       for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(${rnd() < .5 ? "80,72,56" : "250,246,232"},${.04 + rnd() * .08})`; g.beginPath(); g.ellipse(rnd() * w, rnd() * h, 8 + rnd() * 40, 4 + rnd() * 16, rnd() * 3, 0, 6.3); g.fill(); }
       for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(${120 + rnd() * 30},${64 + rnd() * 20},38,${.12 + rnd() * .2})`; g.fillRect(rnd() * w, h * (.88 + rnd() * .12), 1 + rnd() * 3, 3 + rnd() * 14); }
       return c; };
-    const ribShade = (c, x0px, perPx) => { const g = c.getContext('2d'), h = c.height; for (let x = x0px; x < c.width; x += perPx) for (const [a, b, c0, c1] of [[0, .27, 'rgba(70,62,46,.17)', 'rgba(70,62,46,.17)'], [.27, .5, 'rgba(70,62,46,.17)', 'rgba(255,250,235,.09)'], [.5, .77, 'rgba(255,250,235,.09)', 'rgba(255,250,235,.09)'], [.77, 1, 'rgba(255,250,235,.09)', 'rgba(70,62,46,.17)']]) { const gr = g.createLinearGradient(x + a * perPx, 0, x + b * perPx, 0); gr.addColorStop(0, c0); gr.addColorStop(1, c1); g.fillStyle = gr; g.fillRect(x + a * perPx, 0, (b - a) * perPx, h); } return c; }; // one rib = four bands: a dark valley, a flank into the light, the lit crest, a flank back into the dark
+    const ribShade = (c, x0px, perPx, dark = .05, light = .05) => { const g = c.getContext('2d'), im = g.getImageData(0, 0, c.width, c.height), d = im.data; for (let x = 0; x < c.width; x++) { const s = (((x - x0px) / perPx) % 1 + 1) % 1, w = Math.cos(2 * Math.PI * (s - .635)); // 1 on a crest, -1 in a valley
+        const a = w > 0 ? w * light : -w * dark, v = w > 0 ? 255 : 40; for (let y = 0; y < c.height; y++) { const k = (y * c.width + x) * 4, al = Math.round(a * 255) / 255, ia = d[k + 3] / 255, o = al + ia * (1 - al); d[k] = (v * al + d[k] * ia * (1 - al)) / (o || 1); d[k + 1] = (v * al + d[k + 1] * ia * (1 - al)) / (o || 1); d[k + 2] = (v * al + d[k + 2] * ia * (1 - al)) / (o || 1); d[k + 3] = o * 255; } } g.putImageData(im, 0, 0); return c; }; // one rib = one soft wave: light on the crest, a little dark in the valley, never a bar
     const bodyT = tex2(ribShade(bodyCanvas(2048, 1024), .12 / L * 2048, P / L * 2048), false), endT = tex2((() => { const c = bodyCanvas(512, 1024), g = c.getContext("2d"); g.strokeStyle = "rgba(60,54,42,.55)"; g.lineWidth = 3; g.strokeRect(24, 40, 464, 940); g.beginPath(); g.moveTo(256, 40); g.lineTo(256, 980); g.stroke();
       for (const x of [88, 168, 344, 424]) { g.fillStyle = "rgba(70,64,52,.5)"; g.fillRect(x - 5, 80, 10, 860); g.fillStyle = "rgba(60,56,46,.7)"; g.fillRect(x - 14, 480, 28, 40); } return c; })(), false);
     const bodyM = new THREE.MeshStandardMaterial({ map: bodyT, roughness: .66, metalness: .08, envMapIntensity: .25 }), endM = new THREE.MeshStandardMaterial({ map: endT, roughness: .66, metalness: .08, envMapIntensity: .25 });
@@ -28,43 +29,43 @@
     // the ribbed front: a strip of flat quads, each with the normal of its slope (non-indexed: every quad its own)
     { const pos = [], nor = [], uv = [], zAt = s => ZF + RIB_D * rib(s);
       const pts = []; for (let r = 0; r < NR; r++) for (const s of [0, .27, .5, .77]) pts.push([XR0 + (r + s) * P, zAt(s)]); pts.push([XR0 + NR * P, zAt(0)]);
-      for (let i = 0; i < pts.length - 1; i++) { const [xa, za] = pts[i], [xb, zb] = pts[i + 1], dx = xb - xa, dz = zb - za, n = V(dz, 0, -dx).normalize(), ua = (xa - X0) / L, ub = (xb - X0) / L, va = (YF0 - Y0) / H, vb = (YF1 - Y0) / H;
+      for (let i = 0; i < pts.length - 1; i++) { const [xa, za] = pts[i], [xb, zb] = pts[i + 1], dx = xb - xa, dz = zb - za, n = V(dz * .4, 0, -dx).normalize() /* the flank's normal leans 40 % of what its slope says: soft folds under a grazing lamp, never dark bars */, ua = (xa - X0) / L, ub = (xb - X0) / L, va = (YF0 - Y0) / H, vb = (YF1 - Y0) / H;
         pos.push(xa, YF0, za, xb, YF1, zb, xb, YF0, zb, xa, YF0, za, xa, YF1, za, xb, YF1, zb); for (let k = 0; k < 6; k++) nor.push(n.x, n.y, n.z);
         uv.push(ua, va, ub, vb, ub, va, ua, va, ua, vb, ub, vb); }
       const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
       const face = new THREE.Mesh(g, bodyM); face.castShadow = face.receiveShadow = true; group.add(face);  }
     // the rest: back, roof, floor, the two ends (the right one is seen on the way to the end wall), the posts and the rails (steel, a little proud of the ribs)
     add(new THREE.BoxGeometry(L, H, .06), bodyM, CX, Y0 + H / 2, ZF + D - .03);
-    add(new THREE.BoxGeometry(L, .06, D), bodyM, CX, Y0 + H - .03, ZF + D / 2);
+    add(new THREE.BoxGeometry(L, .06, D), bodyM, CX, Y0 + H - .04, ZF + D / 2);
     for (const sx of [-1, 1]) add(new THREE.BoxGeometry(.06, H, D), [endM, endM, bodyM, bodyM, bodyM, bodyM], CX + sx * (L / 2 - .03), Y0 + H / 2, ZF + D / 2);
-    add(new THREE.BoxGeometry(L, .14, .1), steel, CX, Y0 + H - .07, ZF - .035); add(new THREE.BoxGeometry(L, .14, .1), steel, CX, Y0 + .07, ZF - .035);
+    add(new THREE.BoxGeometry(L, .13, .1), steel, CX, Y0 + H - .075, ZF - .035); add(new THREE.BoxGeometry(L, .14, .1), steel, CX, Y0 + .07, ZF - .035);
     for (const sx of [-1, 1]) for (const [y, h] of [[Y0 + H / 2, H]]) { add(new THREE.BoxGeometry(.14, h, .12), steel, CX + sx * (L / 2 - .07), y, ZF - .045); add(new THREE.BoxGeometry(.12, h, .1), steel, CX + sx * (L / 2 - .06), y, ZF + D + .035); }
     for (const sx of [-1, 1]) for (const y of [Y0 + .09, Y0 + H - .09]) add(new THREE.BoxGeometry(.18, .18, .18), cast, CX + sx * (L / 2 - .09), y, ZF - .06);
     for (const x of [X0 + .4, X1 - .4]) add(new THREE.BoxGeometry(.3, .16, .3), grey, x, Y0 - .08, ZF + D / 2, false); // two pads it stands on
     // ---- the paint: one flat sheet over the crests, normals leaning over each flank (the metal's ribs reach the paint as light, never as a shift)
-    const ANG = .5; // radians: how far the paint's normal leans on a flank (the metal itself leans .17: the paint under a grazing lamp reads about as the metal does)
+    const ANG = .2; // radians: how far the paint's normal leans on a flank (the metal itself leans .17: the paint under a grazing lamp reads about as the metal does)
     const painted = (file, w, y0, [pw, ph]) => { const k = w / pw, h = ph * k, xa = CX - w / 2, xb = CX + w / 2, N = Math.ceil(w / P * 12), pos = [], nor = [], uv = [], idx = [], z = ZF - .003;
       for (let i = 0; i <= N; i++) { const x = xa + w * i / N, s = (((x - XR0) / P) % 1 + 1) % 1, lean = s > .27 && s < .5 ? -Math.sin(Math.PI * (s - .27) / .23) : s > .77 ? Math.sin(Math.PI * (s - .77) / .23) : 0, a = lean * ANG, u = (xb - x) / w; // picture u runs to the left (the face looks the other way)
         for (const [y, v] of [[y0, 0], [y0 + h, 1]]) { pos.push(x, y, z); nor.push(Math.sin(a), 0, -Math.cos(a)); uv.push(u, v); } }
       for (let i = 0; i < N; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
       const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx);
       const map = tex(file, true, 1, 1, 0, 0, true); map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
-      const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: .6, envMapIntensity: .25, polygonOffset: true, polygonOffsetFactor: -2 })); m.visible = false; group.add(m);
+      const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map, color: 0x9c9c9c, transparent: true, depthWrite: false, roughness: .7, envMapIntensity: .1, polygonOffset: true, polygonOffsetFactor: -2 })); m.visible = false; group.add(m);
       // picture pixel (px, py) in the world: the picture's top is at y0 + h, its left at the world's right
       const at = (px, py) => V(xb - px * k, y0 + h - py * k, z);
-      { const c = mk(256, 8); ribShade(c, 0, 256); const t = tex2(c, true); t.repeat.set(-w / P, 1); t.offset.set((((xb - XR0) / P) % 1 + 1) % 1, 0);
-        const sh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, opacity: .2, fog: false, polygonOffset: true, polygonOffsetFactor: -3 })); m.add(sh); }
+      { const c = mk(256, 8); ribShade(c, 0, 256, .06, .03); const t = tex2(c, true); t.repeat.set(-w / P, 1); t.offset.set((((xb - XR0) / P) % 1 + 1) % 1, 0);
+        const sh = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, opacity: .6, fog: false, polygonOffset: true, polygonOffsetFactor: -3 })); m.add(sh); }
       return { m, at, w, h, k, ready: () => texReady(file), protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y0), at(x1, y1)]), zw: 0 }; };
     const B = NARROW ? painted("assets/site_phone.webp", 2.2, Y0 + .22, [1689, 1711]) : painted("assets/site_laptop.webp", 5, Y0 + .3, [2146, 924]);
     // ---- the two lamps, on tripods at the front corners, both turned to the container (no bright lamp face competes with the piece)
     const lampM = new THREE.MeshStandardMaterial({ color: 0x1d1a14, emissive: 0xffe2b0, emissiveIntensity: 0 }), lamps = [];
-    for (const [sx, tx] of [[-1, 1.6], [1, -1.6]]) { const lx = CX + sx * 3.3, lz = ZF - 1.6, hy = Y0 + 1.95;
-      const legM = new THREE.MeshStandardMaterial({ color: 0x2f3236, roughness: .5, metalness: .6 });
-      for (let i = 0; i < 3; i++) { const a = i * 2.094 + .5, leg = new THREE.Mesh(new THREE.CylinderGeometry(.026, .032, 1.95, 6), legM); leg.position.set(lx + Math.sin(a) * .15, Y0 + .93, lz + Math.cos(a) * .15); leg.rotation.set(-Math.cos(a) * .157, 0, Math.sin(a) * .157); leg.castShadow = false; group.add(leg); }
+    for (const [sx, tx] of [[-1, 1.6], [1, -1.6]]) { const lx = CX + sx * 2.95, lz = ZF - 1.6, hy = Y0 + 1.95;
+      const legM = new THREE.MeshStandardMaterial({ color: 0x3a3d42, roughness: .45, metalness: .6 });
+      for (let i = 0; i < 3; i++) { const a = i * 2.094 + .5, leg = new THREE.Mesh(new THREE.CylinderGeometry(.014, .018, 1.95, 6), legM); leg.position.set(lx + Math.sin(a) * .15, Y0 + .93, lz + Math.cos(a) * .15); leg.rotation.set(-Math.cos(a) * .157, 0, Math.sin(a) * .157); leg.castShadow = false; group.add(leg); }
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .5, 6), grey); pole.position.set(lx, hy - .2, lz); group.add(pole);
       const head = new THREE.Group(); head.position.set(lx, hy + .1, lz); const hb = new THREE.Mesh(new THREE.BoxGeometry(.5, .36, .1), grey), face = new THREE.Mesh(new THREE.PlaneGeometry(.44, .3), lampM); face.position.z = .056; head.add(hb, face);
       const aim = V(CX + tx, Y0 + 1.2, ZF); head.lookAt(aim); group.add(head);
-      const sp = new THREE.SpotLight(0xffd9aa, 0, 17, .62, 1, 1.4); sp.position.copy(head.position); sp.target.position.copy(aim); scene.add(sp, sp.target);
+      const sp = new THREE.SpotLight(0xffe0bc, 0, 17, .62, 1, 1.4); sp.position.copy(head.position); sp.target.position.copy(aim); scene.add(sp, sp.target);
       sp.castShadow = false; sp.shadow.mapSize.set(2048, 2048); sp.shadow.camera.near = 1.5; sp.shadow.camera.far = 16; sp.shadow.bias = -.0004; sp.shadow.normalBias = .004; lamps.push(sp); }
     // ---- the fence: steel mesh panels (3.5 m x 2 m) on concrete feet, from both ends of the container along the street to the end wall (x 104); see-through, so what stands behind it is built
     const FZ = ZF + .3, FW = 3.5, FH = 2, fence = [[X0, -1, 3], [X1, 1, 10]]; // [start x, direction, panels]
@@ -92,7 +93,7 @@
     const halos = []; // a soft halo on each light (additive, no fog: it is what is seen of the work from far)
     const halo = (x, y, z, size, col) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glow, color: col, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, opacity: 0 })); sp.scale.set(size, size, 1); sp.position.set(x, y, z); group.add(sp); halos.push({ sp, size }); return sp; };
     work.forEach(m => halo(m.position.x, m.position.y, m.position.z, .9, 0xffa850));
-    const workL = [[76, 12.4], [92, 12.4]].map(([x, z]) => { const l = new THREE.PointLight(0xffd8b0, 0, 10.5, 1.4); l.position.set(x, Y0 + 4.6, z); scene.add(l);
+    const workL = [[72, 9.4], [84, 9.4], [96, 9.4]].map(([x, z]) => { const l = new THREE.PointLight(0xffd8b0, 0, 10, 1.4); l.position.set(x, Y0 + 4.6, z); scene.add(l);
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(.05, .07, 4.6, 6), grey); pole.position.set(x, Y0 + 2.3, z + .1); group.add(pole); const hd = new THREE.Mesh(new THREE.BoxGeometry(.5, .14, .3), workM); hd.position.set(x, Y0 + 4.65, z); group.add(hd); return l; }); // 4: two floodlight masts behind the fence: real lights that show the fence, its feet and the ground on the way to the end wall
     // the crane: one silhouette plane far off (the lattice mast, the jib with its counter-jib and the hook) and its red light; a soft horizon glow behind it so it shows against the night
     const craneC = (() => { const c = mk(512, 512), g = c.getContext("2d"); g.strokeStyle = "#fff"; g.fillStyle = "#fff"; g.lineWidth = 3; g.beginPath(); g.moveTo(236, 512); g.lineTo(236, 80); g.moveTo(276, 512); g.lineTo(276, 80); g.stroke(); g.lineWidth = 2;
