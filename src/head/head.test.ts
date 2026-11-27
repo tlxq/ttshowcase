@@ -27,7 +27,7 @@ test("the description is Tom's text, and it is written in one place", () => {
   assert.equal(FRONT_TITLE, "Tom Larsson, product engineer");
   const front = read("app/page.tsx");
   assert.doesNotMatch(front, /product engineer from/); // no second copy
-  assert.match(front, /twitter: \{ card: "summary_large_image", title, description \}/);
+  assert.match(front, /twitter: \{\s*card: "summary_large_image",\s*title,\s*description,/);
   assert.match(front, /openGraph: \{[\s\S]*title,\s*description,/);
 });
 

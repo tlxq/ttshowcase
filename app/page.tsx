@@ -9,7 +9,12 @@ import { Motion } from "@/look/Motion";
 import { PaintSelect } from "@/look/PaintSelect";
 import { Tom } from "@/look/Tom";
 import { tagWritten } from "@/look/handPaint";
-import { DESCRIPTION as description, FRONT_TITLE as title, personJsonLdText } from "@/head/head";
+import {
+  DESCRIPTION as description,
+  FRONT_TITLE as title,
+  SHARE_ALT,
+  personJsonLdText,
+} from "@/head/head";
 
 export const metadata: Metadata = {
   title,
@@ -17,7 +22,7 @@ export const metadata: Metadata = {
   // One address for search and shared links, whichever host served the page.
   alternates: { canonical: "https://ttdevs.com/" },
   // What a link to the page shows on LinkedIn, in chats and mail: the first screen
-  // (public/share.jpg, made with mise run share; Tom picked C 11-14).
+  // (public/share.jpg, the picture Tom approved 11-27).
   openGraph: {
     type: "website",
     url: "https://ttdevs.com/",
@@ -28,11 +33,16 @@ export const metadata: Metadata = {
         url: "/share.jpg",
         width: 1200,
         height: 630,
-        alt: "I build and run things myself, with Tom's tlxq tag",
+        alt: SHARE_ALT,
       },
     ],
   },
-  twitter: { card: "summary_large_image", title, description },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: [{ url: "/share.jpg", alt: SHARE_ALT }],
+  },
 };
 
 /** The new look, built next to the old page until Tom says it is right (11-13). */
