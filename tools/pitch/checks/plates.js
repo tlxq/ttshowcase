@@ -1,5 +1,5 @@
 // No plate over a picture (Tom 11-18): at every stop of the walk, no label plate (.tag), the form (.mail), the Write to me sticker in the corner (#corner) or a name on the progress stripe (.stripe span) that shows covers a picture or the
-// mural's words. The pictures are the page's own list (window.plateTest, from PROT in pitch/paint.src.html): epaRadar's painting, the mural,
+// mural's words. The pictures are the page's own list (window.plateTest, from PROT in pitch/paint.src.html): the street's two pieces with their notes, the mural,
 // the seven paintings. The painted part only, never the bare concrete round it. A plate may touch a picture's edge by up to 6 px. Run at 1440 x 900 and on a phone.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs, stops: 0, plates: 0, pictures: 0 };
   page.on('pageerror', e => errs.push(String(e)));

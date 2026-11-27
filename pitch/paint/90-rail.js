@@ -77,7 +77,7 @@
     cmx += (mx - cmx) * .04; cmy += (my - cmy) * .04;
     const drift = now / 1000;
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
-    endK = cl((sv - 548) / 30); lamp2At(sv); washAt(sv, lft); endCam(sv, cp, cl_); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp, cl_); morning(now, sv, cp, cl_);
+    endK = cl((sv - 548) / 30); lamp2At(sv); washAt(sv, lft); endCam(sv, cp, cl_); streetAt(now); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp, cl_); morning(now, sv, cp, cl_);
     if (railR < 3) railAt(railR, cp, cl_);
     // the seam (Tom 11-23): above the pole the camera rests on the visitors' wall (TOP); at the very top the page jumps to its end, which shows
     // the same wall, and scrolling on up walks back through the glare to EDGE. Never while the tag tool or the flyer is open.
@@ -102,9 +102,9 @@
     tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
     // the label and the links on the painted marks, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
-    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn); EPA_PARTS.forEach((p, i) => p.fade(!!factsOn && sec > .8 + i * .3));
+    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn); EPA_PARTS.forEach((p, i) => p.fade(ST[0].k >= 1 && pan > .5 && walk3 < .6 && sec > .8 + i * .3)); // the numbers are sprayed on once the picture is up and stay while the piece is in view (an empty dark cloud next to the stop looked unfinished)
     pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .25, EY - EH / 2 + .3, 0) : V(EX - EW * .3, EY - EH / 2 + .1, 0), NARROW ? 18 : 24, 60); // phone: under the painting, on the empty floor
-    placeHots(hots, EPA_MARKS, EPAB, sec >= .3 && pan > .5 && walk3 < .5); // at this wall, each mark that is in view
+    placeHots(hots, EPA_MARKS, EPAB, ST[0].k >= 1 && sec >= .3 && pan > .5 && walk3 < .5); // at this wall, each mark that is in view
     const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
     [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);
     pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);
