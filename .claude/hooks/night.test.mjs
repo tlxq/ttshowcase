@@ -23,7 +23,15 @@ test("green, skipped, no file or a broken file say nothing", () => {
   assert.equal(nightLine("{not json"), "");
 });
 
-test("the hook prints the line from the state file only when red", () => {
+const redSkip = { ...red, commit: "abc1234ffff", result: "skipped", failed: [], note: "not walked", red_commit: "98e34e2abcdef" };
+
+test("skipped because the fallback commit was already red says the tip was not walked", () => {
+  assert.equal(nightLine(JSON.stringify(redSkip)), "Night walk did not run on abc1234: the older commit 98e34e2 was already red. Fix that first.");
+  assert.equal(nightLine(JSON.stringify({ ...redSkip, commit: "" })), "Night walk did not run: the older commit 98e34e2 was already red. Fix that first.");
+  assert.equal(nightLine(JSON.stringify({ ...redSkip, red_commit: "" })), "", "no red_commit: the plain skip, nothing to say");
+});
+
+test("the hook prints the line from the state file when red or skipped on a red commit", () => {
   const dir = mkdtempSync(join(tmpdir(), "night-hook-"));
   try {
     mkdirSync(join(dir, "ttshowcase"));
@@ -33,6 +41,8 @@ test("the hook prints the line from the state file only when red", () => {
     assert.equal(run().stdout, "");
     writeFileSync(join(dir, "ttshowcase", "night.json"), JSON.stringify(red));
     assert.equal(run().stdout, "Night walk red on 98e34e2: walk speed-look, pitch:check contrast-phone. Fix this first.\n");
+    writeFileSync(join(dir, "ttshowcase", "night.json"), JSON.stringify(redSkip));
+    assert.equal(run().stdout, "Night walk did not run on abc1234: the older commit 98e34e2 was already red. Fix that first.\n");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

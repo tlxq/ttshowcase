@@ -122,6 +122,57 @@ for p in / /privacy /index.html /privacy.html; do
   grep -qiE 'no-cache|no-store|max-age=0' <<<"$cc" || no "$p (a page) has no revalidating Cache-Control: '${cc:-none}'"
 done
 
+# the page head: titles, noindex, the sitemap, the structured data, the bar colour and the old icon address (src/head/head.ts)
+desc=$(node -e 'import("./src/head/head.ts").then((m) => process.stdout.write(m.DESCRIPTION))')
+[ -n "$desc" ] || no "could not read DESCRIPTION from src/head/head.ts"
+# favicon.ico is made from the built icon.svg; a changed icon with an old .ico fails here
+want=$(cat tools/icons/favicon.source.sha256 2>/dev/null || true)
+[ "$(sha256sum out/icon.svg | cut -d' ' -f1)" = "$want" ] ||
+  no "public/favicon.ico is stale: the icon changed. Run: node tools/icons/favicon.mjs (after npm run build) and commit public/favicon.ico and tools/icons/favicon.source.sha256"
+DESC="$desc" python3 -I - out <<'PY' || fail=1
+import html as htmllib, os, pathlib, re, sys, json
+out = pathlib.Path(sys.argv[1])
+bad = []
+front = (out / "index.html").read_text(encoding="utf-8")
+for tag in ('name="description"', 'property="og:description"', 'name="twitter:description"'):
+    m = re.search(r'<meta ' + tag + r' content="([^"]*)"', front)
+    if not m or htmllib.unescape(m.group(1)) != os.environ["DESC"]:
+        bad.append(f"index.html: {tag} is not the DESCRIPTION of src/head/head.ts")
+def page(name):
+    return (out / name).read_text(encoding="utf-8")
+def title(html):
+    m = re.search(r"<title>([^<]*)</title>", html)
+    return m.group(1) if m else ""
+def noindex(html):
+    return any("noindex" in t for t in re.findall(r'<meta name="robots" content="([^"]*)"', html))
+for name, private in [("index.html", False), ("privacy.html", False), ("admin.html", True), ("wall.html", True), ("404.html", True)]:
+    html = page(name)
+    t = title(html)
+    if name == "index.html":
+        if t != "Tom Larsson, product engineer": bad.append(f"{name}: title is '{t}'")
+    elif not re.fullmatch(r"[^·<>]+ · Tom Larsson", t):
+        bad.append(f"{name}: title '{t}' is not 'Page · Tom Larsson'")
+    if noindex(html) != private:
+        bad.append(f"{name}: " + ("private page without noindex" if private else "public page with noindex"))
+    if '<meta name="theme-color" content="#' not in html: bad.append(f"{name}: no theme-color")
+    blocks = re.findall(r'<script type="application/ld\+json">([^<]*)</script>', html)
+    if len(blocks) != (1 if name == "index.html" else 0):
+        bad.append(f"{name}: {len(blocks)} structured data blocks")
+    for b in blocks:
+        if json.loads(b).get("@type") != "Person": bad.append("the structured data is not a Person")
+locs = re.findall(r"<loc>([^<]*)</loc>", (out / "sitemap.xml").read_text(encoding="utf-8"))
+if sorted(locs) != ["https://ttdevs.com/", "https://ttdevs.com/privacy"]:
+    bad.append(f"sitemap.xml lists {locs}")
+ico = (out / "favicon.ico").read_bytes()
+if ico[:4] != b"\0\0\1\0" or ico[4] != 3: bad.append("favicon.ico is not an icon with 3 sizes")
+if bad: sys.exit("header-check: " + "\n".join(bad))
+PY
+for p in /admin /next; do
+  grep -qi 'noindex' <(curl -sI -b "$jar" "$base$p" | tr -d '\r' | grep -i '^x-robots-tag:') || no "$p sends no noindex header"
+done
+cc=$(curl -sI "$base/favicon.ico" | tr -d '\r' | grep -i '^cache-control:' || true)
+grep -qiE 'max-age=([1-9][0-9]{4,})' <<<"$cc" || no "/favicon.ico has no long cache: '${cc:-none}'"
+
 txt=$(curl -s -w '\n%{http_code}' "$base/.well-known/security.txt")
 [ "$(tail -1 <<<"$txt")" = 200 ] || no "/.well-known/security.txt is missing"
 expires=$(grep -oP '^Expires: \K\S+' <<<"$txt" || true)

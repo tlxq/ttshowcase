@@ -376,7 +376,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <p>Each one is live. Open it, or read the code.</p>
       </div>
       <article class="proj a" aria-labelledby="p1">
-        <div class="film"><video src="projects/eparadar-map.mp4" poster="projects/eparadar-map.webp" muted loop playsinline preload="none" width="540" height="1170" aria-label="The epaRadar app: friends driving on a live map of Södermalm, made-up test friends"></video><button type="button" class="vp" aria-label="Pause the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ps" d="M7 5h3v14H7zM14 5h3v14h-3z"/><path class="pl" d="M8 5l11 7-11 7z"/></svg></button></div>
+        <div class="film"><video src="projects/eparadar-map.mp4" poster="projects/eparadar-map.webp" muted loop playsinline preload="none" width="540" height="1170" aria-label="The epaRadar app: friends driving on a live map of Södermalm, made-up test friends"></video><button type="button" class="vp" aria-label="Play the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ps" d="M7 5h3v14H7zM14 5h3v14h-3z"/><path class="pl" d="M8 5l11 7-11 7z"/></svg></button></div>
         <span class="cap">The app · test data</span>
         <p class="note" aria-hidden="true"><span>see who's out</span><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg></p>
         <div class="txt">
@@ -413,7 +413,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <div class="shot big morph"><img src="projects/app-utveckling-top.webp" alt="app-utveckling.se: Vi bygger appar som används." width="1440" height="900" loading="lazy"><img class="to" src="projects/mjukvaruutvecklare-top.webp" alt="mjukvaruutvecklare.com, the same page from the same code: Vi bygger system som håller." width="1440" height="900" loading="lazy"><i class="seam"></i></div>
         <span class="cap">app-utveckling.se → mjukvaruutvecklare.com</span>
         <p class="note up" aria-hidden="true"><svg viewBox="0 0 130 90"><path pathLength="1" d="M118 10 C 92 8, 52 22, 16 70"/><path pathLength="1" d="M16 70 L 17 50 M16 70 L 34 62"/></svg><span>same code, two sites</span></p>
-        <div class="shot small vbox" data-speed="1"><video src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video><button type="button" class="vp" aria-label="Pause the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ps" d="M7 5h3v14H7zM14 5h3v14h-3z"/><path class="pl" d="M8 5l11 7-11 7z"/></svg></button></div>
+        <div class="shot small vbox" data-speed="1"><video src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video><button type="button" class="vp" aria-label="Play the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ps" d="M7 5h3v14H7zM14 5h3v14h-3z"/><path class="pl" d="M8 5l11 7-11 7z"/></svg></button></div>
         <div class="txt">
           <span class="no">03 / 03 · Work project, built alone</span>
           <h3 id="p3">EDGE</h3>
@@ -509,7 +509,8 @@ __LIBS__
   // a tap on a film or its mark pauses it, another plays it; a film paused by hand stays paused when it comes back on screen
   document.querySelectorAll(".vp").forEach((b) => { const v = b.parentElement.querySelector("video");
     // the mark says what a tap does next, from the film's own state (off screen it is paused too)
-    const mark = () => { b.classList.toggle("rest", v.paused); b.setAttribute("aria-label", v.paused ? "Play the video" : "Pause the video"); };
+    const name = document.getElementById(b.closest("article")?.getAttribute("aria-labelledby") ?? "")?.textContent.trim() ?? ""; // the project's own heading, so a rename carries over
+    const mark = () => { b.classList.toggle("rest", v.paused); b.setAttribute("aria-label", (v.paused ? "Play the " : "Pause the ") + (name ? name + " " : "") + "video"); };
     v.addEventListener("play", mark); v.addEventListener("pause", mark); mark();
     const flip = () => { const hold = !v.paused; b.classList.toggle("held", hold); v.dataset.held = hold ? "1" : ""; v.dataset.on = hold ? "" : "1";
       if (hold) v.pause(); else { v.preload = "auto"; v.play().catch(() => {}); } };

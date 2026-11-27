@@ -11,6 +11,7 @@ The paint pitch (pitch/):
   Wall, road and night-light pictures from Poly Haven (CC0): concrete_wall_004, aerial_asphalt_01
   and a night rooftop environment.
   three.js 0.147.0 (MIT), loaded from jsDelivr.
+  A copy is kept in tools/pitch/vendor for the checks.
   Clash Display by Indian Type Foundry (ITF Free Font License, fontshare.com) and Saira Stencil One
   (SIL Open Font License, Google Fonts): fetched at build time, never stored in this repo.
   The street's painting (pitch/assets/street_0.webp and street_1.webp: epaRadar with its car, and raddavarfruberga with its house, one wall in two pictures) was made by Tom on his own computer with

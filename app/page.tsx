@@ -9,11 +9,7 @@ import { Motion } from "@/look/Motion";
 import { PaintSelect } from "@/look/PaintSelect";
 import { Tom } from "@/look/Tom";
 import { tagWritten } from "@/look/handPaint";
-
-const title = "Tom Larsson, product engineer";
-/** What a shared link says under the title (Tom's words 11-14, role word 11-18; LinkedIn wants 100 characters or more). */
-const description =
-  "Tom Larsson, product engineer from Sweden. I believe in AI and build with it every day. Arch Linux, btw.";
+import { DESCRIPTION as description, FRONT_TITLE as title, personJsonLdText } from "@/head/head";
 
 export const metadata: Metadata = {
   title,
@@ -36,13 +32,15 @@ export const metadata: Metadata = {
       },
     ],
   },
-  twitter: { card: "summary_large_image" },
+  twitter: { card: "summary_large_image", title, description },
 };
 
 /** The new look, built next to the old page until Tom says it is right (11-13). */
 export default function LookPage() {
   return (
     <div className="lk">
+      {/* data, not a script the browser runs: the CSP leaves it alone (tools/csp/manifest.mjs) */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: personJsonLdText() }} />
       <LookHeader />
       <main className="lk-main" data-written={tagWritten}>
         <Hero />

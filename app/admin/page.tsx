@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { NOINDEX, pageTitle } from "@/head/head";
 import { AdminForm } from "@/look/AdminForm";
 
 export const metadata: Metadata = {
-  title: "Sign in",
-  robots: { index: false, follow: false },
+  title: pageTitle("Sign in"),
+  robots: NOINDEX,
 };
 
 /** Tom's sign-in (api/admin.ts). Linked from nowhere, kept out of search; vercel.json sends noindex with it too. */

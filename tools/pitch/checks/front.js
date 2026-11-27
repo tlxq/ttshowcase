@@ -47,6 +47,14 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
     await new Promise(r => setTimeout(r, 1500)); const a = [v.paused, b.getAttribute('aria-label')]; v.click(); await new Promise(r => setTimeout(r, 300));
     const c = [v.paused, b.getAttribute('aria-label')]; b.click(); await new Promise(r => setTimeout(r, 600)); return [a, c, [v.paused, b.getAttribute('aria-label')]]; });
   const still = await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const wantFilm = still ? [[true, 'Play the video'], [false, 'Pause the video'], [true, 'Play the video']] : [[false, 'Pause the video'], [true, 'Play the video'], [false, 'Pause the video']];
+  const h1 = await page.evaluate(() => document.getElementById(document.querySelector('.film .vp').closest('article').getAttribute('aria-labelledby')).textContent.trim()), play = 'Play the ' + h1 + ' video', pause = 'Pause the ' + h1 + ' video';
+  const wantFilm = still ? [[true, play], [false, pause], [true, play]] : [[false, pause], [true, play], [false, pause]];
   if (JSON.stringify(res.film) !== JSON.stringify(wantFilm)) errs.push('a tap does not pause and play the film: ' + JSON.stringify(res.film));
+  // each film button says what its own project's heading says, in both states (a rename carries over); a wrong or shared name is red
+  res.names = await page.evaluate(async () => { const out = [];
+    for (const b of document.querySelectorAll('.vp')) { const v = b.parentElement.querySelector('video'), h = document.getElementById(b.closest('article').getAttribute('aria-labelledby')).textContent.trim(), want = () => (v.paused ? 'Play the ' : 'Pause the ') + h + ' video';
+      const a = [b.getAttribute('aria-label'), want()]; b.click(); await new Promise(r => setTimeout(r, 600)); const c = [b.getAttribute('aria-label'), want()]; b.click(); await new Promise(r => setTimeout(r, 600));
+      out.push({ h, a, c, back: [b.getAttribute('aria-label'), want()] }); } return out; });
+  for (const n of res.names) for (const k of ['a', 'c', 'back']) if (n[k][0] !== n[k][1]) errs.push('a film button does not say its own project (' + n.h + ', ' + k + '): ' + JSON.stringify(n[k]));
+  if (res.names.length < 2 || new Set(res.names.map(n => n.a[0])).size !== res.names.length) errs.push('the film buttons share a name: ' + JSON.stringify(res.names.map(n => n.a[0])));
   return JSON.stringify(res); }
