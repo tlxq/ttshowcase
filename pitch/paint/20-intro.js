@@ -213,21 +213,22 @@
   const FG = 9.8, FREST = .25 /* restitution: a pail on concrete keeps a quarter of its speed */, FROLL = 1.6 /* m/s^2 rolling/sliding friction */, FHINT_S = 1, CAPTOP = WALL_TOP + .05, CAPFRONT = .06, FSLIDE = .9 /* m/s^2: the push off the cap */;
   const FDELTA = Math.asin((BK.r1 - BK.r0) / Math.hypot(BK.h, BK.r1 - BK.r0)); // a cone lies with its narrow end a little up
   const fs = { ph: 0, base: 0, away: false, at: 0, go: 0, t0: 0, p: V(), v: V(), th: 0, w: 0, psi: 0, R: .28, phi: 0, phiV: 0, hOff: 0, hV: 0, rock: 0, bounces: 0 };
+  window.__bucketFall = fs; fs.obj = bucket; // the prototype's state, for the look checks
   try { if (sessionStorage.getItem("bkfell") && RESUME !== null && !REDUCED) fs.ph = 7; } catch (e) {}
   const fPud = new THREE.Group(); fPud.visible = false; fPud.userData.at = 0; scene.add(fPud);
   const fPudMat = new THREE.MeshPhysicalMaterial({ roughness: .06, clearcoat: 1, clearcoatRoughness: .03, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
   for (const [dx, dz, s] of [[0, 0, 1], [.28, .1, .45], [-.3, -.05, .5], [.12, -.3, .3], [-.1, .3, .28], [.5, -.12, .16], [-.52, .14, .18]]) { const m = new THREE.Mesh(new THREE.CircleGeometry(s * .42, 28), fPudMat); m.rotation.x = -Math.PI / 2; m.position.set(dx, 0, dz); m.scale.set(1, .8 + Math.abs(dx) * .3, 1); fPud.add(m); }
   const fAx = th => V(-Math.sin(th), Math.cos(th), 0);
   const fLow = () => { const a = fAx(fs.th), s = Math.sqrt(Math.max(0, 1 - a.y * a.y)); return Math.min(fs.p.y - a.y * BK.h / 2 - BK.r0 * s, fs.p.y + a.y * BK.h / 2 - (BK.r1 + .012) * s); };
-  const fPlace = () => { bucketHome.position.copy(fs.p); bucketHome.quaternion.setFromEuler(new THREE.Euler(0, 0, fs.th)).multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), fs.psi)); };
+  const fPlace = () => { bucketTip.rotation.set(0, 0, 0); bucketHome.position.copy(fs.p); bucketHome.quaternion.setFromEuler(new THREE.Euler(0, 0, fs.th)).multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), fs.psi)); };
   function fSplash(x, y, z, n, up) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = x + gauss() * .12; mp[i * 3 + 1] = y; mp[i * 3 + 2] = z + gauss() * .12;
     mv[i * 3] = gauss() * 1.8; mv[i * 3 + 1] = up * (.3 + Math.random()); mv[i * 3 + 2] = gauss() * 1.8; ml[i] = .7 + Math.random() * .3; } }
   function fallStep(now, dt) {
     if (REDUCED) return;
-    if (fs.ph === 0 && !fs.base && introOver) fs.base = now;
+    if (fs.ph === 0 && !fs.base && introOver) fs.base = Math.max(now, goAt + Math.min(pourDone, 30) / TS * 1000); // N counts from the end of the pour, not from the moment the scroll opens
     if (fs.ph === 7) { // a reload for a new window shape: it already fell
       fs.p.set(LEDGE.x, GROUND + .3, .9); fs.th = -(Math.PI / 2 + FDELTA); fs.psi = 0; bucket.position.set(0, -BK.h / 2, 0); bucketTip.position.set(0, 0, 0); bucketTip.rotation.set(0, 0, 0); fPlace(); coat.visible = false; fPud.position.set(fs.p.x, GROUND + .006, fs.p.z); fPud.visible = true; fPud.scale.setScalar(1); fs.ph = 6; }
-    if (fs.ph === 6) { fPudMat.color.copy(PAINT).multiplyScalar(.7); coat.visible = false; return; }
+    if (fs.ph === 6) { bucketTip.rotation.set(0, 0, 0); fPudMat.color.copy(PAINT).multiplyScalar(.7); coat.visible = false; return; }
     if (fs.ph < 2) {
       const atStart = introOver && Math.abs(scrollY - upPx()) < innerHeight * .5;
       if (introOver && scrollY > upPx() + innerHeight * .9) fs.away = true;
