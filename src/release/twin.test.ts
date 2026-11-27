@@ -49,3 +49,16 @@ test("cookieValue: the one known difference is %-escapes", () => {
   assert.equal(fromMiddleware("b=x%20y", "b"), "x y");
   assert.equal(fromAdmin("b=x%20y", "b"), "x%20y");
 });
+
+// Inputs with % in them. A broken escape (here a cut-off UTF-8 byte, or a lone %) makes the middleware's copy answer null, so a
+// bad cookie never matches the key; the admin's copy hands back the raw text. Pinned as they are today (audit N-23).
+test("cookieValue: %-escapes and a broken escape", () => {
+  assert.equal(fromMiddleware("b=%E0%A4%A", "b"), null);
+  assert.equal(fromAdmin("b=%E0%A4%A", "b"), "%E0%A4%A");
+  assert.equal(fromMiddleware("a=1; b=%zz", "b"), null);
+  assert.equal(fromAdmin("a=1; b=%zz", "b"), "%zz");
+  assert.equal(fromMiddleware("b=100%", "b"), null);
+  assert.equal(fromAdmin("b=100%", "b"), "100%");
+  assert.equal(fromMiddleware("b=%41%42", "b"), "AB");
+  assert.equal(fromAdmin("b=%41%42", "b"), "%41%42");
+});

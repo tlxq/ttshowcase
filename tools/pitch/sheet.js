@@ -1,6 +1,8 @@
 // A page function for playwright-cli run-code, like tools/pitch/checks/: no semicolon after it, so prettier leaves it alone (.prettierignore).
 // The whole-walk sheet's pictures (tools/pitch/sheet.sh): one load, tap the bucket, then jump straight to each moment and take
 // a picture: __OUT__<moment>.png. The moments are the walk's stops (tour.js) plus the scroll-up side. Returns the console errors.
+// The page's clock jumps forward before each picture (see below), so the sheet shows settled moments only: a bug that exists only
+// mid-animation will not show here.
 async (page) => {
   const W = page.viewportSize().width,
     H = page.viewportSize().height,
