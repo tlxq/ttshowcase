@@ -185,7 +185,7 @@ section.say > .bloom { position: absolute; opacity: .35; pointer-events: none; }
 .count .n { font: 900 min(7vw, 12.5svh)/.8 var(--f-big); font-stretch: 125%; letter-spacing: -.03em; color: var(--look-cream); font-variant-numeric: tabular-nums; }
 .count .w { font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--look-quiet); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.proj.b .txt h3 { font-size: min(2.9vw, 5.6svh); } /* VÅRFRUBERGA is one long word: it fits its column */
+.proj.b .txt h3, .proj.c .txt h3 { font-size: min(2.9vw, 5.6svh); } /* VÅRFRUBERGA and EDGEFLOW.SE are one long word: it fits its column */
 /* EDGE shown its own way (award step 4): one screen that is app-utveckling.se and becomes mjukvaruutvecklare.com as you
    scroll; same layout, same code, other words ("appar som används" -> "system som håller") */
 .morph { aspect-ratio: 16 / 10; overflow: hidden; }
@@ -294,7 +294,7 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
   .proj.a .film { width: 100vw; margin-left: calc(-1 * max(var(--gutter), env(safe-area-inset-left))); border-radius: 0; }
   .note { order: -1; margin-bottom: -6px; }
   .note span { font-size: 30px; }
-  .proj.b .txt h3 { font-size: 7.6vw; }
+  .proj.b .txt h3, .proj.c .txt h3 { font-size: 7.6vw; }
 }
 
 
@@ -418,14 +418,14 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
         <div class="shot small vbox" data-speed="1"><video src="projects/mjukvaruutvecklare-phone.mp4" poster="projects/mjukvaruutvecklare-phone.webp" muted loop playsinline preload="none" width="390" height="844" aria-label="mjukvaruutvecklare.com scrolling on a phone"></video><button type="button" class="vp" aria-label="Play the video"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="ps" d="M7 5h3v14H7zM14 5h3v14h-3z"/><path class="pl" d="M8 5l11 7-11 7z"/></svg></button></div>
         <div class="txt">
           <span class="no">03 / 03 · Work project, built alone</span>
-          <h3 id="p3">EDGE</h3>
-          <p class="line">Two landing pages for EDGE Associates, on <span class="mark">one code base</span>.</p>
+          <h3 id="p3">edgeflow.se</h3>
+          <p class="line">The product site for EdgeFlow, and <span class="mark">two landing pages</span>, for EDGE Associates.</p>
           <div class="story">
             <p><b>Why</b>EDGE sells apps to one kind of customer and systems to another. They needed a site for each, without two code bases to keep up.</p>
             <p><b>Hard part</b>The sites live on a plain web host with no build server. So I made one command that tests both sites on five devices, uploads them and checks them live, for whoever comes after me.</p>
           </div>
           <dl><dt>Result</dt><dd>Both sites live. Lighthouse 100 for SEO, accessibility and best practices.</dd><dt>Stack</dt><dd>Astro, TypeScript</dd></dl>
-          <div class="go"><a href="https://app-utveckling.se">app-utveckling.se ↗</a><a href="https://mjukvaruutvecklare.com">mjukvaruutvecklare.com ↗</a></div>
+          <div class="go"><a href="https://edgeflow.se">edgeflow.se ↗</a><a href="https://app-utveckling.se">app-utveckling.se ↗</a><a href="https://mjukvaruutvecklare.com">mjukvaruutvecklare.com ↗</a></div>
         </div>
       </article>
     </div></div>
