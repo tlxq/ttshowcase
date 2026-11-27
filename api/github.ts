@@ -34,7 +34,8 @@ export async function numbers(get: Get, token?: string): Promise<Numbers> {
     },
   };
   const ask = async (url: string) => {
-    const r = await get(url, init);
+    // the token goes to GitHub's API only (the raw file host gets none)
+    const r = await get(url, url.startsWith(API) ? init : { headers: { Accept: "*/*" } });
     if (!r.ok) throw new Error(String(r.status));
     return r;
   };
@@ -79,7 +80,7 @@ export async function numbers(get: Get, token?: string): Promise<Numbers> {
     );
   const migrationsOf = async () =>
     positive(
-      (await filesOf("eparadar", "master")).filter((p) => p.startsWith("supabase/migrations/"))
+      (await filesOf("eparadar", "master")).filter((p) => /^supabase\/migrations\/.+\.sql$/.test(p))
         .length,
     );
   const skillsOf = async (repo: string, branch: string) =>
@@ -107,16 +108,23 @@ export async function numbers(get: Get, token?: string): Promise<Numbers> {
       merged: () => mergedOf("raddavarfruberga"),
     };
   const out: Numbers = {};
+  const refused = new Set<string>(); // walls GitHub would not show at all (no access), as opposed to a passing fault
   await Promise.all(
     Object.entries(wanted).flatMap(([wall, gets]) => {
       const own: Record<string, number | null> = (out[wall] = {});
       return Object.entries(gets).map(async ([key, run]) => {
-        own[key] = await run().catch(() => null);
+        own[key] = await run().catch((e: unknown) => {
+          // 401, 403, 404: no access to the repo; 422: the search can't see it
+          if (/^(401|403|404|422)$/.test(e instanceof Error ? e.message : "")) refused.add(wall);
+          return null;
+        });
       });
     }),
   );
   // a token that can't see the private repo: leave it out, whole
-  if (out.rvf && Object.values(out.rvf).every((n) => n == null)) delete out.rvf;
+  // (a passing fault keeps the empty numbers instead, so the answer is asked again in five minutes like any wall's)
+  if (out.rvf && refused.has("rvf") && Object.values(out.rvf).every((n) => n == null))
+    delete out.rvf;
   return out;
 }
 

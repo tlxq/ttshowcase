@@ -119,3 +119,24 @@ test("the token never reaches an answer, even when GitHub echoes it back", async
   assert.ok(!text.includes("SECRET123"));
   assert.ok(!text.includes("Bearer"));
 });
+
+test("a passing fault on the private repo (500) keeps rvf empty and asks again in five minutes", async () => {
+  const ok = github();
+  const get = async (url: string) =>
+    /raddavarfruberga/.test(decodeURIComponent(url)) ? new Response("", { status: 500 }) : ok(url);
+  const n = await numbers(get, "tok");
+  assert.deepEqual(n.rvf, { commits: null, merged: null });
+  assert.match((await answer(get, "tok")).headers.get("Cache-Control")!, /s-maxage=300$/);
+});
+
+test("the token goes to GitHub's API only, not to the raw file host", async () => {
+  const ok = github();
+  const seen: string[] = [];
+  const get = async (url: string, init?: RequestInit) => {
+    if (new Headers(init?.headers).get("Authorization")) seen.push(new URL(url).host);
+    return ok(url);
+  };
+  await numbers(get, "tok");
+  assert.ok(seen.length > 0);
+  assert.deepEqual([...new Set(seen)], ["api.github.com"]);
+});
