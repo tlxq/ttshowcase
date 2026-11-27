@@ -4,8 +4,8 @@ description: Start a session on the site or the paint pitch - where it stands, o
 
 Start a session in this repo. Rules: `CLAUDE.md`. One moment at a time: name the cause, change one thing, Tom judges.
 
-1. Read the board's ttshowcase line (`~/.claude/plans/board.md`) and the newest entries of the plan section it points
-   to (`~/.claude/plans/ttshowcase.md`). Say in two lines where it stands and what's next.
+1. Read the Next line and the newest Progress entries of the ttshowcase plan changed most recently in `~/.claude/plans/`
+   (session start lists them). Say in two lines where it stands and what's next.
 2. `git status` and `git branch`. Uncommitted work or a branch with commits only on this PC: say what it is and ask
    before touching it.
 3. Name the one change for this session in a sentence: what Tom sees after it, and which screen or scene. Two

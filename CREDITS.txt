@@ -24,6 +24,6 @@ The paint pitch (pitch/):
   (MIT) and the Z-Image Turbo model (Apache 2.0). The wall round each is keyed out to transparency. The link mark over EDGE's painting (pitch/assets/edge_banner.webp) is drawn by hand in code, and
   all its text is set by hand (Nimbus Sans and URW Gothic from the URW base-35 fonts).
   The stencil (pitch/assets/stencil/) is Tom's head turn, made from his own studio photos (11-22) on his own computer.
-  Inter (SIL Open Font License) and Sedgwick Ave
-  Display (SIL Open Font License, Google Fonts) are used for the labels, the form and
-  raddavarfruberga's banner words, and are fetched at build time.
+  Inter (SIL Open Font License) is used for the labels and the form. Sedgwick Ave Display (SIL Open
+  Font License, Google Fonts) is used for the handwritten note on the front. Both are fetched at
+  build time.
