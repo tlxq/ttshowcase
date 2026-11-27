@@ -129,7 +129,6 @@
     sky.color.lerp(SKYM, k); sky.groundColor.lerp(GNDM, k); sky.intensity += (.75 - sky.intensity) * k; sun.intensity = 2.1 * k; scene.background.lerp(BGM, k); scene.fog.color.lerp(FOGM, k);
     lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * k); skyU.uBg.value.copy(scene.background); }
   document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
-  const SUN_START = 1.2; // how much stronger the sun lights the start wall by day (a share of its own strength)
   function morning(now, sv, cp, look) { // after endCam: past EDGE, in close to the bare wall, the change to the visitors' wall, the light
     const dn = dayNow(); paintTone(dn); // the spray's colour follows the clock, as the light does (the clock read once a frame)
     // by day the start wall's haze is thinner (as at the end, where the painting is 16 m away and the opening's haze would wash it out): the start's line is 16 m from the camera and the day's pale fog
@@ -150,8 +149,6 @@
     endReady = false; // no end landing any more (Tom 11-23): Leave your tag lives on the visitors' wall
     if (document.documentElement.dataset.endReady !== (endReady ? "1" : "0")) document.documentElement.dataset.endReady = endReady ? "1" : "0"; // the checks wait for it
     endWallState(now, false);
-    { const up = upPx(), tp = topPx(), lf = introOver && up > tp ? cl(1 - (scrollY - tp) / (up - tp)) : 0; // how far up the page, past the start: the visitors' wall at the top keeps its light (its pale words need the dimmer wall)
-      sun.intensity *= 1 + SUN_START * (sv >= CUT ? 0 : 1 - sm(cl((sv - 12) / 36))) * (1 - sm(cl(lf * 5))); } // (Tom 11-27) the day's start wall is lit brighter: it rendered mid-grey and the dark blue paint on it reached only 2:1; the sun is SUN_START stronger there, and the same by sv 48 as before
     sun.intensity *= 1 - .97 * shop.ins; sky.intensity *= 1 - .6 * shop.ins; } // inside the workshop the day's sun and sky are mostly shut out
   // the camera's way: along the street to the garage door, in through it, a stop in front of each tool on the workshop's back wall, out through the far door,
   // on to EDGE, on towards the sunrise (then morning() cuts to the opening wall).
