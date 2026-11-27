@@ -21,6 +21,13 @@ function github(fail: RegExp | null = null) {
           { type: "blob", path: "t/a.bats" },
           { type: "blob", path: "plugins/p/skills/s/SKILL.md" },
           { type: "blob", path: "plugins/p/skills/s2/SKILL.md" },
+          { type: "blob", path: "apps/m/src/__tests__/a.test.ts" },
+          { type: "blob", path: "apps/m/src/__tests__/b.test.tsx" },
+          { type: "blob", path: "apps/m/src/notes.ts" },
+          { type: "blob", path: "supabase/tests/database/one.sql" },
+          { type: "blob", path: "supabase/migrations/1_a.sql" },
+          { type: "blob", path: "supabase/migrations/2_b.sql" },
+          { type: "blob", path: "supabase/migrations/3_c.sql" },
         ],
       });
     return new Response("@test one\n@test two\nnot a test\n");
@@ -32,7 +39,7 @@ test("every number comes from one round of asks", async () => {
     dot: { commits: 346, tests: 2 },
     ttoolbox: { commits: 346, skills: 2 },
     tthermal: { commits: 346, merged: 14 },
-    epa: { commits: 346, merged: 14 },
+    epa: { commits: 346, merged: 14, tests: 3, migrations: 3 },
   });
 });
 
@@ -50,7 +57,7 @@ test("when GitHub refuses everything the answer is all null and short-lived", as
     dot: { commits: null, tests: null },
     ttoolbox: { commits: null, skills: null },
     tthermal: { commits: null, merged: null },
-    epa: { commits: null, merged: null },
+    epa: { commits: null, merged: null, tests: null, migrations: null },
   });
   assert.match(r.headers.get("Cache-Control")!, /s-maxage=300$/);
 });
@@ -71,4 +78,65 @@ test("the token is sent only when there is one", async () => {
   await numbers(get, "tok");
   assert.ok(seen.slice(0, before).every((h) => h === undefined));
   assert.ok(seen.slice(before).every((h) => h === "Bearer tok"));
+});
+
+const without = (n: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(n).filter(([k]) => k !== "rvf"));
+
+test("the private repo is asked only with a token", async () => {
+  const none = await numbers(github());
+  assert.ok(!("rvf" in none));
+  const withTok = await numbers(github(), "tok");
+  assert.deepEqual(withTok.rvf, { commits: 346, merged: 14 });
+  assert.deepEqual(without(withTok), none);
+});
+
+for (const status of [404, 403]) {
+  test(`a token that can't see the private repo (${status}) leaves rvf out, the rest whole`, async () => {
+    const ok = github();
+    const get = async (url: string) =>
+      /raddavarfruberga/.test(decodeURIComponent(url)) ? new Response("", { status }) : ok(url);
+    const n = await numbers(get, "tok");
+    assert.ok(!("rvf" in n));
+    assert.deepEqual(n, await numbers(github()));
+    assert.match((await answer(get, "tok")).headers.get("Cache-Control")!, /s-maxage=3600/);
+  });
+}
+
+test("the token never reaches an answer, even when GitHub echoes it back", async () => {
+  const get = async (_: string, init?: RequestInit) =>
+    new Response(
+      JSON.stringify({
+        message: "bad",
+        echo: (init?.headers as Record<string, string>).Authorization,
+      }),
+      {
+        status: 401,
+      },
+    );
+  const r = await answer(get, "ghp_SECRET123");
+  const text = JSON.stringify(await r.json()) + [...r.headers].join();
+  assert.ok(!text.includes("SECRET123"));
+  assert.ok(!text.includes("Bearer"));
+});
+
+test("a passing fault on the private repo (500) keeps rvf empty and asks again in five minutes", async () => {
+  const ok = github();
+  const get = async (url: string) =>
+    /raddavarfruberga/.test(decodeURIComponent(url)) ? new Response("", { status: 500 }) : ok(url);
+  const n = await numbers(get, "tok");
+  assert.deepEqual(n.rvf, { commits: null, merged: null });
+  assert.match((await answer(get, "tok")).headers.get("Cache-Control")!, /s-maxage=300$/);
+});
+
+test("the token goes to GitHub's API only, not to the raw file host", async () => {
+  const ok = github();
+  const seen: string[] = [];
+  const get = async (url: string, init?: RequestInit) => {
+    if (new Headers(init?.headers).get("Authorization")) seen.push(new URL(url).host);
+    return ok(url);
+  };
+  await numbers(get, "tok");
+  assert.ok(seen.length > 0);
+  assert.deepEqual([...new Set(seen)], ["api.github.com"]);
 });

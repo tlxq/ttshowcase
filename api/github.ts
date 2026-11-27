@@ -4,9 +4,15 @@
  * the console. Vercel's edge keeps the answer (s-maxage), so GitHub is asked about once an hour whoever comes.
  * A number GitHub didn't give is null: the page draws nothing for it, never an old or made-up number.
  *
- *   GET /api/github   { dot: { commits, tests }, ttoolbox: { commits, skills }, tthermal: { commits, merged }, epa: { commits, merged } }
+ *   GET /api/github   { dot: { commits, tests }, ttoolbox: { commits, skills }, tthermal: { commits, merged },
+ *                       epa: { commits, merged, tests, migrations }, rvf?: { commits, merged } }
  *
- * GITHUB_TOKEN (optional, Vercel setting): a read-only token raises the limit to 5,000 an hour. Tests: src/github/github.test.ts.
+ * epa.tests counts files, not cases: every *.test.ts(x) plus every supabase/tests/**\/*.sql (pgTAP); epa.migrations counts
+ * the files under supabase/migrations/. Both are one `find` away from the repo. dot.tests counts @test cases in .bats files.
+ *
+ * GITHUB_TOKEN (optional, Vercel setting): a read-only token raises the limit to 5,000 an hour. rvf is a private repo:
+ * it is asked only with a token, and is left out (never an error) when there is none or the token can't see the repo.
+ * The token only goes to GitHub: it is never in an answer, an error or a log line. Tests: src/github/github.test.ts.
  */
 const API = "https://api.github.com/";
 const RAW = "https://raw.githubusercontent.com/tlxq/";
@@ -28,7 +34,8 @@ export async function numbers(get: Get, token?: string): Promise<Numbers> {
     },
   };
   const ask = async (url: string) => {
-    const r = await get(url, init);
+    // the token goes to GitHub's API only (the raw file host gets none)
+    const r = await get(url, url.startsWith(API) ? init : { headers: { Accept: "*/*" } });
     if (!r.ok) throw new Error(String(r.status));
     return r;
   };
@@ -65,6 +72,17 @@ export async function numbers(get: Get, token?: string): Promise<Numbers> {
     );
     return positive(counts.reduce((a, b) => a + b, 0));
   };
+  const epaTestsOf = async () =>
+    positive(
+      (await filesOf("eparadar", "master")).filter((p) =>
+        /\.test\.tsx?$|^supabase\/tests\/.+\.sql$/.test(p),
+      ).length,
+    );
+  const migrationsOf = async () =>
+    positive(
+      (await filesOf("eparadar", "master")).filter((p) => /^supabase\/migrations\/.+\.sql$/.test(p))
+        .length,
+    );
   const skillsOf = async (repo: string, branch: string) =>
     positive(
       (await filesOf(repo, branch)).filter((p) =>
@@ -76,17 +94,37 @@ export async function numbers(get: Get, token?: string): Promise<Numbers> {
     dot: { commits: () => commitsOf("dot"), tests: () => testsOf("dot", "main") },
     ttoolbox: { commits: () => commitsOf("ttoolbox"), skills: () => skillsOf("ttoolbox", "main") },
     tthermal: { commits: () => commitsOf("tthermal"), merged: () => mergedOf("tthermal") },
-    epa: { commits: () => commitsOf("eparadar"), merged: () => mergedOf("eparadar") },
+    epa: {
+      commits: () => commitsOf("eparadar"),
+      merged: () => mergedOf("eparadar"),
+      tests: epaTestsOf,
+      migrations: migrationsOf,
+    },
   };
+  // a private repo: only asked with a token
+  if (token)
+    wanted.rvf = {
+      commits: () => commitsOf("raddavarfruberga"),
+      merged: () => mergedOf("raddavarfruberga"),
+    };
   const out: Numbers = {};
+  const refused = new Set<string>(); // walls GitHub would not show at all (no access), as opposed to a passing fault
   await Promise.all(
     Object.entries(wanted).flatMap(([wall, gets]) => {
       const own: Record<string, number | null> = (out[wall] = {});
       return Object.entries(gets).map(async ([key, run]) => {
-        own[key] = await run().catch(() => null);
+        own[key] = await run().catch((e: unknown) => {
+          // 401, 403, 404: no access to the repo; 422: the search can't see it
+          if (/^(401|403|404|422)$/.test(e instanceof Error ? e.message : "")) refused.add(wall);
+          return null;
+        });
       });
     }),
   );
+  // a token that can't see the private repo: leave it out, whole
+  // (a passing fault keeps the empty numbers instead, so the answer is asked again in five minutes like any wall's)
+  if (out.rvf && refused.has("rvf") && Object.values(out.rvf).every((n) => n == null))
+    delete out.rvf;
   return out;
 }
 
