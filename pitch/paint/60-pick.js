@@ -31,7 +31,7 @@
   { const NOGLOW = () => ({ build() {}, pulse: -1, op: 0, mesh: null }); // the street's words are its links (like the production's): no glow over them, and "Opens ..." in the one place
     EPA_MARKS.forEach((b, i) => hotOn(hots[i], labelOf(hots[i]), NOGLOW(), null, true));
     hotOn(hot3, labelOf(hot3), NOGLOW(), null, true);
-    U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), u.tile ? { build() {}, pulse: -1, op: 0, mesh: null } /* the production's words are the link: no glow over them (it hazed the piece on a phone) */ : makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}), u.text && boxesOn(u.B, [...u.text, ...u.nums]), !!u.tile)));
+    U4.forEach(u => u.hots.forEach((h, j) => hotOn(h, labelOf(h), u.tile || u.site ? { build() {}, pulse: -1, op: 0, mesh: null } /* the production's words are the link: no glow over them (it hazed the piece on a phone); the Edge piece's link tags are its links the same way */ : makeGlow(u.ov || u.art[0], u.B, u.links[j].box, u.ov ? { rect: true } : {}), u.text && boxesOn(u.B, [...u.text, ...u.nums]), !!(u.tile || u.site))));
     const leaveHot = document.getElementById("leave");
     hotOn(leaveHot, "Leave your tag", { build() {}, pulse: -1, op: 0, mesh: null }); // a real can: its tap area is the can itself, no glow drawn from paint
     endS.hots = { leaveHot }; }
