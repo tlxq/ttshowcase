@@ -4,8 +4,9 @@
   const CUT = 1125; // the scroll (vh) where the walk changes from the bare wall past EDGE to the bare wall by the visitors' wall, in close (Tom 11-23: no flash)
   const sun = new THREE.DirectionalLight(0xffe4c8, 0); sun.position.set(14, 7, 9); sun.target.position.set(0, .5, 0); scene.add(sun, sun.target);
   const BG0 = scene.background.clone(), BGM = new THREE.Color(0xb9c3cf), FOGM = new THREE.Color(0xa7adb5), SKYM = new THREE.Color(0xdfe6ef), GND0 = sky.groundColor.clone(), GNDM = new THREE.Color(0x6d6862);
+  const MAIL = __MAIL_WORDS__; // the words: src/content/mailWords.json, one source (tools/pitch/build.mjs fills it in)
     // the form: the same fields and words as the live site's (src/look/MailForm.tsx), sent by the server (api/contact.ts); signum W3, W5, W6
-  document.querySelector(".hud").insertAdjacentHTML("beforeend", `<form class="mail" id="mail" method="post" inert><span class="head">Write to me</span><div class="fields" style="display: contents">
+  document.querySelector(".hud").insertAdjacentHTML("beforeend", `<form class="mail" id="mail" method="post" action="${MAIL.action}" inert><span class="head">Write to me</span><div class="fields" style="display: contents">
     <label class="f-name"><input name="name" autocomplete="name" required maxlength="100" enterkeyhint="next" placeholder=" "><span>Name</span></label>
     <label class="f-email"><input name="email" type="email" autocomplete="email" required maxlength="200" enterkeyhint="next" placeholder=" "><span>Email</span></label>
     <label class="f-msg"><textarea name="message" rows="2" required maxlength="4000" placeholder=" "></textarea><span>Message</span></label>
@@ -14,7 +15,6 @@
     <button type="button" class="hot" id="leave" aria-label="Leave your tag" tabindex="-1" style="display: none"></button>
 `);
   const mail = document.getElementById("mail"), mailErr = mail.querySelector(".err"), mailBtn = mail.querySelector("button");
-  const MAIL = __MAIL_WORDS__; // the words: src/content/mailWords.json, one source (tools/pitch/build.mjs fills it in)
   const sendContact = __MAIL_SEND__; // the send and its error words: src/content/sendContact.ts, one source for the site and both pitch pages (tools/pitch/build.mjs fills it in)
   mail.addEventListener("submit", async e => { e.preventDefault(); mailBtn.disabled = true; mailBtn.textContent = "Sending\u2026"; mailErr.hidden = true;
     const f = Object.fromEntries(new FormData(mail)), r = await sendContact(f, MAIL);

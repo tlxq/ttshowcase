@@ -17,3 +17,13 @@ test("the front's mail form posts to /api/contact", () => {
   assert.equal(words.action, "/api/contact");
   assert.match(form, /\smethod=["']post["']/i);
 });
+
+test("the site's and the walk's mail forms post there too", () => {
+  const site = readFileSync(join(root, "src/look/MailForm.tsx"), "utf8");
+  assert.match(/<form\b[^>]*>/.exec(site)?.[0] ?? "", /\saction=\{mail\.action\}/);
+  const walk = readFileSync(join(root, "pitch/paint/50-end.js"), "utf8");
+  assert.match(
+    /<form\b[^>]*id="mail"[^>]*>/.exec(walk)?.[0] ?? "",
+    /\saction="\$\{MAIL\.action\}"/,
+  );
+});
