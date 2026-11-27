@@ -92,6 +92,7 @@ run = "PORT=${PORT:-8124} SERVE_DIR=.cache/pitch SERVE_PAGE=paint.html SERVE_BUI
 
 [tasks."pitch:check"]
 description = "Build the paint pitch and walk it at 1440 x 900 and on a phone: the whole walk, the waits, paints once, reduced motion, text contrast, no plate over a picture; name one check to run only that, e.g. mise run pitch:check contrast-phone"
+env = { PITCH_NUMBERS = "off" } # the page carries no saved numbers, so every check measures the live path alone (epanums injects its own)
 run = "tools/passes/build-first.sh pitch pitch:build tools/pitch/run.sh"
 
 [tasks.check]

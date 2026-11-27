@@ -30,6 +30,9 @@ page=$(curl -s -b "$jar" -w '\n%{http_code}' "$base/next")
 [ "$(tail -1 <<<"$page")" = 200 ] || no "/next with the cookie should be 200"
 grep -q 'noindex' <<<"$page" || no "/next should say noindex"
 grep -q 'id="leave"' <<<"$page" || no "/next should be the paint walk (tools/pitch/build.mjs --site)"
+# the last known numbers are in the page itself (tools/pitch/saved-numbers.mjs), not a file beside it that a deploy could leave out
+grep -qE 'const SAVED_NUMBERS = \{("[a-z]+":\{("[a-z]+":[0-9]+,?)+\},?)*\};' <<<"$page" || no "/next should carry the saved numbers (const SAVED_NUMBERS = {...}, empty when the build had none)"
+! grep -qE 'SAVED_NUMBERS = .*(token|ghp_|github_pat_)' <<<"$page" || no "/next's saved numbers hold something that is not a number"
 [ "$(code -b "$jar" "$base/next/assets/wall4_diff.jpg")" = 200 ] || no "the walk's pictures should be at /next/assets/"
 [ "$(code "$base/")" = 200 ] || no "the home page should still be 200"
 if grep -rlE 'href="/next([/?#".])' out --include='*.html' | grep -v '^out/next' >/dev/null; then

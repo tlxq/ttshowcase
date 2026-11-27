@@ -21,6 +21,7 @@ import { join, resolve } from "node:path";
 import { fontProblems } from "./fonts-used.mjs";
 import { nodeProblem } from "./need-node.mjs";
 import { fillParts, readParts } from "./paint-parts.mjs";
+import { paths as numberPaths, savedNumbers } from "./saved-numbers.mjs";
 
 // before anything that needs a new Node, so an old one gets this sentence and not a cryptic load error
 const nodeSays = nodeProblem(
@@ -32,6 +33,7 @@ if (nodeSays) {
   process.exit(1);
 }
 const { TAG_LIMITS } = await import("../../api/tags.ts");
+const { numbers: askGithub } = await import("../../api/github.ts");
 
 const root = resolve(import.meta.dirname, "../..");
 const fonts = join(root, ".cache/fonts");
@@ -166,6 +168,14 @@ const parts = {
   ), // the contact form's words: the site's own file (src/look/MailForm.tsx reads it too)
   __MAIL_SEND__: mailSend(), // the contact form's send: the site's own file (src/look/MailForm.tsx imports it too)
   __TAG_LIMITS__: JSON.stringify(TAG_LIMITS), // what one tag may hold: the store's own numbers (api/tags.ts)
+  // the last known numbers for the notes and counts, when the live answer lacks one (tools/pitch/saved-numbers.mjs; never fails the build)
+  __SAVED_NUMBERS__: await savedNumbers({
+    ...numberPaths(root),
+    ask: askGithub,
+    token: process.env.GITHUB_TOKEN,
+    skip: process.env.PITCH_NUMBERS === "off",
+    log: (m) => console.warn(m),
+  }),
 };
 // the page's style and script come first, from their parts (pitch/paint/): they hold the __HAND__ etc. filled below
 let page = fillParts(

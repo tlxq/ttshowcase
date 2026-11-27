@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { themeColor } from "@/head/head";
 import { lookFonts } from "@/look/fonts";
 import { TabAway } from "@/look/TabAway";
 import "./globals.css";
@@ -17,7 +18,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(address),
   // Tom's icon tag (app/icon.svg/route.ts), made at build time.
   icons: {
-    icon: { url: "/icon.svg", type: "image/svg+xml" },
+    icon: [
+      // the old address every browser and crawler still asks for (public/favicon.ico, tools/icons/favicon.mjs)
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
     apple: { url: "/apple-icon.png", type: "image/png" },
   },
 };
@@ -26,6 +31,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: themeColor(),
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

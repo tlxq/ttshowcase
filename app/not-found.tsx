@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { pageTitle } from "@/head/head";
 import { Address } from "@/look/Address";
 import { posterFont } from "@/look/posterFont";
 import { TlxqMark } from "@/look/TlxqMark";
 
 /** The tab says what happened; the page was a bare address before. */
-export const metadata: Metadata = { title: "Page not found, Tom Larsson" };
+export const metadata: Metadata = { title: pageTitle("Page not found") };
 
 /** Any address that isn't a page, in the front's design: Tom's tlxq mark, 404 in the poster face, the address struck through, one
  * line and one way back. */
