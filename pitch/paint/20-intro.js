@@ -205,6 +205,62 @@
     if (!START_T) { START_T = performance.now(); startEl.classList.add("placed"); } } // the lamp warms up from the moment the start shows
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
+  // ---- the bucket falls (pitch/bucket-fall prototype): later, as a surprise. Phases with real constants, no physics engine:
+  // 0 on the ledge · 1 hint (rocks, creaks) · 2 slides to the front edge · 3 rolls over it · 4 free fall (g 9.8, turning) · 5 settles on the ground (bounce, roll, handle flops) · 6 at rest
+  // knobs in the link: fall=after|back|both|now  n=seconds [7]  hint=0|1 [1]
+  const FQ = new URLSearchParams(location.search), FMODE = ["after", "back", "both", "now"].includes(FQ.get("fall")) ? FQ.get("fall") : "after",
+    FN = FMODE === "now" ? 0 : Math.max(0, +(FQ.get("n") ?? 7) || 0), FHINT = FQ.get("hint") !== "0";
+  const FG = 9.8, FREST = .25 /* restitution: a pail on concrete keeps a quarter of its speed */, FROLL = 1.6 /* m/s^2 rolling/sliding friction */, FHINT_S = 1, CAPTOP = WALL_TOP + .05, CAPFRONT = .06, FSLIDE = .9 /* m/s^2: the push off the cap */;
+  const FDELTA = Math.asin((BK.r1 - BK.r0) / Math.hypot(BK.h, BK.r1 - BK.r0)); // a cone lies with its narrow end a little up
+  const fs = { ph: 0, base: 0, away: false, at: 0, go: 0, t0: 0, p: V(), v: V(), th: 0, w: 0, psi: 0, R: .28, phi: 0, phiV: 0, hOff: 0, hV: 0, rock: 0, bounces: 0 };
+  try { if (sessionStorage.getItem("bkfell") && !REDUCED) fs.ph = 7; } catch (e) {}
+  const fPud = new THREE.Group(); fPud.visible = false; fPud.userData.at = 0; scene.add(fPud);
+  const fPudMat = new THREE.MeshPhysicalMaterial({ roughness: .06, clearcoat: 1, clearcoatRoughness: .03, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
+  for (const [dx, dz, s] of [[0, 0, 1], [.28, .1, .45], [-.3, -.05, .5], [.12, -.3, .3], [-.1, .3, .28], [.5, -.12, .16], [-.52, .14, .18]]) { const m = new THREE.Mesh(new THREE.CircleGeometry(s * .42, 28), fPudMat); m.rotation.x = -Math.PI / 2; m.position.set(dx, 0, dz); m.scale.set(1, .8 + Math.abs(dx) * .3, 1); fPud.add(m); }
+  const fAx = th => V(-Math.sin(th), Math.cos(th), 0);
+  const fLow = () => { const a = fAx(fs.th), s = Math.sqrt(Math.max(0, 1 - a.y * a.y)); return Math.min(fs.p.y - a.y * BK.h / 2 - BK.r0 * s, fs.p.y + a.y * BK.h / 2 - (BK.r1 + .012) * s); };
+  const fPlace = () => { bucketHome.position.copy(fs.p); bucketHome.quaternion.setFromEuler(new THREE.Euler(0, 0, fs.th)).multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), fs.psi)); };
+  function fSplash(x, y, z, n, up) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = x + gauss() * .12; mp[i * 3 + 1] = y; mp[i * 3 + 2] = z + gauss() * .12;
+    mv[i * 3] = gauss() * 1.8; mv[i * 3 + 1] = up * (.3 + Math.random()); mv[i * 3 + 2] = gauss() * 1.8; ml[i] = .7 + Math.random() * .3; } }
+  function fallStep(now, dt) {
+    if (REDUCED) return;
+    if (fs.ph === 0 && !fs.base && introOver) fs.base = now;
+    if (fs.ph === 7) { // a reload for a new window shape: it already fell
+      fs.p.set(LEDGE.x, GROUND + .3, .9); fs.th = -(Math.PI / 2 + FDELTA); fs.psi = 0; bucket.position.set(0, -BK.h / 2, 0); bucketTip.position.set(0, 0, 0); bucketTip.rotation.set(0, 0, 0); fPlace(); coat.visible = false; fPud.position.set(fs.p.x, GROUND + .006, fs.p.z); fPud.visible = true; fPud.scale.setScalar(1); fs.ph = 6; }
+    if (fs.ph === 6) { fPudMat.color.copy(PAINT).multiplyScalar(.7); coat.visible = false; return; }
+    if (fs.ph < 2) {
+      const atStart = introOver && Math.abs(scrollY - upPx()) < innerHeight * .5;
+      if (introOver && scrollY > upPx() + innerHeight * .9) fs.away = true;
+      if (fs.ph === 0 && introOver) {
+        const due = fs.base + FN * 1000 - (FHINT ? FHINT_S * 1000 : 0), back = fs.away && atStart;
+        if ((FMODE === "back" && back) || (FMODE === "both" && back) || (FMODE !== "back" && now >= due && atStart && !fs.away)) { fs.ph = 1; fs.at = now; fs.go = now + (FHINT ? FHINT_S * 1000 : 0); } }
+      if (fs.ph === 1) { const t = (now - fs.at) / 1000, ramp = Math.min(1, t / .4); fs.rock = FHINT ? .045 * ramp * Math.abs(Math.sin(t * 13)) * (1 - .3 * Math.sin(t * 5)) : 0; bucketTip.rotation.z += fs.rock; bucketHome.position.x = LEDGE.x + (FHINT ? .006 * ramp * Math.sin(t * 29) : 0);
+        if (now >= fs.go) { // from here on the pail is one body: its centre, its angle, its speed
+          fs.p.copy(bucket.localToWorld(V(0, BK.h / 2, 0))); fs.th = -1.52; fs.psi = 0; fs.R = fs.p.y - CAPTOP; fs.v.set(0, 0, 0);
+          bucketHome.position.set(0, 0, 0); bucketTip.position.set(0, 0, 0); bucketTip.rotation.set(0, 0, 0); bucket.position.set(0, -BK.h / 2, 0); fs.ph = 2; fs.t0 = now; fPlace(); } }
+      if (fs.ph < 2) return; }
+    dt = Math.min(dt, .033); const p = fs.p, v = fs.v;
+    if (fs.ph === 2) { v.z += FSLIDE * dt; p.z += v.z * dt; if (p.z >= CAPFRONT) { fs.ph = 3; fs.phi = 0; fs.phiV = v.z / fs.R; } } // pushed along the cap until its weight passes the edge
+    else if (fs.ph === 3) { fs.phiV += FG * Math.sin(fs.phi) / fs.R * dt + .6 * dt; fs.phi += fs.phiV * dt; fs.th -= .6 * dt; // rolls over the edge: weight on the corner, then it lets go
+      p.set(p.x, CAPTOP + fs.R * Math.cos(fs.phi), CAPFRONT + fs.R * Math.sin(fs.phi)); fs.psi += fs.phiV * dt * .7;
+      if (fs.R * fs.phiV * fs.phiV > FG * Math.cos(fs.phi) * .8 || fs.phi > 1.1) { v.set(0, -fs.R * fs.phiV * Math.sin(fs.phi), fs.R * fs.phiV * Math.cos(fs.phi)); fs.w = 2.4; fs.ph = 4; fs.hV = -4; } }
+    else if (fs.ph === 4) { v.y -= FG * dt; p.addScaledVector(v, dt); fs.th += fs.w * dt; fs.psi += .8 * dt;
+      if (fLow() <= GROUND && v.y < 0) { // the first hit: it bounces once, low
+        const sp = -v.y; p.y += GROUND - fLow(); v.y = sp * FREST; v.z *= .55; v.x = fs.w * .22; fs.w *= -.3; fs.hV += 9; fs.ph = 5; fs.bounces = 1; fs.t0 = now;
+        fSplash(p.x, GROUND + .02, p.z, 70, 2.2); fPud.position.set(p.x, GROUND + .006, p.z); fPud.visible = true; fPud.userData.at = now; fPudMat.color.copy(PAINT).multiplyScalar(.7); fPud.scale.setScalar(.01); coat.visible = false; film.visible = true;
+        try { sessionStorage.setItem("bkfell", "1"); } catch (e) {} } }
+    else if (fs.ph === 5) { const wrap = fs.th - Math.round(fs.th / (2 * Math.PI)) * 2 * Math.PI, tgt = (wrap > 0 ? 1 : -1) * (Math.PI / 2 + FDELTA);
+      fs.w += (-45 * (wrap - tgt) - 6.5 * fs.w) * dt; fs.th += fs.w * dt;
+      if (fLow() > GROUND + .002 || v.y > 0) v.y -= FG * dt;
+      p.addScaledVector(v, dt);
+      if (fLow() < GROUND) { const sp = -v.y; p.y += GROUND - fLow(); if (v.y < 0) { if (sp > .7) { v.y = sp * FREST; fs.hV += 3; fs.bounces++; } else v.y = 0; } }
+      const g = Math.hypot(v.x, v.z), onG = fLow() < GROUND + .004 && v.y <= 0; if (onG && g > 0) { const d = Math.min(g, FROLL * dt); v.x -= v.x / g * d; v.z -= v.z / g * d; }
+      fs.psi += (Math.sign(fAx(fs.th).x) || 1) * v.z / ((BK.r0 + BK.r1) / 2) * dt; // rolling on its side turns the handle and rings round
+      if (now - fs.t0 > 900 && Math.abs(wrap - tgt) < .004 && Math.abs(fs.w) < .02 && Math.hypot(v.x, v.z) < .01 && onG) { fs.ph = 6; fs.th = tgt; fs.hV = 0; } }
+    // the handle flops loose on its pivot, knocks the pail wall at its stops
+    fs.hV += (-26 * fs.hOff - 2.2 * fs.hV) * dt; fs.hOff += fs.hV * dt; if (fs.hOff > 1.05) { fs.hOff = 1.05; fs.hV *= -.35; } if (fs.hOff < -1.05) { fs.hOff = -1.05; fs.hV *= -.35; } handle.rotation.x = -1.25 + fs.hOff;
+    if (fs.ph >= 5) fPud.scale.setScalar(Math.max(.01, 1 - Math.exp(-(now - fPud.userData.at) / 1000 / .45)));
+    fPlace(); }
   function intro(now, dt) {
     const since = (now - t0) / 1000; wallUpload(); if (introOver) LATE.start(); // the bucket has tipped and the pour is over: now the rest is asked for (not during the pour, which keeps the frames to itself)
     if (!goAt) {
@@ -228,7 +284,7 @@
       column(inflow, top, top.clone().add(V(0, 9, 0)), Math.max(1e-4, r)); } // no splash while it fills: on the black start the drops drift off as stray dots
     // the bucket tips: from where the visitor left it, all the way over on its side
     const k = cl(ic / .45), ang = goAt ? tilt0 + (1.52 - tilt0) * (k < 1 ? sm(k) * (1 + .12 * Math.sin(k * Math.PI)) : 1) : tilt;
-    bucketTip.rotation.z = -ang;
+    bucketTip.rotation.z = -ang; if (goAt && introOver) fallStep(now, dt);
     // the paint surface stays level and sloshes a little behind the bucket
     sloshV += (-(slosh - ang) * 70 - sloshV * 6) * dt; slosh += sloshV * dt;
     surface.visible = false;

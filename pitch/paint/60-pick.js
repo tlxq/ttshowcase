@@ -100,7 +100,7 @@
     for (const M of NARROW ? [MURALS.narrow, MURALS.wide] : [MURALS.wide, MURALS.narrow]) { /* this screen's mural first: CLEAR[0] is the title (pickTest) */ const lx = -(M.w / 2 + .2) - .55; b.push([-M.w / 2 - m, M.cy - M.h / 2 - m, M.w / 2 + m, M.cy + M.h / 2 + m], [lx - 1.2, WALL_TOP - 2, lx + 1.6, WALL_TOP]); }
     if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); }
     const calm = .6, box = o => { const c = new THREE.Box3().setFromObject(o); return [c.min.x - m, c.min.y - m, c.max.x + m, c.max.y + m]; };
-    b.push([eU(E.flyer[0]) - calm, GROUND - .2, eU(E.flyer[2]) + calm, eV(E.flyer[1]) + calm], box(vWords), box(vCan3), ...BOMB_CLEAR); return b; }
+    b.push([eU(E.flyer[0]) - calm, GROUND - .2, eU(E.flyer[2]) + calm, eV(E.flyer[1]) + calm], box(vWords), box(vCan3), ...BOMB_CLEAR); b.push([LEDGE.x - 1.9, GROUND - .3, LEDGE.x + 1.9, GROUND + 1.5]); /* where the bucket lands and lies (the fall) */ return b; }
   const inArea = (x, y) => [cl(x, AREA.x0 + FRAME.w / 2, AREA.x1 - FRAME.w / 2), cl(y, AREA.y0 + FRAME.h / 2, AREA.y1 - FRAME.h / 2)];
   const hits = (x, y) => c => x + FRAME.w / 2 > c[0] && x - FRAME.w / 2 < c[2] && y + FRAME.h / 2 > c[1] && y - FRAME.h / 2 < c[3];
   const keptBy = (x, y) => CLEAR.some(hits(x, y)) ? "clear" : HELD.some(hits(x, y)) ? "held" : null, kept = (x, y) => !!keptBy(x, y); // HELD: where a waiting tag of someone else is (the store); it stays lit, only the frame turns yellow
