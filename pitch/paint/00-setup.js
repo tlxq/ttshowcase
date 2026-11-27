@@ -63,7 +63,7 @@
   // but the page is shorter: a wall holds ~20-25 vh of scroll, a move between walls about half what it took. PACE: [sv, vh down the page below the park];
   // straight between pairs, so a move keeps its own easing. The checks scroll with svY(sv), which reads it.
   const PACE = [[0, 0], [60, 45], [240, 70], [304, 90], [340, 95], [416, 145], [486, 170], [529, 190], [548, 195], [612, 217], [656, 230], [700, 248], /* 612-656: through the garage door, a little quicker */ [725, 262], [770, 290], [795, 310],
-    [840, 340], [865, 360], [910, 390], [935, 410], [1045, 460], [1058, 485], [SV_MAX - 10, 535], [SV_MAX, 543]], WALK = PACE[PACE.length - 1][1];
+    [840, 340], [865, 360], [910, 390], [935, 410], [1045, 460], [1058, 485], /* the street past EDGE (Tom 11-27, audit N-2): the camera walks 16 m along a dark street to the end wall; it had 50 vh, 23 of them in the black middle, now 14 at one even rate (the move itself is eased in 80-admin.js) */ [SV_MAX - 10, 499], [SV_MAX, 507]], WALK = PACE[PACE.length - 1][1];
   const paceOf = (v, a, b) => { if (v <= PACE[0][a]) return PACE[0][b]; for (let i = 1; i < PACE.length; i++) if (v <= PACE[i][a]) { const [p, q] = [PACE[i - 1], PACE[i]]; return p[b] + (q[b] - p[b]) * (v - p[a]) / (q[a] - p[a]); } return PACE[PACE.length - 1][b]; };
   const UP = 90, TOP = 50, PAGE = TOP + UP + WALK + 100, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / PAGE, topPx = () => track.offsetHeight * TOP / PAGE;
   track.style.height = PAGE + "vh"; // the stylesheet says the same, for the first paint

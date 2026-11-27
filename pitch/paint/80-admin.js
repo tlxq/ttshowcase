@@ -219,8 +219,8 @@
     if (!outWay) { const [P0, L0] = OUT_FROM, [P1, L1] = EDGE_STOP; outWay = glide(P0, L0, P1, L1, [V(EXIT_X - 1.2, 0, -1.2), V(EXIT_X, 0, .3), V(EXIT_X + .15, 0, 3), V(EXIT_X + 4.8, 0, 7.4)] /* straight out through the middle of the door first, away from both jambs, then across to the fence */, OUT_TURN); }
     glideAt(outWay, t, cp, look); }
   const KEYS = [...U4.slice(1, 3).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)])], KEY_END = [1058, SV_MAX - 10, ...BARE_T]; /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */
-  const keyTo = (sv, cp, look, [a, b, P, L]) => { const k = sm(cl((sv - a) / (b - a))); if (k > 0) { cp.lerp(P, k); look.lerp(L, k); } };
-  function endCam(sv, cp, look) { wayIn(sv, cp, look); KEYS.forEach(k => keyTo(sv, cp, look, k)); wayOut(sv, cp, look); keyTo(sv, cp, look, KEY_END); }
+  const keyTo = (sv, cp, look, [a, b, P, L], ease = sm) => { const k = ease(cl((sv - a) / (b - a))); if (k > 0) { cp.lerp(P, k); look.lerp(L, k); } };
+  function endCam(sv, cp, look) { wayIn(sv, cp, look); KEYS.forEach(k => keyTo(sv, cp, look, k)); wayOut(sv, cp, look); keyTo(sv, cp, look, KEY_END, glideEase); } // the last move on the street past EDGE has the garage doors' pace: slow at its ends, never standing still, never a crawl (Tom 11-27, audit N-2: the smoothstep it had made the middle of a long dark street fastest and the scroll for it was long)
   function endAt(now, sv, cp, look) { shopAt(now, sv, cp, look); const cx = cp.x;
     edgeL.intensity = 5 * sm(cl((sv - 850) / 40)); siteM.emissiveIntensity = 2.6 * sm(cl((sv - 850) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
     scene.fog.color.copy(FOG0); sky.color.copy(SKY0);

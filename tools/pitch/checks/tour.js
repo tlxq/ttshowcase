@@ -9,6 +9,10 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const go = sv => page.evaluate(sv => scrollTo(0, svY(sv)), sv);
   for (const sv of [128, 432, 540, 590, 615, 700, 770, 840, 910, 960, 995, 1045, 1110, 1180]) { await go(sv); await page.waitForTimeout(sv >= 700 ? 3200 : 1500);
     await page.screenshot({ path: '__SHOTS__pitch-' + W + '-' + sv + '.png' }); }
+  // the street past EDGE (Tom 11-27, audit N-2): its dark middle (sv 1104-1184, nothing lit on it) was 23 % of the screen's height of scroll, it is now a quarter of that; and the way never stands still (every 10 sv moves the page)
+  { const ys = await page.evaluate(() => { const o = []; for (let sv = 1058; sv <= 1230; sv += 10) o.push(svY(sv)); return { o, dark: svY(1184) - svY(1104), H: innerHeight }; });
+    res.dark = Math.round(ys.dark); if (ys.dark > .08 * ys.H) errs.push('the dark street past EDGE (sv 1104-1184) is ' + Math.round(ys.dark) + ' px of scroll, more than 8 % of the screen (' + Math.round(.08 * ys.H) + ' px): a long black walk');
+    for (let i = 2; i < ys.o.length; i++) if (ys.o[i] - ys.o[i - 1] < 1) errs.push('the street past EDGE has no scroll between sv ' + (1058 + (i - 1) * 10) + ' and ' + (1058 + i * 10) + ': it would feel stuck'); }
   // Leave your tag (Tom 11-23: no end landing): the words and the can on the visitors' wall. The form lives on the flyer the Write to me sticker opens.
   await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(2500);
   for (let i = 0; i < 60 && (await page.evaluate(() => document.getElementById('leaveUp').style.display)) !== 'block'; i++) await page.waitForTimeout(200);
