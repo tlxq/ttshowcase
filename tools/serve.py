@@ -34,7 +34,7 @@ with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "vercel
 # Only plain paths and a "(.*)" end mean the same here as in Vercel's path-to-regexp; anything else stops the server
 # instead of quietly matching something else.
 for source, _ in HEADER_BLOCKS:
-    if not re.fullmatch(r"/[A-Za-z0-9/_-]*(\(\.\*\))?", source):
+    if not re.fullmatch(r"/[A-Za-z0-9/._-]*(\(\.\*\))?", source):
         sys.exit(f"serve.py: vercel.json header source {source} isn't a plain path or path(.*): teach serve.py how Vercel reads it")
 HEADER_BLOCKS = [(re.compile(re.escape(s.removesuffix("(.*)")) + (".*" if s.endswith("(.*)") else "")), h) for s, h in HEADER_BLOCKS]
 

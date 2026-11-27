@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { pageTitle } from "@/head/head";
 import { posterFont } from "@/look/posterFont";
 import { TlxqMark } from "@/look/TlxqMark";
 import "./privacy.css";
 
 export const metadata: Metadata = {
-  title: "Privacy, Tom Larsson",
+  title: pageTitle("Privacy"),
   description: "What ttdevs.com keeps from the mail form and the wall's tags, and what it doesn't.",
   alternates: { canonical: "https://ttdevs.com/privacy" },
 };
