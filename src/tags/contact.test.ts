@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { contact, mailHash, MAIL_PER_ADDRESS, type ContactDeps } from "../../api/contact.ts";
+import { contact, mailHash, MAIL_PER_ADDRESS, PLAIN, type ContactDeps } from "../../api/contact.ts";
 
 const SECRET = "x".repeat(40);
 
@@ -221,4 +221,26 @@ test("a plain post from another site is refused", async () => {
 test("the JSON path still answers JSON", async () => {
   const r = await world().post(send(letter));
   assert.deepEqual(await r.json(), { sent: true });
+});
+
+test("the sent page escapes the address it names", async () => {
+  const w = world();
+  const r = await w.post(plain({ ...letter, email: 'a"<b>@x.co' }));
+  const html = await r.text();
+  assert.ok(!html.includes("<b>@x.co"), "the address is put on the page unescaped");
+});
+
+test("a plain post from another site says the form didn't arrive, not that the mail service failed", async () => {
+  const w = world();
+  const r = await w.post(plain(letter, { Origin: "https://evil.example" }));
+  assert.equal(r.status, 400);
+  const html = await r.text();
+  assert.ok(html.includes(PLAIN.broken.replace("'", "&#39;")));
+  assert.deepEqual(w.mails, []);
+});
+
+test("the trap field's thank-you names no address when none was given", async () => {
+  const r = await world().post(plain({ ...letter, email: "", website: "http://spam" }));
+  const html = await r.text();
+  assert.ok(!html.includes(PLAIN.sent), "an empty address is named");
 });

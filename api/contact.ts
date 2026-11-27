@@ -109,6 +109,8 @@ export const PLAIN = {
   back: "Back to the site",
   // The browser check needs JavaScript, so without it this is the reason, not "reload".
   robot: "The browser check didn't pass. It needs JavaScript.",
+  // A post that came from another site, or that could not be read.
+  broken: "The form didn't arrive whole.",
 };
 
 const esc = (s: string) =>
@@ -120,8 +122,15 @@ const esc = (s: string) =>
 /** The site's one token file, put on the page as is; the page's own rules only use its values.
  * vercel.json ships the file with this function. */
 let tokens: string | undefined;
-const tokenCss = () =>
-  (tokens ??= readFileSync(join(process.cwd(), "src/design/tokens.css"), "utf8"));
+const tokenCss = () => {
+  // The mail may already be sent when the page is built: a missing file must cost the look, never the answer
+  // (a 500 here would make the visitor send again, and the message would arrive twice).
+  try {
+    return (tokens ??= readFileSync(join(process.cwd(), "src/design/tokens.css"), "utf8"));
+  } catch {
+    return "";
+  }
+};
 
 /** The page's look, built only from tokens.css. */
 export const ANSWER_CSS =
@@ -136,9 +145,16 @@ function answerPage(v: Verdict, email: string, message: string): Response {
   let title: string, body: string;
   if (!v.error) {
     title = PLAIN.sentTitle;
-    body = `<h1>${esc(PLAIN.sentTitle)}</h1><p>${esc(PLAIN.sent)}${esc(email)}.</p>`;
+    // no address to name (the trap field's thank-you): the heading alone
+    body =
+      `<h1>${esc(PLAIN.sentTitle)}</h1>` + (email ? `<p>${esc(PLAIN.sent)}${esc(email)}.</p>` : "");
   } else {
-    const why = v.error === "robot" ? PLAIN.robot : mailWords.why[v.error] || mailWords.other;
+    const why =
+      v.error === "robot"
+        ? PLAIN.robot
+        : v.error === "bad-request"
+          ? PLAIN.broken
+          : mailWords.why[v.error] || mailWords.other;
     title = mailWords.lead.trim();
     body =
       `<h1>${esc(title)}</h1><p>${esc(why)}</p><p>${esc(PLAIN.notSent)}</p>` +
