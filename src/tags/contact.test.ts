@@ -235,7 +235,7 @@ test("a plain post from another site says the form didn't arrive, not that the m
   const r = await w.post(plain(letter, { Origin: "https://evil.example" }));
   assert.equal(r.status, 400);
   const html = await r.text();
-  assert.ok(html.includes(PLAIN.broken.replace("'", "&#39;")));
+  assert.ok(html.includes(PLAIN.broken.replace(/'/g, "&#39;")));
   assert.deepEqual(w.mails, []);
 });
 
