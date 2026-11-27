@@ -211,3 +211,4 @@ html.flow .stripe { opacity: 0; visibility: hidden; }
 .stripe span.on { opacity: 1; color: var(--look-text); }
 @media (max-aspect-ratio: 4/5) { .stripe span { font-size: var(--look-stripe-name-phone); top: 26px; } }
 @media (prefers-reduced-motion: reduce) { .stripe span { transition: none; } }
+.start h2, .start .go { visibility: hidden; } /* the typed name and the second hint are gone from the start (Tom 11-28): the lit bucket carries its own hint; the name comes back as the painted piece */

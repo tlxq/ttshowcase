@@ -179,7 +179,7 @@
     tf(stGo, "g.opacity", startOpen && !goAt ? "1" : "0"); } // the loading screen (21-loading.js) is drawn from the top of this, on its own canvas, over all of this until it has run off
   const stW = new Map(); let stBox = [0, 0, 0, 0];
   const onBucket = e => e.clientX >= stBox[0] && e.clientX <= stBox[2] && e.clientY >= stBox[1] && e.clientY <= stBox[3];
-  window.bucketAt = () => ({ x: (stBox[0] + stBox[2]) / 2, y: (stBox[1] + stBox[3]) / 2 }); // the checks click the bucket, not the middle
+  window.bucketBox = () => stBox; window.bucketAt = () => startOpen ? ({ x: (stBox[0] + stBox[2]) / 2, y: (stBox[1] + stBox[3]) / 2 }) : ({ x: 0, y: 0 }); /* (pitch/start) 0,0 until the paint has run off: the checks that wait for the bucket wait for the hand-over too */ // the checks click the bucket, not the middle
   function startLayout(W, H, gu) { bucketHome.updateWorldMatrix(true, false); camera.updateMatrixWorld(); // placed now, not as of the last render: the first frames come before it
     const P = q => { const v = bucketHome.localToWorld(q).project(camera); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; };
     const [cx] = P(V(0, BK.h * .5, 0)), [ex] = P(V(BK.r1 + .06, BK.h * .5, 0)), [, ty] = P(V(0, BK.h + .12, 0)), [, by] = P(V(0, -.05, 0)), room = cx - Math.abs(ex - cx) - gu, AR = .73;
@@ -297,18 +297,19 @@
     // while it fills: the paint level as a number (nothing in the first second); when full: what to do (signum L1, L2)
     const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000);
     const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
-    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>Tom Larsson &middot; Product engineer</b>${txt}`; } // fixed text: the label's own words and a number, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
+    if (showB && txt !== tagText) { tagText = txt; tagBucket.textContent = txt; } // fixed text: the label's own words and a number, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
-    veilU.uIc.value = ic < 0 ? -9 : ic; veilU.uAll.value = startDay = sm(cl((ic - 1.1) / 1.5)); skyU.uVeil.value = startDay; cityFar.material.opacity = startDay;
-    const lk = ic < 0 ? 0 : sm(cl((ic - .6) / 1.1)), flick = lk > 0 && lk < .6 && Math.random() < .3 ? .2 : 1;
+    veilU.uIc.value = ic < 0 ? -9 : ic; veilU.uAll.value = startDay = Math.max(sm(cl((ic - 1.1) / 1.5)), startLit); skyU.uVeil.value = startDay; cityFar.material.opacity = startDay;
+    const lk = Math.max(ic < 0 ? 0 : sm(cl((ic - .6) / 1.1)), startLit), flick = lk > 0 && lk < .6 && Math.random() < .3 ? .2 : 1;
     lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * lampOn * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2))));
     // after the tip the work light widens and follows the paint's front along the top, so the sheet is seen coming down
     { const k = ic < 0 ? 0 : sm(cl((ic - .25) / .6)), fx = Math.min(SPAN - .6, LEDGE.x0 + Math.max(0, ic - LEDGE.tip - .2) * LEDGE.spread - .6);
       const tx = LEDGE.x + .1 + (fx - LEDGE.x - .1) * k, ty = WALL_TOP + .2 - (.2 + SB * .8) * k;
       workAt.x += (tx - workAt.x) * Math.min(1, dt * 5); workAt.y += (ty - workAt.y) * Math.min(1, dt * 5);
       work.target.position.set(workAt.x, workAt.y, -.17 + .17 * k); work.position.set(workAt.x + .8, WALL_TOP + 4.2, 1.6 + 1.2 * k); work.angle = .2 + .22 * k; }
+    { const lt = startLit; if (lt > 0) { work.angle += .5 * lt; work.intensity *= 1 + 1.6 * lt; work.target.position.y -= 1.3 * lt; work.target.position.x -= .3 * lt; work.penumbra = .9; } } // the hand-over (pitch/start): the work light widens and drops so the wall under the ledge is lit, not only the bucket
     return ic;
   }
   const toWorld = (x, y) => V(-PW / 2 + x / PX, PCY + PH / 2 - y / PX, 0);
