@@ -44,6 +44,8 @@
   --front-code: "JetBrains Mono", ui-monospace, Menlo, monospace;
   /* The progress stripe (Tom 11-26, pick B): a sprayed stripe along the top that fills as you walk, the area's name stencilled under it.
      Its height, the gap it keeps to the screen's edge, the name's size (laptop, phone) and the two colours its canvas draws. */
+  /* the Write to me sticker's left edge, in from the right of the screen: plates and bars on a phone end before it */
+  --look-sticker-left: 112px;
   --look-stripe: 74px;
   --look-stripe-gap: 14px;
   --look-stripe-name: 22px;

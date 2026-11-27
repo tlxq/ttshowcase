@@ -137,7 +137,7 @@
   const work = new THREE.SpotLight(0xffe6cc, 0, 14, .2, .8, 1.4); scene.add(work, work.target);
   work.position.set(LEDGE.x + .9, WALL_TOP + 4.2, 1.6); work.target.position.set(LEDGE.x + .1, WALL_TOP + .2, -.17);
   const INTRO = NARROW ? [V(LEDGE.x + .6, WALL_TOP + 2.6, 3.2), V(LEDGE.x + .2, WALL_TOP + .2, -.17)] : [V(LEDGE.x - .2, WALL_TOP + 2.4, 3.9), V(LEDGE.x - 1.3, WALL_TOP + .75, -.17)]; // laptop (Tom 11-25): the bucket low in the bottom-right corner, Tom's photo on the left, the name across the top // laptop: the bucket right of centre, Tom's photo on the left
-  const CAM_IN = [.4, 0], FREE_AT = 3.2; // camera starts moving, finishes (set when the pour is known); FREE_AT: on the pour clock the scroll is free here, ~4 s after the tap, while the paint still runs
+  const CAM_IN = [.4, 0], FREE_AT = 2; // camera starts moving, finishes (set when the pour is known); FREE_AT: on the pour clock the scroll is free here, ~2.5 s after the tap (Tom 11-27: it was 4 s), while the paint still runs
   // the visitor tips the bucket: one click or tap, or Enter/Space. Until then it waits, rocking a little now and then.
   let goAt = 0, level = 0, skipped = false, introOver = false, coatMax = 0, readyAt = 0, tilt = 0, tiltV = 0, tilt0 = 0, slosh = 0, sloshV = 0, rocks = 0;
   try { history.scrollRestoration = "manual"; } catch (e) {} scrollTo(0, upPx());
@@ -271,6 +271,7 @@
     PAINT.set("#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("")); bounce.color.copy(PAINT); SPRAY = rgb.join(","); rgb.forEach((v, i) => mistCol[i] = v / 255);
     // by day the wet gloss goes: the dark paint's mirror coat reflected the bright sky and washed it out to a pale blue (a clear coat and the sky's reflection on a colour this dark was most of what showed)
     pourMat.clearcoat = .9 - .8 * k; pourMat.envMapIntensity = .9 - .75 * k;
+    band.material.color.copy(PAINT); capMat.color.copy(PAINT); // (Tom 11-27) the can's band and cap are the paint's colour too: they were copied once, at night's blue
     paintIn.color.copy(PAINT); paintCoat.color.copy(PAINT).multiplyScalar(.4); filmMat.color.copy(PAINT).multiplyScalar(.45); }
 
   function spray(x, y, p, amount) {

@@ -42,13 +42,13 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (!res.on.on || res.on.tags.length !== 2 || !res.on.tags.every(t => t.drawn) || !res.on.chip) errs.push('the wall did not show Tom\'s view with both tags: ' + JSON.stringify(res.on));
   if (res.on.chipNote !== 'Admin · 1 waiting') errs.push('the admin bar did not count the waiting tag: ' + res.on.chipNote);
   // Tom 11-26 (S23): the bar ran under the Write to me sticker in the bottom-right corner. On a phone it ends before the sticker's left edge
-  // (112 px in from the right, as 80-admin.js keeps its own plates clear of it) at 360, 390 and 412 wide, and its button stays 48 px tall.
+  // (--look-sticker-left in from the right, as 80-admin.js keeps its own plates clear of it) at 360, 390 and 412 wide, and its button stays 48 px tall.
   res.chipBox = [];
   for (const w of wide ? [W] : [360, 390, 412]) {
     if (w !== W) { await page.setViewportSize({ width: w, height: H }); await page.waitForTimeout(500); }
-    const r = await page.evaluate(() => { const a = document.getElementById('adm').getBoundingClientRect(), bs = [...document.querySelectorAll('#adm button')].map(b => Math.round(b.getBoundingClientRect().height)); return { w: innerWidth, left: Math.round(a.left), right: Math.round(a.right), bottom: Math.round(a.bottom), minBtn: Math.min(...bs) }; });
+    const r = await page.evaluate(() => { const a = document.getElementById('adm').getBoundingClientRect(), bs = [...document.querySelectorAll('#adm button')].map(b => Math.round(b.getBoundingClientRect().height)); return { sticker: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--look-sticker-left')), w: innerWidth, left: Math.round(a.left), right: Math.round(a.right), bottom: Math.round(a.bottom), minBtn: Math.min(...bs) }; });
     res.chipBox.push(r);
-    if (!wide && r.right > r.w - 112) errs.push('the admin bar runs under the Write to me sticker at ' + r.w + ' wide: ' + JSON.stringify(r));
+    if (!wide && r.right > r.w - r.sticker) errs.push('the admin bar runs under the Write to me sticker at ' + r.w + ' wide: ' + JSON.stringify(r));
     if (r.minBtn < 48) errs.push('the admin bar\'s button is under 48 px at ' + r.w + ' wide: ' + JSON.stringify(r)); }
   if (!wide && page.viewportSize().width !== W) { await page.setViewportSize({ width: W, height: H }); await page.waitForTimeout(500); }
   await page.screenshot({ path: '__SHOTS__pitch-' + W + '-admin-chip.png' });

@@ -129,6 +129,7 @@
     sky.color.lerp(SKYM, k); sky.groundColor.lerp(GNDM, k); sky.intensity += (.75 - sky.intensity) * k; sun.intensity = 2.1 * k; scene.background.lerp(BGM, k); scene.fog.color.lerp(FOGM, k);
     lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * k); skyU.uBg.value.copy(scene.background); }
   document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
+  const SUN_START = 1.2; // how much stronger the sun lights the start wall by day (a share of its own strength)
   function morning(now, sv, cp, look) { // after endCam: past EDGE, in close to the bare wall, the change to the visitors' wall, the light
     const dn = dayNow(); paintTone(dn); // the spray's colour follows the clock, as the light does (the clock read once a frame)
     // by day the start wall's haze is thinner (as at the end, where the painting is 16 m away and the opening's haze would wash it out): the start's line is 16 m from the camera and the day's pale fog
@@ -149,6 +150,8 @@
     endReady = false; // no end landing any more (Tom 11-23): Leave your tag lives on the visitors' wall
     if (document.documentElement.dataset.endReady !== (endReady ? "1" : "0")) document.documentElement.dataset.endReady = endReady ? "1" : "0"; // the checks wait for it
     endWallState(now, false);
+    { const up = upPx(), tp = topPx(), lf = introOver && up > tp ? cl(1 - (scrollY - tp) / (up - tp)) : 0; // how far up the page, past the start: the visitors' wall at the top keeps its light (its pale words need the dimmer wall)
+      sun.intensity *= 1 + SUN_START * (sv >= CUT ? 0 : 1 - sm(cl((sv - 12) / 36))) * (1 - sm(cl(lf * 5))); } // (Tom 11-27) the day's start wall is lit brighter: it rendered mid-grey and the dark blue paint on it reached only 2:1; the sun is SUN_START stronger there, and the same by sv 48 as before
     sun.intensity *= 1 - .97 * shop.ins; sky.intensity *= 1 - .6 * shop.ins; } // inside the workshop the day's sun and sky are mostly shut out
   // the camera's way: along the street to the garage door, in through it, a stop in front of each tool on the workshop's back wall, out through the far door,
   // on to EDGE, on towards the sunrise (then morning() cuts to the opening wall).
@@ -187,7 +190,8 @@
     STEN.meshes.forEach((m, k) => { m.position.set(STEN.x + j[0] + (k ? SEAM_D.x : 0), STEN.y + j[1] + (k ? SEAM_D.y : 0), .002); m.rotation.z = j[2]; }); }
   // the way through the workshop (Tom 11-26): to the door, through it, then a stop in front of each tool, out by the far door
   const DOOR_X = (DOOR_A[0] + DOOR_A[1]) / 2, EXIT_X = (DOOR_B[0] + DOOR_B[1]) / 2;
-  const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + 8.2, floor + 1.95, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
+  const TOOL_D = 7.6; // (Tom 11-27) phone: 7.6 m from the wall, not 8.2: a piece fills the screen's width whole, the one next to it is all but out of view, and the scroll pans across (panAt)
+  const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + TOOL_D, floor + 1.95, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
   // the two moves through the door (Tom 11-26, cause D: "the camera dips to the floor going in", and the same coming out): each is ONE glide from one stop to
   // the next, eased once at its ends. The camera moves on a smooth line through the middle of the doorway; its heading and its look up or down are turned as
   // ANGLES (never a point lerped between two walls, which swings past the camera's feet), its height changes evenly: never a dip. `turn` is how far (rad) the
@@ -220,7 +224,9 @@
     glideAt(outWay, t, cp, look); }
   const KEYS = [...U4.slice(1, 3).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)])], KEY_END = [1058, SV_MAX - 10, ...BARE_T]; /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */
   const keyTo = (sv, cp, look, [a, b, P, L], ease = sm) => { const k = ease(cl((sv - a) / (b - a))); if (k > 0) { cp.lerp(P, k); look.lerp(L, k); } };
-  function endCam(sv, cp, look) { wayIn(sv, cp, look); KEYS.forEach(k => keyTo(sv, cp, look, k)); wayOut(sv, cp, look); keyTo(sv, cp, look, KEY_END, glideEase); } // the last move on the street past EDGE has the garage doors' pace: slow at its ends, never standing still, never a crawl (Tom 11-27, audit N-2: the smoothstep it had made the middle of a long dark street fastest and the scroll for it was long)
+  // phone (Tom 11-27): from ttoolbox's stop to tthermal's the camera pans along the wall, even in the scroll (as the street wall's phone pan does, 90-rail.js), instead of holding at a stop and sliding to the next
+  const PAN_A = IN_B, PAN_B = OUT_A, panAt = (sv, cp, look) => { if (sv <= PAN_A) return; const u = cl((paceOf(sv, 0, 1) - paceOf(PAN_A, 0, 1)) / (paceOf(PAN_B, 0, 1) - paceOf(PAN_A, 0, 1))), dx = (U4[2].x - U4[0].x) * u; cp.x += dx; look.x += dx; };
+  function endCam(sv, cp, look) { wayIn(sv, cp, look); if (N_) panAt(sv, cp, look); else KEYS.forEach(k => keyTo(sv, cp, look, k)); wayOut(sv, cp, look); keyTo(sv, cp, look, KEY_END, glideEase); } // the last move on the street past EDGE has the garage doors' pace: slow at its ends, never standing still, never a crawl (Tom 11-27, audit N-2: the smoothstep it had made the middle of a long dark street fastest and the scroll for it was long)
   function endAt(now, sv, cp, look) { shopAt(now, sv, cp, look); const cx = cp.x;
     edgeL.intensity = 5 * sm(cl((sv - 850) / 40)); siteM.emissiveIntensity = 2.6 * sm(cl((sv - 850) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
     scene.fog.color.copy(FOG0); sky.color.copy(SKY0);
@@ -228,14 +234,14 @@
     // (Tom 11-26) a production piece keeps its numbers and plate while it is in view, not only at its stop: inView is how much of its painted box is on the screen
     const seen = u => { const [ax, , oa] = proj(u.B.at(u.bb[0], u.bb[3])), [bx, , ob] = proj(u.B.at(u.bb[2], u.bb[3])); return oa && ob ? Math.max(0, Math.min(innerWidth, bx) - Math.max(0, ax)) / Math.max(1, bx - ax) : 0; };
     const PROD_FROM = U4[0].key - 70, /* (Tom 11-26) the production comes up as the camera clears the door, all three pieces and the title tile together: the wall between two stops is never bare */ inGarage = sv > PROD_FROM && sv < 875, view = U4.map(u => u.tile && inGarage ? seen(u) : 0), most = view.indexOf(Math.max(...view)); // the plate: only the piece most in view has one
-    U4.forEach((u, i) => { const near = u.tile ? view[i] > .5 : Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = u.tile ? inGarage : sv > u.key - 14 && sv < u.leave + 15;
+    U4.forEach((u, i) => { const near = u.tile ? view[i] > (NARROW ? .3 : .5) /* the pan passes a place where two pieces are half in view: one plate stays */ : Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = u.tile ? inGarage : sv > u.key - 14 && sv < u.leave + 15;
       if (introOver && sv > (u.tile ? PROD_FROM : u.key - 14) && !u.start && u.B.ready() && (!u.O || u.O.ready()) && (!u.X || u.X.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1, t0 = .35, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / FADE)), shown = k >= 1;
       if (k > 0 && !u.B.ready()) root.dataset.pops = (+root.dataset.pops || 0) + 1; u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.X) { u.X.m.visible = k > 0; u.X.m.material.opacity = k; } if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE, plate = show && (!u.tile || i === most); [u.el, u.l, u.c].forEach(e => e.style.opacity = plate ? 1 : 0);
         u.on = u.tile ? here && shown && (u.on ? view[i] > 0 : view[i] > .5) : show; u.parts.forEach((p, k) => p.fade(u.on && sec > t0 + .2 + FADE + k * .3)); // numbers sprayed on stay while any of the piece is on the screen
-        if (plate) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - 112, 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (plate) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (plate && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
+        if (plate) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - parseFloat(tok("--look-sticker-left")), 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (plate) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (plate && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");
