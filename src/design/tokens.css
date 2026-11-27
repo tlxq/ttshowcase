@@ -42,6 +42,8 @@
   /* the front's first screen, the code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono */
   --front-name: "Archivo", "Arial Black", sans-serif;
   --front-code: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  /* the Write to me sticker's left edge, in from the right of the screen: its 12 px (right) + 92 px (width) + an 8 px gap. Plates and bars on a phone end before it */
+  --look-sticker-left: 112px;
   /* The progress stripe (Tom 11-26, pick B): a sprayed stripe along the top that fills as you walk, the area's name stencilled under it.
      Its height, the gap it keeps to the screen's edge, the name's size (laptop, phone) and the two colours its canvas draws. */
   --look-stripe: 74px;

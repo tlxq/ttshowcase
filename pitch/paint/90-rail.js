@@ -19,6 +19,7 @@
   let svKeep = -1, svKeepH = 0; // the walk's place, kept across resizes
   const START = 1600, t0 = performance.now(); let last = t0, si = 0, cmx = 0, cmy = 0;
   if (!WL.want) document.documentElement.dataset.wallAt = 1; // no tags on the wall: nothing to wait for (the checks read 0 as never)
+  const SUN_START = 1.2; // how much stronger the sun lights the start wall by day (a share of its own strength)
   const PARK = V(EX - EW / 2 - 1, G3, 1.9), canPos = PARK.clone(), canAim = V();
   renderer.setAnimationLoop(now => {
     const raw = now - last, dt = Math.min(.05, raw / 1000); last = now; const t = now - t0 - START;
@@ -79,6 +80,7 @@
     const drift = now / 1000;
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
     endK = cl((sv - 548) / 30); lamp2At(sv); washAt(sv, lft); endCam(sv, cp, cl_); streetAt(now); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp, cl_); morning(now, sv, cp, cl_);
+    sun.intensity *= 1 + SUN_START * (sv >= CUT ? 0 : 1 - sm(cl((sv - 12) / 36))) * (1 - sm(cl(lft * 5))); // (Tom 11-27) by day the start wall is lit brighter: it rendered mid-grey and the dark blue paint on it reached only 2:1. The sun is SUN_START stronger there (the same as before by sv 48, and at the visitors' wall at the top, whose pale words need the dimmer wall)
     if (railR < 3) railAt(railR, cp, cl_);
     else if (NARROW && sv < PH_END) { const u = cl((paceOf(sv, 0, 1) - PH_V0) / (PH_V1 - PH_V0)), x = PH_X0 + (PH_X1 - PH_X0) * cl((u - .03) / .94); cl_.x += x - cp.x; cp.x = x; } // (Tom 11-27) a phone: one slow pan along the wall, even in the scroll, from the left end to the right end
     // the seam (Tom 11-23): above the pole the camera rests on the visitors' wall (TOP); at the very top the page jumps to its end, which shows

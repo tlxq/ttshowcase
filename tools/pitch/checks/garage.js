@@ -61,6 +61,8 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   g = await at(625); if (g.open < .95) errs.push('the garage door did not roll up: ' + JSON.stringify(g));
   g = await at(660, () => { const g = garageTest(); return g.inside >= .5 && g.paintings.every(p => p.shown); }); if (g.inside < .5 || g.cam[2] >= 0) errs.push('the camera did not walk in through the door by 660: ' + JSON.stringify(g));
   { const bare = g.paintings.filter(p => !p.shown).map(p => p.name); if (bare.length) errs.push('the production is not on the wall as the camera clears the door (sv 660), the stretch between two stops is bare: ' + bare.join(', ') + ' not painted yet: ' + JSON.stringify(g.paintings)); } // (Tom 11-26) all three pieces and the title tile come up together as it comes in, so no wall between two stops is bare
+  { let r = null; for (let i = 0; i < 20 && !(r = await page.evaluate(() => window.roundTest ? roundTest() : null)); i++) await page.waitForTimeout(250); // (Tom 11-27) the stack of tyres' shadows are round: the same darkness on a ring along the axes and along the diagonals
+    if (!r) errs.push('the tyres have no shadow to measure (window.roundTest is missing)'); else { res.tyreShadow = r; for (const [k, a] of Object.entries(r)) if (Math.max(...a) < 20 || Math.max(...a) - Math.min(...a) > 40) errs.push("the tyres' " + k + ' shadow is not round: its darkness round the ring is ' + a.join(', ') + ' (along the two axes, then the two diagonals)'); } }
   for (const [sv, i] of [[700, 0], [770, 1], [840, 2]]) { g = await at(sv); const p = g.paintings[i];
     if (!p.shown) errs.push(p.name + ' is not painted at its stop: ' + JSON.stringify(g));
     if (p.bump) errs.push(p.name + " has the street concrete's bumps on the block wall (its joint draws a dark line across the painting)"); if (g.inside < .95) errs.push('at ' + p.name + ' the camera is not inside the workshop: ' + JSON.stringify(g));
@@ -68,6 +70,9 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
     const bad = await nums(p.name, NUMS[p.name]); if (bad) errs.push(bad);
     if (sv === 700) { await at(735); const off = await nums('ttoolbox', NUMS.ttoolbox); if (off) errs.push('between ttoolbox and dot: ' + off); }
   }
+  if (W < 600) { // (Tom 11-27) phone: the stops are closer (the back wall is at z -9.5: a stop 8.2 m from it was z -1.3, now no more than 8 m) and the scroll pans across, one move from ttoolbox's stop to tthermal's, never standing still
+    for (const sv of [700, 770, 840]) if (res.stops[sv].cam[2] > -1.5) errs.push('on a phone the camera at sv ' + sv + ' is ' + (res.stops[sv].cam[2] + 9.5).toFixed(1) + ' m from the back wall, over 8 m: the stop is not close enough');
+    await oneMove('panning', 700, 840); }
   await oneMove('going out', 840, 965); // out through the back door (Tom 11-26: it looked down at the pavement and out over the street, half the screen black): the same one glide, from tthermal's stop to EDGE's
   g = await at(940); if (g.cam[0] < 62 || g.cam[2] < -1.6) errs.push('the back door out is not reached by 940: ' + JSON.stringify(g));
   g = await at(1045); if (g.inside > .05 || g.cam[2] <= 0) errs.push('the way out at the far end did not lead back to the street at EDGE: ' + JSON.stringify(g));

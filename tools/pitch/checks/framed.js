@@ -12,7 +12,7 @@ async page => { const W0 = page.viewportSize().width, H0 = page.viewportSize().h
       await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(sv === 128 || sv === 432 ? 9000 : 4000);
       const r = await page.evaluate(sv => { const W = innerWidth, H = innerHeight, d = p => Math.hypot((p.l + p.r) / 2 - W / 2, (p.t + p.b) / 2 - H / 2);
         const p = window.plateTest.pictures().filter(p => !p.only && !/^the mural/.test(p.name)).sort((a, b) => d(a) - d(b))[0];
-        const pan = W < 600 && (sv === 128 || sv === 432) ; /* a phone pans along the street's wall (Tom 11-27): 5 m of it across the screen, so the piece is whole in height, not in width */ return p && { name: p.name, out: Math.round(Math.max(-p.t, p.b - H, pan ? -1e9 : Math.max(-p.l, p.r - W))) }; }, sv);
+        const pan = W < 600 && (sv === 128 || sv === 432 || sv === 700 || sv === 770 || sv === 840) ; /* a phone pans along the street's wall (Tom 11-27): 5 m of it across the screen, so the piece is whole in height, not in width; and along the garage's back wall from ttoolbox's stop to tthermal's: its three pieces are whole in height at their stops and the pan carries them across, a piece being a little wider than a 360 px screen at 7.6 m */ return p && { name: p.name, out: Math.round(Math.max(-p.t, p.b - H, pan ? -1e9 : Math.max(-p.l, p.r - W))) }; }, sv);
       if (!r) errs.push('no painting in view at stop ' + sv + ' (' + w + ' x ' + h + ')');
       else { seen.push(r.name.split(' ')[0] + ' ' + r.out); if (r.out > 4) errs.push(r.name + ' runs ' + r.out + ' px past the screen at stop ' + sv + ' (' + w + ' x ' + h + ')'); } }
     res.sizes.push(w + 'x' + h + ': ' + seen.join(', ')); }

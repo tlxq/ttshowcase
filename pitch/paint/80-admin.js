@@ -187,7 +187,9 @@
     STEN.meshes.forEach((m, k) => { m.position.set(STEN.x + j[0] + (k ? SEAM_D.x : 0), STEN.y + j[1] + (k ? SEAM_D.y : 0), .002); m.rotation.z = j[2]; }); }
   // the way through the workshop (Tom 11-26): to the door, through it, then a stop in front of each tool, out by the far door
   const DOOR_X = (DOOR_A[0] + DOOR_A[1]) / 2, EXIT_X = (DOOR_B[0] + DOOR_B[1]) / 2;
-  const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + 8.2, floor + 1.95, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
+  const STICKER_LEFT = parseFloat(tok("--look-sticker-left")); if (!(STICKER_LEFT >= 104)) throw new Error("Couldn't read --look-sticker-left from tokens.css (the Write to me sticker's left edge, 104 px at the least)"); // read once at load, as the colours are (tokHex)
+  const TOOL_D = 7.6; // (Tom 11-27) phone: 7.6 m from the wall, not 8.2: a piece fills the screen's width whole, the one next to it is all but out of view, and the scroll pans across (panAt)
+  const toolStop = (x, floor) => N_ ? stop(x, floor + 1.55, WZ + TOOL_D, floor + 1.95, WZ) : stop(x, floor + 1.3, WZ + 7.6, floor + 1.75, WZ);
   // the two moves through the door (Tom 11-26, cause D: "the camera dips to the floor going in", and the same coming out): each is ONE glide from one stop to
   // the next, eased once at its ends. The camera moves on a smooth line through the middle of the doorway; its heading and its look up or down are turned as
   // ANGLES (never a point lerped between two walls, which swings past the camera's feet), its height changes evenly: never a dip. `turn` is how far (rad) the
@@ -222,10 +224,12 @@
     glideAt(outWay, t, cp, look); }
   const KEYS = [...U4.slice(1, 3).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)])], KEY_END = [1058, SV_MAX - 10, ...BARE_T]; /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */
   const keyTo = (sv, cp, look, [a, b, P, L], ease = sm) => { const k = ease(cl((sv - a) / (b - a))); if (k > 0) { cp.lerp(P, k); look.lerp(L, k); } };
+  // phone (Tom 11-27): from ttoolbox's stop to tthermal's the camera pans along the wall, even in the scroll (as the street wall's phone pan does, 90-rail.js), instead of holding at a stop and sliding to the next
+  const PAN_A = IN_B, PAN_B = OUT_A, panAt = (sv, cp, look) => { if (sv <= PAN_A) return; const u = cl((paceOf(sv, 0, 1) - paceOf(PAN_A, 0, 1)) / (paceOf(PAN_B, 0, 1) - paceOf(PAN_A, 0, 1))), dx = (U4[2].x - U4[0].x) * u; cp.x += dx; look.x += dx; };
   // on from the container to the end wall (the bare stretch's view): out along the street, the head turning from the container by way of the street's +x to the wall (the garage doors' pace)
   let sweepW = null; const SWEEP_A = KEY_END[0], SWEEP_B = KEY_END[1];
   function sweepAt(sv, cp, look) { let t = cl((sv - SWEEP_A) / (SWEEP_B - SWEEP_A)); if (t <= 0) return; if (N_) t = Math.pow(t, .6); /* a phone's narrow view held two thirds of the blank container at sv 1076: it leaves sooner */ if (!sweepW || sweepW.ih !== innerHeight) { const [P0, L0] = edgeStop(); sweepW = glide(P0, L0, KEY_END[2], KEY_END[3], [V(SITE.CX + 6, 0, 3), V(SITE.CX + 16, 0, 5)]); sweepW.ih = innerHeight; } glideAt(sweepW, t, cp, look); }
-  function endCam(sv, cp, look) { wayIn(sv, cp, look); KEYS.forEach(k => keyTo(sv, cp, look, k)); wayOut(sv, cp, look); sweepAt(sv, cp, look); } // the last move on the street past EDGE has the garage doors' pace: slow at its ends, never standing still, never a crawl (Tom 11-27, audit N-2: the smoothstep it had made the middle of a long dark street fastest and the scroll for it was long)
+  function endCam(sv, cp, look) { wayIn(sv, cp, look); if (N_) panAt(sv, cp, look); else KEYS.forEach(k => keyTo(sv, cp, look, k)); wayOut(sv, cp, look); sweepAt(sv, cp, look); } // the last move on the street past EDGE has the garage doors' pace: slow at its ends, never standing still, never a crawl (Tom 11-27, audit N-2: the smoothstep it had made the middle of a long dark street fastest and the scroll for it was long)
   function endAt(now, sv, cp, look) { shopAt(now, sv, cp, look); const cx = cp.x;
     siteActive(sv > 815 && sv < 1160); siteOn(sm(cl((sv - 850) / 40))); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
     scene.fog.color.copy(FOG0); sky.color.copy(SKY0);
@@ -233,14 +237,14 @@
     // (Tom 11-26) a production piece keeps its numbers and plate while it is in view, not only at its stop: inView is how much of its painted box is on the screen
     const seen = u => { const [ax, , oa] = proj(u.B.at(u.bb[0], u.bb[3])), [bx, , ob] = proj(u.B.at(u.bb[2], u.bb[3])); return oa && ob ? Math.max(0, Math.min(innerWidth, bx) - Math.max(0, ax)) / Math.max(1, bx - ax) : 0; };
     const PROD_FROM = U4[0].key - 70, /* (Tom 11-26) the production comes up as the camera clears the door, all three pieces and the title tile together: the wall between two stops is never bare */ inGarage = sv > PROD_FROM && sv < 875, view = U4.map(u => u.tile && inGarage ? seen(u) : 0), most = view.indexOf(Math.max(...view)); // the plate: only the piece most in view has one
-    U4.forEach((u, i) => { const near = u.tile ? view[i] > .5 : Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = u.tile ? inGarage : sv > u.key - 14 && sv < u.leave + 15;
+    U4.forEach((u, i) => { const near = u.tile ? view[i] > (NARROW ? .3 : .5) /* the pan passes a place where two pieces are half in view: one plate stays */ : Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = u.tile ? inGarage : sv > u.key - 14 && sv < u.leave + 15;
       if (introOver && sv > (u.tile ? PROD_FROM : u.site ? 820 : u.key - 14) && !u.start && u.B.ready() && (!u.O || u.O.ready()) && (!u.X || u.X.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1, t0 = .35, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / FADE)), shown = k >= 1;
       if (k > 0 && !u.B.ready()) root.dataset.pops = (+root.dataset.pops || 0) + 1; u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.X) { u.X.m.visible = k > 0; u.X.m.material.opacity = k; } if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE, plate = show && (!u.tile || i === most); [u.el, u.l, u.c].forEach(e => e.style.opacity = plate ? 1 : 0);
         u.on = u.tile ? here && shown && (u.on ? view[i] > 0 : view[i] > .5) : show; u.parts.forEach((p, k) => p.fade(u.on && sec > t0 + .2 + FADE + k * .3)); // numbers sprayed on stay while any of the piece is on the screen
-        if (plate) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - 112, 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (plate) pin(u.el, u.l, u.c, u.site ? (NARROW ? V(SITE.CX - .9, u.floor + .05, SITE.ZF - .6) : u.B.at(u.bb[2] - 80, u.bb[3])) : NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (plate && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
+        if (plate) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - STICKER_LEFT, 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (plate) pin(u.el, u.l, u.c, u.site ? (NARROW ? V(SITE.CX - .9, u.floor + .05, SITE.ZF - .6) : u.B.at(u.bb[2] - 80, u.bb[3])) : NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (plate && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");
