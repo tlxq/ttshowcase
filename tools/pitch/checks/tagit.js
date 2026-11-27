@@ -16,6 +16,9 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (!(await toForm())) { errs.push('the morning form never showed, so Tag it was not tested'); return JSON.stringify(res); }
   const toLeft = async () => {}; // one view of the visitors' wall on every screen
   await toLeft(); await page.click('#leaveUp'); await page.waitForTimeout(1700);
+  // the pick step (pointing at a lit part of the wall) is a full-screen flow too: the stripe is already away before the first tap (PR #127 review)
+  res.stripePick = await page.evaluate(() => { const cs = getComputedStyle(document.querySelector('.stripe')); return { visibility: cs.visibility, opacity: cs.opacity, flow: document.documentElement.classList.contains('flow') }; });
+  if (res.stripePick.visibility !== 'hidden' || +res.stripePick.opacity > 0) errs.push('the stripe stays on screen while the pick step is open: ' + JSON.stringify(res.stripePick));
   const spot = await page.evaluate(() => window.pickTest.freeOnScreen()); await page.mouse.click(spot.x, spot.y); await page.waitForTimeout(1500);
   res.locked = await st();
   if (res.locked.stage !== 'draw' || !res.locked.bar || !res.locked.shown) errs.push('a tap on the wall did not open the drawing bar: ' + JSON.stringify(res.locked));
