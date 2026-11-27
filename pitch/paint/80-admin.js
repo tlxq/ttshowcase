@@ -124,10 +124,10 @@
   // the clock light (Tom 11-23): the start wall and the end are lit by the visitor's own time: day 07-18, night 19-06, a blend in 06-07 and 18-19. ?hour=13.5 forces one
   const HOUR_Q = new URLSearchParams(location.search).get("hour");
   function dayNow() { const d = new Date(), h = HOUR_Q !== null && HOUR_Q !== "" && isFinite(+HOUR_Q) ? ((+HOUR_Q % 24) + 24) % 24 : d.getHours() + d.getMinutes() / 60; return sm(cl(h - 6)) * (1 - sm(cl(h - 18))); }
-  function clockLight(k) { skyU.uDay.value = Math.max(0, k); if (k <= 0) return; const n = 1 - k, cf = cityFar.material.color.r; // day: the street light, the work light and the stair lights off, the sun and the morning sky on
-    lamp.intensity *= n; pool.intensity *= n; bulbM.emissiveIntensity *= n; work.intensity *= n; lamp2.intensity *= n; stairLight.intensity *= n; edgeL.intensity *= n; siteM.emissiveIntensity *= n;
-    sky.color.lerp(SKYM, k); sky.groundColor.lerp(GNDM, k); sky.intensity += (.75 - sky.intensity) * k; sun.intensity = 2.1 * k; scene.background.lerp(BGM, k); scene.fog.color.lerp(FOGM, k);
-    lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * k); skyU.uBg.value.copy(scene.background); }
+  function clockLight(k, kd = k, kf = kd) { skyU.uDay.value = Math.max(0, kd); if (kd <= 0) return; const n = 1 - k, nd = 1 - kd, cf = cityFar.material.color.r; // k: the light inside the workshop's own reach, kd: the day out of doors (Tom 11-27, the door view by day was black: the sky, the haze and the site's lamps follow the day, whatever the camera's place) // day: the street light, the work light and the stair lights off, the sun and the morning sky on
+    lamp.intensity *= n; pool.intensity *= n; bulbM.emissiveIntensity *= n; work.intensity *= n; lamp2.intensity *= n; stairLight.intensity *= n; siteLamps.forEach(l => l.intensity *= nd); siteM.emissiveIntensity *= nd; siteLights(nd);
+    sky.color.lerp(SKYM, k); sky.groundColor.lerp(GNDM, k); sky.intensity += (.75 - sky.intensity) * k; sun.intensity = 2.1 * k; scene.background.lerp(BGM, kd); scene.fog.color.lerp(FOGM, kf);
+    lens.uniforms.uAper.value += (.5 - lens.uniforms.uAper.value) * k; cityFar.material.color.setScalar(cf + (1 - cf) * kd); skyU.uBg.value.copy(scene.background); }
   document.documentElement.dataset.day = dayNow().toFixed(2); // the checks read it
   function morning(now, sv, cp, look) { // after endCam: past EDGE, in close to the bare wall, the change to the visitors' wall, the light
     const dn = dayNow(); paintTone(dn); // the spray's colour follows the clock, as the light does (the clock read once a frame)
@@ -145,11 +145,11 @@
       sky.color.copy(SKY0); sky.groundColor.copy(GND0); sky.intensity = .35; sun.intensity = 0; scene.background.copy(BG0); scene.fog.color.copy(FOG0); lens.uniforms.uAper.value = 1; cityFar.material.color.setScalar(.25);
       if (sv >= SV_MAX - 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, 8); // the loop: the page's top shows the same wall, then the pole, the start
       clockLight(dn); }
-    else { endVisit = 0; sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); clockLight(dn * startDay * (1 - shop.ins)); } // by day the sun comes up only as the start's paint shows the wall // the street is in the clock's light all along; inside the workshop it has its own warm light (Tom 11-26)
+    else { endVisit = 0; sun.intensity = 0; sky.groundColor.copy(GND0); scene.background.copy(BG0); { const dv = look.clone().sub(cp), fo = sm(cl((dv.z / Math.max(.001, dv.length()) + .1) / .6)), kd = dn * startDay, k = kd * (1 - shop.ins); clockLight(k, kd, k + (kd - k) * fo); } } // by day the sun comes up only as the start's paint shows the wall // the street is in the clock's light all along; inside the workshop it has its own warm light (Tom 11-26)
     endReady = false; // no end landing any more (Tom 11-23): Leave your tag lives on the visitors' wall
     if (document.documentElement.dataset.endReady !== (endReady ? "1" : "0")) document.documentElement.dataset.endReady = endReady ? "1" : "0"; // the checks wait for it
     endWallState(now, false);
-    sun.intensity *= 1 - .97 * shop.ins; sky.intensity *= 1 - .6 * shop.ins; } // inside the workshop the day's sun and sky are mostly shut out
+    sun.intensity *= 1 - .97 * shop.ins; sky.intensity *= 1 - .6 * shop.ins; siteFill(skyU.uDay.value * shop.ins); } // the street outside the door still has its day: the container and the ground there are lit from outside // inside the workshop the day's sun and sky are mostly shut out
   // the camera's way: along the street to the garage door, in through it, a stop in front of each tool on the workshop's back wall, out through the far door,
   // on to EDGE, on towards the sunrise (then morning() cuts to the opening wall).
   const stop = (x, y, z, ly, lz = 0) => [V(x + .1, y, z), V(x, ly, lz)];
@@ -165,7 +165,7 @@
   const WASH_TOP = () => [V(VPOST.x - .6, GROUND + 6.2, VPOST.z + 1.25), V(BARE[1].x + .4, GROUND + 1.2, 0)];
   function washAt(sv, top) { const end = sv > 990, d = end ? SEAM_D : V(), w = WASH_TOP(); washL.position.copy(w[0]).add(d); washL.target.position.copy(w[1]).add(d);
     washL.intensity = 2.6 * (end ? sm(cl((sv - 1000) / 25)) : sm(cl(top / .3))); }
-  const EDGE_STOP = N_ ? stop(75, G3 + 1.9, 8.4, G3 + 1.9) : stop(75, G3 + 1.7, 9.2, G3 + 2);
+  const EDGE_STOP = N_ ? [V(SITE.CX, G3 + 1.55, 3.3), V(SITE.CX + .1, G3 + 1.35, SITE.ZF)] : [V(SITE.CX, G3 + 1.5, .9), V(SITE.CX + .1, G3 + 1.3, SITE.ZF)]; // (Tom 11-27) the building site: outside the back door, the container straight across, the phone a little nearer the door
   const VISIT = NARROW ? [V(-12, 2.4, 15), V(-12, 1.9, 0)] : [V(-12, 2.2, 14.5), V(-12, 1.6, 0)];
   const BARE = NARROW ? [V(-19.5, 2.6, 8), V(-19.5, 2.4, 0)] : [V(-21.2, 2.6, 8), V(-21.2, 2.4, 0)], BARE_T = BARE.map(v => v.clone().add(SEAM_D)); // R3: the page's top and the walk's end, the same view: the visitors' lamp post and the wall under it, left of the tags, the street out of view
   // the stop-motion stencil (Tom 11-24, card B of the front-turn round): his head turn, 22 frames sprayed in three layers (cream, blue, night), on the bare
@@ -214,28 +214,31 @@
   // pavement outside the door, so the view fell to the floor, swung round and looked out over the street at nothing. Now the camera walks out through the middle of the
   // door with its head turned back to the lit workshop (the tools, the paintings; the room's end wall and the corner are bare, so they are never what it faces, and the
   // street has no sky behind it), then turns to the lit fence, along it first, then on to EDGE's stop.
-  const OUT_A = U4[2].key, OUT_B = 965, /* it sets off at tthermal's stop: no stretch of scroll where nothing moves */ OUT_FROM = toolStop(U4[2].x, WF); let outWay = null; const OUT_TURN = [[0, 0], [.2, -.28], [.42, -.4], [.7, 0], [.9, .15], [1, 0]]; // (Tom 11-26) the head is back to the room only while the camera is still in it, and level by the door: it walked out of the door with the head turned 35 degrees and swung 100 degrees right in 20 sv, which on a phone's narrow view was a flash of jamb, then street wall
+  const OUT_A = U4[2].key, OUT_B = 965, /* it sets off at tthermal's stop: no stretch of scroll where nothing moves */ OUT_FROM = toolStop(U4[2].x, WF); let outWay = null; const OUT_TURN = Array.from({ length: 21 }, (_, i) => { const u = i / 20; return [u, Math.PI * (u - 1 + Math.pow(1 - u, 1.12))]; }); /* the glide itself turns -180 degrees evenly, by way of -x (the short way, wrapped); this makes the first half of it quicker */ // (Tom 11-27) the heading goes the other way round, over the left shoulder: the camera walks to the door looking back along the room (its paintings, never the bare end wall) and is facing the paintings by the middle of the way and turns on to the street, never more than 1.9 degrees an sv, to face the container as it comes out
   function wayOut(sv, cp, look) { const t = cl((sv - OUT_A) / (OUT_B - OUT_A)); if (t <= 0) return;
-    if (!outWay) { const [P0, L0] = OUT_FROM, [P1, L1] = EDGE_STOP; outWay = glide(P0, L0, P1, L1, [V(EXIT_X - 1.2, 0, -1.2), V(EXIT_X, 0, .3), V(EXIT_X + .15, 0, 3), V(EXIT_X + 4.8, 0, 7.4)] /* straight out through the middle of the door first, away from both jambs, then across to the fence */, OUT_TURN); }
+    if (!outWay) { const [P0, L0] = OUT_FROM, [P1, L1] = EDGE_STOP; outWay = glide(P0, L0, P1, L1, [V(EXIT_X - 1.2, 0, -1.2), V(EXIT_X, 0, .3)] /* straight out through the middle of the door, away from both jambs, to the stop across from it */, OUT_TURN); }
     glideAt(outWay, t, cp, look); }
   const KEYS = [...U4.slice(1, 3).map(u => [u.key - 45, u.key, ...toolStop(u.x, WF)])], KEY_END = [1058, SV_MAX - 10, ...BARE_T]; /* R3 (Tom 11-24: no zoom): on along the street to the bare stretch past EDGE, the page's top's own view */
   const keyTo = (sv, cp, look, [a, b, P, L], ease = sm) => { const k = ease(cl((sv - a) / (b - a))); if (k > 0) { cp.lerp(P, k); look.lerp(L, k); } };
-  function endCam(sv, cp, look) { wayIn(sv, cp, look); KEYS.forEach(k => keyTo(sv, cp, look, k)); wayOut(sv, cp, look); keyTo(sv, cp, look, KEY_END, glideEase); } // the last move on the street past EDGE has the garage doors' pace: slow at its ends, never standing still, never a crawl (Tom 11-27, audit N-2: the smoothstep it had made the middle of a long dark street fastest and the scroll for it was long)
+  // on from the container to the end wall (the bare stretch's view): out along the street, the head turning from the container by way of the street's +x to the wall (the garage doors' pace)
+  let sweepW = null; const SWEEP_A = KEY_END[0], SWEEP_B = KEY_END[1];
+  function sweepAt(sv, cp, look) { const t = cl((sv - SWEEP_A) / (SWEEP_B - SWEEP_A)); if (t <= 0) return; if (!sweepW) sweepW = glide(EDGE_STOP[0], EDGE_STOP[1], KEY_END[2], KEY_END[3], [V(SITE.CX + 6, 0, 3), V(SITE.CX + 16, 0, 5)]); glideAt(sweepW, t, cp, look); }
+  function endCam(sv, cp, look) { wayIn(sv, cp, look); KEYS.forEach(k => keyTo(sv, cp, look, k)); wayOut(sv, cp, look); sweepAt(sv, cp, look); } // the last move on the street past EDGE has the garage doors' pace: slow at its ends, never standing still, never a crawl (Tom 11-27, audit N-2: the smoothstep it had made the middle of a long dark street fastest and the scroll for it was long)
   function endAt(now, sv, cp, look) { shopAt(now, sv, cp, look); const cx = cp.x;
-    edgeL.intensity = 5 * sm(cl((sv - 850) / 40)); siteM.emissiveIntensity = 2.6 * sm(cl((sv - 850) / 40)); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
+    siteOn(sm(cl((sv - 850) / 40))); /* on as you come, and it stays on behind you (a lamp doesn't go out as you walk away) */
     scene.fog.color.copy(FOG0); sky.color.copy(SKY0);
     const FADE = .8; // seconds a painting takes to come up on its wall
     // (Tom 11-26) a production piece keeps its numbers and plate while it is in view, not only at its stop: inView is how much of its painted box is on the screen
     const seen = u => { const [ax, , oa] = proj(u.B.at(u.bb[0], u.bb[3])), [bx, , ob] = proj(u.B.at(u.bb[2], u.bb[3])); return oa && ob ? Math.max(0, Math.min(innerWidth, bx) - Math.max(0, ax)) / Math.max(1, bx - ax) : 0; };
     const PROD_FROM = U4[0].key - 70, /* (Tom 11-26) the production comes up as the camera clears the door, all three pieces and the title tile together: the wall between two stops is never bare */ inGarage = sv > PROD_FROM && sv < 875, view = U4.map(u => u.tile && inGarage ? seen(u) : 0), most = view.indexOf(Math.max(...view)); // the plate: only the piece most in view has one
     U4.forEach((u, i) => { const near = u.tile ? view[i] > .5 : Math.abs(cx - u.x) < (NARROW ? 3 : 5), here = u.tile ? inGarage : sv > u.key - 14 && sv < u.leave + 15;
-      if (introOver && sv > (u.tile ? PROD_FROM : u.key - 14) && !u.start && u.B.ready() && (!u.O || u.O.ready()) && (!u.X || u.X.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
+      if (introOver && sv > (u.tile ? PROD_FROM : u.site ? 880 : u.key - 14) && !u.start && u.B.ready() && (!u.O || u.O.ready()) && (!u.X || u.X.ready())) { u.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit
       const sec = u.start ? (REDUCED ? 99 : (now - u.start) / 1000) : -1, t0 = .35, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - t0) / FADE)), shown = k >= 1;
       if (k > 0 && !u.B.ready()) root.dataset.pops = (+root.dataset.pops || 0) + 1; u.B.m.visible = k > 0; u.B.m.material.opacity = k; if (u.X) { u.X.m.visible = k > 0; u.X.m.material.opacity = k; } if (u.O) { u.O.m.visible = k > 0; u.O.m.material.opacity = k; }
       placeHots(u.hots, u.links.map(l => l.box), u.B, shown && near && here);
       if (u.el) { const show = here && near && shown && sec > t0 + .2 + FADE, plate = show && (!u.tile || i === most); [u.el, u.l, u.c].forEach(e => e.style.opacity = plate ? 1 : 0);
         u.on = u.tile ? here && shown && (u.on ? view[i] > 0 : view[i] > .5) : show; u.parts.forEach((p, k) => p.fade(u.on && sec > t0 + .2 + FADE + k * .3)); // numbers sprayed on stay while any of the piece is on the screen
-        if (plate) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - 112, 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (plate) pin(u.el, u.l, u.c, NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (plate && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
+        if (plate) { if (NARROW) u.el.style.width = Math.min(innerWidth - 24 - 112, 250) + "px"; /* narrower than the Write to me sticker's left edge */ } if (plate) pin(u.el, u.l, u.c, u.site ? (NARROW ? V(SITE.CX - .9, u.floor + .05, SITE.ZF - .6) : u.B.at(u.bb[2] - 80, u.bb[3])) : NARROW ? V(u.x - .9, u.floor + .05, (u.zw || 0) + .3) : u.B.at(u.bb[2] - 80, u.bb[3]), NARROW ? 10 : -20, NARROW ? 40 : 70); if (plate && NARROW) u.el.style.left = "12px"; } }); } // phone: on the floor below the wall, where nothing is painted
 
   svg.insertAdjacentHTML("beforeend", '<line id="l6"/><circle id="c6" r="4"/>');
   const tagFacts = document.getElementById("tagFacts"), l6 = svg.querySelector("#l6"), c6 = svg.querySelector("#c6");

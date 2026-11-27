@@ -268,12 +268,14 @@ export const lookLive: {
     role: "Work project, built alone",
     did: [
       "51 pull requests, from the first sketch to live",
+      "The product site for EdgeFlow, built alone from sketch to live.",
       "Scroll-driven scenes",
       "SEO and Core Web Vitals checked",
     ],
     stack: "Astro · TypeScript",
     live: true,
     links: [
+      { label: "edgeflow.se", href: "https://edgeflow.se" },
       { label: "app-utveckling.se", href: "https://app-utveckling.se" },
       { label: "mjukvaruutvecklare.com", href: "https://mjukvaruutvecklare.com" },
     ],
