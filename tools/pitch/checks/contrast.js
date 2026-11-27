@@ -1,7 +1,7 @@
 // WCAG 1.4.3 text contrast at every stop: each piece of HTML text that shows, against the plate behind it.
 // 4.5:1, or 3:1 for large text (24 px, or 18.66 px bold). Text with no plate (straight on the 3D picture) fails:
 // its contrast changes with the scene, so it can't be promised. Words painted into the 3D scene are not HTML and
-// are judged by eye. Lists the smallest text size too.
+// are judged by eye. Lists the smallest text size too. The start's painted line is measured on the picture (paint against wall) by day and by night.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs, checked: 0, smallest: null };
   page.on('pageerror', e => errs.push(String(e)));
   const look = where => page.evaluate(where => {
@@ -33,6 +33,16 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && (b.x > 0 ? b : matchMedia("(prefers-reduced-motion: reduce)").matches && getComputedStyle(document.querySelector(".start")).display === "none" && b); /* reduced motion: no start screen, nothing to tip */ }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
     for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
     all.push(...await look('opening' + at));
+    // the start's painted line (Tom 11-26): it is paint on the wall, not HTML, so it is measured on the picture: the paint's pixels (blue ones) against the wall's (the rest), in a clip of the walk's first
+    // view. By day the paint must be the darker one and 1.5:1 or more (on master it is the lighter one: pale blue on the beige, 1.76:1). The target is 4.5:1, which the dark blue token alone cannot reach on a wall the day renders mid-grey; the night's is reported, not judged (night is unchanged: lit by the lamp, the pale blue is what Tom picked).
+    await page.waitForTimeout(2500); { const png = (await page.screenshot({ clip: { x: Math.round(W * .06), y: Math.round(H * .14), width: Math.round(W * .88), height: Math.round(H * .66) } })).toString('base64');
+      const shot = await page.context().newPage(); await shot.setContent('<canvas id=c></canvas>');
+      const r = await shot.evaluate(async b64 => { const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode(); const c = document.getElementById('c'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+        const d = g.getImageData(0, 0, c.width, c.height).data, f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }, L = (r, g, b) => .2126 * f(r) + .7152 * f(g) + .0722 * f(b), paint = [], wall = [];
+        for (let i = 0; i < d.length; i += 16) { const [r, g, b] = [d[i], d[i + 1], d[i + 2]]; if (b - r > 45 && b > g) paint.push(L(r, g, b)); else if (b - r <= 25) wall.push(L(r, g, b)); }
+        const med = a => a.sort((x, y) => x - y)[a.length >> 1]; return { paint: paint.length, wall: wall.length, p: paint.length ? med(paint) : null, w: wall.length ? med(wall) : null }; }, png);
+      await shot.close(); const ratio = r.p === null || r.w === null ? 0 : +((Math.max(r.p, r.w) + .05) / (Math.min(r.p, r.w) + .05)).toFixed(2); (res.startLine ||= {})[hour === '12' ? 'noon' : 'night'] = { ratio, paintPixels: r.paint, wallPixels: r.wall, paintLum: r.p === null ? null : +r.p.toFixed(3), wallLum: r.w === null ? null : +r.w.toFixed(3) };
+      if (r.paint < 400) errs.push('the start line is not on the wall to measure (' + r.paint + ' paint pixels' + at + ')'); else if (hour === '12' && !(r.p < r.w && ratio >= 1.5)) errs.push('the start line\'s paint on the wall is ' + ratio + ':1' + at + (r.p >= r.w ? ' and LIGHTER than the wall (pale blue on beige)' : '') + ', by day it must be the darker one, at least 1.5:1 (the target is 4.5:1: the day wall renders mid-grey, lum ' + r.w.toFixed(2) + ', so the dark blue reaches no more than about 2:1 until the wall is lit brighter)'); }
     const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
     for (const sv of [128, 432, 540, 700, 770, 840, 910, 1045, 1180]) { await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(sv === 128 || sv === 432 ? 9000 : 4000); if (sv === 1180) {
         await page.click('#corner'); await page.waitForTimeout(1300); all.push(...await look('the flyer (Write to me)' + at)); await page.keyboard.press('Escape'); await page.waitForTimeout(1000); }

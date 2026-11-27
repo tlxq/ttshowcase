@@ -264,7 +264,15 @@
     return ic;
   }
   const toWorld = (x, y) => V(-PW / 2 + x / PX, PCY + PH / 2 - y / PX, 0);
-  const SPRAY = [1, 3, 5].map(i => parseInt(PAINT_HEX.slice(i, i + 2), 16)).join(","); // from the hex: PAINT holds linear values // Tom's tag in the paint's colour
+  let SPRAY = PAINT_N.join(","); // from the hex: PAINT holds linear values // Tom's tag in the paint's colour
+  // the paint's colour by the clock (Tom 11-26): the night's blue by night, --front-spray-day at noon, the start line, its drips, pour, mist, pool and glow all follow. One PAINT object is
+  // every shader's uniform, so it is changed in place; the mist's colours and the drips' text are the same colour in the other forms.
+  function paintTone(k) { const rgb = PAINT_N.map((n, i) => Math.round(n + (PAINT_D[i] - n) * k)); if (paintTone.k === k) return; paintTone.k = k;
+    PAINT.set("#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("")); bounce.color.copy(PAINT); SPRAY = rgb.join(","); rgb.forEach((v, i) => mistCol[i] = v / 255);
+    // by day the wet gloss goes: the dark paint's mirror coat reflected the bright sky and washed it out to a pale blue (a clear coat and the sky's reflection on a colour this dark was most of what showed)
+    pourMat.clearcoat = .9 - .8 * k; pourMat.envMapIntensity = .9 - .75 * k;
+    paintIn.color.copy(PAINT); paintCoat.color.copy(PAINT).multiplyScalar(.4); filmMat.color.copy(PAINT).multiplyScalar(.45); }
+
   function spray(x, y, p, amount) {
     const rc = 5 + p * 9;
     const gr = g.createRadialGradient(x, y, 0, x, y, rc); gr.addColorStop(0, `rgba(${SPRAY},${.7 * amount})`); gr.addColorStop(.5, `rgba(${SPRAY},${.45 * amount})`); gr.addColorStop(1, `rgba(${SPRAY},0)`);

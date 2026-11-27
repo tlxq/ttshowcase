@@ -90,8 +90,11 @@
     const ceil = new THREE.Mesh(new THREE.PlaneGeometry(RW, BD), ceilMat); ceil.rotation.x = Math.PI / 2; ceil.position.set(HX0 + RW / 2, CEIL, WZ / 2); scene.add(ceil);
     const floorM = plank(RW, BD, true); slab(HX0, CX1, G3 - .3, G3, WZ, 0, floorM);
     const edges = [HX0, DOOR_A[0], DOOR_A[1], DOOR_B[0], DOOR_B[1], CX1]; // the wall between the doors, and over each (the lintel)
-    [[0, 1], [2, 3], [4, 5]].forEach(([a, b]) => slab(edges[a], edges[b], G3 - .01, CEIL, -.3, -.001, plank(edges[b] - edges[a], RH)));
-    [[1, 2], [3, 4]].forEach(([a, b]) => slab(edges[a], edges[b], G3 + DOOR_H, CEIL, -.3, -.001, plank(edges[b] - edges[a], RH - DOOR_H)));
+    // a wall piece is a box 0.3 m thick: its narrow faces (a doorway's jambs, the underside of a lintel) get the blocks at their own size. With the one material the whole
+    // wall's width of blocks was squeezed into the 0.3 m of a jamb, which shimmered as the camera passed through the door (Tom 11-26: "where it flickers").
+    const wallPiece = (x0, x1, y0, y1) => { const w = x1 - x0, h = y1 - y0, face = plank(w, h), jamb = plank(.3, h), under = plank(w, .3); slab(x0, x1, y0, y1, -.3, -.001, [jamb, jamb, under, under, face, face]); };
+    [[0, 1], [2, 3], [4, 5]].forEach(([a, b]) => wallPiece(edges[a], edges[b], G3 - .01, CEIL));
+    [[1, 2], [3, 4]].forEach(([a, b]) => wallPiece(edges[a], edges[b], G3 + DOOR_H, CEIL));
     const ribs = (() => { const c = document.createElement("canvas"); c.width = 16; c.height = 64; const g = c.getContext("2d"); g.fillStyle = "#8a8f94"; g.fillRect(0, 0, 16, 64); g.fillStyle = "#4b4f54"; g.fillRect(0, 0, 16, 7); g.fillStyle = "#a7acb1"; g.fillRect(0, 7, 16, 3);
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.repeat.set(1, DOOR_H / .1); return t; })();
     const steel = new THREE.MeshStandardMaterial({ color: 0x7d8288, metalness: .7, roughness: .5, envMapIntensity: .6 });
@@ -151,12 +154,22 @@
       img.data[(y * W + x) * 4 + 3] = 255 * (1 - d) * (1 - d); } g.putImageData(img, 0, 0); });
     const shM = new THREE.MeshBasicMaterial({ map: SH, color: 0x000000, transparent: true, opacity: .7, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }), shW = shM.clone(); shW.opacity = .32;
     const shadow = (w, d, x, z, o = 1) => { const m = put(new THREE.PlaneGeometry(w, d), o === 1 ? shM : Object.assign(shM.clone(), { opacity: .7 * o }), x, G3 + .004, z); m.rotation.x = -Math.PI / 2; };
+    // (Tom 11-26, "shadows + skirting only") the soft shadows above reach their dark only far from the thing's edge, so a prop stood on the floor with a light halo round its foot. The contact shadow is a tight one:
+    // dark right up to the footprint's edge, a few cm of feather, laid just over the soft one. And the skirting: a dark band where the block wall meets the floor, so the wall does not float on it.
+    const SHC = canv(128, 128, (g, W) => { const img = g.createImageData(W, W); for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) { const dx = Math.max(0, Math.abs(x - 63.5) - 56) / 8, dy = Math.max(0, Math.abs(y - 63.5) - 56) / 8, d = Math.min(1, Math.hypot(dx, dy));
+      img.data[(y * W + x) * 4 + 3] = 255 * (1 - d) * (1 - d); } g.putImageData(img, 0, 0); });
+    const shC = new THREE.MeshBasicMaterial({ map: SHC, color: 0x000000, transparent: true, opacity: .8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -5 });
+    const contact = (w, d, x, z) => { const m = put(new THREE.PlaneGeometry(w + .1, d + .1), shC, x, G3 + .006, z); m.rotation.x = -Math.PI / 2; };
+    { const skirtM = new THREE.MeshStandardMaterial({ color: 0x2b2e33, roughness: .75, metalness: .1 }), SKH = .14;
+      const band = (x0, x1, z0, z1) => slab(x0, x1, G3, G3 + SKH, z0, z1, skirtM);
+      band(HX0, CX1, WZ, WZ + .025); band(HX0, HX0 + .025, WZ, -.3); band(CX1 - .025, CX1, WZ, -.3); // the back wall and the two ends
+      band(HX0, DOOR_A[0], -.325, -.3); band(DOOR_A[1], DOOR_B[0], -.325, -.3); band(DOOR_B[1], CX1, -.325, -.3); } // and the street wall's inside, between the doors
     const wallShadow = (w, h, x, y) => put(new THREE.PlaneGeometry(w, h), shW, x, y, WZ + .004);
     const steelW = worn(0x9aa0a6, .55, .5), darkSteel = worn(0x3d4146, .6, .45), chrome = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, metalness: .9, roughness: .3 }), rubber = new THREE.MeshStandardMaterial({ color: 0x1c1c1e, roughness: .85 });
 
     // ---- the door end: the workbench against the back wall, ending 45 cm short of the production (PX0): in the corner on a laptop, nearer the door on a phone, so it is in view there too
     const BX1 = PX0 - .45, BX0 = Math.max(HX0 + .12, BX1 - 2.13), BXC = (BX0 + BX1) / 2, BW = BX1 - BX0, BD_ = .68, BZ = WZ + BD_ / 2 + .02, TOP = G3 + .9;
-    shadow(BW + .5, BD_ + .4, BXC, BZ + .02); wallShadow(BW + .3, 1.1, BXC, G3 + .55);
+    shadow(BW + .5, BD_ + .4, BXC, BZ + .02); contact(BW, BD_, BXC, BZ); wallShadow(BW + .3, 1.1, BXC, G3 + .55);
     rb(BW, .07, BD_, BXC, TOP - .035, BZ, woodTop, .01); // the top: thick worn boards
     for (const dx of [-BW / 2 + .06, BW / 2 - .06]) for (const dz of [-BD_ / 2 + .06, BD_ / 2 - .06]) rb.at(.05, .83, .05, BXC + dx, G3, BZ + dz, darkSteel, .006); // the legs: square steel tube
     rb.at(BW - .12, .03, .04, BXC, TOP - .14, BZ + BD_ / 2 - .06, darkSteel, .005); rb.at(BW - .1, .025, BD_ - .1, BXC, G3 + .16, BZ, woodTop, .006); // the rail under the top, the low shelf
@@ -210,7 +223,7 @@
 
     // ---- the far end: 90 cm past the production's end (on a phone too, where the production is shorter), a steel shelf, a stack of tyres and the tool chest by the back door
     const SX0 = PX0 + 5300 * PK + .9, SW = 2, SD = .5, SXC = SX0 + SW / 2, SZ = WZ + SD / 2 + .03, LV = [.12, .72, 1.32, 1.92], SH_ = 2.05;
-    shadow(SW + .4, SD + .4, SXC, SZ); wallShadow(SW + .25, SH_ + .1, SXC, G3 + SH_ / 2);
+    shadow(SW + .4, SD + .4, SXC, SZ); contact(SW, SD, SXC, SZ); wallShadow(SW + .25, SH_ + .1, SXC, G3 + SH_ / 2);
     for (const dx of [-SW / 2, SW / 2]) for (const dz of [-SD / 2, SD / 2]) { rb.at(.045, SH_, .012, SXC + dx, G3, SZ + dz, steelW, .002); rb.at(.012, SH_, .045, SXC + dx, G3, SZ + dz, steelW, .002); } // angle posts
     const board = worn(0xb79a72, 0, .85); for (const y of LV) { for (const dz of [-SD / 2, SD / 2]) rb.at(SW, .05, .03, SXC, G3 + y - .05, SZ + dz, worn(0x3e6fa6, .4, .5), .004); rb.at(SW - .03, .018, SD, SXC, G3 + y, SZ, board, .003); }
     const on = (i, x, w, h, d, m, ry = 0, r = .012) => rb.at(w, h, d, SX0 + x, G3 + LV[i] + .018, SZ + (SD - d) / 2 - .04, m, r, ry);
@@ -224,11 +237,11 @@
     { const hose = put(new THREE.TorusGeometry(.19, .024, 8, 28), worn(0x2e6a3a, 0, .55), SX0 + 1.65, G3 + LV[2] + .042, SZ); hose.rotation.x = Math.PI / 2; const h2 = hose.clone(); h2.position.y += .045; h2.rotation.z = .5; h2.scale.setScalar(.92); scene.add(h2); } // a garden hose, coiled flat
     on(3, .3, .4, .26, .38, kraft, -.05); on(3, .85, .36, .2, .34, kraft, .1); on(3, 1.45, .55, .32, .42, worn(0x56606b, 0, .7), 0, .02);
     // a stack of worn tyres on the floor beside it, each a little off the one under it
-    { const tx = SX0 + SW + .45, tz = WZ + .5, tm = new THREE.MeshStandardMaterial({ color: 0x18181a, map: WEAR, roughness: .9 }), rim = worn(0x7e8389, .7, .4); shadow(.95, .95, tx, tz, 1);
+    { const tx = SX0 + SW + .45, tz = WZ + .5, tm = new THREE.MeshStandardMaterial({ color: 0x18181a, map: WEAR, roughness: .9 }), rim = worn(0x7e8389, .7, .4); shadow(.95, .95, tx, tz, 1); contact(.7, .7, tx, tz);
       [[0, 0, 0], [.03, -.02, .4], [-.02, .03, .9], [.02, .01, 1.3]].forEach(([dx, dz, r], i) => { const y = G3 + .1 + i * .2; const t = put(new THREE.TorusGeometry(.26, .1, 12, 30), tm, tx + dx, y, tz + dz); t.rotation.set(Math.PI / 2, 0, r); t.scale.set(1, 1, .95);
         if (i === 3) { const w = put(new THREE.CylinderGeometry(.19, .19, .16, 24, 1, true), rim, tx + dx, y, tz + dz); w.material.side = THREE.DoubleSide; } }); }
     // the tool chest on castors, in the far corner: a roll cabinet with a top chest on it, drawers with steel pulls
-    { const cx = SX0 + SW + 1.3, cz = WZ + .32, CW = .74, CD = .48, red = worn(0xa3291f, .45, .42); shadow(CW + .35, CD + .35, cx, cz); wallShadow(CW + .25, 1.5, cx, G3 + .7);
+    { const cx = SX0 + SW + 1.3, cz = WZ + .32, CW = .74, CD = .48, red = worn(0xa3291f, .45, .42); shadow(CW + .35, CD + .35, cx, cz); contact(CW, CD, cx, cz); wallShadow(CW + .25, 1.5, cx, G3 + .7);
       for (const dx of [-CW / 2 + .07, CW / 2 - .07]) for (const dz of [-CD / 2 + .07, CD / 2 - .07]) { rb.at(.06, .03, .06, cx + dx, G3 + .1, cz + dz, darkSteel, .005); const w = put(new THREE.CylinderGeometry(.045, .045, .035, 16), rubber, cx + dx, G3 + .045, cz + dz); w.rotation.x = Math.PI / 2; }
       const y0 = G3 + .13; rb.at(CW, .78, CD, cx, y0, cz, red, .02); rb.at(CW - .02, .3, CD - .04, cx, y0 + .8, cz - .01, red, .03); rb.at(CW, .018, CD + .005, cx, y0 + .78, cz, darkSteel, .004);
       const rows = [[.06, .1], [.18, .1], [.3, .1], [.42, .14], [.58, .18]]; for (const [y, h] of rows) { rb.at(CW - .06, h - .014, .012, cx, y0 + y, cz + CD / 2, red, .006); rb.at(CW * .55, .014, .02, cx, y0 + y + h - .04, cz + CD / 2 + .012, chrome, .006); }
@@ -243,12 +256,15 @@
   // the lights that go with the camera: a warm spot on the wall it faces, a warm fill from the room's middle, and the light that spills out of the door onto the wet street
   const exitL = new THREE.PointLight(0xffd9a0, 0, 15, 1.4); scene.add(exitL); exitL.position.set((DOOR_B[0] + DOOR_B[1]) / 2, G3 + DOOR_H + .9, 1.1); // the work lamp over the back door
   const shopSpot = new THREE.SpotLight(SHOP_WARM, 0, 15, 1, 1, 1.3), shopFill = new THREE.PointLight(0xf1f2ff, 0, 13, 1.6), spill = new THREE.SpotLight(0xffd29a, 0, 14, .7, .85, 1.1); scene.add(shopSpot, shopSpot.target, shopFill, spill, spill.target);
-  function shopAt(now, sv, cp) { // the door's roll, the lamps, where the light stands
+  function shopAt(now, sv, cp, look) { // the door's roll, the lamps, where the light stands
     const tIn = sm(cl((sv - 578) / 50)); shop.open = tIn; shop.lit = tIn * (1 - sm(cl((sv - 940) / 50))); // (cause D) the door rolls up as the camera comes to it, open before it goes through (sv ~645)
     shop.panel.position.y = G3 + DOOR_H / 2 + tIn * (DOOR_H + .05); shop.panel.visible = tIn < .999;
     const inX = sm(cl((cp.x - HX0 + .2) / 1.4)) * (1 - sm(cl((cp.x - CX1 + 1.2) / 1.6))), inZ = sm(cl((.9 - cp.z) / 1.6)); shop.ins = inX * inZ;
     shopBulb.emissiveIntensity = 2.2 * shop.lit; tubeM.emissiveIntensity = 2.4 * shop.lit; tubeBad.emissiveIntensity = (Math.sin(now / 37) > .55 && Math.random() < .5 ? .15 : 2.4) * shop.lit;
-    const cx = cl(cp.x, HX0 + 1.5, CX1 - 1.5);
+    // (Tom 11-26, night) the spot lights what the camera LOOKS at, not the wall in front of its feet: with the head turned back along the room (the way out) it stood where the camera
+    // was and the shelf and the tool chest it looked at were dim shapes. Where the view line meets the back wall; looking out of the room (no wall ahead), it stays by the camera.
+    const dir = look.clone().sub(cp), ahead = sm(cl((-dir.z / Math.hypot(dir.x, dir.z) - .15) / .3)), hit = dir.z < -1e-3 ? cp.x + dir.x * ((WZ - cp.z) / dir.z) : cp.x;
+    const cx = cl(cp.x + (hit - cp.x) * ahead, HX0 + 1.5, CX1 - 1.5);
     shopSpot.intensity = 2.2 * shop.lit; shopSpot.position.set(cx, CEIL - .3, WZ + 1.7); shopSpot.target.position.set(cx, G3 + 1.7, WZ);
     shopFill.intensity = 1.0 * shop.lit; shopFill.position.set(cx, G3 + 3.2, WZ + 6.3);
     const sx = sm(cl((cp.x - 50) / 8)), dx = DOOR_A[0] + (DOOR_A[1] - DOOR_A[0]) / 2, ex = DOOR_B[0] + (DOOR_B[1] - DOOR_B[0]) / 2; // the light out of the door follows you to the far one
@@ -257,7 +273,7 @@
     spill.intensity = 9 * shop.lit * (1 - .6 * shop.ins); exitL.intensity = 15 * shop.lit * sm(cl((sv - 820) / 40));
 }
   window.garageTest = () => ({ open: +shop.open.toFixed(3), lit: +shop.lit.toFixed(3), inside: +shop.ins.toFixed(3), cam: [+camera.position.x.toFixed(2), +camera.position.y.toFixed(2), +camera.position.z.toFixed(2)],
-    eye: +(camera.position.y - G3).toFixed(2), pitch: +THREE.MathUtils.radToDeg(Math.asin(camera.getWorldDirection(V()).y)).toFixed(1), // the camera's height over the floor and how far it looks up (+) or down (-), in degrees
+    eye: +(camera.position.y - G3).toFixed(2), pitch: +THREE.MathUtils.radToDeg(Math.asin(camera.getWorldDirection(V()).y)).toFixed(1), face: +THREE.MathUtils.radToDeg(Math.atan2(...(d => [d.x, -d.z])(camera.getWorldDirection(V())))).toFixed(1), // the camera's height over the floor and how far it looks up (+) or down (-), in degrees; which way it faces (0 = the back wall, 90 = along the street, 180 = out over the street)
     // for the garage check: the door, the light, where the camera is
     paintings: U4.slice(0, 3).map(u => ({ name: u.name, x: u.x, shown: u.B.m.visible && u.B.m.material.opacity > .99, wall: u.zw, bump: !!u.B.m.material.normalMap })) }); // bump: the street concrete's joints drawn on it
   // the last wall past the climb out, lower, so the sky shows over it; the coping on top
@@ -299,10 +315,11 @@
       for (let i = 0; i < 6; i++) { g.fillStyle = "rgba(60,36,14,.3)"; g.beginPath(); g.ellipse(rnd() * 512, rnd() * 256, 10 + rnd() * 30, 6 + rnd() * 14, rnd() * 3, 0, 6.3); g.fill(); }
       g.strokeStyle = "rgba(40,24,8,.8)"; g.lineWidth = 3; g.strokeRect(1, 1, 510, 254); for (const [x, y] of [[14, 14], [498, 14], [14, 242], [498, 242], [256, 14], [256, 242]]) { g.fillStyle = "rgba(40,30,20,.8)"; g.beginPath(); g.arc(x, y, 3, 0, 6.3); g.fill(); }
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; t.repeat.set(7, 1.5); return t; })();
-    const FX0 = 68.4, FX1 = 86.4, FH = 3.6, fence = new THREE.Mesh(new THREE.PlaneGeometry(FX1 - FX0, FH), new THREE.MeshStandardMaterial({ map: sheet, roughness: .85, polygonOffset: true, polygonOffsetFactor: -1 })); fence.position.set((FX0 + FX1) / 2, G3 + FH / 2, .0012); scene.add(fence);
-    const postM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }); for (const x of [68.4, 70.9, 79.2, 81.8, 84.4, 86.4]) { const po = new THREE.Mesh(new THREE.BoxGeometry(.12, FH + .1, .12), postM); po.position.set(x, G3 + FH / 2, .09); scene.add(po); }
+    const FX0 = 68.4, FX1 = 81.4, /* (Tom 11-26) it ends short of what the walk's last stop (the bare wall past it, from x 82.3) shows: its end stuck into that frame's bottom left as an orange stub */ FH = 3.6, fence = new THREE.Mesh(new THREE.PlaneGeometry(FX1 - FX0, FH), new THREE.MeshStandardMaterial({ map: sheet, roughness: .85, polygonOffset: true, polygonOffsetFactor: -1 })); fence.position.set((FX0 + FX1) / 2, G3 + FH / 2, .0012); scene.add(fence);
+    const postM = new THREE.MeshStandardMaterial({ color: 0x5b4330, roughness: .8 }); for (const x of [68.4, 70.9, 79.2, 81.4]) { const po = new THREE.Mesh(new THREE.BoxGeometry(.12, FH + .1, .12), postM); po.position.set(x, G3 + FH / 2, .09); scene.add(po); }
     const rail = new THREE.Mesh(new THREE.BoxGeometry(FX1 - FX0, .1, .1), postM); rail.position.set((FX0 + FX1) / 2, G3 + FH + .05, .09); scene.add(rail);
-    for (const x of [71.2, 79.6]) { const pole = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, FH + .8, 8), metalM), head = new THREE.Mesh(new THREE.BoxGeometry(.5, .16, .22), siteM); pole.position.set(x, G3 + (FH + .8) / 2, .5); head.position.set(x, G3 + FH + .8, .6); head.rotation.x = .3; scene.add(pole, head); } }
+    const siteHeads = [];
+    for (const x of [69.5, 80.7]) { /* the lamp posts stand outside what EDGE's stop shows (x 70.8 to 79.2 on a laptop): a lit head floated in the frame's top corner */ const pole = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, FH + .8, 8), metalM), head = new THREE.Mesh(new THREE.BoxGeometry(.5, .16, .22), siteM); pole.position.set(x, G3 + (FH + .8) / 2, .5); head.position.set(x, G3 + FH + .8, .6); head.rotation.x = .3; scene.add(pole, head); siteHeads.push(head); } window.siteTest = () => ({ heads: siteHeads.map(h => proj(h.position)), fenceEnd: proj(V(FX1, G3 + FH / 2, .0012)) }); /* for the garage check: where the fence's end and the lamp heads are on the screen */ }
   const GHUB = "https://github.com/tlxq/";
   // where each one stands (laptop / phone): four tools in the workshop, then EDGE. key: the scroll (vh) where the camera has arrived,
   // leave: where it starts to go on. The camera stops in front of each. Each has its painting (Tom 11-19, one artist per wall): art = [file, picture m wide on a

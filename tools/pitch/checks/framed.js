@@ -8,7 +8,7 @@ async page => { const W0 = page.viewportSize().width, H0 = page.viewportSize().h
   await page.goto('__URL__'); await page.waitForTimeout(3500); await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && (b.x > 0 ? b : matchMedia("(prefers-reduced-motion: reduce)").matches && getComputedStyle(document.querySelector(".start")).display === "none" && b); /* reduced motion: no start screen, nothing to tip */ }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   for (const [w, h] of sizes) { await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(800); const seen = [];
-    for (const sv of [128, 432, 700, 770, 840, 910, 1045]) {
+    for (const sv of [128, 432, 700, 770, 840, 965, 1045]) {
       await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(sv === 128 || sv === 432 ? 9000 : 4000);
       const r = await page.evaluate(() => { const W = innerWidth, H = innerHeight, d = p => Math.hypot((p.l + p.r) / 2 - W / 2, (p.t + p.b) / 2 - H / 2);
         const p = window.plateTest.pictures().filter(p => !p.only && !/^the mural/.test(p.name)).sort((a, b) => d(a) - d(b))[0];
