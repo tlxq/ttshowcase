@@ -213,7 +213,7 @@
   const FG = 9.8, FREST = .25 /* restitution: a pail on concrete keeps a quarter of its speed */, FROLL = 1.6 /* m/s^2 rolling/sliding friction */, FHINT_S = 1, CAPTOP = WALL_TOP + .05, CAPFRONT = .06, FSLIDE = .9 /* m/s^2: the push off the cap */;
   const FDELTA = Math.asin((BK.r1 - BK.r0) / Math.hypot(BK.h, BK.r1 - BK.r0)); // a cone lies with its narrow end a little up
   const fs = { ph: 0, base: 0, away: false, at: 0, go: 0, t0: 0, p: V(), v: V(), th: 0, w: 0, psi: 0, R: .28, phi: 0, phiV: 0, hOff: 0, hV: 0, rock: 0, bounces: 0 };
-  try { if (sessionStorage.getItem("bkfell") && !REDUCED) fs.ph = 7; } catch (e) {}
+  try { if (sessionStorage.getItem("bkfell") && RESUME !== null && !REDUCED) fs.ph = 7; } catch (e) {}
   const fPud = new THREE.Group(); fPud.visible = false; fPud.userData.at = 0; scene.add(fPud);
   const fPudMat = new THREE.MeshPhysicalMaterial({ roughness: .06, clearcoat: 1, clearcoatRoughness: .03, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
   for (const [dx, dz, s] of [[0, 0, 1], [.28, .1, .45], [-.3, -.05, .5], [.12, -.3, .3], [-.1, .3, .28], [.5, -.12, .16], [-.52, .14, .18]]) { const m = new THREE.Mesh(new THREE.CircleGeometry(s * .42, 28), fPudMat); m.rotation.x = -Math.PI / 2; m.position.set(dx, 0, dz); m.scale.set(1, .8 + Math.abs(dx) * .3, 1); fPud.add(m); }
@@ -234,7 +234,7 @@
       if (fs.ph === 0 && introOver) {
         const due = fs.base + FN * 1000 - (FHINT ? FHINT_S * 1000 : 0), back = fs.away && atStart;
         if ((FMODE === "back" && back) || (FMODE === "both" && back) || (FMODE !== "back" && now >= due && atStart && !fs.away)) { fs.ph = 1; fs.at = now; fs.go = now + (FHINT ? FHINT_S * 1000 : 0); } }
-      if (fs.ph === 1) { const t = (now - fs.at) / 1000, ramp = Math.min(1, t / .4); fs.rock = FHINT ? .045 * ramp * Math.abs(Math.sin(t * 13)) * (1 - .3 * Math.sin(t * 5)) : 0; bucketTip.rotation.z += fs.rock; bucketHome.position.x = LEDGE.x + (FHINT ? .006 * ramp * Math.sin(t * 29) : 0);
+      if (fs.ph === 1) { const t = (now - fs.at) / 1000, ramp = Math.min(1, t / .4); fs.rock = FHINT ? .045 * ramp * Math.abs(Math.sin(t * 13)) * (1 - .3 * Math.sin(t * 5)) : 0; bucketTip.rotation.z += fs.rock; if (FHINT && Math.random() < .5) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = LEDGE.x + gauss() * .5; mp[i * 3 + 1] = CAPTOP - .4; mp[i * 3 + 2] = .3; mv[i * 3] = gauss() * .2; mv[i * 3 + 1] = -1.2 - Math.random(); mv[i * 3 + 2] = 0; ml[i] = 1; } // grit shaken loose, falling into view bucketHome.position.x = LEDGE.x + (FHINT ? .006 * ramp * Math.sin(t * 29) : 0);
         if (now >= fs.go) { // from here on the pail is one body: its centre, its angle, its speed
           fs.p.copy(bucket.localToWorld(V(0, BK.h / 2, 0))); fs.th = -1.52; fs.psi = 0; fs.R = fs.p.y - CAPTOP; fs.v.set(0, 0, 0);
           bucketHome.position.set(0, 0, 0); bucketTip.position.set(0, 0, 0); bucketTip.rotation.set(0, 0, 0); bucket.position.set(0, -BK.h / 2, 0); fs.ph = 2; fs.t0 = now; fPlace(); } }
@@ -243,7 +243,7 @@
     if (fs.ph === 2) { v.z += FSLIDE * dt; p.z += v.z * dt; if (p.z >= CAPFRONT) { fs.ph = 3; fs.phi = 0; fs.phiV = v.z / fs.R; } } // pushed along the cap until its weight passes the edge
     else if (fs.ph === 3) { fs.phiV += FG * Math.sin(fs.phi) / fs.R * dt + .6 * dt; fs.phi += fs.phiV * dt; fs.th -= .6 * dt; // rolls over the edge: weight on the corner, then it lets go
       p.set(p.x, CAPTOP + fs.R * Math.cos(fs.phi), CAPFRONT + fs.R * Math.sin(fs.phi)); fs.psi += fs.phiV * dt * .7;
-      if (fs.R * fs.phiV * fs.phiV > FG * Math.cos(fs.phi) * .8 || fs.phi > 1.1) { v.set(0, -fs.R * fs.phiV * Math.sin(fs.phi), fs.R * fs.phiV * Math.cos(fs.phi)); fs.w = 2.4; fs.ph = 4; fs.hV = -4; } }
+      if (fs.R * fs.phiV * fs.phiV > FG * Math.cos(fs.phi) * .8 || fs.phi > 1.1) { v.set(0, -fs.R * fs.phiV * Math.sin(fs.phi), fs.R * fs.phiV * Math.cos(fs.phi)); fs.w = 2.4; v.x = .5; fs.ph = 4; fs.hV = -4; } }
     else if (fs.ph === 4) { v.y -= FG * dt; p.addScaledVector(v, dt); fs.th += fs.w * dt; fs.psi += .8 * dt;
       if (fLow() <= GROUND && v.y < 0) { // the first hit: it bounces once, low
         const sp = -v.y; p.y += GROUND - fLow(); v.y = sp * FREST; v.z *= .55; v.x = fs.w * .22; fs.w *= -.3; fs.hV += 9; fs.ph = 5; fs.bounces = 1; fs.t0 = now;
