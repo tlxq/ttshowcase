@@ -125,11 +125,13 @@ done
 # the page head: titles, noindex, the sitemap, the structured data, the bar colour and the old icon address (src/head/head.ts)
 desc=$(node -e 'import("./src/head/head.ts").then((m) => process.stdout.write(m.DESCRIPTION))')
 [ -n "$desc" ] || no "could not read DESCRIPTION from src/head/head.ts"
-# favicon.ico is made from the built icon.svg; a changed icon with an old .ico fails here
+alt=$(node -e 'import("./src/head/head.ts").then((m) => process.stdout.write(m.SHARE_ALT))')
+[ -n "$alt" ] || no "could not read SHARE_ALT from src/head/head.ts"
+# favicon.ico is made from the approved mark pictures, which were made from the built icon.svg; a changed icon with old pictures fails here
 want=$(cat tools/icons/favicon.source.sha256 2>/dev/null || true)
 [ "$(sha256sum out/icon.svg | cut -d' ' -f1)" = "$want" ] ||
-  no "public/favicon.ico is stale: the icon changed. Run: node tools/icons/favicon.mjs (after npm run build) and commit public/favicon.ico and tools/icons/favicon.source.sha256"
-DESC="$desc" python3 -I - out <<'PY' || fail=1
+  no "public/favicon.ico is stale: the icon changed. Run: node tools/icons/favicon.mjs --render (after npm run build), have Tom approve the new tools/icons/mark-*.png, and commit them with public/favicon.ico and tools/icons/favicon.source.sha256"
+DESC="$desc" ALT="$alt" python3 -I - out <<'PY' || fail=1
 import html as htmllib, os, pathlib, re, sys, json
 out = pathlib.Path(sys.argv[1])
 bad = []
@@ -160,6 +162,28 @@ for name, private in [("index.html", False), ("privacy.html", False), ("admin.ht
         bad.append(f"{name}: {len(blocks)} structured data blocks")
     for b in blocks:
         if json.loads(b).get("@type") != "Person": bad.append("the structured data is not a Person")
+# the share picture and the icons, as the built front names them (src/head/head.ts, app/layout.tsx)
+def meta(html, key, val):
+    m = re.search(r'<meta ' + key + r'="' + re.escape(val) + r'" content="([^"]*)"', html)
+    return htmllib.unescape(m.group(1)) if m else None
+if meta(front, "property", "og:image") is None or not meta(front, "property", "og:image").endswith("/share.jpg"):
+    bad.append("index.html: og:image is not /share.jpg")
+for key, val in (("property", "og:image:width"), ("property", "og:image:height")):
+    want = "1200" if val.endswith("width") else "630"
+    if meta(front, key, val) != want: bad.append(f"index.html: {val} is not {want}")
+for key, val in (("property", "og:image:alt"), ("name", "twitter:image:alt")):
+    if meta(front, key, val) != os.environ["ALT"]: bad.append(f"index.html: {val} is not SHARE_ALT of src/head/head.ts")
+for rel, href in (("icon", "/favicon.ico"), ("icon", "/icon.svg"), ("apple-touch-icon", "/apple-icon.png")):
+    if not re.search(r'<link rel="' + rel + r'" href="' + re.escape(href) + r'[^"]*"', front) and not re.search(r'<link [^>]*href="' + re.escape(href) + r'[^"]*"[^>]*rel="' + rel + r'"', front):
+        bad.append(f"index.html: no {rel} link to {href}")
+share = (out / "share.jpg").read_bytes()
+if share[:2] != b"\xff\xd8" or len(share) > 300_000: bad.append(f"share.jpg is not a JPEG under 300 KB ({len(share)} bytes)")
+for f in [out / "icon.svg", *sorted((out / "icon-drip").glob("*.svg"))]:
+    if "#ff4f1a" in f.read_text(encoding="utf-8").lower(): bad.append(f"{f.name} still has the old orange")
+if len(list((out / "icon-drip").glob("*.svg"))) < 8: bad.append("the drip frames are missing")
+if (out / "icon.svg").read_bytes() != pathlib.Path("tools/icons/mark.svg").read_bytes(): bad.append("icon.svg is not the approved tools/icons/mark.svg")
+if (out / "apple-icon.png").read_bytes() != pathlib.Path("app/apple-icon.png/assets/piece-180.png").read_bytes(): bad.append("apple-icon.png is not the approved piece-180.png")
+if (out / "share.jpg").read_bytes() != pathlib.Path("pitch/assets/share.jpg").read_bytes(): bad.append("share.jpg differs from the new front's pitch/assets/share.jpg")
 locs = re.findall(r"<loc>([^<]*)</loc>", (out / "sitemap.xml").read_text(encoding="utf-8"))
 if sorted(locs) != ["https://ttdevs.com/", "https://ttdevs.com/privacy"]:
     bad.append(f"sitemap.xml lists {locs}")

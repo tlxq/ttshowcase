@@ -29,6 +29,11 @@ export const NOINDEX = { index: false, follow: false } as const;
 /** The share picture's address, as search and chats must read it. */
 export const SHARE_IMAGE = `${SITE}/share.jpg`;
 
+/** What the share picture shows, for og:image:alt and twitter:image:alt (picture and text approved by Tom 11-27). The new
+ * front's pages (pitch/*.src.html) carry the same words; head.test.ts holds them equal. */
+export const SHARE_ALT =
+  "Tom Larsson, product engineer: a black and white portrait in front of a concrete wall with blue paint poured down it, signed with his tlxq tag.";
+
 const link = (host: string) => lookAsk.links.find((l) => new URL(l.href).hostname === host)?.href;
 
 /** The Person block for the front page: the profile links are the site's own (src/content/look.ts), no e-mail. */
