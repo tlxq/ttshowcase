@@ -7,6 +7,9 @@
   "functions": {
     "api/tags.ts": {
       "includeFiles": "src/design/tokens.css"
+    },
+    "api/contact.ts": {
+      "includeFiles": "src/design/tokens.css"
     }
   },
   "headers": [

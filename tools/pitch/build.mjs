@@ -249,6 +249,8 @@ let front = readFileSync(join(root, "pitch/front.src.html"), "utf8")
   .replaceAll("__TOKENS__", () => parts.__TOKENS__)
   .replaceAll("__MAIL_WORDS__", () => parts.__MAIL_WORDS__)
   .replaceAll("__MAIL_SEND__", () => parts.__MAIL_SEND__)
+  // where a form sent without JavaScript posts to (api/contact.ts answers it with a plain page): the words file's `action`
+  .replaceAll("__MAIL_ACTION__", () => JSON.parse(parts.__MAIL_WORDS__).action)
   .replaceAll("__PACE__", () => pace())
   .replaceAll("__LIBS__", () => libs)
   .replaceAll("__SIGN__", () => readFileSync(join(root, "pitch/sign-d.json"), "utf8").trim());

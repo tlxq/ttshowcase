@@ -1,4 +1,5 @@
 {
+  "action": "/api/contact",
   "lead": "Couldn't send your message. ",
   "other": "The mail service didn't answer.",
   "offline": "The page couldn't reach the server.",
