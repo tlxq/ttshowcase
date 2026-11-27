@@ -23,7 +23,7 @@ export function iconSvg() {
     view: `${n(x)} ${n(y)} ${n(side)} ${n(side)}`,
     side,
     ground: token("--look-ground"),
-    spray: token("--look-spray"),
+    spray: token("--front-spray"),
     d: strokes.map((s) => s.shape).join(""),
   };
 }
@@ -36,6 +36,18 @@ const DRIPS = [
   { x: 560, y: -165, long: 165, w: 36, late: 0 },
   { x: 322, y: -180, long: 105, w: 32, late: 0.25 },
 ];
+
+/** The tab icon, drip-free: the mark in the paint blue (--front-spray) on the look's dark ground. app/icon.svg/route.ts
+ * serves it; tools/icons/mark.svg is the picture Tom approved 11-27, and a test holds the two equal. */
+export function iconTabSvg() {
+  const { view, side, ground, spray, d } = iconSvg();
+  const [x, y] = view.split(" ");
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${view}">` +
+    `<rect x="${x}" y="${y}" width="${side.toFixed(0)}" height="${side.toFixed(0)}" rx="${(side * 0.2).toFixed(0)}" fill="${ground}"/>` +
+    `<path fill="${spray}" d="${d}"/></svg>`
+  );
+}
 
 /** The tab icon with its drips grown to `step` of DRIP_FRAMES (1 to DRIP_FRAMES): a static picture, because a
  * browser shows only an SVG icon's first frame, so the page swaps between these (TabAway.tsx). */
