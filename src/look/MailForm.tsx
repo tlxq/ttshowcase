@@ -67,7 +67,7 @@ export function MailForm() {
     <form
       className="lk-mail"
       method="post"
-
+      action={mail.action}
       onSubmit={send}
       ref={form}
       style={{ minHeight: height }}

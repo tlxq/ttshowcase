@@ -3,7 +3,7 @@
 // painted in front of its stop, "Toolbox" is not stencilled on the wall, the camera is not inside at each stop, or the way out at the far end leaves it inside. Page errors and three.js warnings fail it too.
 // The live numbers (Tom 11-26): the site's /api/github answers with fixed counts here; each piece's two numbers must be painted (painted digits, with paint on them) at its stop,
 // and ttoolbox's must still be on the wall between ttoolbox and dot (they stay while the piece is in view, not only at its stop).
-// In through the door (Tom 11-26, cause D: "the camera dips to the floor going in"): from raddavarfruberga's stop (548) to ttoolbox's (700) the camera moves as ONE glide.
+// In through the door (Tom 11-26, cause D: "the camera dips to the floor going in"): from raddavarfruberga's stop (540) to ttoolbox's (700) the camera moves as ONE glide.
 // Read every 4 sv: it speeds up once and slows down once, with no stop on the way (it used to stop just outside the door and just inside), its height over the floor stays between the two stops'
 // heights and its look up or down between the two stops' (a little slack for the hand's drift): no dip to the floor, no bob.
 // Out through the back door (cause: the camera looked at the pavement, swung round and looked out over the street): the same read from tthermal's stop (840) to EDGE's (965), the same three rules,
@@ -20,7 +20,7 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && (b.x > 0 ? b : matchMedia("(prefers-reduced-motion: reduce)").matches && getComputedStyle(document.querySelector(".start")).display === "none" && b); /* reduced motion: no start screen, nothing to tip */ }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   for (let i = 0; i < 40 && !(await page.evaluate(() => document.documentElement.style.overflow === '')); i++) await page.waitForTimeout(250);
   if (!(await page.evaluate(() => typeof window.garageTest === 'function'))) { errs.push('there is no garage workshop in the walk (window.garageTest is missing)'); return JSON.stringify(res); }
-  const at = async sv => { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(sv >= 700 ? 3200 : 2200); const g = await page.evaluate(() => garageTest()); res.stops[sv] = g;
+  const at = async (sv, till) => { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); if (till) await page.waitForFunction(till, null, { timeout: 8000 }).catch(() => {}); /* waits on the state it names, not a fixed time (a slow runner needs longer than the 1.15 s fade): a miss shows in the checks below */ else await page.waitForTimeout(sv >= 700 ? 3200 : 2200); const g = await page.evaluate(() => garageTest()); res.stops[sv] = g;
     await page.screenshot({ path: '__SHOTS__pitch-garage-' + W + '-' + sv + '.png' }); return g; };
   const oneMove = async (name, sv0, sv1) => { const way = []; for (let sv = sv0; sv <= sv1; sv += 4) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(120); way.push([sv, await page.evaluate(() => { const g = garageTest(); return [g.cam, g.eye, g.pitch, g.face]; })]); }
     res['way ' + name] = way.map(([sv, [c, e, p]]) => sv + ':' + e + '/' + p); const [e0, p0] = way[0][1].slice(1), [e1, p1] = way[way.length - 1][1].slice(1);
@@ -43,7 +43,7 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   let g = await at(540); if (g.open > .05 || g.inside > .05) errs.push('before the workshop the garage door should be shut and the camera in the street: ' + JSON.stringify(g));
   g = await at(590); if (g.open <= .05 || g.open >= .95) errs.push('the door should be rolling up at 590: ' + JSON.stringify(g));
   g = await at(625); if (g.open < .95) errs.push('the garage door did not roll up: ' + JSON.stringify(g));
-  g = await at(660); if (g.inside < .5 || g.cam[2] >= 0) errs.push('the camera did not walk in through the door by 660: ' + JSON.stringify(g));
+  g = await at(660, () => { const g = garageTest(); return g.inside >= .5 && g.paintings.every(p => p.shown); }); if (g.inside < .5 || g.cam[2] >= 0) errs.push('the camera did not walk in through the door by 660: ' + JSON.stringify(g));
   { const bare = g.paintings.filter(p => !p.shown).map(p => p.name); if (bare.length) errs.push('the production is not on the wall as the camera clears the door (sv 660), the stretch between two stops is bare: ' + bare.join(', ') + ' not painted yet: ' + JSON.stringify(g.paintings)); } // (Tom 11-26) all three pieces and the title tile come up together as it comes in, so no wall between two stops is bare
   for (const [sv, i] of [[700, 0], [770, 1], [840, 2]]) { g = await at(sv); const p = g.paintings[i];
     if (!p.shown) errs.push(p.name + ' is not painted at its stop: ' + JSON.stringify(g));

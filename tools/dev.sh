@@ -13,4 +13,5 @@ ip=$(tailscale ip -4 | head -n 1)
 name=$(tailscale status --json | python3 -I -c 'import json, sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')
 
 echo "Live editing at http://$name:$port (Ctrl+C to stop)"
+node tools/csp/manifest.mjs --stub # the middleware imports the CSP manifest; a dev server has no build, so an empty one
 exec npx next dev --hostname "$ip" --port "$port"

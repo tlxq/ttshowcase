@@ -168,7 +168,7 @@
     clearOnScreen: () => { for (const c of CLEAR) for (let y = c[3] - .2; y > c[1]; y -= .3) for (let x = c[0] + .4; x < c[2]; x += .3) { if (HELD.some(h => x > h[0] && x < h[2] && y > h[1] && y < h[3])) continue; // a kept-clear point on screen that no waiting tag covers
       const [px, py] = proj(V(x, y, 0)); if (px > 40 && px < innerWidth - 40 && py > 100 && py < innerHeight - 100) return { x: px, y: py }; } return null; },
     freeOnScreen: () => { for (let y = AREA.y1 - 1; y > AREA.y0 + 1; y -= .4) for (let x = AREA.x0 + 1; x < AREA.x1 - 1; x += .4) { if (kept(...inArea(x, y)) || Math.hypot(x - pick.x, y - pick.y) < 1) continue; /* a tap puts the frame at inArea's place */ const [px, py] = proj(V(x, y, 0)); if (px > 80 && px < innerWidth - 80 && py > 140 && py < innerHeight - 140) return { x: px, y: py }; } return null; },
-    restored: () => scene.fog.density === (endS.show ? .012 : .04) && skyMesh.visible && root.style.touchAction === "",
+    restored: () => pick.fog === 0 && scene.fog.density >= (endS.show ? .012 : .04 - .026 * dayNow()) - 1e-9 /* the day's start haze is thinner than the night's .04 */ && skyMesh.visible && root.style.touchAction === "",
     heldOnScreen: () => { const h = HELD[0]; if (!h) return null; const [px, py] = proj(V((h[0] + h[2]) / 2, (h[1] + h[3]) / 2, 0)); return { x: px, y: py }; },
     worldAt: (px, py) => wallAt(px, py),
     spotOnScreen: () => { const [px, py] = proj(V(pick.x, pick.y, 0)); return { x: px, y: py }; },

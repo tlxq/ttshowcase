@@ -24,8 +24,8 @@ The walk comes after the front. How the front leads into it is picked when the r
 A bucket of paint waits on a dark wall at night. The visitor tips it, the paint pours down the wall and becomes the line, and the line leads past my builds.
 1. The opening wall at night. The visitor tips the bucket, the paint pours, and the street light comes on.
 2. epaRadar and raddavarfruberga: the facts and links sprayed through stencils onto their walls.
-3. The workshop: my own tools in a row: the self-hosted platform, ttoolbox, dot and tthermal.
-4. EDGE: client work on its own clean wall, a printed sheet pasted up.
+3. The workshop: my own tools in a row: ttoolbox, dot and tthermal, painted as one long piece on the workshop wall.
+4. The building site: client work for EDGE Associates, painted on the site's plywood board: edgeflow and EDGE, with their links.
 5. Dawn grows to white, and out of the white you are back at the opening wall, in your own light (day or night by your clock): the mural and the visitors' tags round it. The can at the mural's foot lets a visitor paint their tag on the wall. Scrolling on, the walk goes round again.
 6. Write to me is a sticker on the street light's pole, among stickers about me. Tap it and it unfolds into a flyer: a form to write to me, and my email, GitHub and LinkedIn. The same sticker sits in the screen's corner the whole way. Scrolling up from the start walks round the pole, close enough to read the stickers, on to the visitors' tags.
 

@@ -25,6 +25,21 @@ test("a font used but not embedded is named", () => {
   ]);
 });
 
+test("a family named only in a comment is not used", () => {
+  const html = `<style>${face("Inter")}${face("Clash Display")} /* "Clash Display" is gone */ body{font:16px "Inter"}</style><!-- "Clash Display" --><script>
+    const a = 1; // "Clash Display" moves the words
+    // "Clash Display" again
+    const url = "https://x.test/a"; g.font = '1px "Inter"';</script>`;
+  assert.deepEqual(fontProblems(html, "front"), [
+    "front embeds Clash Display but never uses it: drop it from tools/pitch/build.mjs",
+  ]);
+});
+
+test("a family used in code after a url with // still counts", () => {
+  const html = `${face("Archivo")}<script>const u = "https://x.test/a"; g.font = '1px "Archivo"';</script>`;
+  assert.deepEqual(fontProblems(html, "walk"), []);
+});
+
 test("the family's name inside its own @font-face does not count as use", () => {
   assert.equal(fontProblems(face("Inter"), "front").length, 1);
 });

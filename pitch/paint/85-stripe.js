@@ -1,11 +1,11 @@
   // ---- The progress stripe (Tom 11-26, pick B; it replaced the 3px line and its blue dash): a sprayed stripe along the top of the screen that fills as you
   // walk, with the area's name stencilled under it. The walk's three areas (Tom 11-26): Side projects (epaRadar, raddavarfruberga), Toolbox (ttoolbox,
-  // dot, tthermal), Client work (EDGE). Its sizes and colours are tokens (--look-stripe*); a screen reader hears the area as the bar's value text.
-  const STRIPE_AREAS = [["Side projects", 0, 128], ["Toolbox", 590, 700], ["Client work", 875, 1045]]; // name, where the area starts (sv: Client work at the garage's back door, so it is named all the way to EDGE), its first stop
+  // dot, tthermal), Client work (EDGE). The start wall and the end wall have no name (Tom 11-27: they are not an area of work); the stripe still fills there and a screen reader hears "Start" and "End". Its sizes and colours are tokens (--look-stripe*); a screen reader hears the area as the bar's value text.
+  const STRIPE_AREAS = [["", 0, 0, "Start"], ["Side projects", 60, 128], ["Toolbox", 590, 700], ["Client work", 875, 1045], ["", 1058, 1180, "End"]]; // name (empty: none shown), where the area starts (sv: the projects at the wall the walk reaches at 60; Client work at the garage's back door, so it is named all the way to EDGE; the end from EDGE's last glance), its first stop, what a screen reader hears when it has no name
   const stripeNav = document.createElement("nav"); stripeNav.className = "stripe"; stripeNav.setAttribute("role", "progressbar"); stripeNav.setAttribute("aria-label", "Where you are in the walk");
   stripeNav.setAttribute("aria-valuemin", "0"); stripeNav.setAttribute("aria-valuemax", "100"); document.body.append(stripeNav);
   const stripeCanvas = document.createElement("canvas"); stripeCanvas.setAttribute("aria-hidden", "true"); stripeNav.append(stripeCanvas);
-  const stripeNames = STRIPE_AREAS.map(([n]) => { const s = document.createElement("span"); s.setAttribute("aria-hidden", "true"); s.textContent = n; stripeNav.append(s); return s; });
+  const stripeNames = STRIPE_AREAS.map(([n]) => { if (!n) return null; const s = document.createElement("span"); s.setAttribute("aria-hidden", "true"); s.textContent = n; stripeNav.append(s); return s; });
   let stripeSeed = 7, stripeEdge = [], stripeLast = "";
   const stripeTok = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const stripeWhere = () => { const max = document.documentElement.scrollHeight - innerHeight, park = upPx(); if (max <= park) return { f: 0, area: 0, at: STRIPE_AREAS.map(() => 0) };
@@ -20,5 +20,5 @@
     let s = 11; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647; // the overspray under the stripe: the same dots every frame
     for (let i = 0; i < x / 3; i++) { const px = rnd() * x, py = band + 2 + rnd() * 8; g.globalAlpha = .25 + rnd() * .5; g.fillRect(px, py, 1.4, 1.4); } g.globalAlpha = 1;
     const gap = parseFloat(stripeTok("--look-stripe-gap")) || 14;
-    stripeNames.forEach((n, i) => { n.style.left = Math.min(W - n.offsetWidth - gap, Math.max(gap, at[i] * W + 8)) + "px"; n.classList.toggle("on", i === area); });
-    stripeNav.setAttribute("aria-valuenow", String(Math.round(f * 100))); stripeNav.setAttribute("aria-valuetext", STRIPE_AREAS[area][0]); window.stripeTest = () => ({ f, area, name: STRIPE_AREAS[area][0] }); }
+    stripeNames.forEach((n, i) => { if (!n) return; n.style.left = Math.min(W - n.offsetWidth - gap, Math.max(gap, at[i] * W + 8)) + "px"; n.classList.toggle("on", i === area); });
+    stripeNav.setAttribute("aria-valuenow", String(Math.round(f * 100))); const said = STRIPE_AREAS[area][3] || STRIPE_AREAS[area][0]; stripeNav.setAttribute("aria-valuetext", said); window.stripeTest = () => ({ f, area, name: STRIPE_AREAS[area][0], said }); }

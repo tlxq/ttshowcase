@@ -34,7 +34,7 @@ that would draw in software.
 
 | Check | When | What |
 |---|---|---|
-| `mise run check` | Every push (pre-push runs it) | Types, the guard hook's tests, lint, build, known holes in packages |
+| `mise run check` | Every PR (GitHub runs it; pre-push skips it) | Types, the guard hook's tests, lint, build, known holes in packages |
 | `mise run walk` | A site change, before merge | The built page at laptop, tablet and phone sizes: look, line clearance, accessibility, speed |
 | `mise run pitch:check` | A pitch change, before merge | 1440 and phone: the whole walk, the waits, each wall paints once, reduced motion, text contrast |
 | `mise run pictures` | A change in how the site looks | Before/after pictures against `master` |

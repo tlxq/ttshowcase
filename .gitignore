@@ -3,6 +3,8 @@ node_modules/
 out/
 next-env.d.ts
 *.tsbuildinfo
+# the middleware's CSP manifest, written by the build (tools/csp/manifest.mjs)
+csp-manifest.generated.js
 .cache/
 .venv/
 # Claude Code: the shared setup is in git (docs/ai.md); worktrees and personal settings stay out.

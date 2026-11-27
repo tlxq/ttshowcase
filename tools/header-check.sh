@@ -38,6 +38,11 @@ for p in / /admin /no-such-page /next; do
   grep -qi '^x-frame-options: DENY' <<<"$h" || no "$p can be framed (no X-Frame-Options: DENY)"
 done
 
+# the CSP manifest is code the middleware imports, never a public file: one would list /next, /next/front, /admin and /wall (audit N-42)
+find out -name 'csp-manifest*' | grep -q . && no "a CSP manifest file is in out/ (it would be public): $(find out -name 'csp-manifest*' | head -3 | tr '\n' ' ')"
+[ "$(curl -s -o /dev/null -w '%{http_code}' "$base/csp-manifest.json")" = 404 ] || no "/csp-manifest.json is served (the manifest must be built into the middleware, not a public file)"
+grep -rlE '"/(next/front|admin|wall)":' out --include='*.json' | grep -q . && no "a public .json file lists the private paths (/next/front, /admin, /wall): $(grep -rlE '"/(next/front|admin|wall)":' out --include='*.json' | head -3 | tr '\n' ' ')"
+
 # every page's header CSP: no 'unsafe-inline' for scripts, and the hash of every inline script it carries (the build's
 # manifest is not trusted: the hashes are worked out again here from the page itself)
 python3 -I - out "$base" "$key" <<'PY' || fail=1
@@ -99,7 +104,7 @@ inline = {"sha256-" + base64.b64encode(hashlib.sha256(s.encode()).digest()).deco
 if not inline or named != inline:
     sys.exit("header-check: /next's script rule doesn't match its inline scripts (tools/pitch/build.mjs)")
 import json
-if "url(data:font" in page and not re.search(r"font-src [^;]*data:", json.load(open("out/csp-manifest.json", encoding="utf-8"))["/next"]):
+if "url(data:font" in page and not re.search(r"font-src [^;]*data:", json.load(open(".cache/csp-manifest.json", encoding="utf-8"))["/next"]):
     sys.exit("header-check: /next embeds its fonts as data:, but the site's font-src doesn't allow data: (tools/csp/manifest.mjs)")
 if "'unsafe-inline'" in rule.group(1) or "'unsafe-eval'" in rule.group(1):
     sys.exit("header-check: /next's script rule allows any inline script")

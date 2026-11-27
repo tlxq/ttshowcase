@@ -13,6 +13,7 @@ const config = [
     ignores: [
       ".next/",
       "out/",
+      "csp-manifest.generated.js",
       "node_modules/",
       ".claude/",
       ".cache/",

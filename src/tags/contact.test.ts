@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { contact, mailHash, MAIL_PER_ADDRESS, type ContactDeps } from "../../api/contact.ts";
+import { contact, mailHash, MAIL_PER_ADDRESS, PLAIN, type ContactDeps } from "../../api/contact.ts";
 
 const SECRET = "x".repeat(40);
 
@@ -121,4 +121,126 @@ test("no database, no mail", async () => {
 test("not set up answers 503", async () => {
   const r = await contact(() => null)(send(letter));
   assert.equal(r.status, 503);
+});
+
+// ---- a form sent without JavaScript: urlencoded post, answered with a plain page ----
+const plain = (body: Record<string, string>, headers: Record<string, string> = {}) =>
+  new Request("https://ttdevs.com/api/contact", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "x-forwarded-for": "1.2.3.4",
+      ...headers,
+    },
+    body: new URLSearchParams(body),
+  });
+
+test("a plain form post sends the mail and answers with a page that says it was sent", async () => {
+  const w = world();
+  const r = await w.post(plain(letter));
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get("content-type")!, /^text\/html/);
+  const page = await r.text();
+  assert.match(page, /Sent/);
+  assert.match(page, /k@example\.com/);
+  assert.match(page, /href="\/"/);
+  assert.equal(w.mails.length, 1);
+  assert.equal(w.mails[0]!.text, "Hej Tom");
+});
+
+test("the answer page has its own policy: no script, nowhere to post", async () => {
+  const r = await world().post(plain(letter));
+  const csp = r.headers.get("content-security-policy")!;
+  assert.match(csp, /default-src 'none'/);
+  assert.doesNotMatch(csp, /script-src/);
+  assert.match(csp, /form-action 'none'/);
+  assert.equal(r.headers.get("cache-control"), "private, no-store");
+});
+
+test("a bad email on a plain post names what is wrong, keeps the text and gives Tom's address", async () => {
+  const w = world();
+  const r = await w.post(plain({ ...letter, email: "nope", message: "<b>Hej</b> Tom" }));
+  assert.equal(r.status, 400);
+  const page = await r.text();
+  assert.match(page, /Couldn&#39;t send your message/);
+  assert.match(page, /That email address doesn&#39;t look complete\./);
+  assert.match(page, /Your message was not sent\./);
+  assert.match(page, /&lt;b&gt;Hej&lt;\/b&gt; Tom/);
+  assert.match(page, /mailto:hello@ttdevs\.com/);
+  assert.deepEqual(w.mails, []);
+});
+
+test("an empty message on a plain post names the message", async () => {
+  const r = await world().post(plain({ ...letter, message: "  " }));
+  assert.equal(r.status, 400);
+  assert.match(await r.text(), /The message is empty or longer than 4 000 characters\./);
+});
+
+test("a robot on a plain post is still refused: nothing counted, nothing mailed", async () => {
+  const w = world(true, false);
+  const r = await w.post(plain(letter));
+  assert.equal(r.status, 403);
+  assert.match(await r.text(), /The browser check didn&#39;t pass/);
+  assert.deepEqual(w.sends, []);
+  assert.deepEqual(w.mails, []);
+});
+
+test("the trap field on a plain post gets the thank-you and sends nothing", async () => {
+  const w = world();
+  const r = await w.post(plain({ ...letter, website: "http://spam" }));
+  assert.equal(r.status, 200);
+  assert.deepEqual(w.mails, []);
+});
+
+test("a plain post counts against the same daily limit and says so", async () => {
+  const w = world();
+  for (let i = 0; i < MAIL_PER_ADDRESS; i++) await w.post(plain(letter));
+  const r = await w.post(plain(letter));
+  assert.equal(r.status, 429);
+  assert.match(await r.text(), /sent all its messages for today/);
+  assert.equal(w.mails.length, MAIL_PER_ADDRESS);
+});
+
+test("a mail service that fails on a plain post says the text was not sent", async () => {
+  const w = world(false);
+  const r = await w.post(plain(letter));
+  assert.equal(r.status, 502);
+  assert.match(await r.text(), /Your message was not sent\./);
+  assert.deepEqual(w.sends, []);
+});
+
+test("a plain post from another site is refused", async () => {
+  const w = world();
+  const r = await w.post(plain(letter, { origin: "https://evil.example" }));
+  assert.equal(r.status, 400);
+  assert.deepEqual(w.mails, []);
+  const same = await w.post(plain(letter, { origin: "https://ttdevs.com" }));
+  assert.equal(same.status, 200);
+});
+
+test("the JSON path still answers JSON", async () => {
+  const r = await world().post(send(letter));
+  assert.deepEqual(await r.json(), { sent: true });
+});
+
+test("the sent page escapes the address it names", async () => {
+  const w = world();
+  const r = await w.post(plain({ ...letter, email: 'a"<b>@x.co' }));
+  const html = await r.text();
+  assert.ok(!html.includes("<b>@x.co"), "the address is put on the page unescaped");
+});
+
+test("a plain post from another site says the form didn't arrive, not that the mail service failed", async () => {
+  const w = world();
+  const r = await w.post(plain(letter, { Origin: "https://evil.example" }));
+  assert.equal(r.status, 400);
+  const html = await r.text();
+  assert.ok(html.includes(PLAIN.broken.replace("'", "&#39;")));
+  assert.deepEqual(w.mails, []);
+});
+
+test("the trap field's thank-you names no address when none was given", async () => {
+  const r = await world().post(plain({ ...letter, email: "", website: "http://spam" }));
+  const html = await r.text();
+  assert.ok(!html.includes(PLAIN.sent), "an empty address is named");
 });

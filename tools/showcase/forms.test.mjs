@@ -7,16 +7,18 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const files = [
-  "pitch/front.src.html",
-  "pitch/paint.src.html",
-  ...readdirSync(join(root, "pitch/paint"))
-    .filter((f) => f.endsWith(".js"))
-    .map((f) => "pitch/paint/" + f),
-  ...readdirSync(join(root, "src/look"))
-    .filter((f) => f.endsWith(".tsx"))
-    .map((f) => "src/look/" + f),
-];
+// Every place a page's HTML can come from: the site (src, app), the functions that write HTML (api), the pitch pages and their
+// parts, and the public folder. tools/ is not shipped (its local editor, tools/write, is never served).
+const SCANNED = ["src", "app", "api", "pitch", "public"];
+const files = [];
+function walk(dir) {
+  for (const e of readdirSync(join(root, dir), { withFileTypes: true })) {
+    const rel = dir + "/" + e.name;
+    if (e.isDirectory()) walk(rel);
+    else if (/\.(tsx?|jsx?|mjs|html)$/.test(e.name) && !/\.test\./.test(e.name)) files.push(rel);
+  }
+}
+for (const d of SCANNED) walk(d);
 
 test("every form in the page sources says method=post", () => {
   let seen = 0;
@@ -31,5 +33,5 @@ test("every form in the page sources says method=post", () => {
       );
     }
   }
-  assert.ok(seen >= 4, `expected the site's forms, found ${seen}`);
+  assert.ok(seen >= 5, `expected the site's forms, found ${seen}`);
 });

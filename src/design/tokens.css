@@ -37,7 +37,7 @@
      The old pages keep the orange until the new front replaces them. */
   --front-spray: #4aa8ff;
   /* The same spray by day (Tom 11-26, the start line on the beige wall): the line, drips, pour, mist and pool take this at noon and the night value at night;
-     the progress stripe and the focus rings keep --front-spray. 8.5:1 on the beige wall. */
+     the progress stripe and the focus rings keep --front-spray. The day wall renders a mid grey, not the beige, so this blue reaches only about 2:1 against it. */
   --front-spray-day: #004c8f;
   /* the front's first screen, the code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono */
   --front-name: "Archivo", "Arial Black", sans-serif;
