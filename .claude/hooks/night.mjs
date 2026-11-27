@@ -1,7 +1,9 @@
 // Runs when a Claude session starts in this repo (SessionStart, .claude/settings.json).
 // Reads the last night walk (tools/night.sh writes ${XDG_STATE_HOME:-~/.local/state}/ttshowcase/night.json)
-// and prints one line only when it was red, so the fix comes first (CLAUDE.md, Tom 11-25). Green, skipped or
-// no file: prints nothing. Tests: node --test .claude/hooks/
+// and prints one line when it was red, so the fix comes first (CLAUDE.md, Tom 11-25), or when it was skipped
+// because the fallback commit was already red (result "skipped" with red_commit: master's tip was NOT walked,
+// which is not "fine"). Green, any other skipped night (both checks had already passed) or no file: prints nothing.
+// Tests: node --test .claude/hooks/
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -18,6 +20,11 @@ export function nightLine(text) {
     night = JSON.parse(text);
   } catch {
     return "";
+  }
+  if (night?.result === "skipped" && night.red_commit) {
+    const red = String(night.red_commit).slice(0, 7);
+    const tip = String(night.commit || "").slice(0, 7);
+    return `Night walk did not run${tip ? ` on ${tip}` : ""}: the older commit ${red} was already red. Fix that first.`;
   }
   if (night?.result !== "red") return "";
   const sha = String(night.commit || "").slice(0, 7) || "unknown commit";

@@ -15,7 +15,7 @@ async page => { const errs = [], res = { errs }; page.on('pageerror', e => errs.
   const read = () => page.evaluate(() => window.sprayTest ? window.sprayTest() : null);
   const settle = async want => { let s = null; for (let i = 0; i < 80; i++) { s = await read(); if (s && s.length === 6 && want(s)) return s; await page.waitForTimeout(250); } return s; }; // the hand sheet and the answer arrive after the tip
   const by = s => Object.fromEntries((s || []).map(p => [p.key, p]));
-  const full = { epa: { commits: 346, merged: 14, tests: 73, migrations: 6 }, rvf: { commits: 406, merged: 26 } };
+  const full = __STANDIN__; // tools/pitch/standin-numbers.json: the same stand-ins the sheet gives both builds
   const want = (n, label, p, errs) => { if (!p) return errs.push(label + ': no such note'); if (p.shown !== n) errs.push(`${label} shows ${p.shown}, not ${n}`); if (!(p.ink > 200)) errs.push(`${label} has no paint (${p.ink} px)`); };
   const blank = (label, p, errs) => { if (!p) return errs.push(label + ': no such note'); if (p.shown != null || p.ink > 0 || p.used.length) errs.push(`${label} should show nothing, yet shows ${p.shown} with ${p.ink} px of paint and ${p.used.join(' ')}`); };
   const fits = (p, errs) => { if (!p || !p.fit) return; const f = p.fit; if (f.lo < f.room[0] - 12 || f.hi > f.room[1] + 1) errs.push(`${p.key} shows ${p.shown} from ${f.lo} to ${f.hi}, outside its room ${f.room[0]} to ${f.room[1]} (shrunk to ${f.s})`);

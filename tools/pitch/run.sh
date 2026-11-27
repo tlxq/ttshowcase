@@ -39,7 +39,9 @@ job() { # check, then "desktop" or "phone": its own servers and browser session;
   done
   local page="paint.html?hour=23"; case "$1" in front*) page=front.html ;; esac # the clock light (Tom 11-23): the checks walk at night, the start's own light; contrast walks at noon too
   budget=$(node -p 'JSON.stringify(require("./tools/walk/budget.json").pitchStart.limits)')
-  sed -e "s#__BUDGET__#$budget#g" -e "s#__URL__#http://127.0.0.1:$port/$page#g" -e "s#__SHOTS__#$root/.cache/shots/#g" "tools/pitch/checks/$1.js" > "$script"
+  standin=$(tr -d '\n' < tools/pitch/standin-numbers.json)
+  # wrap.mjs: three.js is answered from tools/pitch/vendor (no network needed), and any other outside request fails the check
+  sed -e "s#__BUDGET__#$budget#g" -e "s#__URL__#http://127.0.0.1:$port/$page#g" -e "s#__SHOTS__#$root/.cache/shots/#g" -e "s#__STANDIN__#$standin#g" "tools/pitch/checks/$1.js" | node tools/pitch/wrap.mjs /dev/stdin > "$script"
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
   # The walls' live numbers come from this site's /api/github, which asks GitHub (60 anonymous asks an hour per address): a whole run would use

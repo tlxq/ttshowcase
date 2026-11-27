@@ -11,7 +11,10 @@
 # Writes ${XDG_STATE_HOME:-~/.local/state}/ttshowcase/night.json:
 #   {when, commit, result: green|red|skipped, failed: [check names], log, note}
 # skipped = both checks had already passed on these files, so nothing ran. Exit 1 when red.
-# The SessionStart hook (.claude/hooks/night.mjs) says so in the next session when it is red.
+# skipped has a second meaning, written by the home repo's ttshowcase-night-sync, not by this script: result "skipped" with
+# a note and red_commit = master's tip was NOT walked, because the fallback commit (red_commit) was already red last night.
+# That is not "fine".
+# The SessionStart hook (.claude/hooks/night.mjs) says so in the next session when it is red, and for that second skip.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 2
 
