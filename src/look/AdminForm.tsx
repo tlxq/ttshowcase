@@ -114,7 +114,7 @@ export function AdminForm() {
   }
 
   return (
-    <form className="lk-mail lk-admin" onSubmit={signIn}>
+    <form className="lk-mail lk-admin" method="post" onSubmit={signIn}>
       <label className="lk-mail-row">
         <span className="lk-mail-key">Key</span>
         <input

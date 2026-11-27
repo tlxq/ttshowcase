@@ -64,7 +64,14 @@ export function MailForm() {
   }
 
   return (
-    <form className="lk-mail" onSubmit={send} ref={form} style={{ minHeight: height }}>
+    <form
+      className="lk-mail"
+      method="post"
+
+      onSubmit={send}
+      ref={form}
+      style={{ minHeight: height }}
+    >
       <label className="lk-mail-row">
         <span className="lk-mail-key">name</span>
         <input
