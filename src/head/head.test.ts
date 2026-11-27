@@ -15,7 +15,7 @@ import {
   tokenColour,
 } from "./head.ts";
 import { inlineHashes } from "../../tools/csp/manifest.mjs";
-import { ico, SIZES } from "../../tools/icons/favicon.mjs";
+import { ico, SIZES, sourceHash, SOURCE_HASH_FILE } from "../../tools/icons/favicon.mjs";
 
 const read = (path: string) => readFileSync(path, "utf8");
 
@@ -116,6 +116,14 @@ test("private pages say noindex, and no private path is in the sitemap list", ()
 test("the bar's colour is the page's ground, read from tokens.css", () => {
   assert.equal(tokenColour(":root { --a: #123abc; }", "--a"), "#123abc");
   assert.throws(() => tokenColour(":root {}", "--a"));
+  // the whole name only: a longer token never answers for a shorter one
+  assert.throws(() =>
+    tokenColour(":root { --look-ground-x: #111; --x--look-ground: #222; }", "--look-ground"),
+  );
+  assert.equal(
+    tokenColour(":root { --look-ground-x: #111; --look-ground: #222; }", "--look-ground"),
+    "#222",
+  );
   assert.equal(themeColor(), tokenColour(read("src/design/tokens.css"), "--look-ground"));
   assert.match(read("app/layout.tsx"), /themeColor: themeColor\(\)/);
 });
@@ -138,4 +146,6 @@ test("favicon.ico holds the 16, 32 and 48 px pictures, linked and cached", () =>
     (h: { source: string }) => h.source === "/favicon.ico",
   );
   assert.match(JSON.stringify(rule), /max-age=604800/);
+  assert.match(read(SOURCE_HASH_FILE), /^[0-9a-f]{64}\n$/);
+  assert.notEqual(sourceHash("<svg/>"), sourceHash("<svg />"));
 });

@@ -123,10 +123,21 @@ for p in / /privacy /index.html /privacy.html; do
 done
 
 # the page head: titles, noindex, the sitemap, the structured data, the bar colour and the old icon address (src/head/head.ts)
-python3 -I - out <<'PY' || fail=1
-import pathlib, re, sys, json
+desc=$(node -e 'import("./src/head/head.ts").then((m) => process.stdout.write(m.DESCRIPTION))')
+[ -n "$desc" ] || no "could not read DESCRIPTION from src/head/head.ts"
+# favicon.ico is made from the built icon.svg; a changed icon with an old .ico fails here
+want=$(cat tools/icons/favicon.source.sha256 2>/dev/null || true)
+[ "$(sha256sum out/icon.svg | cut -d' ' -f1)" = "$want" ] ||
+  no "public/favicon.ico is stale: the icon changed. Run: node tools/icons/favicon.mjs (after npm run build) and commit public/favicon.ico and tools/icons/favicon.source.sha256"
+DESC="$desc" python3 -I - out <<'PY' || fail=1
+import html as htmllib, os, pathlib, re, sys, json
 out = pathlib.Path(sys.argv[1])
 bad = []
+front = (out / "index.html").read_text(encoding="utf-8")
+for tag in ('name="description"', 'property="og:description"', 'name="twitter:description"'):
+    m = re.search(r'<meta ' + tag + r' content="([^"]*)"', front)
+    if not m or htmllib.unescape(m.group(1)) != os.environ["DESC"]:
+        bad.append(f"index.html: {tag} is not the DESCRIPTION of src/head/head.ts")
 def page(name):
     return (out / name).read_text(encoding="utf-8")
 def title(html):

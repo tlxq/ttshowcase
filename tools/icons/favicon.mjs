@@ -1,11 +1,16 @@
 // Makes public/favicon.ico (16, 32 and 48 px) from the tab icon the site already builds, out/icon.svg (app/icon.svg/route.ts:
 // Tom's icon tag), so the mark is never redrawn. Needs a build (`npm run build`) and rsvg-convert.
 // Run when the icon changes: node tools/icons/favicon.mjs. The file is committed; public/ goes to the site as it is.
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 export const SIZES = [16, 32, 48];
+/** The hash of the icon the committed .ico was made from. tools/header-check.sh fails when the built icon.svg differs, so a
+ * changed icon can't leave a stale favicon.ico behind (the .ico's bytes depend on the machine's rsvg-convert, the svg's don't). */
+export const SOURCE_HASH_FILE = "tools/icons/favicon.source.sha256";
+export const sourceHash = (svg) => createHash("sha256").update(svg).digest("hex");
 
 /** An .ico holding one PNG per size (PNG-in-ICO, read by every browser made since 2008). */
 export function ico(pngs) {
@@ -36,5 +41,6 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     }),
   }));
   writeFileSync(`${root}public/favicon.ico`, ico(pngs));
+  writeFileSync(`${root}${SOURCE_HASH_FILE}`, sourceHash(svg) + "\n");
   console.log(`public/favicon.ico: ${SIZES.join(", ")} px from out/icon.svg`);
 }

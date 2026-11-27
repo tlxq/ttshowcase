@@ -53,7 +53,9 @@ export function personJsonLdText() {
 
 /** A colour from the one token file. */
 export function tokenColour(css: string, name: string): string {
-  const m = new RegExp(`${name}:\\s*(#[0-9a-fA-F]{3,8})`).exec(css);
+  // the whole name: nothing name-like before it, the colon right after it
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const m = new RegExp(`(?<![\\w-])${escaped}\\s*:\\s*(#[0-9a-fA-F]{3,8})`).exec(css);
   if (!m) throw new Error(`head: no colour token ${name} in tokens.css`);
   return m[1]!;
 }
