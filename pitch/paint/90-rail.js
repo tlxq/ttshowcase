@@ -6,6 +6,7 @@
     const i = Math.min(2, Math.floor(r)), f = r - i, e = f - (1 - RAIL_SLOW) * Math.sin(2 * Math.PI * f) / (2 * Math.PI), u = (i + e) / 3;
     cp.copy(RAIL_POS.getPoint(u)); look.copy(RAIL_LOOK.getPoint(u)); }
   let stencilAt = 0;
+  const PH_END = 486, PH_V0 = paceOf(60, 0, 1), PH_V1 = paceOf(PH_END, 0, 1), PH_X0 = WX_(134) + 2.5 + .15, PH_X1 = WX_(4000) - 2.5 - .2; // the phone pans between these camera x, over sv 60 to 486
   let mx = 0, my = 0; addEventListener("pointermove", e => { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; });
   // render size follows the machine: weak graphics (T14s, Intel UHD: 46-57 ms a frame at full size, 12 ms at half, 11-16) draw fewer pixels
   // until frames are smooth; strong ones keep full sharpness. Median of the last 30 frames, so one slow frame (a shader, a texture) changes nothing.
@@ -18,7 +19,7 @@
   let svKeep = -1, svKeepH = 0; // the walk's place, kept across resizes
   const START = 1600, t0 = performance.now(); let last = t0, si = 0, cmx = 0, cmy = 0;
   if (!WL.want) document.documentElement.dataset.wallAt = 1; // no tags on the wall: nothing to wait for (the checks read 0 as never)
-  const PARK = V(EX - EW / 2 - 1, G2, 1.9), canPos = PARK.clone(), canAim = V();
+  const PARK = V(EX - EW / 2 - 1, G3, 1.9), canPos = PARK.clone(), canAim = V();
   renderer.setAnimationLoop(now => {
     const raw = now - last, dt = Math.min(.05, raw / 1000); last = now; const t = now - t0 - START;
     autoRes(raw);
@@ -59,7 +60,7 @@
     if (si > 0 && !done0 || drips.some(d => d.v >= 2)) paintTex.needsUpdate = true;
     // the can follows the pen, nozzle a hand's width from the wall; after the last stroke it steps back
     const done = si >= samples.length;
-    if (stencilOn) canAim.set(EX - EW / 2 - (NARROW ? .5 : .8), G2, 1.6); // set down on the floor left of the painting
+    if (stencilOn) canAim.set(EX - EW / 2 - (NARROW ? .5 : .8), G3, 1.6); // set down on the floor left of the painting
     if (stencilOn) {}
     else if (pen) { canAim.copy(pen).add(V(0, 0, REACH)).sub(NOZZLE); }
     else if (done) canAim.copy(PARK);
@@ -79,6 +80,7 @@
     const cp = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[0], CAM.B[0], back), CAM.C[0], pan), CAM.D[0], end), CAM.E[0], walk3), CAM.F[0], end3), cl_ = lerpV(lerpV(lerpV(lerpV(lerpV(CAM.A[1], CAM.B[1], back), CAM.C[1], pan), CAM.D[1], end), CAM.E[1], walk3), CAM.F[1], end3);
     endK = cl((sv - 548) / 30); lamp2At(sv); washAt(sv, lft); endCam(sv, cp, cl_); streetAt(now); rvfAt(now, walk3, end3); stairsAt(cp.x); endAt(now, sv, cp, cl_); morning(now, sv, cp, cl_);
     if (railR < 3) railAt(railR, cp, cl_);
+    else if (NARROW && sv < PH_END) { const u = cl((paceOf(sv, 0, 1) - PH_V0) / (PH_V1 - PH_V0)), x = PH_X0 + (PH_X1 - PH_X0) * cl((u - .03) / .94); cl_.x += x - cp.x; cp.x = x; } // (Tom 11-27) a phone: one slow pan along the wall, even in the scroll, from the left end to the right end
     // the seam (Tom 11-23): above the pole the camera rests on the visitors' wall (TOP); at the very top the page jumps to its end, which shows
     // the same wall, and scrolling on up walks back through the glare to EDGE. Never while the tag tool or the flyer is open.
     if (scrollY <= 4 && introOver && !pick.mode && !sheetOpen) scrollTo(0, svY(SV_MAX - 8));
@@ -102,9 +104,9 @@
     tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
     // the label and the links on the painted marks, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
-    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn); EPA_PARTS.forEach((p, i) => p.fade(ST[0].k >= 1 && pan > .5 && walk3 < .6 && sec > .8 + i * .3)); // the numbers are sprayed on once the picture is up and stay while the piece is in view (an empty dark cloud next to the stop looked unfinished)
-    pin(tagFacts, l6, c6, NARROW ? V(EX - EW * .25, EY - EH / 2 + .3, 0) : V(EX - EW * .3, EY - EH / 2 + .1, 0), NARROW ? 18 : 24, 60); // phone: under the painting, on the empty floor
-    placeHots(hots, EPA_MARKS, EPAB, ST[0].k >= 1 && sec >= .3 && pan > .5 && walk3 < .5); // at this wall, each mark that is in view
+    const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn); 
+    pin(tagFacts, l6, c6, NARROW ? V(camera.position.x - .6, G3 + .1, 0) : V(EX - EW * .3, EY - EH / 2 + .1, 0), NARROW ? 18 : 24, 60); // phone: the plate and its line follow the camera along the wall // phone: under the painting, on the empty floor
+    placeHots(hots, EPA_MARKS, EPAB, ST[0].k >= 1 && sec >= .3 && pan > .5 && endK < .5); // at this wall, each mark that is in view
     const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
     [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);
     pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);

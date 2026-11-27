@@ -1,11 +1,11 @@
   // ---- moments 2 and 3: the street's one production (Tom 11-27): epaRadar and raddavarfruberga on ONE painted wall, 4000 x 1120 px, painted on the desk's graphics card (CREDITS.txt): the two
-  // pieces, the car and the house, the stack handwritten into the paint. The live numbers are written on it at run time in a second hand (the notes below). The street steps down between
-  // the two pieces (the underpass), so the wall is two pictures in the scene, cut where the abutment hides the street wall (x 16.75 to 22.9): the left one with epaRadar and its car, on the street
-  // at G2, the right one with raddavarfruberga and its house, on the street at G3. Both come after the tip (LATE), like the garage's.
-  // The wall's own pixel (px, py) is at x = ST_A(px) or ST_B(px), y = its street + (WALL_FOOT - py) * SPX: a pixel is 4.2 mm, the pieces' foot (row 1065) stands on the street.
-  const SPX = .0042, WALL_FOOT = 1065, ST_A = px => 16.7 + (px - 2002) * SPX, ST_B = px => 22.85 + (px - 1960) * SPX, ST_A0 = 120, ST_B0 = 1960; // ST_A0, ST_B0: the wall pixel each picture starts at
-  const EX = 13, EW = 7.6, EH = 1120 * SPX, EY = G2 + (WALL_FOOT - 560) * SPX; // the stop's frame: epaRadar's piece with its car stands round (EX, EY)
-  const RX = ST_B(2895); // raddavarfruberga's piece: its middle on the wall
+  // pieces, the car and the house, the stack handwritten into the paint. The live numbers are written on it at run time in a second hand (the notes below). The wall is one flat stretch of
+  // street wall at G3 (Tom 11-27: no stairs or bridge between the pieces; the street's two flights of steps are before it), in two pictures that overlap by 150 px and fade into each other
+  // (street_0: wall pixels 120 to 2100, street_1: 1950 to 4000), so no seam shows. Both come after the tip (LATE), like the garage's.
+  // The wall's own pixel (px, py) is at x = WX_(px), y = G3 + (WALL_FOOT - py) * SPX: a pixel is 4.2 mm, the pieces' foot (row 1065) stands on the street.
+  const SPX = .0042, WALL_FOOT = 1065, WALL_X0 = 17.4, WX_ = px => WALL_X0 + px * SPX, ST_A0 = 120, ST_B0 = 1950, TA = px => px - ST_A0, TB = px => px - ST_B0; // ST_A0, ST_B0: the wall pixel each picture starts at
+  const EX = WX_(1068), EW = 7.6, EH = 1120 * SPX, EY = G3 + (WALL_FOOT - 560) * SPX; // the first stop's frame: epaRadar's piece with its car stands round (EX, EY)
+  const RX = WX_(2895); // raddavarfruberga's piece: its middle on the wall (the old stop stood at x 29.1)
   // The other six paintings (Tom 11-19, one artist per wall) go on their walls the same way: painted on the desk's graphics card (CREDITS.txt), the bare
   // concrete keyed out so the wall shows through, 1536 x 960 px each. paintOn puts picture pixel (px, py) at the wall point (wx, wy), the picture w m wide.
   // at(u, v) is any picture pixel in the wall's own space; the link marks and the painted areas are in picture pixels. The wall's own hole (moment 3) cuts through it too.
@@ -19,15 +19,19 @@
     m.position.set(cx, cy, zw + z); scene.add(m);
     const at = (u, v) => V(cx - w / 2 + u * k, cy + h / 2 - v * k, zw);
     return { m, at, w, h, k, ready: () => texReady(file), protect: (name, [x0, y0, x1, y1]) => PROT.push([name, at(x0, y1), at(x1, y0)]), zw }; }
-  // the street's two pictures (street_0: wall pixels 120..2060, street_1: 1960..4000) and what is on them, in the picture's own pixels (the wall's pixel minus ST_A0 / ST_B0)
-  const EP = paintOn("assets/street_0.webp", 1940 * SPX, [2002 - ST_A0, WALL_FOOT], [ST_A(2002), G2], .002, [1940, 1120]), RVP = paintOn("assets/street_1.webp", 2040 * SPX, [0, WALL_FOOT], [ST_B(ST_B0), G3], .002, [2040, 1120]);
-  const EPAN = EP, EPA_MARKS = [[318 - ST_A0, 418, 1632 - ST_A0, 822], [1632 - ST_A0, 500, 2002 - ST_A0, 812]], EPAB = EP, RVF_BOX = [1998 - ST_B0, 428, 3472 - ST_B0, 852]; // the links: epaRadar's name (the site) and its car (the code); raddavarfruberga's name (the site)
-  EP.protect("epaRadar's name", EPA_MARKS[0]); EP.protect("epaRadar's car", EPA_MARKS[1]); RVP.protect("raddavarfruberga's name", RVF_BOX); RVP.protect("raddavarfruberga's house", [3478 - ST_B0, 520, 3792 - ST_B0, 812]);
-  EP.protect("epaRadar's production", [134 - ST_A0, 12, 2002 - ST_A0, 1120]); RVP.protect("raddavarfruberga's production", [2000 - ST_B0, 12, 3999 - ST_B0, 1120]); // each whole piece with its clouds and tags (the framing check: the whole piece is on the screen at its stop)
-  // the pictures come up on the wall one by one as each arrives (like the garage's pieces, 80-admin.js): never before its picture is in, and never both before the tip
-  const ST = [EP, RVP].map(B => (B.m.visible = false, { B, start: 0, k: 0 }));
-  function streetAt(now) { for (const s of ST) { if (!s.start && introOver && s.B.ready()) { s.start = now; root.dataset.started = (+root.dataset.started || 0) + 1; } // once per visit; the checks count it
-      const sec = s.start ? (REDUCED ? 99 : (now - s.start) / 1000) : -1; s.k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - .35) / .8)); s.B.m.visible = s.k > 0; s.B.m.material.opacity = s.k; } }
+  // the street's two pictures and what is on them, in the picture's own pixels (the wall's pixel minus ST_A0 / ST_B0)
+  const EP = paintOn("assets/street_0.webp", 1980 * SPX, [0, WALL_FOOT], [WX_(ST_A0), G3], .002, [1980, 1120]), RVP = paintOn("assets/street_1.webp", 2050 * SPX, [0, WALL_FOOT], [WX_(ST_B0), G3], .002, [2050, 1120]);
+  RVP.m.renderOrder = 1; // over the left picture: in the overlap the two add up to the painted alpha only when the right one is drawn second
+  const EPAN = EP, EPA_MARKS = [[TA(318), 418, TA(1632), 822], [TA(1632), 500, TA(2002), 812]], EPAB = EP, RVF_BOX = [TB(1998), 428, TB(3472), 852]; // the links: epaRadar's name (the site) and its car (the code); raddavarfruberga's name (the site)
+  EP.protect("epaRadar's name", EPA_MARKS[0]); EP.protect("epaRadar's car", EPA_MARKS[1]); RVP.protect("raddavarfruberga's name", RVF_BOX); RVP.protect("raddavarfruberga's house", [TB(3478), 520, TB(3792), 812]);
+  EP.protect("epaRadar's production", [TA(134), 12, TA(2002), 1120]); RVP.protect("raddavarfruberga's production", [TB(2000), 12, TB(3999), 1120]); // each whole piece with its clouds and tags (the framing check: the whole piece is on the screen at its stop)
+  // the pictures come up on the wall together once both are in (like the garage's pieces, 80-admin.js): never before their picture, and not before the tip
+  const ST = [EP, RVP].map(B => (B.m.visible = false, { B, k: 0 })); let stStart = 0;
+  function streetAt(now) { if (!stStart && introOver && EP.ready() && RVP.ready()) { stStart = now; root.dataset.started = (+root.dataset.started || 0) + 2; } // once per visit; the checks count it
+    const sec = stStart ? (REDUCED ? 99 : (now - stStart) / 1000) : -1, k = sec < 0 ? 0 : REDUCED ? 1 : sm(cl((sec - .35) / .8));
+    for (const s of ST) { s.k = k; s.B.m.visible = k > 0; s.B.m.material.opacity = k; }
+    // the notes are sprayed on when they come into view (the camera has reached the first stop), a little after one another, and stay while in view
+    NOTE_PARTS.forEach((p, i) => { const [sx, , ok] = proj(p.mesh.position), on = k >= 1 && stencilAt > 0 && ok && sx > -.05 * innerWidth && sx < 1.05 * innerWidth; if (!on) p.seen = 0; else if (!p.seen) p.seen = now; p.fade(on && (REDUCED || now - p.seen > 250 + i * 110)); }); }
   // the tap areas over painted link marks (picture pixels): each at least 48 x 48 px; two marks that sit close share the line between them (each grows away from it), so they never overlap.
   // Each shows while its own mark is in view (on), and is out of the tab order otherwise.
   function placeHots(els, boxes, B, on) { const R = boxes.map(([x0, y0, x1, y1]) => { const [ax, ay, oa] = proj(B.at(x0, y0)), [bx, by, ob] = proj(B.at(x1, y1)), l = Math.min(ax, bx), r = Math.max(ax, bx), t = Math.min(ay, by), b = Math.max(ay, by),
@@ -59,7 +63,7 @@
   const SPRAY_FONT = '"Saira Stencil One", sans-serif';
   // painted glyphs for live numbers (Tom 11-25): the digits and words in the tag hand, one picture; [x, y, w, h] each, all 160 px tall (tests and skills added 11-26 for the Toolbox)
   const GLYPH = new Image(), GLYPH_AT = {"0":[0,0,105,160],"1":[113,0,95,160],"2":[216,0,134,160],"3":[358,0,123,160],"4":[489,0,136,160],"5":[633,0,136,160],"6":[777,0,109,160],"7":[894,0,121,160],"8":[1023,0,109,160],"9":[1140,0,100,160],"commits":[1248,0,614,160],"merged":[0,168,406,160],"pull requests":[414,168,616,160],"tests":[0,336,379,160],"skills":[387,336,417,160]};
-  GLYPH.src = "assets/epa_glyphs.webp"; const glyphsReady = GLYPH.decode().catch(() => {});
+  const glyphsReady = new Promise(done => LATE.run(() => { GLYPH.src = "assets/toolbox_glyphs.webp"; GLYPH.decode().catch(() => {}).then(() => { done(); LATE.got(); }); })); // only the Toolbox's numbers use it: after the tip
   function makeSpray(o) { const FONT = o.font || SPRAY_FONT, WT = o.weight || "", [x0, y0, x1, y1] = o.rect, w = x1 - x0, h = y1 - y0, PPM = 400, W = Math.round(w * PPM), H = Math.round(h * PPM);
     const mk = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; return c; }, out = mk(), og = out.getContext("2d", { willReadFrequently: true });
     const map = new THREE.CanvasTexture(out); map.encoding = THREE.sRGBEncoding; map.anisotropy = maxAniso;
@@ -141,7 +145,7 @@
     ["epa", 3, "epa.migrations", [1322, 214], 3, 92, [["#", "migrations"]], 0, [1324, 137, 1769, 235]],
     ["rvf", 0, "rvf.commits", [3345, 296], 4, 96, [["#", "commits"]], 0, [3346, 207, 3832, 294]],
     ["rvf", 1, "rvf.merged", [3462, 910], 3, 88, [["#", "merged"], ["pull requests"]], 80.5, [3465, 830, 3871, 1019]] ];
-  const NOTE_AT = { epa: [ST_A, G2], rvf: [ST_B, G3] }; // the wall's pixel x to the scene, and the street under the piece
+  const NOTE_AT = { epa: [WX_, G3], rvf: [WX_, G3] }; // the wall's pixel x to the scene, and the street under the piece
   // glyphs of a note for a count n, in the note's own space (x from the anchor, y from the first baseline): [glyph, x, y, scale]
   function noteGlyphs(n, [, , , , , hd, lines, pitch]) { const k = hd / 160, kk = k * NOTE_WORD, seen = {}, out = [];
     lines.forEach((line, li) => { let x = li ? 26 * k : 0; const by = li * pitch;
@@ -162,23 +166,10 @@
         map.needsUpdate = true; },
       fade(on) { const now = performance.now(), dt = Math.min(.1, (now - sp.at) / 1000 || 0); sp.at = now; sp.op = cl(sp.op + (on ? dt / .6 : -dt / .6)); sp.mesh.visible = sp.op > .01; sp.mesh.material.opacity = sp.op; } }; // the spray-in: it comes up in .6 s
     (SPRAYS[proj] ||= []).push(sp); noteSheetReady.then(() => sp.draw()); return sp; });
-  const EPA_PARTS = NOTE_PARTS.filter((_, i) => NOTES[i][0] === "epa"), RVF_PARTS = NOTE_PARTS.filter((_, i) => NOTES[i][0] === "rvf");
-  const inkOf = p => { const c = p.mesh.material.map.image, d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let ink = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 128) ink++; return ink; };
+    const inkOf = p => { const c = p.mesh.material.map.image, d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let ink = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 128) ink++; return ink; };
   window.numsTest = () => Object.fromEntries(["ttoolbox", "dot", "tthermal"].map(k => [k, (SPRAYS[k] || []).map(p => ({ shown: p.shown ?? null, ink: inkOf(p), op: +p.op.toFixed(2) }))])); // for the garage check: each Toolbox number's painted count, paint and how far it has faded in
   window.sprayTest = () => NOTE_PARTS.map(p => ({ key: p.key, shown: p.shown ?? null, used: p.used || [], ink: inkOf(p), op: +p.op.toFixed(2) })); // for the epanums check: the number each of the street's six notes shows, how much paint it has and how far it has faded in
-  // the underpass (Tom 11-18): the street goes down its second flight under a bridge, from the painting's right edge to just short of
-  // raddavarfruberga. The deck rests on its abutment, a wall that stands forward of the street wall: the car drives in behind its corner.
-  const UP0 = EX + EW / 2 - .05, UP1 = 22.9, UD = .22, DECK = G2 + 3.8, DECK_Z = 30;
-  { const len = UP1 - UP0, ah = DECK - G3, conc = (rx, ry, c) => new THREE.MeshStandardMaterial({ color: c, roughness: .92, map: tex("assets/wall4_diff.jpg", true, rx, ry), normalMap: tex("assets/wall4_nor_gl.jpg", false, rx, ry) });
-    const abut = new THREE.Mesh(new THREE.BoxGeometry(len, ah, UD), conc(len / TILE, ah / TILE, 0x5c5953)); abut.position.set(UP0 + len / 2, G3 + ah / 2, UD / 2); scene.add(abut);
-    const deck = new THREE.Mesh(new THREE.BoxGeometry(len + .3, 1.2, DECK_Z), conc((len + .3) / TILE, DECK_Z / TILE, 0x77736c)); deck.position.set(UP0 + len / 2, DECK + .6, DECK_Z / 2); scene.add(deck);
-    const tubeM = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: 0xffe6c4, emissiveIntensity: 2.4 });
-    { const prev = ground.material.onBeforeCompile; ground.material.onBeforeCompile = sh => { prev(sh);
-      sh.fragmentShader = sh.fragmentShader.replace("#include <emissivemap_fragment>", `diffuseColor.rgb *= 1. - .62 * smoothstep(${(UP0 - .6).toFixed(2)}, ${(UP0 + .4).toFixed(2)}, vWP.x) * (1. - smoothstep(${(UP1 - .4).toFixed(2)}, ${(UP1 + .6).toFixed(2)}, vWP.x)) * step(vWP.z, ${DECK_Z.toFixed(1)});
-        #include <emissivemap_fragment>`); }; }
-    for (const z of [2, 7, 12, 17]) { const t = new THREE.Mesh(new THREE.BoxGeometry(1.3, .05, .14), tubeM); t.position.set(UP0 + len / 2, DECK - .03, z); scene.add(t); } }
-
   // a second street light for the second piece; it flickers on as the camera arrives
-  const lamp2 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp2.position.set(EX - 6.5, 3.8 - DROP, 3.4); lamp2.target.position.set(EX + .4, EY, 0); scene.add(lamp2, lamp2.target);
+  const lamp2 = new THREE.SpotLight(0xfff3e6, 0, 30, .62, .75, 1.3); lamp2.position.set(EX - 6.5, 3.8 - 2 * DROP, 3.4); lamp2.target.position.set(EX + .4, EY, 0); scene.add(lamp2, lamp2.target);
   const head = document.getElementById("head");
   const CREAM = "236,230,216";

@@ -12,9 +12,8 @@
     if (introOver && walk3 > .3 && !rvfStart) rvfStart = now; // once per visit, while the camera is still coming in
     const sec = rvfStart ? (REDUCED ? 99 : (now - rvfStart) / 1000) : -1;
     const showL = sec > RVF_END + .2 && walk3 > .5 && end3 < .5; [tagRvf, l7, c7].forEach(e => e.style.opacity = showL ? 1 : 0);
-    if (on) pin(tagRvf, l7, c7, NARROW ? V(RX - .84, G3 + .1, .3) : RVP.at(2895 - ST_B0, WALL_FOOT), NARROW ? 14 : 8, NARROW ? 70 : 34); // below the piece's foot, on the dark street, where the neon box has room
-    RVF_PARTS.forEach((p, i) => p.fade(walk3 > .25 && end3 < .8 && ST[1].k >= 1 && sec > RVF_END + .2 + i * .3)); // the notes are sprayed on once the picture is up and stay while the piece is in view
-    placeHots([hot3], [RVF_BOX], RVP, ST[1].k >= 1 && sec >= .3 && walk3 > .5 && endK < .5); } // the piece's name is the link, once the camera is at the wall
+    if (on) pin(tagRvf, l7, c7, NARROW ? V(camera.position.x - .6, G3 + .1, .3) : RVP.at(TB(2895), WALL_FOOT), NARROW ? 14 : 8, NARROW ? 70 : 34); // below the piece's foot, on the dark street, where the neon box has room
+        placeHots([hot3], [RVF_BOX], RVP, ST[1].k >= 1 && stencilAt > 0 && endK < .5); } // the piece's name is the link, once the camera is at the wall
 
   // ---- the ending (Tom 11-26): past raddavarfruberga a garage door in the street wall rolls up and the camera walks into a workshop: a workbench at the door end, a shelf and a
   // tool chest at the far end, fluorescent tubes. On its back wall the Toolbox production: ttoolbox, dot, tthermal. A second door at the far end is open: the way out to EDGE, on its own clean wall (client work, the next round); then on along the wall, in close
@@ -328,7 +327,7 @@
         dot: ["dot", "#25407a", ["Bash", "bats", "GNU Stow", "mise"]], tthermal: ["tthermal", "#d8435f", ["JavaScript", "QML", "Shell"]], "app-utveckling.se": ["edge", "#1f5fc4", ["Astro", "TypeScript"]] }[u.name];
       const stack = u.painted || u.tile ? [] : stack0, yb = u.B.at(0, u.bb[3]).y; // painted: the picture has its stack written in // beside the painting on a laptop; under it, above the floor, on a phone
       if (u.tile) { // (Tom 11-26) the production: the live numbers sprayed in the bare wall above the piece, clear of its clouds and words (the stack words are painted into the strip),
-        // in painted digits and words (assets/epa_glyphs.webp, the tag hand epaRadar's numbers use), outlined and shadowed like the production's own tags
+        // in painted digits and words (assets/toolbox_glyphs.webp, the tag hand), outlined and shadowed like the production's own tags
         const GW = { commits: [["commits"]], tests: [["tests"]], skills: [["skills"]], "merged pull requests": [["merged"], ["pull requests"]] };
         u.parts = (LIVE[key] || []).map((s, i) => makeSpray({ key, only: i, name: u.name + "'s number " + (i + 1), colour: "#f3ead8", piece: colour, glyphs: { words: GW[s.word[1]] }, stack: [], zw: u.zw, z: .004,
           rect: ((p, q, p1, q1) => [u.B.at(p, 0).x, u.B.at(0, q1).y, u.B.at(p1, 0).x, u.B.at(0, q).y])(...u.nums[i]) })); }

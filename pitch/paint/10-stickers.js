@@ -29,7 +29,7 @@
           #include <emissivemap_fragment>`); }; }
   const stairLamps = STAIRS.map(([a, b, h0, h1]) => { const m = new THREE.Group(), x = (a + b) / 2;
     const box = new THREE.Mesh(new THREE.BoxGeometry(.32, .18, .12), postM), lens = new THREE.Mesh(new THREE.BoxGeometry(.26, .04, .1), new THREE.MeshStandardMaterial({ color: 0, emissive: 0xffd9a8, emissiveIntensity: 2 }));
-    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, h1 + 2.5, a >= RA ? .29 : .07); scene.add(m); // the second flight's lamp hangs on the bridge's abutment
+    lens.position.set(0, -.1, 0); m.add(box, lens); m.position.set(x, h1 + 2.5, .07); scene.add(m);
     const pts = [V(a - .4, h0 + .9, .3), V(a, h0 + .9, .3), V(b, h1 + .9, .3), V(b + .4, h1 + .9, .3)];
     for (let i = 0; i < 3; i++) { const d = pts[i + 1].clone().sub(pts[i]), r = new THREE.Mesh(new THREE.CylinderGeometry(.022, .022, d.length(), 8), postM);
       r.position.copy(pts[i]).addScaledVector(d, .5); r.quaternion.setFromUnitVectors(V(0, 1, 0), d.clone().normalize()); scene.add(r); }
@@ -41,9 +41,8 @@
     cw.rotation.z = Math.atan2(RH1 - RH0, RB - RA); cw.position.set((RA + RB) / 2, (RH0 + RH1) / 2 + .35, SW + .11); scene.add(cw); } // the stairs' side wall, its top .9 m over the steps
   const stairLight = new THREE.SpotLight(0xffd9a8, 0, 7, .95, .8, 1.4); scene.add(stairLight, stairLight.target);
   function stairsAt(cx) { const i = cx < 12 ? 0 : 1, s = stairLamps[i];
-    const w = i === 0 ? 1 - sm(cl((cx - 10) / 2)) : sm(cl((cx - 12) / 2)) * (1 - sm(cl((cx - 27) / 2)));
-    if (i) { stairLight.position.set((UP0 + UP1) / 2, DECK - .15, 2.2); stairLight.target.position.set((UP0 + UP1) / 2, G3 + .8, 0); stairLight.angle = 1.2; stairLight.distance = 10; } // under the bridge: the deck's own tubes light the abutment and the steps (Tom 11-24: no dark block)
-    else { stairLight.position.set(s.x, s.y, .4); stairLight.target.position.set(s.x, s.y - 3, 1.6); stairLight.angle = .95; stairLight.distance = 7; }
+    const w = i === 0 ? 1 - sm(cl((cx - 10) / 2)) : sm(cl((cx - 10) / 2)) * (1 - sm(cl((cx - 19) / 2))); // each flight has the light while the camera is by it
+    { stairLight.position.set(s.x, s.y, .4); stairLight.target.position.set(s.x, s.y - 3, 1.6); stairLight.angle = .95; stairLight.distance = 7; }
     stairLight.intensity = (i ? 9 : 7) * w * (introOver ? 1 : 0); }
   const pool = new THREE.SpotLight(0xffd2a0, 0, 14, .62, .85, 1.6); pool.position.set(POST.x, GROUND + 6.3, POST.z + 1.25); pool.target.position.set(POST.x + .3, GROUND, POST.z + 1.6); scene.add(pool, pool.target); // a curb stone at the pavement's edge; the darker band beyond is the road
   ground.receiveShadow = true; scene.add(ground);

@@ -51,7 +51,7 @@
       THREE.ShaderChunk.normal_fragment_maps.replaceAll("texture2D( normalMap, vUv )", "texture2D( normalMap, ( uNorT * vec3( vUv, 1. ) ).xy )")); };
     m.customProgramCacheKey = () => "wallBump"; return m; };
   // downhill (Tom 11-16: scrolling down should go down): the street steps down 1.8 m twice, between the scenes
-  const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, STAIRS = [[5, 8, GROUND, G2], [19.3, 22.3, G2, G3]], NSTEP = 12;
+  const DROP = 1.8, G2 = GROUND - DROP, G3 = GROUND - 2 * DROP, STAIRS = [[5, 8, GROUND, G2], [12.5, 15.5, G2, G3]], NSTEP = 12; // (Tom 11-27) both flights come before the street's wall: no stairs or bridge between its two pieces
   // the workshop (Tom 11-26: a garage workshop, not a way down under the ground). A room built behind the street wall from HX0 to CX1: BD deep, RH high, its
   // floor the street's (WF = G3). A garage door in the street wall (DOOR_A) rolls up as you come; the far one (DOOR_B) is open, the way out. The four tools'
   // walls hang on the room's back wall, at z = WZ. The street stays at G3 all along.
@@ -62,8 +62,8 @@
   // the scroll's own pace (R2, Tom 11-24: "a lot of scrolling"): the walk keeps its own count (sv, 0..SV_MAX: every moment, light and check is set in it),
   // but the page is shorter: a wall holds ~20-25 vh of scroll, a move between walls about half what it took. PACE: [sv, vh down the page below the park];
   // straight between pairs, so a move keeps its own easing. The checks scroll with svY(sv), which reads it.
-  const PACE = [[0, 0], [60, 45], [240, 70], [304, 90], [340, 95], [416, 145], [486, 170], [529, 190], [548, 195], [612, 217], [656, 230], [700, 248], /* 612-656: through the garage door, a little quicker */ [725, 262], [770, 290], [795, 310],
-    [840, 340], [865, 360], [910, 390], [935, 410], [1045, 460], [1058, 485], /* the street past EDGE (Tom 11-27, audit N-2): the camera walks 16 m along a dark street to the end wall; it had 50 vh, 23 of them in the black middle, now 14 at one even rate (the move itself is eased in 80-admin.js) */ [SV_MAX - 10, 499], [SV_MAX, 507]], WALK = PACE[PACE.length - 1][1];
+  const PACE = [[0, 0], [60, 50], [240, 75], [304, 95], [340, 100], [416, 125], [486, 150], [529, 170], [548, 175], [612, 197], [656, 210], [700, 228], /* 612-656: through the garage door, a little quicker */ [725, 242], [770, 270], [795, 290],
+    [840, 320], [865, 340], [910, 370], [935, 390], [1045, 440], [1058, 465], /* the street past EDGE (Tom 11-27, audit N-2): the camera walks 16 m along a dark street to the end wall; it had 50 vh, 23 of them in the black middle, now 14 at one even rate (the move itself is eased in 80-admin.js) */ [SV_MAX - 10, 479], [SV_MAX, 487]], WALK = PACE[PACE.length - 1][1];
   const paceOf = (v, a, b) => { if (v <= PACE[0][a]) return PACE[0][b]; for (let i = 1; i < PACE.length; i++) if (v <= PACE[i][a]) { const [p, q] = [PACE[i - 1], PACE[i]]; return p[b] + (q[b] - p[b]) * (v - p[a]) / (q[a] - p[a]); } return PACE[PACE.length - 1][b]; };
   const UP = 90, TOP = 50, PAGE = TOP + UP + WALK + 100, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / PAGE, topPx = () => track.offsetHeight * TOP / PAGE;
   track.style.height = PAGE + "vh"; // the stylesheet says the same, for the first paint
