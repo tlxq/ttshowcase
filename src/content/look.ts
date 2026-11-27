@@ -261,14 +261,15 @@ export const lookLive: {
     note: { hand: "tryIt", label: "try it" },
   },
   {
-    // Public sites Tom built for EDGE Associates (Tom 11-13: "we can show"); nothing about its
-    // clients or his job here (never-public list). Recording + link only (Tom 11-14).
-    name: "app-utveckling.se",
-    line: "Two landing pages for EDGE Associates, on one code base.",
+    // Public sites Tom built for EDGE Associates (Tom 11-13: "we can show"): edgeflow.se, the product site, and
+    // the two landing pages app-utveckling.se and mjukvaruutvecklare.com; nothing about its clients or his job here
+    // (never-public list). Recording + link only (Tom 11-14; the films stay named app-utveckling and mjukvaruutvecklare).
+    name: "edgeflow.se",
+    line: "The product site for EdgeFlow, and two landing pages, for EDGE Associates.",
     role: "Work project, built alone",
     did: [
-      "51 pull requests, from the first sketch to live",
-      "The product site for EdgeFlow, built alone from sketch to live.",
+      "edgeflow.se, from the first sketch to live",
+      "Two landing pages on one code base, 51 pull requests",
       "Scroll-driven scenes",
       "SEO and Core Web Vitals checked",
     ],

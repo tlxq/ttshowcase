@@ -26,7 +26,7 @@
     const bodyM = new THREE.MeshStandardMaterial({ map: bodyT, roughness: .66, metalness: .08, envMapIntensity: .25 }), endM = new THREE.MeshStandardMaterial({ map: endT, roughness: .66, metalness: .08, envMapIntensity: .25 });
     const steel = new THREE.MeshStandardMaterial({ color: 0xb3ae9e, roughness: .55, metalness: .15, envMapIntensity: .25 }), grey = new THREE.MeshStandardMaterial({ color: 0x3b3e43, roughness: .6, metalness: .5 }), cast = new THREE.MeshStandardMaterial({ color: 0x9d9889, roughness: .6, metalness: .25, envMapIntensity: .25 });
     const group = new THREE.Group(); scene.add(group);
-    const add = (geo, mat, x, y, z, cast = true) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = cast; m.receiveShadow = true; group.add(m); return m; };
+    const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); group.add(m); return m; };
     // the ribbed front: a strip of flat quads, each with the normal of its slope (non-indexed: every quad its own)
     { const pos = [], nor = [], uv = [], zAt = s => ZF + RIB_D * rib(s);
       const pts = []; for (let r = 0; r < NR; r++) for (const s of [0, .27, .5, .77]) pts.push([XR0 + (r + s) * P, zAt(s)]); pts.push([XR0 + NR * P, zAt(0)]);
@@ -34,7 +34,7 @@
         pos.push(xa, YF0, za, xb, YF1, zb, xb, YF0, zb, xa, YF0, za, xa, YF1, za, xb, YF1, zb); for (let k = 0; k < 6; k++) nor.push(n.x, n.y, n.z);
         uv.push(ua, va, ub, vb, ub, va, ua, va, ua, vb, ub, vb); }
       const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
-      const face = new THREE.Mesh(g, bodyM); face.castShadow = face.receiveShadow = true; group.add(face);  }
+      const face = new THREE.Mesh(g, bodyM); group.add(face);  }
     // the rest: back, roof, floor, the two ends (the right one is seen on the way to the end wall), the posts and the rails (steel, a little proud of the ribs)
     add(new THREE.BoxGeometry(L, H, .06), bodyM, CX, Y0 + H / 2, ZF + D - .03);
     add(new THREE.BoxGeometry(L, .06, D), bodyM, CX, Y0 + H - .04, ZF + D / 2);
@@ -42,7 +42,7 @@
     add(new THREE.BoxGeometry(L, .17, .1), steel, CX, Y0 + H - .095, ZF - .035); add(new THREE.BoxGeometry(L, .14, .1), steel, CX, Y0 + .07, ZF - .035);
     for (const sx of [-1, 1]) for (const [y, h] of [[Y0 + H / 2, H]]) { add(new THREE.BoxGeometry(.14, h, .12), steel, CX + sx * (L / 2 - .07), y, ZF - .045); add(new THREE.BoxGeometry(.12, h, .1), steel, CX + sx * (L / 2 - .06), y, ZF + D + .035); }
     for (const sx of [-1, 1]) for (const y of [Y0 + .09, Y0 + H - .09]) add(new THREE.BoxGeometry(.18, .18, .18), cast, CX + sx * (L / 2 - .09), y, ZF - .06);
-    for (const x of [X0 + .4, X1 - .4]) add(new THREE.BoxGeometry(.3, .16, .3), grey, x, Y0 - .08, ZF + D / 2, false); // two pads it stands on
+    for (const x of [X0 + .4, X1 - .4]) add(new THREE.BoxGeometry(.3, .16, .3), grey, x, Y0 - .08, ZF + D / 2); // two pads it stands on
     // by day the ribs read at a glance (round 4): a stronger rib wave over the metal, in only as the day comes in (opacity 0 at night: the night look is round 3's)
     const dayRibs = (() => { const c = mk(256, 8); ribShade(c, 0, 256, .16, .09); const t = tex2(c, true); t.repeat.set(NR, 1);
       const g = new THREE.PlaneGeometry(NR * P, YF1 - YF0), m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, opacity: 0, polygonOffset: true, polygonOffsetFactor: -1 })); m.rotation.y = Math.PI; m.position.set(XR0 + NR * P / 2, (YF0 + YF1) / 2, ZF - .0015); m.scale.x = -1; m.material.side = THREE.DoubleSide; group.add(m); return m; })();
@@ -65,18 +65,18 @@
     const lampM = new THREE.MeshStandardMaterial({ color: 0x1d1a14, emissive: 0xffe2b0, emissiveIntensity: 0 }), lamps = [];
     for (const [sx, tx] of [[-1, 1.6], [1, -1.6]]) { const lx = CX + sx * 2.95, lz = ZF - 1.6, hy = Y0 + 1.95;
       const legM = new THREE.MeshStandardMaterial({ color: 0x3a3d42, roughness: .45, metalness: .6 });
-      for (let i = 0; i < 3; i++) { const a = i * 2.094 + .5, leg = new THREE.Mesh(new THREE.CylinderGeometry(.014, .018, 1.95, 6), legM); leg.position.set(lx + Math.sin(a) * .15, Y0 + .93, lz + Math.cos(a) * .15); leg.rotation.set(-Math.cos(a) * .157, 0, Math.sin(a) * .157); leg.castShadow = false; group.add(leg); }
+      for (let i = 0; i < 3; i++) { const a = i * 2.094 + .5, leg = new THREE.Mesh(new THREE.CylinderGeometry(.014, .018, 1.95, 6), legM); leg.position.set(lx + Math.sin(a) * .15, Y0 + .93, lz + Math.cos(a) * .15); leg.rotation.set(-Math.cos(a) * .157, 0, Math.sin(a) * .157); group.add(leg); }
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, .5, 6), grey); pole.position.set(lx, hy - .2, lz); group.add(pole);
       const head = new THREE.Group(); head.position.set(lx, hy + .1, lz); const hb = new THREE.Mesh(new THREE.BoxGeometry(.5, .36, .1), grey), face = new THREE.Mesh(new THREE.PlaneGeometry(.44, .3), lampM); face.position.z = .056; head.add(hb, face);
       const aim = V(CX + tx, Y0 + 1.2, ZF); head.lookAt(aim); group.add(head);
       const sp = new THREE.SpotLight(0xffe0bc, 0, 17, .62, 1, 1.4); sp.position.copy(head.position); sp.target.position.copy(aim); scene.add(sp, sp.target);
-      sp.castShadow = false; sp.shadow.mapSize.set(2048, 2048); sp.shadow.camera.near = 1.5; sp.shadow.camera.far = 16; sp.shadow.bias = -.0004; sp.shadow.normalBias = .004; lamps.push(sp); }
+      lamps.push(sp); }
     // ---- the fence: steel mesh panels (3.5 m x 2 m) on concrete feet, from both ends of the container along the street to the end wall (x 104); see-through, so what stands behind it is built
     const FZ = ZF + .3, FW = 3.5, FH = 2, fence = [[X0, -1, 3], [X1, 1, 10]]; // [start x, direction, panels]
     const meshT = (() => { const c = mk(64, 64), g = c.getContext("2d"); g.strokeStyle = "#b9bdc2"; g.lineWidth = 6; g.strokeRect(0, 0, 64, 64); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(FW / .1, FH / .1); t.anisotropy = maxAniso; t.encoding = THREE.sRGBEncoding; return t; })();
     const meshM = new THREE.MeshStandardMaterial({ map: meshT, transparent: true, alphaTest: .35, side: THREE.DoubleSide, roughness: .5, metalness: .6, envMapIntensity: .3 }), concM = new THREE.MeshStandardMaterial({ color: 0x74767a, roughness: .95 });
     const T4 = (x, y, z, sx = 1, sy = 1, sz = 1) => new THREE.Matrix4().compose(V(x, y, z), new THREE.Quaternion(), V(sx, sy, sz));
-    const inst = (geo, mat, ms) => { const im = new THREE.InstancedMesh(geo, mat, ms.length); ms.forEach((m, i) => im.setMatrixAt(i, m)); im.receiveShadow = true; im.frustumCulled = false; group.add(im); return im; };
+    const inst = (geo, mat, ms) => { const im = new THREE.InstancedMesh(geo, mat, ms.length); ms.forEach((m, i) => im.setMatrixAt(i, m)); im.frustumCulled = false; group.add(im); return im; };
     { const panels = [], posts = [], feet = [], rails = [];
       for (const [x0, d, n] of fence) for (let i = 0; i < n; i++) { const xa = x0 + d * i * FW, xm = xa + d * FW / 2, xb = xa + d * FW;
         panels.push(T4(xm, Y0 + .1 + FH / 2, FZ)); rails.push(T4(xm, Y0 + .1 + FH - .02, FZ), T4(xm, Y0 + .1 + .04, FZ));
@@ -84,7 +84,7 @@
       inst(new THREE.PlaneGeometry(FW, FH), meshM, panels); inst(new THREE.BoxGeometry(FW, .04, .04), grey, rails); inst(new THREE.CylinderGeometry(.02, .02, FH + .1, 6), grey, posts); inst(new THREE.BoxGeometry(.7, .22, .25), concM, feet); }
     // ---- behind the fence: the ground goes on (dark), a concrete building frame at each side of the container's view with its work lights, and one far crane
     const darkM = new THREE.MeshStandardMaterial({ color: 0x2a2c30, roughness: .95, envMapIntensity: .15 });
-    { const gr = new THREE.Mesh(new THREE.PlaneGeometry(160, 90), darkM); gr.rotation.x = -Math.PI / 2; gr.position.set(80, Y0 - .02, 64); gr.receiveShadow = true; group.add(gr); }
+    { const gr = new THREE.Mesh(new THREE.PlaneGeometry(160, 90), darkM); gr.rotation.x = -Math.PI / 2; gr.position.set(80, Y0 - .02, 64); group.add(gr); }
     const conc = new THREE.MeshStandardMaterial({ color: 0x4b4e54, roughness: .95, envMapIntensity: .15 }), FL = 3.4, NF = 2;
     const work = [], workM = new THREE.MeshStandardMaterial({ color: 0x2a1c0e, emissive: 0xffb060, emissiveIntensity: 0 });
     { const cols = [], slabs = [], bars = [];
@@ -109,7 +109,6 @@
       // the plane is turned to face the camera, so its picture is mirrored: the jib's tip (picture x 500 of 512, y 20 of 512 from the top) is at the world's x below the plane's middle
       halo(CRANE.x + (500 / 512 - .5) * CRANE.s, Y0 + CRANE.s / 2 - 1 + (.5 - 70 / 512) * CRANE.s, CRANE.z - .1, 1.8, 0xff2a1a); }
     const hz = new THREE.Mesh(new THREE.PlaneGeometry(240, 40), new THREE.MeshBasicMaterial({ map: glow, color: 0x4a6490, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, opacity: 0 })); hz.position.set(CX, Y0 + 4, 80); hz.rotation.y = Math.PI; group.add(hz);
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     return { L, H, D, CX, ZF, X0, X1, Y0, B, bodyM, dayRibs, lamps, lampM, work, workM, workL, halos, craneM, hz, group };
   })();
   const siteLamps = SITE.lamps, siteM = SITE.lampM;
@@ -118,6 +117,10 @@
   const siteFill = k => { siteDay.intensity = 4 * k; };
   // the site's lights: k = how far the camera has come out (0..1); the lamps and the work lights are on from there and stay on behind it. The clock (80-admin.js clockLight) switches them off by day with siteLights.
   const LAMP_I = 4.2;
+  // the site's meshes are shown only while the walk can see them (sv 815 to 1160); its lights stay in the scene all the way: taking them out and putting them back changes the number of lights, and every program is built again for it (measured round 5: an 800 ms stop at sv 816, on the desk's card), six lights in every material's loop is the cheaper price
+  let siteWas = null;
+  function siteActive(on) { if (on === siteWas) return; siteWas = on; SITE.group.visible = on; }
+  siteActive(false);
   function siteOn(k) { siteLamps.forEach(l => l.intensity = LAMP_I * k); siteM.emissiveIntensity = 2.4 * k; SITE.workM.emissiveIntensity = 2 * k; SITE.workL.forEach(l => l.intensity = 6 * k); SITE.halos.forEach((h, i) => h.sp.material.opacity = k * (i === SITE.halos.length - 1 ? .9 : .35));
     SITE.craneM.color.setHex(0x07080b); SITE.hz.material.opacity = k * .9; SITE.dayRibs.material.opacity = 0; SITE.bodyM.color.setHex(0xffffff); }
   function siteLights(n) { SITE.workL.forEach(l => l.intensity *= n); SITE.workM.emissiveIntensity *= n; SITE.halos.forEach(h => h.sp.material.opacity *= n); SITE.hz.material.opacity *= n; SITE.craneM.color.setHex(0x5b6370); SITE.dayRibs.material.opacity = 1 - n; SITE.bodyM.color.setHex(0xffffff).lerp(DAY_BODY, 1 - n); } // by day: a greyer, more worn off-white (f2) and ribs that read
