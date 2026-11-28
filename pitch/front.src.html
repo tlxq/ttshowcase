@@ -301,6 +301,11 @@ h2 .mark::after { bottom: .02em; height: .15em; opacity: .85; }
 @media (max-width: 640px) {
   /* the poster as in Tom's pick: he stands on the bottom edge on the right, LARSSON runs over his hair, the role bottom left */
   :root { --hp: 64svh; }
+  /* N-21 (night audit 11-27): on a phone "what he built" came after 6.3 swipes, the hero alone took 4. The hero's whole motion is scrubbed
+     over its length, so a shorter hero is the same motion in less scroll: 290 -> 180svh; the statement's and the work's padding shrink too */
+  .hero { height: 180svh; }
+  .say { padding-top: 8svh; padding-bottom: 18svh; }
+  .track { padding-top: 8svh; gap: 10svh; }
   .name { top: calc(100svh - var(--hp) - var(--name-size, 15vw) * 1.2); }
   .photo { left: 70%; }
   .hint { display: none; }

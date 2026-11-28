@@ -3,7 +3,7 @@
  * the live one in api/tags.ts, nothing is kept after the process ends.
  */
 import { randomUUID } from "node:crypto";
-import type { Deps, Status } from "../../api/tags.ts";
+import { overlaps, type Deps, type Status } from "../../api/tags.ts";
 
 type Row = Parameters<Deps["db"]["insert"]>[0] & {
   id: string;
@@ -30,8 +30,13 @@ export function memoryDeps(secret: string, mail: Deps["mail"], adminKey: string 
       async held() {
         return rows.filter((r) => r.status === "waiting");
       },
+      async taken() {
+        return [...rows];
+      },
       async insert(t) {
-        if (rows.some((r) => r.device === t.device)) return null;
+        // one step, like the real store's: nothing is awaited between the checks and the push
+        if (rows.some((r) => r.device === t.device)) return "one-tag";
+        if (rows.some((r) => overlaps(r, t))) return "spot-taken";
         const id = randomUUID();
         sends.push(t.ip_hash);
         rows.push({ ...t, id, created_at: new Date().toISOString(), status: "waiting" });

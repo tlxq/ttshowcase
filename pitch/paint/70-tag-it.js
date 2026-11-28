@@ -62,7 +62,7 @@
       renderer.state.bindTexture(tglx.TEXTURE_2D, pr.__webglTexture); tglx.pixelStorei(tglx.UNPACK_FLIP_Y_WEBGL, true); tglx.pixelStorei(tglx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); tglx.pixelStorei(tglx.UNPACK_ALIGNMENT, 4);
       tglx.texSubImage2D(tglx.TEXTURE_2D, 0, x, TH - y - h, tglx.RGBA, tglx.UNSIGNED_BYTE, tgc.getImageData(x, y, w, h)); }
     b.x0 = b.y0 = 1e9; b.x1 = b.y1 = -1e9; b.all = false; }
-  function tagPlace(x, y) { tag.x = x; tag.y = y; tagMesh.position.set(x, y - DRIP / 2, .003); } // the frame's top edge stays at the spot's; the drip room hangs below
+  function tagPlace(x, y) { tag.x = x; tag.y = y; tagMesh.position.set(x, y - DRIP / 2, .0033); tagMesh.renderOrder = .5; } // the frame's top edge stays at the spot's; the drip room hangs below
   function tagMenus(open) { const was = !tagToolsM.hidden || !tagColsM.hidden, back = !tagToolsM.hidden ? tagToolB : tagColB, inMenu = tagToolsM.contains(document.activeElement) || tagColsM.contains(document.activeElement); tagToolsM.hidden = open !== tagToolsM; tagColsM.hidden = open !== tagColsM;
     tagToolB.setAttribute("aria-expanded", open === tagToolsM); tagColB.setAttribute("aria-expanded", open === tagColsM); if (was && !open && inMenu) back.focus({ preventScroll: true }); return was && !open; }
   [tagToolsM, tagColsM].forEach(m => m.addEventListener("focusout", e => { if (!m.hidden && !m.contains(e.relatedTarget) && e.relatedTarget !== tagToolB && e.relatedTarget !== tagColB) { m.hidden = true; tagToolB.setAttribute("aria-expanded", false); tagColB.setAttribute("aria-expanded", false); } }));
@@ -80,7 +80,7 @@
     tagMesh.visible = true; tagBarPaint(); pickShow(); document.fonts.load(TAG_FONT).catch(() => {}); }
   function tagStop() { if (!tag.stage) return; tag.stage = null; tag.strokes = []; tag.cur = null; tag.play = null; tag.runs = []; tagMesh.visible = false; tagMenus(); } // Cancel: the paint goes with it
   function tagMove() { if (tag.cur) return; tag.stage = "move"; tagMenus(); pickWideGo(); } // back to the wide shot; the paint stays and goes with the frame
-  function tagMoveTo() { tag.stage = "draw"; tagPlace(pick.x, pick.y); tagBarPaint(); pickShow(); }
+  function tagMoveTo() { tag.stage = "draw"; tagPlace(pick.x, pick.y); tagMesh.visible = true; tagBarPaint(); pickShow(); }
   function tagRedo() { tag.stage = "draw"; tag.play = null; tag.name = ""; tagRedraw(); tagBarPaint(); pickShow(); tagDone.focus({ preventScroll: true }); }
   const tagAt = e => { const w = wallAt(e.clientX, e.clientY); if (!w) return null;
     return [cl(Math.round((w[0] - (tag.x - FRAME.w / 2)) * TPM), -200, TW + 200), cl(Math.round((tag.y + FRAME.h / 2 - w[1]) * TPM), -200, TFH + 200)]; };
@@ -114,8 +114,8 @@
   tagPut.addEventListener("click", () => { if (tag.stage !== "send" || tag.play) return; if (adm.make) { admPut(); return; } tag.name = tagName.value.replace(/[\p{Cc}\p{Cf}]/gu, "").trim().slice(0, 24); tagRedraw();
     try { localStorage.setItem(TAG_KEY, JSON.stringify({ v: 1, x: tag.x, y: tag.y, w: FRAME.w, h: FRAME.h, turn: 0, name: tag.name, strokes: tag.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr })) })); }
     catch (_) { tag.err = true; pickShow(); return; } // nowhere to keep it: it stays here, and Leave your tag stays
-    tag.stage = null; tag.putAt = performance.now() - (REDUCED ? 1e5 : 0); leaveB.hidden = true; pick.locked = false; pickGo(-1, 1.2); tagSendOut(); });
-  function tagTick(now) { if (adm.on) admTick(); if (tag.play) tagPlay(now);
+    tag.stage = null; tag.putAt = performance.now() - (REDUCED ? 1e5 : 0); leaveB.hidden = true; tag.lost = false; pick.locked = false; pickGo(-1, 1.2); tagSendOut(true); });
+  function tagTick(now) { if (adm.on) admTick(); if (tag.play) tagPlay(now); tagNoteTick();
     const c = tag.cur; if (c && TOOL[c.tool].flow && c.load + (now - c.lt) / 1000 * TOOL[c.tool].flow >= 1) tagPool(c, c.pts.length - 4, now, false); // held still: it pools and runs
     if (tag.runs.length) tagRuns(now);
     const w = tag.stage ? 1 : tag.putAt ? cl(1 - (now - tag.putAt) / 5000) : 0; // wet while you paint; dries over 5 s once it's on the wall
@@ -127,31 +127,47 @@
   const tagSaved = () => { try { const o = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); return o && o.v === 1 && tagOk(o) ? o : null; } catch (_) { return null; } };
   const tagSave = patch => { try { const o = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); if (o) localStorage.setItem(TAG_KEY, JSON.stringify({ ...o, ...patch })); } catch (_) {} };
   // Sending: the saved tag and a random device id (kept here) go to the store. Nothing on the screen tells. sent: "yes" (and its id), or "stop" when the store will never take it
-  // (400 broken, 409 this device or the spot already has one, 429 too many from this address); a network failure or a 5xx (mail service, wall busy, not set up) leaves it unsent, and the next visit tries again.
+  // (400 broken, 409 this device already has one, 429 too many from this address); a refusal by the robot check (403 robot, and 403 origin the same way) stays unsent like a failure, with a line under the tag (tagNoteTick), or "taken" when someone else's tag got that spot first (409 spot-taken): then the visitor is told and picks
+  // another spot with the drawing kept (tagLost), at once when it was just put, else from Leave your tag; a network failure or a 5xx (mail service, wall busy, not set up) leaves it unsent, and the next visit tries again.
   let tagSending = false;
+  // the robot check (Vercel BotID) refused the send (403 robot), or the send was refused for where it came from (403 origin): the tag stays in this browser, unsent, and the next load sends it again. The visitor is told, in a label under their tag while it is in view (signum W6, L1: why, and the next step)
+  const tagNote = document.getElementById("tagNote"), TAG_ROBOT = "Couldn't send your tag. The browser check didn't pass. Reload the page to try again.";
+  function tagNoteTick() { let on = false; if (tag.robot && !pick.mode && tagMesh.visible) { const [x, y, front] = proj(V(tag.x, tag.y - FRAME.h / 2, 0)); on = front && x > 0 && x < innerWidth && y > 0 && y < innerHeight;
+      if (on) { tagNote.style.left = cl(x - tagNote.offsetWidth / 2, 12, innerWidth - tagNote.offsetWidth - 12) + "px"; tagNote.style.top = cl(y + 8, 12, innerHeight - tagNote.offsetHeight - 12) + "px"; } }
+    tagNote.style.opacity = on ? 1 : 0; }
   const tagDevice = () => { try { let d = localStorage.getItem(DEVICE_KEY); if (!/^[\w-]{16,64}$/.test(d || "")) { d = crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem(DEVICE_KEY, d); } return d; } catch (_) { return null; } };
-  async function tagSendOut() { const o = tagSaved(), device = o && !o.sent && !tagSending ? tagDevice() : null; if (!device) return; tagSending = true;
+  async function tagSendOut(justPut) { const o = tagSaved(), device = o && !o.sent && !tagSending ? tagDevice() : null; if (!device) return; tagSending = true;
     try { const r = await fetch("/api/tags", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: o.name, device, spot: { x: o.x, y: o.y, w: o.w, h: o.h, turn: o.turn }, strokes: o.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr })) }) });
-      if (r.ok) { const j = await r.json().catch(() => null); tagSave({ sent: "yes", id: j && typeof j.id === "string" ? j.id : null }); }
+      const j = await r.json().catch(() => null), why = j && j.error; tag.robot = !r.ok && r.status === 403 && (why === "robot" || why === "origin");
+      if (r.ok) tagSave({ sent: "yes", id: j && typeof j.id === "string" ? j.id : null });
+      else if (r.status === 409 && why === "spot-taken") { tagSave({ sent: "taken" }); tagLost(justPut); }
       else if (r.status === 400 || r.status === 409 || r.status === 429) tagSave({ sent: "stop" }); } catch (_) {} // else: unsent, tried again next visit
+    if (tag.robot) tagNote.textContent = TAG_ROBOT;
     tagSending = false; }
+  // the spot went to someone else: the tag is not on the wall. Leave your tag is back and leads to the wide shot with the drawing kept; when the tag was put a moment ago the wide shot opens by itself
+  function tagLost(now) { tag.lost = true; tagMesh.visible = false; leaveB.hidden = false; if (!now) return; const go = () => { if (!tag.lost || tag.stage) return; if (pick.mode) { setTimeout(go, 200); return; } leaveB.click(); }; go(); }
+  function tagLostPick() { const o = tagSaved(); if (!o) { tag.lost = false; return; } tag.strokes = o.strokes; tag.strokes.forEach(s => s.dr = s.dr || []); tag.name = ""; tag.cur = null; tag.play = null; tag.full = false; tag.putAt = 0; tag.stage = "move"; tagRedraw(); }
   // your own tag on every visit: at its spot, dry, and no second Leave your tag
   { const o = tagSaved();
     if (o) { tag.strokes = o.strokes; tag.strokes.forEach(s => s.dr = s.dr || []); tag.name = typeof o.name === "string" ? o.name.slice(0, 24) : ""; tagPlace(o.x, o.y); tagMesh.visible = true; tag.putAt = -1e6; leaveB.hidden = true;
-      tagRedraw(); if (tag.name) document.fonts.load(TAG_FONT).then(tagRedraw, () => {}); tagSendOut(); } }
+      tagRedraw(); if (tag.name) document.fonts.load(TAG_FONT).then(tagRedraw, () => {}); if (o.sent === "taken") tagLost(false); else tagSendOut(); } }
   // The wall's other tags: the store's approved ones (oldest first, so the newest paint over the older), each at its spot, drawn by the same renderer as the tag tool but on the wall's stretch pictures
   // (one picture per stretch, painted in a worker): not a mesh a tag. Yours is not in it: it shows from this browser. The store also says which spots waiting tags hold: those join the kept-clear boxes.
-  let HELD = [], storeSeen = false, storeW = null;
-  const tagsHeld = list => { HELD = list.filter(h => [h.x, h.y, h.w, h.h].every(Number.isFinite)).map(h => [h.x - h.w / 2, h.y - h.h / 2, h.x + h.w / 2, h.y + h.h / 2]); pickShow(); };
+  let HELD = [], TAKEN = [], storeSeen = false, storeW = null;
+  const tagsHeld = list => { HELD = list.filter(h => [h.x, h.y, h.w, h.h].every(Number.isFinite)).map(h => [h.x - h.w / 2, h.y - h.h / 2, h.x + h.w / 2, h.y + h.h / 2]); areaGrow(); pickShow(); };
+  // an approved tag holds its spot (Tom 11-27): no visitor tags over another's tag. The visitor's own tag is not in the way of moving it.
+  // The store's list of every tag's spot ([x, y, w, h], waiting and approved, also past the 60 tags it sends whole), asked again each time the wide shot opens.
+  const tagsTaken = list => { const own = tagSaved(), mine = s => own && own.sent === "yes" && Math.abs(s[0] - own.x) < .02 && Math.abs(s[1] - own.y) < .02;
+    TAKEN = list.filter(s => Array.isArray(s) && s.length === 4 && s.every(Number.isFinite) && !mine(s)).map(([x, y, w, h]) => [x - w / 2, y - h / 2, x + w / 2, y + h / 2]); areaGrow(); pickShow(); };
   async function tagStore(first) { let d = null; const asked = adm.on || admHinted(); // asked: this browser has been signed in at /admin, so the server is asked for Tom's view; every other browser asks the public question
     try { const r = await fetch(asked ? "/api/tags?admin=1" : "/api/tags", asked ? { cache: "no-store" } : undefined); if (r.ok) d = await r.json(); } catch (_) {}
     if (!d) return; if (asked) { if (d.admin === true) { if (!adm.g) admSet(d.tags); if (!adm.on) admEnter(); return; } if (adm.on) return; admUnhint(); }
-    if (Array.isArray(d.held)) tagsHeld(d.held); if (!first || storeSeen) return; storeSeen = true;
+    if (Array.isArray(d.held)) tagsHeld(d.held); if (Array.isArray(d.taken)) tagsTaken(d.taken); if (!first || storeSeen) return; storeSeen = true;
     const own = tagSaved(), list = (Array.isArray(d.tags) ? d.tags : []).filter(t => tagOk(t) && Number.isFinite(t.w) && Number.isFinite(t.turn) && t.w > .2 && t.w < 6 && (!own || !own.id || t.id !== own.id)).slice(-60);
     if (!list.length) return;
     // painted while the page loads, like the hand words: done long before the bucket is ready, so no frame after the tap pays for it
     const tags = list.map(t => ({ strokes: t.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr: dr || [] })), x: t.x, y: t.y, w: t.w, turn: t.turn, k: 1, st: [], label: typeof t.name === "string" ? t.name.slice(0, 24) : "" }));
-    storeW = wallLayer(tags, .0025); storeW.meshes.forEach(m => m && (m.frustumCulled = false)); document.documentElement.dataset.storeTags = tags.length; storeStart(); }
+    storeW = wallLayer(tags, .0032, .5); /* over the pour's runs and drips (z .003, order 0), under the piece's top layer (order 1): a tag sits on the leftover paint (Tom 11-27) */ storeW.meshes.forEach(m => m && (m.frustumCulled = false)); document.documentElement.dataset.storeTags = tags.length; storeStart(); }
   async function storeStart() { const W = storeW, names = []; // names become small pictures on this thread (it has the font); the rest is the worker's
     if (W.tags.some(T => T.label)) await document.fonts.load(TAG_FONT).catch(() => {});
     for (const T of W.tags) if (T.label) { const c = document.createElement("canvas"), g = c.getContext("2d"), f = `${Math.round(.07 * TPM)}px "Saira Stencil One", sans-serif`; g.font = f; c.width = Math.ceil(g.measureText(T.label).width) + 4; c.height = Math.round(.07 * TPM * 1.5);

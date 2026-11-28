@@ -1,10 +1,10 @@
 // The tag store (PR7, Tom 11-18): a tag the visitor puts on the wall is also sent to the store, with nothing on screen about it.
-// A send that fails (the store refuses once with 502) stays unsent and goes again on the next load; 429, 409 and 400 are never sent again.
+// A send that fails (the store refuses once with 502) stays unsent and goes again on the next load; 429, 409 and 400 are never sent again. A refusal by the robot check (403 robot, and 403 origin the same way) stays unsent too, goes again on the next load, and has a line for the visitor. A spot someone else got first (409 spot-taken) is told, and the visitor picks another with the drawing kept.
 // The store keeps every stroke with its own tool and colour. Another visitor (fresh storage) sees the tag on the wall only after it is approved
 // (through its review link), and the visitor who made it never sees it twice. A waiting tag's spot turns the frame yellow, with its own words.
 // Runs against the pitch's local store (tools/tags/local.mjs, through tools/serve.py); each run starts it empty.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
-  page.on('console', m => { if (m.type() === 'error' && !/status of (400|409|429|502)\b/.test(m.text())) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
+  page.on('console', m => { if (m.type() === 'error' && !/status of (400|403|409|429|502)\b/.test(m.text())) errs.push(m.text()); }); page.on('pageerror', e => errs.push(String(e)));
   const api = (path, method) => page.evaluate(([p, m]) => fetch(p, { method: m || 'GET' }).then(r => r.json()), [path, method]);
   const state = () => page.evaluate(() => window.tagTest.state());
   const settle = async (want, ms) => { for (let i = 0; i < (ms || 50); i++) { const s = await state(); if (want(s)) return s; await page.waitForTimeout(100); } return state(); };
@@ -36,6 +36,15 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   for (const code of [429, 409, 400]) { await fresh(); await seedTag(spotX += 1.5, 5); await api('/api/tags-local/fail?times=1&status=' + code, 'POST'); await load();
     const s = await settle(s => s.sent === 'stop', 30), n = await posts(); await load(); await page.waitForTimeout(800); const n2 = await posts(); res.stop[code] = [s.sent, n2 - n];
     if (s.sent !== 'stop' || n2 !== n) errs.push(code + ' was not final: ' + JSON.stringify([s.sent, n, n2])); }
+
+  // 2b. the robot check refuses (403 robot), or the send is refused for where it came from (403 origin): not stored, not final, the visitor's line is set in sentence case, and the next load sends again
+  res.refused = {};
+  for (const why of ['robot', 'origin']) { await fresh(); await seedTag(spotX += 1.5, 5); const rows0 = (await api('/api/tags-local/rows')).length; await api('/api/tags-local/fail?times=2&status=403&error=' + why, 'POST'); await load();
+    const s = await settle(s => s.robot, 30), n = await posts(), [text, letters] = await page.evaluate(() => { const e = document.getElementById('tagNote'); return [e.textContent, getComputedStyle(e).textTransform]; }); await load(); const s2 = await settle(s => s.robot, 30), n2 = await posts();
+    const got = res.refused[why] = { told: s.robot, sent: s.sent, text, letters, again: n2 - n, rows: (await api('/api/tags-local/rows')).length - rows0 };
+    if (!s.robot || s.sent || !s2.robot || n2 !== n + 1 || got.rows) errs.push('a send refused with 403 ' + why + ' must stay unsent, be told and go again on the next load: ' + JSON.stringify(got));
+    if (text !== "Couldn't send your tag. The browser check didn't pass. Reload the page to try again.") errs.push('the line for 403 ' + why + ' reads: ' + text);
+    if (letters !== 'none') errs.push('the refused-send line must keep its sentence case, its text-transform is: ' + letters); }
 
   // 3. another visitor (fresh storage): the waiting tag is not on their wall, only after its review link is pressed; the maker never sees it twice
   await fresh(); await load(); await page.waitForTimeout(2500); res.waitingSeen = await page.evaluate(() => window.tagTest.store());
@@ -75,4 +84,19 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   if (!res.clear.taken || !/stays clear/.test(res.clear.hint)) errs.push('a kept-clear part lost its own words: ' + JSON.stringify(res.clear));
   const spot = await page.evaluate(() => window.pickTest.freeOnScreen()); res.freeTap = spot; await page.mouse.click(spot.x, spot.y); await page.waitForTimeout(1500); res.free = { ...(await state()), ...(await frame()) };
   if (res.free.stage !== 'draw') errs.push('a free part could not be tagged any more: ' + JSON.stringify(res.free));
+  // 5. the spot went to someone else first (the store answers 409 spot-taken, for real: another device's tag is there): the tag is not shown as up and is not sent again; Leave your tag is back and
+  // leads to the wide shot with one plain line and the drawing kept; a tap on a free part goes on drawing with it
+  await api('/api/tags-local/reset', 'POST'); await fresh(); await seedTag(-12, 3); await load(); await settle(s => s.sent === 'yes', 50);
+  await fresh(); await seedTag(-11.5, 3); await load(); res.lost = await settle(s => s.sent === 'taken', 50); const lostPosts = await posts();
+  if (res.lost.sent !== 'taken' || !res.lost.lost || !res.lost.leave || res.lost.shown) errs.push('a tag whose spot was taken first must not show as up, and Leave your tag must be back: ' + JSON.stringify(res.lost));
+  await load(); await page.waitForTimeout(800); if ((await posts()) !== lostPosts) errs.push('a tag whose spot was taken was sent again without a new spot');
+  for (let i = 0; i < 80 && !(await page.evaluate(() => document.documentElement.dataset.readyAt)); i++) await page.waitForTimeout(250);
+  { const b = await page.evaluate(() => window.bucketAt()); await page.mouse.click(b.x, b.y); }
+  await page.waitForFunction(() => !!window.pickTest && document.documentElement.style.overflow === '', null, { timeout: 40000 });
+  await page.evaluate(() => document.getElementById('leave').click()); await page.waitForTimeout(2500);
+  res.lostPick = { ...(await state()), hint: await page.evaluate(() => document.getElementById('pickHint').textContent) };
+  if (res.lostPick.stage !== 'move' || res.lostPick.strokes !== 2 || !/^Someone tagged that spot first\. Pick another spot\./.test(res.lostPick.hint)) errs.push('after a taken spot the wide shot must say so and keep the drawing: ' + JSON.stringify(res.lostPick));
+  { const sp = await page.evaluate(() => window.pickTest.freeOnScreen()); await page.mouse.click(sp.x, sp.y); await page.waitForTimeout(1500); }
+  res.lostMoved = await state();
+  if (res.lostMoved.stage !== 'draw' || res.lostMoved.strokes !== 2 || !res.lostMoved.shown) errs.push('the drawing was not kept at the new spot: ' + JSON.stringify(res.lostMoved));
   return JSON.stringify(res); }

@@ -29,6 +29,7 @@
     const up = up0 = upPx(), H2 = document.documentElement.scrollHeight - innerHeight - up, sv = H2 > 0 ? paceOf(cl((scrollY - up) / H2) * WALK, 1, 0) : 0,
       tp = topPx(), lft = introOver && up > tp ? cl(1 - (scrollY - tp) / (up - tp)) : 0, // how far up the page, past the visitors' wall
       pAll = cl(sv / 540), p = cl(sv / 320); // sv: the walk's own count below the park (PACE turns the page's scroll into it); the first three scenes keep the scroll they had
+    window.svNow = sv; // the sv this frame reads off the scroll (the page snaps the scroll to whole pixels, so it is a little off the sv a check asked svY for): the checks measure speeds per sv against it
     if (introOver && svKeepH === document.documentElement.scrollHeight) svKeep = sv; else if (svKeep < 0) { svKeep = sv; svKeepH = document.documentElement.scrollHeight; }
     const walk3 = sm(cl((pAll - .63) / .14)), end3 = sm(cl((pAll - .9) / .08));
     // scroll moves the camera only: step back (0-.12), walk right to the second wall (.18-.38), step back to look (.75-.95).
@@ -102,17 +103,17 @@
     shadow.position.set((sa.x + sb.x) / 2, (sa.y + sb.y) / 2, .006); shadow.rotation.z = Math.atan2(sb.y - sa.y, sb.x - sa.x); shadow.scale.set(sl * 1.25, .7 * (1 + can.position.z * .25), 1);
     shadow.material.opacity = .62 * cl(LL.intensity / 5) * cl(1.6 - can.position.z * .4);
     // labels
-    const showCan = t > -600 && !done && !stencilOn, showHand = !!muralPin && uTnow > pourDone && pan < .3 && lft < .1;
-    tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
+    const showCan = t > -600 && !done && !stencilOn, showRole = uTnow > plateAt && pan < .3 && lft < .1 && !sheetOpen; // the start wall's plate: with the whole name (plateAt, the pour's own moment), while the wall is in view
+    tagCan.style.opacity = showCan ? 1 : 0; tagRole.style.opacity = showRole ? 1 : 0;
     // the label and the links on the painted marks, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
     const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn);
     pin(tagFacts, l6, c6, NARROW ? V(camera.position.x - .6, G3 + .1, 0) : V(EX - EW * .3, EY - EH / 2 + .1, 0), NARROW ? 18 : 24, 60); // phone: under the wall on the floor, the plate and its line follow the camera along it
     placeHots(hots, EPA_MARKS, EPAB, ST[0].k >= 1 && sec >= .3 && pan > .5 && endK < .5); // at this wall, each mark that is in view
     const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
-    [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);
+    [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showRole ? 1 : 0);
     pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);
-    if (muralPin) pin(tagHand, l2, c2, muralPin, NARROW ? 30 : 50, NARROW ? -70 : -60);
+    { const P = MU.plate; pin(tagRole, l2, c2, V(P.dot[0], P.dot[1], 0), P.dx, P.dy); }
     composer.render();
   });
 })();

@@ -6,6 +6,7 @@ import { readParts } from "../../tools/pitch/paint-parts.mjs";
 import {
   handlers,
   overlaps,
+  VISITOR_FRAME,
   readTag,
   sign,
   signed,
@@ -96,8 +97,10 @@ test("a tag is stored as the tool makes it, rounded and small", () => {
 test("bad tags are refused with the field that is wrong", () => {
   const bad = (extra: Record<string, unknown>) => readTag(tag(extra));
   assert.deepEqual(bad({ name: "x".repeat(25) }), { error: "name" });
-  assert.deepEqual(bad({ spot: spotAt(0, 2, 99) }), { error: "spot" });
-  assert.deepEqual(bad({ spot: { x: 0, y: 2, w: 1, turn: 0 } }), { error: "spot" });
+  assert.deepEqual(bad({ spot: spotAt(99) }), { error: "spot" });
+  assert.deepEqual(bad({ spot: { x: 0, y: 2, w: 1, h: 1 } }), { error: "spot" });
+  assert.deepEqual(readTag(tag({ spot: spotAt(0, 2, 99) }), true), { error: "spot" }, "Tom's own");
+  assert.deepEqual(readTag(tag({ spot: { x: 0, y: 2, w: 1, turn: 0 } }), true), { error: "spot" });
   assert.deepEqual(bad({ strokes: [] }), { error: "strokes" });
   assert.deepEqual(bad({ strokes: [[0, 0, 0, 0.5]] }), { error: "strokes" }, "the old flat format");
   const one = (s: Record<string, unknown>) => bad({ strokes: [stroke(s)] });
@@ -211,7 +214,7 @@ test("Remove deletes the tag: the spot is free and the device may tag again", as
   assert.equal((await api.POST(send(tag({ device }), "5.6.7.8"))).status, 200);
 });
 
-test("only a waiting tag holds its spot: an approved one never blocks a new tag", async () => {
+test("a tag holds its spot, waiting or approved: no visitor tags over another's tag", async () => {
   const { api, mails } = world();
   await api.POST(send(tag()));
   const over = await api.POST(send(tag({ spot: spotAt(-11.5, 2.2, 1.4, 0.6) })));
@@ -219,14 +222,31 @@ test("only a waiting tag holds its spot: an approved one never blocks a new tag"
   assert.deepEqual(await over.json(), { error: "spot-taken" });
   assert.equal((await wall(api)).held.length, 1);
   await decide(api, mails[0]!, "approve");
-  assert.deepEqual((await wall(api)).held, [], "approved: nothing is held any more");
+  assert.deepEqual(
+    (await wall(api)).held,
+    [],
+    "approved: it is on the wall, no longer in the held list",
+  );
   const on = await api.POST(send(tag({ spot: spotAt(-12) })));
-  assert.equal(on.status, 200, "a new tag may go right over the approved one");
+  assert.equal(on.status, 409, "an approved tag keeps its spot");
+  assert.deepEqual(await on.json(), { error: "spot-taken" });
+  const edge = await api.POST(send(tag({ spot: spotAt(-11.5, 2.2, 1.4, 0.6) })));
+  assert.equal(edge.status, 409, "a tag that only overlaps a part of it is refused too");
   const next = await api.POST(send(tag({ spot: spotAt(-9, 2, 1.4, 0.6) })));
   assert.equal(next.status, 200, "right next to it is fine");
-  assert.equal((await wall(api)).held.length, 2, "the new waiting tags hold theirs");
-  const again = await api.POST(send(tag({ spot: spotAt(-12) })));
-  assert.equal(again.status, 409, "but not over a waiting one");
+  assert.equal((await wall(api)).held.length, 1, "the new waiting tag holds its own");
+  const again = await api.POST(send(tag({ spot: spotAt(-9, 2, 1.4, 0.6) })));
+  assert.equal(again.status, 409, "and nobody tags over a waiting one");
+  assert.equal((await wall(api)).tags.length, 1, "nothing was covered or removed");
+});
+
+test("a removed tag frees its spot", async () => {
+  const { api, mails } = world();
+  await api.POST(send(tag()));
+  await decide(api, mails[0]!, "approve");
+  assert.equal((await api.POST(send(tag({ spot: spotAt(-12) })))).status, 409);
+  assert.equal((await decide(api, mails[0]!, "remove")).status, 200);
+  assert.equal((await api.POST(send(tag({ spot: spotAt(-12) })))).status, 200);
 });
 
 test("boxes overlap only when they really do", () => {
@@ -239,7 +259,7 @@ test("boxes overlap only when they really do", () => {
 test(`${PER_ADDRESS} sends a day per address, removed ones included`, async () => {
   const { api, mails } = world();
   for (let i = 0; i < PER_ADDRESS; i++) {
-    assert.equal((await api.POST(send(tag({ spot: spotAt(-16 + i * 2) })))).status, 200);
+    assert.equal((await api.POST(send(tag({ spot: spotAt(-16 + i * 3) })))).status, 200);
   }
   await decide(api, mails[0]!, "remove");
   assert.equal((await api.POST(send(tag({ spot: spotAt(5, 5) })))).status, 429);
@@ -249,7 +269,7 @@ test(`${PER_ADDRESS} sends a day per address, removed ones included`, async () =
 test(`sending stops at ${MOST_WAITING} waiting tags`, async () => {
   const { api } = world();
   for (let i = 0; i < MOST_WAITING; i++) {
-    const spot = spotAt(-40 + (i % 10) * 2, 1 + Math.floor(i / 10) * 2);
+    const spot = spotAt(-40 + (i % 10) * 3, 1 + Math.floor(i / 10) * 2);
     assert.equal((await api.POST(send(tag({ spot }), `10.0.0.${i}`))).status, 200);
   }
   assert.equal((await api.POST(send(tag({ spot: spotAt(40, 15) }), "9.9.9.9"))).status, 503);
@@ -348,4 +368,56 @@ test("the review page takes every colour from tokens.css", async () => {
   const own = html.replace(tokens, "").replace("#e8452c", ""); // the stroke's own paint colour is data
   assert.deepEqual(own.match(/#[0-9a-f]{3,8}\b|rgba?\(/gi), null, "no colour of its own");
   assert.equal(/\d+px/.test(REVIEW_CSS), false, "no sizes of its own");
+});
+
+test("two sends for the same spot at the same moment: exactly one gets in", async () => {
+  const { api } = world();
+  const both = await Promise.all([
+    api.POST(send(tag({ spot: spotAt(-12) }), "1.1.1.1")),
+    api.POST(send(tag({ spot: spotAt(-11) }), "2.2.2.2")),
+  ]);
+  assert.deepEqual(both.map((r) => r.status).sort(), [200, 409]);
+  const refused = both.find((r) => r.status === 409)!;
+  assert.deepEqual(await refused.json(), { error: "spot-taken" });
+  const now = await wall(api);
+  assert.equal(now.held.length, 1, "one tag is stored, not two");
+});
+
+test("a visitor's tag is always the frame's size, whatever was sent", async () => {
+  const { api } = world();
+  const big = await api.POST(send(tag({ spot: { x: -12, y: 2, w: 6, h: 4, turn: 0 } })));
+  assert.equal(big.status, 200);
+  const held = (await wall(api)).held as { w: number; h: number }[];
+  assert.deepEqual([held[0]!.w, held[0]!.h], [VISITOR_FRAME.w, VISITOR_FRAME.h]);
+  const far = await api.POST(send(tag({ spot: spotAt(-9) })));
+  assert.equal(far.status, 200, "3 m along is free: the sent 6 m width holds nothing");
+  const page = readParts("pitch/paint").js as string;
+  const m = page.match(/const FRAME = \{ w: ([\d.]+), h: ([\d.]+) \}/);
+  assert.ok(m, "the page's frame");
+  assert.deepEqual(
+    [+m![1]!, +m![2]!],
+    [VISITOR_FRAME.w, VISITOR_FRAME.h],
+    "the store's frame is the page's",
+  );
+});
+
+test("the public list carries every tag's spot, small enough at 200 tags", async () => {
+  const { api, mails } = world();
+  for (let i = 0; i < 200; i++) {
+    const r = await api.POST(
+      send(
+        tag({ spot: spotAt(-40 + (i % 20) * 2.5, -1 + Math.floor(i / 20) * 1.5) }),
+        `9.9.${i}.1`,
+      ),
+    );
+    assert.equal(r.status, 200, "tag " + i);
+    if (i < 150) await decide(api, mails[mails.length - 1]!, "approve");
+  }
+  const now = (await wall(api)) as unknown as { tags: unknown[]; taken: number[][] };
+  assert.equal(now.taken.length, 200, "150 approved and 50 waiting, past the list's 60");
+  assert.ok(now.tags.length <= 60);
+  assert.ok(now.taken.every((s) => s.length === 4 && s.every(Number.isFinite)));
+  const bytes = Buffer.byteLength(JSON.stringify(now.taken));
+  console.log("spots list at 200 tags: " + bytes + " bytes");
+  assert.ok(bytes < 6000, "the spots list is " + bytes + " bytes at 200 tags");
 });

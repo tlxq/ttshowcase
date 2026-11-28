@@ -25,6 +25,8 @@ test("the words say what a robot refusal means", () => {
     "a robot refusal is not a mail service failure",
   );
   assert.match(words.why.robot, /try again/i, "say what to do next (signum W6)");
+  // a real person the check blocks can still reach Tom: the public address, the one api/contact.ts and the front show
+  assert.ok(words.why.robot.includes("hello@ttdevs.com"), "the robot line names Tom's address");
   for (const code of ["email", "message", "too-many"])
     assert.ok(words.why[code], `no line for ${code}`);
 });

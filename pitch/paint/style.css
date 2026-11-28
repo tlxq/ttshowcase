@@ -16,6 +16,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the way round to
 /* the facts label: the label word small and uppercase, the sentences in sentence case (signum K3) */
 .tag.facts { white-space: normal; width: min(330px, 74vw); text-transform: none; letter-spacing: .02em; }
 .tag.facts b { text-transform: uppercase; letter-spacing: .08em; }
+#tagNote { text-transform: none; } /* the refused-send line is a sentence: sentence case like the facts label, whatever .tag says (signum K3; the tagstore check reads it) */
 .tag.facts span { color: var(--look-quiet); }
 .tag b { display: block; font-weight: 500; color: var(--look-text); }
 .hot { position: absolute; pointer-events: auto; display: block; border-radius: 2px; }
@@ -191,6 +192,7 @@ form#mail .fields > p[role="status"] { grid-column: 1 / -1; align-self: center; 
   -webkit-mask: url("assets/start/portfolio.webp") center / 100% 100% no-repeat, linear-gradient(90deg, #000 var(--p), transparent calc(var(--p) + 12%)); -webkit-mask-composite: source-in;
   mask: url("assets/start/portfolio.webp") center / 100% 100% no-repeat, linear-gradient(90deg, #000 var(--p), transparent calc(var(--p) + 12%)); mask-composite: intersect; }
 .start .num { position: absolute; bottom: 4svh; font: 900 min(9vw, 17svh)/.8 "Archivo", "Arial Black", sans-serif; font-stretch: 125%; letter-spacing: -.04em; color: var(--front-spray); font-variant-numeric: tabular-nums; }
+.start h2 { visibility: hidden; } /* the typed name is gone from the start (Tom 11-27): the name arrives as the painted piece; the box stays, the loading word is placed by it */
 .start .go { position: absolute; bottom: 5svh; font: 700 15px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .02em; color: var(--look-cream); opacity: 0; transition: opacity .4s; }
 
 .stripe { position: fixed; left: 0; right: 0; top: 0; height: var(--look-stripe); z-index: 7; pointer-events: none; font-family: "Inter", system-ui, sans-serif; color: var(--look-soft); }

@@ -1,5 +1,6 @@
-// Every wait a visitor who just watches has, in seconds: scroll free after the tap; at epaRadar and raddavarfruberga,
-// arrival until the label and each link show. Fails when one never shows within 20 s.
+// Every wait a visitor who just watches has, in seconds: scroll free after the tap; the start wall's plate, which shows the moment the poured name is whole
+// (Tom 11-28: with the name, not after the pour has settled; the page says when the name is whole, the check times the plate against it); at epaRadar and
+// raddavarfruberga, arrival until the label and each link show. Fails when one never shows within 20 s.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs };
   page.on('pageerror', e => errs.push(String(e)));
   await page.goto('__URL__'); await page.waitForTimeout(3500);
@@ -7,11 +8,13 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     sh = id => { const e = document.getElementById(id); return e && e.style.display === 'block'; };
     (function f() { const n = performance.now() - c;
       if (!T.free && document.documentElement.style.overflow === '') T.free = n;
-      [['hot0', sh], ['hot1', sh], ['hot3', sh], ['tagFacts', op], ['tagRvf', op]].forEach(([id, fn]) => { if (!T[id] && fn(id)) T[id] = n; });
+      [['hot0', sh], ['hot1', sh], ['hot3', sh], ['tagFacts', op], ['tagRvf', op], ['tagRole', id => +document.getElementById(id).style.opacity === 1]].forEach(([id, fn]) => { if (!T[id] && fn(id)) T[id] = n; });
       requestAnimationFrame(f); })(); });
   await page.waitForFunction(() => { const b = window.bucketAt && window.bucketAt(); return b && (b.x > 0 ? b : matchMedia("(prefers-reduced-motion: reduce)").matches && getComputedStyle(document.querySelector(".start")).display === "none" && b); /* reduced motion: no start screen, nothing to tip */ }, null, { timeout: 20000 }).then(h => h.jsonValue()).then(b => page.mouse.click(b.x, b.y)) /* the bucket, not the middle: only it tips (11-25) */;
   const tapAt = await page.evaluate(() => performance.now());
   for (let i = 0; i < 40 && !(await page.evaluate(() => window.__T.free)); i++) await page.waitForTimeout(250);
+  for (let i = 0; i < 80 && !(await page.evaluate(() => window.__T.tagRole)); i++) await page.waitForTimeout(250); // the plate shows on the start wall: wait for it there, before the walk leaves
+  const whole = await page.evaluate(() => window.plateTest.nameWhole());
   const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
   const a2 = await page.evaluate(y => { scrollTo(0, y); return performance.now(); }, await page.evaluate(sv => Math.round(svY(sv)), 128));
   for (let i = 0; i < 80 && !(await page.evaluate(narrow => window.__T[narrow ? 'hot0' : 'hot1'] && window.__T.tagFacts, page.viewportSize().width < 600)); i++) await page.waitForTimeout(250);
@@ -21,8 +24,9 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const a3 = await page.evaluate(y => { scrollTo(0, y); return performance.now(); }, await page.evaluate(sv => Math.round(svY(sv)), 432));
   for (let i = 0; i < 80 && !(await page.evaluate(() => window.__T.hot3 && window.__T.tagRvf)); i++) await page.waitForTimeout(250);
   const r = await page.evaluate(([a2, a3, a4, tapAt]) => { const T = window.__T, c = window.__c, s = (v, from) => v ? +((v - from) / 1000).toFixed(1) : null;
-    return { scrollFree: s(T.free, 0), openAfterTap: s(T.free, tapAt - c), epaLabel: s(T.tagFacts, a2 - c), epaLink1: s(T.hot0, a2 - c), epaLink2: s(T.hot1, a4 - c), rvfLink: s(T.hot3, a3 - c), rvfLabel: s(T.tagRvf, a3 - c) }; }, [a2, a3, a4, tapAt]);
-  Object.assign(res, r);
+    return { scrollFree: s(T.free, 0), openAfterTap: s(T.free, tapAt - c), startPlate: s(T.tagRole, tapAt - c), epaLabel: s(T.tagFacts, a2 - c), epaLink1: s(T.hot0, a2 - c), epaLink2: s(T.hot1, a4 - c), rvfLink: s(T.hot3, a3 - c), rvfLabel: s(T.tagRvf, a3 - c) }; }, [a2, a3, a4, tapAt]);
+  Object.assign(res, r); res.nameWhole = whole === null ? null : +whole.toFixed(1);
+  if (r.startPlate !== null && whole !== null && (r.startPlate < whole - .3 || r.startPlate > whole + .7)) errs.push('the start wall\'s plate showed ' + r.startPlate + ' s after the tap, the name was whole at ' + res.nameWhole + ' s: it shows with the name, at most 0.7 s after'); // 0.7: what a slow runner takes to see the tap and draw the frame
   if (r.openAfterTap > 3.2) errs.push('the scroll opened ' + r.openAfterTap + ' s after the tap, over 3.2 s (Tom 11-27: about 2.5 s, it was 4.0)'); // 3.2: the 2.5 s plus the time a slow runner takes to see the tap
   for (const [k, v] of Object.entries(r)) if (v === null) errs.push(k + ' never showed'); // a phone's first view has epaRadar's name; the car link comes with the pan (the reduced check looks at it)
   return JSON.stringify(res); }
