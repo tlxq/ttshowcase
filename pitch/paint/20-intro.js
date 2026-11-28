@@ -99,7 +99,7 @@
   // the start's dark (Tom 11-25): until the tap only the work light's pool on the cap shows; then the wall appears where the paint has run,
   // a soft curtain that follows the pour's own clock (ledgeArrive), and all of it once the camera follows the paint down
   const veilU = { uIc: { value: -9 }, uAll: { value: 0 } };
-  for (const m of [wall.material, cap2.material, bareL.material]) { const prev = m.onBeforeCompile; m.onBeforeCompile = (sh, rr) => { if (prev) prev(sh, rr); Object.assign(sh.uniforms, veilU);
+  for (const m of [wall.material, cap2.material, bareL.material, ...OLD_MATS]) { const prev = m.onBeforeCompile; m.onBeforeCompile = (sh, rr) => { if (prev) prev(sh, rr); Object.assign(sh.uniforms, veilU);
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW;").replace("#include <project_vertex>", "#include <project_vertex>\nvVW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW; uniform float uIc, uAll;").replace("#include <dithering_fragment>", `
       if (uAll < .999) { // the rest of the walk skips the veil
@@ -249,7 +249,7 @@
     // while it fills: the paint level as a number (nothing in the first second); when full: what to do (signum L1, L2)
     const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000);
     const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
-    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>Tom Larsson &middot; Product engineer</b>${txt}`; } // fixed text: the label's own words and a number, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
+    if (showB && txt !== tagText) { tagText = txt; tagBucket.textContent = txt; } // the bucket's hint, for the keyboard's focus only: the label's own words and a number, never a visitor's input. The name is no longer typed here (the piece says it)
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
@@ -263,7 +263,7 @@
       work.target.position.set(workAt.x, workAt.y, -.17 + .17 * k); work.position.set(workAt.x + .8, WALL_TOP + 4.2, 1.6 + 1.2 * k); work.angle = .2 + .22 * k; }
     return ic;
   }
-  const toWorld = (x, y) => V(-PW / 2 + x / PX, PCY + PH / 2 - y / PX, 0);
+  const toWorld = (x, y) => V(PCX - PW / 2 + x / PX, PCY + PH / 2 - y / PX, 0);
   let SPRAY = PAINT_N.join(","); // from the hex: PAINT holds linear values // Tom's tag in the paint's colour
   // the paint's colour by the clock (Tom 11-26): the night's blue by night, --front-spray-day at noon, the start line, its drips, pour, mist, pool and glow all follow. One PAINT object is
   // every shader's uniform, so it is changed in place; the mist's colours and the drips' text are the same colour in the other forms.
@@ -271,6 +271,7 @@
     PAINT.set("#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("")); bounce.color.copy(PAINT); SPRAY = rgb.join(","); rgb.forEach((v, i) => mistCol[i] = v / 255);
     // by day the wet gloss goes: the dark paint's mirror coat reflected the bright sky and washed it out to a pale blue (a clear coat and the sky's reflection on a colour this dark was most of what showed)
     pourMat.clearcoat = .9 - .8 * k; pourMat.envMapIntensity = .9 - .75 * k;
+    topU.uGain.value = 3 - 1.5 * k; topU.uLift.value = .1 - .07 * k; pourU.uPieceE.value = .55 - .4 * k; // the piece is lifted for the lamp's dark; under the day's sky the same lift burned its faces and clouds out to white
     band.material.color.copy(PAINT); capMat.color.copy(PAINT); // (Tom 11-27) the can's band and cap are the paint's colour too: they were copied once, at night's blue
     paintIn.color.copy(PAINT); paintCoat.color.copy(PAINT).multiplyScalar(.4); filmMat.color.copy(PAINT).multiplyScalar(.45); }
 
@@ -350,7 +351,7 @@
   // labels pinned to the can and to the writing, with real facts from the hand file
   const tagCan = document.getElementById("tagCan"), tagHand = document.getElementById("tagHand"), svg = document.getElementById("lines");
   tagCan.innerHTML = `<b>${HAND.pen}</b>written ${HAND.written}`; // fixed text: HAND is built at build time from the repo's own words, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
-  tagHand.innerHTML = "<b>Tom Larsson</b>Product engineer";
+  tagHand.innerHTML = "<b>Product engineer</b>"; // the plate says the role only: the name is the piece (Tom 11-27)
   svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/><line id="l2"/><circle id="c2" r="4"/>');
   const proj = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight, p.z < 1]; };
   function pin(el, line, dot, world, dx, dy) {

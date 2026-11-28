@@ -70,13 +70,18 @@
   const bounce = new THREE.PointLight(0xffffff, 0, 4, 2); scene.add(bounce); // coloured with the paint below, once it is read
 
   // the paint layer: a canvas painted at the pen's own pace, wet and glossy, following the concrete's bumps
-  const MURALS = { wide: { w: 9.4, h: 3.4, cy: .75 }, narrow: { w: 4.6, h: 4.6, cy: 1 } }; // the mural's size on a laptop and on a phone; tags are kept clear of both (a tag is saved in metres and shown on every screen)
-  const PW = (NARROW ? MURALS.narrow : MURALS.wide).w, PH = (NARROW ? MURALS.narrow : MURALS.wide).h, PX = 256, PCY = (NARROW ? MURALS.narrow : MURALS.wide).cy;
-  const pc = document.createElement("canvas"); pc.width = PW * PX; pc.height = PH * PX; const g = pc.getContext("2d", { willReadFrequently: true });
+  // the painted piece "Tom Larsson" (Tom 11-28): the pour's mould, its top layer (3D side, outline, shine, cloud, drips) and the hand line under it come as pictures, laid on the wall in metres. On a laptop one line, on a phone "Tom" over "Larsson".
+  // Sizes are the painter's pictures at their build size (mould and top 1536 x 388 / 1024 x 656, hand line 1344 x 131 / 900 x 312); cx, cy: the piece's middle, hand.top: where the hand line's top edge stands. A tag is saved in metres and shown on every screen,
+  // so tags are kept clear of both layouts' boxes (60-pick.js).
+  const MURALS = { wide: { w: 9.3, h: 9.3 * 388 / 1536, cx: 0, cy: 2.3 - 9.3 * 388 / 1536 / 2, mould: [1536, 388], hand: { w: 5.61, ar: 113 / 1120, cx: .005, top: -.08 }, set: "laptop", pin: [.927, .19], row1: 1 },
+    narrow: { w: 6.78, h: 6.78 * 656 / 1024, cx: 0, cy: 4.43 - 6.78 * 656 / 1024 / 2, mould: [1024, 656], hand: { w: 4.76, ar: 300 / 729, cx: -1.01, top: .05 }, set: "phone", pin: [.533, .06], row1: .45 } };
+  for (const M of Object.values(MURALS)) M.hand.h = M.hand.w * M.hand.ar;
+  const MU = NARROW ? MURALS.narrow : MURALS.wide, PW = MU.w, PH = MU.h, PCX = MU.cx, PCY = MU.cy, PX = MU.mould[0] / PW; // PX: the mould's pixels to a metre
+  const pc = document.createElement("canvas"); pc.width = MU.mould[0]; pc.height = MU.mould[1]; const g = pc.getContext("2d", { willReadFrequently: true });
   const paintTex = new THREE.CanvasTexture(pc); paintTex.encoding = THREE.sRGBEncoding; paintTex.anisotropy = maxAniso;
   const paintMat = wallBump(new THREE.MeshPhysicalMaterial({ map: paintTex, transparent: true, depthWrite: false, roughness: .2, clearcoat: .9, clearcoatRoughness: .12, envMapIntensity: .9,
-    normalMap: tex("assets/wall4_nor_gl.jpg", false, PW / TILE, PH / TILE, (WW / 2 - WX - PW / 2) / TILE, (PCY - PH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.5, .5), polygonOffset: true, polygonOffsetFactor: -2 }));
-  const paint = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), paintMat); paint.position.set(0, PCY, .002); paint.receiveShadow = true; scene.add(paint);
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, PW / TILE, PH / TILE, (WW / 2 - WX - PW / 2 + PCX) / TILE, (PCY - PH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.5, .5), polygonOffset: true, polygonOffsetFactor: -2 }));
+  const paint = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), paintMat); paint.position.set(PCX, PCY, .002); paint.receiveShadow = true; scene.add(paint);
 
   // pen samples → canvas pixels, at Tom's timing
   let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9; HAND.strokes.forEach(s => { for (let i = 0; i < s.length; i += 4) { x0 = Math.min(x0, s[i]); x1 = Math.max(x1, s[i]); y0 = Math.min(y0, s[i + 1]); y1 = Math.max(y1, s[i + 1]); } });
@@ -86,7 +91,6 @@
   // the mural: Tom's line, poured. Streams fall from the top of the wall, land on each letter, flood it from the top down,
   // run on to the letter below and drip at the bottom. Every pixel's wet time is worked out once at load (a flood fill where
   // paint runs down fast, sideways slower and up only slowly); the GPU then only compares it with the clock.
-  const MURAL = NARROW ? ["I build", "and run", "things", "myself."] : ["I build and run", "things myself."];
   const WALL_TOP = GROUND + WH, YB = PCY - PH / 2, HT = WALL_TOP - GROUND, POUR = 1.4, TMAX = 14, NS = 40;
   const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
   // the sheet that comes over the top edge: depth per column, and how fast it slides down (it slows as it thins)
@@ -99,14 +103,15 @@
   const LEDGE = { x: -SPAN - .55, tip: .4, spread: NARROW ? 3 : 5, run: NARROW ? 3.6 : 4.2 };
   LEDGE.x0 = LEDGE.x + BK.r0 + BK.h;
   const ledgeArrive = x => LEDGE.tip + .05 + Math.max(0, x - LEDGE.x0) / LEDGE.spread;
-  const pourNor = tex("assets/wall4_nor_gl.jpg", false, PW / TILE, HT / TILE, (WW / 2 - WX - PW / 2) / TILE, 0);
+  const pourNor = tex("assets/wall4_nor_gl.jpg", false, PW / TILE, HT / TILE, (WW / 2 - WX - PW / 2 + PCX) / TILE, 0);
   const tokHex = n => { const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); if (!/^#[0-9a-f]{6}$/i.test(v)) throw new Error("Couldn't read " + n + " from tokens.css"); return v; };
   const INK_LIGHT = tokHex("--look-paint-light"), INK_BLUE = tokHex("--look-paint-blue"); // EDGE's words on the concrete
   const PAINT_HEX = getComputedStyle(document.documentElement).getPropertyValue("--front-spray").trim(), PAINT = new THREE.Color(PAINT_HEX); if (!/^#[0-9a-f]{6}$/i.test(PAINT_HEX)) throw new Error("--front-spray is missing from tokens.css"); bounce.color.copy(PAINT); // the paint (and the glow where it lands): the front's blue (Tom 11-22, one site), from tokens.css
   const PAINT_DAY_HEX = getComputedStyle(document.documentElement).getPropertyValue("--front-spray-day").trim(); if (!/^#[0-9a-f]{6}$/i.test(PAINT_DAY_HEX)) throw new Error("--front-spray-day is missing from tokens.css");
   const hexRGB = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)), PAINT_N = hexRGB(PAINT_HEX), PAINT_D = hexRGB(PAINT_DAY_HEX);
   const mistCol = [1, 3, 5].map(i => parseInt(PAINT_HEX.slice(i, i + 2), 16) / 255); // the mist and the splashes are the paint's own blue (its sRGB: their shader writes it straight out)
-  const pourU = { uInk: { value: new THREE.Color("#20232b") } /* the outline (Tom 11-24): the walls' dark ink */, uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
+  const PIECE = new THREE.Color(PAINT_HEX); // the piece keeps its night blue by day (Tom 11-27): its own colour, not the PAINT that follows the clock
+  const pourU = { uPiece: { value: PIECE }, uPieceE: { value: .55 }, uOx: { value: PCX }, uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
     uA: { value: Array.from({ length: NS }, () => new THREE.Vector4(0, -99, -99, 99)) }, uB: { value: Array.from({ length: NS }, () => new THREE.Vector4()) },
     uC: { value: PAINT }, uRep: { value: pourNor.repeat }, uOff: { value: pourNor.offset }, uDims: { value: new THREE.Vector4(PW, PH, HT, GROUND) }, uYB: { value: YB },
     uSh: { value: new THREE.Vector4(.3, VSH, WALL_TOP, 0) }, uL: { value: new THREE.Vector4(LEDGE.tip + .05, LEDGE.x0, LEDGE.spread, 0) } };
@@ -114,23 +119,19 @@
   pourMat.onBeforeCompile = sh => {
     Object.assign(sh.uniforms, pourU);
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", `#include <common>
-      uniform sampler2D uMask, uWet; uniform vec3 uInk; uniform float uT; uniform vec4 uA[${NS}], uB[${NS}]; uniform int uN; uniform vec3 uC; uniform vec2 uRep, uOff; uniform vec4 uDims, uSh, uL; uniform float uYB;
+      uniform sampler2D uMask, uWet; uniform vec3 uPiece; uniform float uPieceE, uOx; uniform float uT; uniform vec4 uA[${NS}], uB[${NS}]; uniform int uN; uniform vec3 uC; uniform vec2 uRep, uOff; uniform vec4 uDims, uSh, uL; uniform float uYB;
       float wetG;`)
       .replace("#include <map_fragment>", `
         vec2 uv0 = (vUv - uOff) / uRep;
-        float wx = (uv0.x - .5) * uDims.x, wy = uDims.w + uv0.y * uDims.z, pa = 0.; wetG = 0.;
+        float wx = (uv0.x - .5) * uDims.x + uOx, wy = uDims.w + uv0.y * uDims.z, pa = 0.; wetG = 0.;
         vec2 cuv = vec2(uv0.x, (wy - uYB) / uDims.y);
         if (cuv.y > 0. && cuv.y < 1.) { float m = texture2D(uMask, cuv).r, T = texture2D(uWet, cuv).r * ${TMAX}.; float age = uT - T; pa = m * smoothstep(-.03, .06, age); wetG = pa * (1. - smoothstep(.3, 3., age)); }
-        // a thin dark outline round the letters, sprayed as each part of them lands (Tom 11-24: the line read 1.74:1 by day)
-        float pl = pa, ol = 0.;
-        if (cuv.y > -.02 && cuv.y < 1.02) { vec2 o = vec2(.04 / uDims.x, .04 / uDims.y);
-          for (int k = 0; k < 8; k++) { float an = float(k) * .785398; vec2 q = cuv + o * vec2(cos(an), sin(an));
-            ol = max(ol, texture2D(uMask, q).r * smoothstep(-.03, .06, uT - texture2D(uWet, q).r * ${TMAX}.)); } }
+        float pk = pa; // what the mould filled (the piece's letter faces): its own blue; the outline, side and shine come in the top layer
         float aa = fwidth(wx);
         // the sheet: comes over the edge where the ledge paint reaches it, slides down, slows, gathers a bead at its lower edge
         { float ft = uT - (uL.x + max(0., wx - uL.y) / uL.z); if (ft > 0.) {
           float D = uSh.x * (1. + .22 * sin(wx * 7.3 + 1.) + .14 * sin(wx * 17.9 + 2.) + .07 * sin(wx * 41.3));
-          D = max(.001, D * smoothstep(uDims.x * .5 - .02, uDims.x * .5 - .7 - .25 * sin(wx * 9.1), abs(wx))); // the sheet thins out before the paint layer's sides: no straight cut
+          D = max(.001, D * smoothstep(uDims.x * .5 - .02, uDims.x * .5 - .7 - .25 * sin(wx * 9.1), abs(wx - uOx))); // the sheet thins out before the paint layer's sides: no straight cut
           float fr = D * (1. - exp(-ft * uSh.y * (1. + .15 * sin(wx * 5.1 + 3.)) / D));
           fr += .022 * pow(abs(sin(wx * 21. + 1.3)), 8.) * fr / D;   // small drops hanging from the bead
           float dep = uSh.z - wy, ay = fwidth(wy), sa = 1. - smoothstep(fr - ay, fr + ay, dep);
@@ -151,8 +152,10 @@
           float br = b.x * .8; vec2 bc = vec2(a.x + wob, a.y - head + br * .5);
           if (b.z > .5 || head < L - .001) sa = max(sa, 1. - smoothstep(br - aa, br + aa, length(vec2(wx, wy) - bc)));
           sa *= film; pa = max(pa, sa); wetG = max(wetG, sa * (fall < tail ? .3 : 1.)); }
-        float ring = max(0., ol - pl) * (1. - pa); diffuseColor = vec4(mix(uInk, uC * (1. - .18 * wetG), pa / max(pa + ring, 1e-4)), max(pa, ring * .92));`)
-      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n roughnessFactor = mix(roughnessFactor, .04, wetG);");
+        diffuseColor = vec4(mix(uC * (1. - .18 * wetG), uPiece * (1. - .1 * wetG), pk / max(pa, 1e-4)), pa);`)
+      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n totalEmissiveRadiance += uPiece * uPieceE * pk;")
+      .replace("#include <roughnessmap_fragment>", "#include <roughnessmap_fragment>\n roughnessFactor = mix(roughnessFactor, .04, wetG); roughnessFactor = mix(roughnessFactor, .6, pk * (1. - wetG)); // the settled piece is dry paint: no mirror (it dried greyer under the sky otherwise)")
+      .replace("#include <lights_physical_fragment>", "#include <lights_physical_fragment>\n #ifdef USE_CLEARCOAT\n material.clearcoat *= 1. - pk * (1. - wetG) * .95;\n #endif");
   };
   const puddleU = { uT: pourU.uT, uC: pourU.uC, uP: { value: Array.from({ length: 12 }, () => new THREE.Vector4(0, 99, 0, 0)) }, uPN: { value: 0 } };
   const puddleMat = new THREE.MeshPhysicalMaterial({ transparent: true, depthWrite: false, roughness: .06, clearcoat: 1, clearcoatRoughness: .03, envMapIntensity: 1, polygonOffset: true, polygonOffsetFactor: -2 });
@@ -202,19 +205,47 @@
     creepU.uLen.value = L; creepU.uGut.value = gut;
     creep = { mesh: new THREE.Mesh(geo, creepMat), L, at: src.land + 1.8 }; scene.add(creep.mesh); }
   const puddle = new THREE.Mesh(new THREE.PlaneGeometry(PW + 3, 1.6), puddleMat); puddle.rotation.x = -Math.PI / 2; puddle.position.set(0, GROUND + .004, .8); scene.add(puddle);
-  const pourMesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, HT), pourMat); pourMesh.position.set(0, GROUND + HT / 2, .003); pourMesh.visible = false; scene.add(pourMesh);
-  document.fonts.load('700 100px "Clash Display"').catch(() => {}).then(buildPour);
+  const pourMesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, HT), pourMat); pourMesh.position.set(PCX, GROUND + HT / 2, .003); pourMesh.visible = false; scene.add(pourMesh);
+  // the old paint on the first wall (Tom 11-28): "portfolio" and "showcase" in stencil, "tlxq" as his big hand tag (the signature), there from the first frame, in the dark like the wall, a little faded once the light is on. They stand apart; the
+  // pour runs over whatever of them is in its way (they are drawn under the paint, like the visitors' tags). [word, middle x, middle y, width, height] in wall metres, a laptop and a phone; tags are kept clear of them (60-pick.js).
+  const OLD_WORDS = { wide: [["portfolio", -3.795, 3.3, 2.63, .84], ["showcase", 5.755, 1.3, 1.95, .49], ["tlxq", 3.87, -.81, 1.88, 1.24]], narrow: [["portfolio", -2.11, 5.545, 2.78, .89], ["showcase", -2.395, -1.93, 1.99, .5], ["tlxq", 2.4, -1.45, 1.98, 1.3]] }; // from the painter's layout.json (top left corner, width, height in metres) as middle points; on a phone "showcase" and "tlxq" stood partly under the ground line there (-2.2), so they are a little smaller here and stand on the wall, clear of the hand line; on a laptop "showcase" is a little smaller too: at 1440 x 900 its last letter was cut by the screen's edge
+  const OLD_MATS = OLD_WORDS[NARROW ? "narrow" : "wide"].map(([n, x, y, w, h]) => { const mat = new THREE.MeshStandardMaterial({ map: tex("assets/start/old/" + n + "-" + MU.set + ".webp", true, 1, 1), transparent: true, depthWrite: false, roughness: .92, metalness: 0, opacity: .9, polygonOffset: true, polygonOffsetFactor: -1 });
+    const me = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); me.position.set(x, y, .0025); me.renderOrder = -1; scene.add(me); return mat; });
+  // the top layer (Tom 11-28): outline, 3D side, shine, clouds and drips of the piece, one picture over the paint. Each pixel of it comes on a moment after the paint reached the nearest letter face (buildPour works the times out), so it
+  // arrives letter by letter behind the front, the clouds growing out from the letters. Lit by the scene like the paint, and lifted a little (uLift) so the settled piece matches the painter's picture; the night blue stays by day.
+  const PIECE_DIR = "assets/start/piece/";
+  const topU = { uT: pourU.uT, uRv: { value: null }, uMk: { value: null }, uFill: { value: new THREE.Color(PAINT_HEX) }, uLift: { value: .1 }, uGain: { value: 3 }, uSat: { value: 1.7 } };
+  const topMat = wallBump(new THREE.MeshPhysicalMaterial({ map: tex(PIECE_DIR + MU.set + "-top.webp", true, 1, 1), transparent: true, depthWrite: false, roughness: .5, clearcoat: .3, clearcoatRoughness: .3, envMapIntensity: .15,
+    normalMap: tex("assets/wall4_nor_gl.jpg", false, PW / TILE, PH / TILE, (WW / 2 - WX - PW / 2 + PCX) / TILE, (PCY - PH / 2 - GROUND) / TILE), normalScale: new THREE.Vector2(.4, .4), polygonOffset: true, polygonOffsetFactor: -3 }));
+  { const prev = topMat.onBeforeCompile; topMat.onBeforeCompile = sh => { prev(sh); Object.assign(sh.uniforms, topU);
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform sampler2D uRv, uMk; uniform vec3 uFill; uniform float uT, uLift, uGain, uSat;")
+      .replace("#include <map_fragment>", "#include <map_fragment>\n" + // the painter's piece is the top layer laid over a flat fill of the paint's blue IN SRGB, then lit: blending them in the light's own (linear) space makes every half-see-through shine pale, so it is flattened here first, on the letter faces too
+      "float mk = texture2D(uMk, vUv).r, ta = diffuseColor.a, cov = ta + (1. - ta) * mk; vec3 tS = LinearTosRGB(vec4(diffuseColor.rgb, 1.)).rgb, fS = LinearTosRGB(vec4(uFill, 1.)).rgb, fl = (ta * tS + (1. - ta) * mk * fS) / max(cov, 1e-4);\n" +
+      " diffuseColor.rgb = mix(pow(fl * .9478672986 + .0521327014, vec3(2.4)), fl * .0773993808, vec3(lessThanEqual(fl, vec3(.04045)))); diffuseColor.rgb = max(vec3(0.), mix(vec3(dot(diffuseColor.rgb, vec3(.2126, .7152, .0722))), diffuseColor.rgb, uSat)) * uGain; // the warm light and the film curve take colour out of a blue: put some back\n diffuseColor.a = cov * smoothstep(0., .7, uT - texture2D(uRv, vUv).r * " + TMAX + ".);")
+      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * uLift;"); }; topMat.customProgramCacheKey = () => "pieceTop"; }
+  const topMesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), topMat); topMesh.position.set(PCX, PCY, .0035); topMesh.renderOrder = 1; topMesh.visible = false; scene.add(topMesh);
+  // the hand line under the piece, in the street wall's hand: sprayed in from the left once the piece has settled, with a little mist at the front; cream, day and night
+  const handU = { uT: pourU.uT, uH: { value: new THREE.Vector2(1e9, 1.9) }, uLift: { value: 1 } };
+  const handMat = new THREE.MeshStandardMaterial({ map: tex(PIECE_DIR + MU.set + "-hand.webp", true, 1, 1), transparent: true, depthWrite: false, envMapIntensity: .1, roughness: .75, metalness: 0, polygonOffset: true, polygonOffsetFactor: -3 });
+  handMat.onBeforeCompile = sh => { Object.assign(sh.uniforms, handU);
+    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform float uT, uLift; uniform vec2 uH;")
+      .replace("#include <map_fragment>", "#include <map_fragment>\n float hf = (uT - uH.x) / uH.y * 1.16 - .08, hn = fract(sin(dot(floor(vUv * vec2(170., 26.)), vec2(12.9898, 78.233))) * 43758.5453) * .05; diffuseColor.a *= 1. - smoothstep(hf - .07, hf + .02, vUv.x + hn);")
+      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * uLift;"); }; handMat.customProgramCacheKey = () => "pieceHand";
+  const handMesh = new THREE.Mesh(new THREE.PlaneGeometry(MU.hand.w, MU.hand.h), handMat); handMesh.position.set(MU.hand.cx, MU.hand.top - MU.hand.h / 2, .0036); handMesh.renderOrder = 1; handMesh.visible = false; scene.add(handMesh);
+  let plateAt = 1e9; // when the piece and its hand line are done: the plate and its line come then
+  const HAND_CREAM = hexRGB(tokHex("--look-cream")).map(v => v / 255); // the hand line's mist: the cream of the line itself, from tokens.css
+  function handMist(t) { const hf = (t - handU.uH.value.x) / handU.uH.value.y * 1.16 - .08; if (hf < 0 || hf > 1.1) return; const hd = MU.hand, x = hd.cx - hd.w / 2 + cl(hf) * hd.w, y = hd.top - hd.h * .5; // cream grains at the front, drifting off the wall a little
+    for (let k = 0; k < 2; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = HAND_CREAM[0]; mc[i * 3 + 1] = HAND_CREAM[1]; mc[i * 3 + 2] = HAND_CREAM[2]; mp[i * 3] = x + gauss() * .06; mp[i * 3 + 1] = y + gauss() * .14; mp[i * 3 + 2] = .04;
+      mv[i * 3] = gauss() * .12; mv[i * 3 + 1] = gauss() * .1 - .03; mv[i * 3 + 2] = .08 + Math.random() * .15; ml[i] = .5 + Math.random() * .25; } }
+  new THREE.ImageLoader().load("assets/start/piece/" + MU.set + "-mould.webp", buildPour); // the start set: it goes through the default loading manager, so the bucket waits for it like for the walls' pictures
 
-  function buildPour() {
+  function buildPour(mould) {
     const W = pc.width, H = pc.height, mk = document.createElement("canvas"); mk.width = W; mk.height = H; const m = mk.getContext("2d", { willReadFrequently: true });
-    const font = n => `700 ${n}px "Clash Display", system-ui, sans-serif`;
-    m.font = font(100); const w100 = Math.max(...MURAL.map(l => m.measureText(l).width));
-    const size = Math.min(100 * W * .9 / w100, H * .9 / (MURAL.length * .9)), lh = size * .9, lw = w100 * size / 100;
-    const x0 = (W - lw) / 2, top = (H - lh * MURAL.length) / 2 + size * .74;
-    m.fillStyle = "#000"; m.fillRect(0, 0, W, H); m.fillStyle = "#fff"; m.font = font(size); m.textBaseline = "alphabetic";
-    MURAL.forEach((l, i) => m.fillText(l, x0, top + i * lh));
-    muralPin = toWorld(x0 + lw * (NARROW ? .55 : .985), top - size * .72);
-    PROT.push(["the mural", toWorld(x0, top - size * .74), toWorld(x0 + lw, top + (MURAL.length - 1) * lh + size * .2), ".tag"], ["the mural's first line", toWorld(x0, top - size * .74), toWorld(x0 + lw, top + size * .2), ".mail"]); // the form on a phone covers the lower lines, never the first
+    m.fillStyle = "#000"; m.fillRect(0, 0, W, H); m.drawImage(mould, 0, 0, W, H); // the letter faces, white on black: the mask the paint fills
+    muralPin = V(PCX - PW / 2 + MU.pin[0] * PW, PCY + PH / 2 - MU.pin[1] * PH, 0);
+    { const x0 = PCX - PW / 2, x1 = PCX + PW / 2, y0 = PCY - PH / 2, y1 = PCY + PH / 2, hd = MU.hand;
+      PROT.push(["the mural", V(x0, y0, 0), V(x1, y1, 0), ".tag"], ["the mural's first line", V(x0, y1 - PH * MU.row1, 0), V(x1, y1, 0), ".mail"],
+        ["the mural's hand line", V(hd.cx - hd.w / 2, hd.top - hd.h, 0), V(hd.cx + hd.w / 2, hd.top, 0), ".tag"]); } // the form on a phone covers the lower lines, never the first; the plates keep off all of it
     // a half-size grid for the flow
     const full = m.getImageData(0, 0, W, H).data, w = W >> 1, h = H >> 1, N = w * h, PXH = PX / 2;
     const lit = new Uint8Array(N);
@@ -229,6 +260,9 @@
     }
     comps.forEach(c => { c.top = new Int32Array(c.x1 - c.x0 + 1).fill(1e9); c.bot = new Int32Array(c.x1 - c.x0 + 1).fill(-1); });
     for (let i = 0; i < N; i++) { const L = lab[i]; if (L < 0) continue; const c = comps[L], x = i % w, y = i / w | 0, k = x - c.x0; if (y < c.top[k]) c.top[k] = y; if (y > c.bot[k]) c.bot[k] = y; }
+    // the letters' own size (a line is as high as its letters are plus room), and which line each is on (the rows are told apart by the gap between their middles)
+    const hts = comps.map(c => (c.y1 - c.y0 + 1) * 2).sort((a, b) => a - b), medH = hts[hts.length >> 1], lh = medH * 1.3, size = lh / .9;
+    { let ln = 0, ref = null; for (const c of comps.slice().sort((a, b) => (a.y0 + a.y1) - (b.y0 + b.y1))) { const cy = c.y0 + c.y1; if (ref === null) ref = cy; else if (cy - ref > medH * .6) { ln++; ref = cy; } c.line = ln; } }
     const pass = new Uint8Array(N); for (let i = 0; i < N; i++) pass[i] = lit[i] >= 60 ? 1 : 0;
     const T = new Float64Array(N).fill(Infinity), seeds = [];
     // each piece is fed by the nearest piece above it (a thin run), or by its own stream from the top of the wall
@@ -237,7 +271,7 @@
     for (const c of comps) {
       let best = null; const mid = c.top.length / 2;
       for (let k = 1; k < c.top.length - 1; k++) { const x = c.x0 + k, ty = c.top[k]; if (ty > 1e8) continue;
-        for (let y = ty - 1; y >= Math.max(0, ty - gapMax); y--) { const L = lab[y * w + x]; if (L < 0) continue;
+        for (let y = ty - 1; y >= Math.max(0, ty - gapMax); y--) { const L = lab[y * w + x]; if (L < 0) continue; if (comps[L].line >= c.line) break; // only a piece on a line above feeds this one
           const gap = ty - y; if (!best || gap < best.gap - 1 || (gap <= best.gap + 1 && Math.abs(k - mid) < Math.abs(best.x - c.x0 - mid))) best = { x, y, ty, gap }; break; } }
       if (best) { // a run from the piece above
         m.fillRect(2 * best.x + 1 - RUN / 2, 2 * best.y, RUN, 2 * (best.ty - best.y) + 2);
@@ -259,7 +293,7 @@
     });
     // short runs that never reach a letter: they slow down and stop in a drop
     const topY = Math.max(...comps.map(c => toWorld(0, 2 * c.y0).y)), shorts = [];
-    for (let n = 0, tries = 0; n < (NARROW ? 7 : 12) && tries < 80; tries++) {
+    for (let n = 0, tries = 0; n < (NARROW ? 3 : 5) && tries < 80; tries++) {
       const x = (Math.random() * 2 - 1) * SPAN, [ys, t0] = startOf(x), L = Math.min(.15 + Math.pow(Math.random(), 1.6) * 2.6, ys - topY - .1);
       if (L < .1) continue;
       shorts.push({ x, y: ys - L, ys, t0: t0 + .05 + Math.random() * .3, w: (NARROW ? .036 : .03) * (.7 + Math.random() * .5), v: 1.2 + Math.random(), kind: 1, keep: 1 }); n++;
@@ -279,7 +313,7 @@
     while (hi.length) { const [i, t] = pop(); if (t > T[i]) continue; const x = i % w, y = i / w | 0;
       for (const [dx, dy, c] of DIRS) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const j = ny * w + nx; if (!pass[j]) continue; const nt = t + c * nz[j]; if (nt < T[j]) { T[j] = nt; push(j, nt); } } }
     // reading order: line by line, left to right. A piece waits its turn (the paint pools in the piece above, then runs on)
-    { const lineOf = c => Math.round((c.y0 + c.y1 - (top - size * .35)) / lh), E = comps.map(() => Infinity), Mx = comps.map(() => -Infinity), S = new Float64Array(comps.length);
+    { const lineOf = c => c.line, E = comps.map(() => Infinity), Mx = comps.map(() => -Infinity), S = new Float64Array(comps.length);
       for (let i = 0; i < N; i++) { const L = lab[i]; if (L < 0 || !(T[i] < 1e9)) continue; if (T[i] < E[L]) E[L] = T[i]; if (T[i] > Mx[L]) Mx[L] = T[i]; }
       const order = comps.filter(c => E[c.id] < 1e9).sort((a, b) => lineOf(a) - lineOf(b) || a.x0 - b.x0), done = new Uint8Array(comps.length);
       let cur = null, prevStart = -Infinity, lineEnd = -Infinity, curEnd = -Infinity;
@@ -297,25 +331,13 @@
       for (let i = 0; i < N; i++) if (own[i] >= 0 && T[i] < 1e9) T[i] += S[own[i]];
       streams.forEach(st => { const d = S[st.c.id]; st.t0 += d; st.land += d; st.end += d; }); }
     pourDone = 0; for (let i = 0; i < N; i++) if (lab[i] >= 0 && T[i] < 1e9) pourDone = Math.max(pourDone, T[i]); pourDone += .3;
-    // drips from the bottom line: they run, slow down as they dry, and end in a bead
+    // (the piece's own drips are in its top layer; the leftover runs below start where the hand line is not)
     const maxB = Math.max(...comps.map(c => c.y1)), lows = comps.filter(c => c.y1 >= maxB - lh / 2 * .35 && c.top.length > 8);
-    const TAU = 1;
-    for (let n = 0, tries = 0; n < (NARROW ? 5 : 7) && tries < 200 && lows.length; tries++) {
-      const c = lows[Math.random() * lows.length | 0], k = 3 + (Math.random() * (c.top.length - 6) | 0), hx = c.x0 + k, by = c.bot[k];
-      if (by < 0 || !(T[by * w + hx] < 1e9) || lit[(by + 2) * w + hx] > 0) continue;
-      const room = (h - by) / PXH - .1; if (room < .12) continue;
-      const L = Math.min(room, .12 + Math.random() * .5), wd = size * (.016 + Math.random() * .016), Lp = L * PX, fx = 2 * hx + 1, fy = 2 * by + 1;
-      m.beginPath(); m.moveTo(fx - wd * 1.4, fy - 2); m.quadraticCurveTo(fx - wd * .5, fy, fx - wd * .5, fy + wd * 1.4); m.lineTo(fx - wd * .32, fy + Lp); m.lineTo(fx + wd * .32, fy + Lp); m.lineTo(fx + wd * .5, fy + wd * 1.4); m.quadraticCurveTo(fx + wd * .5, fy, fx + wd * 1.4, fy - 2); m.fill();
-      m.beginPath(); m.arc(fx, fy + Lp, wd * .55, 0, 6.283); m.fill();
-      const t0 = T[by * w + hx] + .2 + Math.random() * .8, L2 = L / .98, r = Math.ceil(wd / 2) + 1;
-      for (let y = by + 1; y <= Math.min(h - 1, by + Lp / 2 + wd / 2 + 2); y++) { const d = Math.min((y - by) / PXH, L), t = t0 - TAU * Math.log(1 - d / L2);
-        for (let x = hx - r; x <= hx + r; x++) { const j = y * w + x; if (t < T[j]) T[j] = t; } }
-      n++;
-    }
     // a few runs keep going past the letters to the foot of the wall; each makes a puddle where it lands
     for (let n = 0, tries = 0; n < (NARROW ? 4 : 6) && tries < 200 && lows.length && all.length < NS; tries++) {
       const c = lows[Math.random() * lows.length | 0], k = 3 + (Math.random() * (c.top.length - 6) | 0), hx = c.x0 + k, by = c.bot[k];
       if (by < 0 || !(T[by * w + hx] < 1e9) || lit[(by + 2) * w + hx] > 0 || grounds.some(g => Math.abs(g.hx - hx) < 12)) continue;
+      if (tries < 120 && Math.abs(PCX - PW / 2 + (2 * hx + 1) / PX - MU.hand.cx) < MU.hand.w / 2 + .15) continue; // a leftover run keeps off the hand line's words while there is room
       const p = toWorld(2 * hx + 1, 2 * by + 2), t0 = T[by * w + hx] + .3 + Math.random() * .7, v = .9 + Math.random() * .6;
       const g = { hx, x: p.x, ys: p.y, y: GROUND, t0, v, w: (NARROW ? .04 : .034) * (.8 + Math.random() * .5), kind: 0, keep: Math.random() < .5 ? 1 : 0 };
       g.land = t0 + (p.y - GROUND) / v; g.feed = g.land + Math.max(.4, 1.4 - (p.y - GROUND) / v); grounds.push(g); all.push(g); n++;
@@ -326,6 +348,16 @@
     // close the soft edges: every pixel the paint touches takes the time of its wet neighbour
     for (let pass2 = 0; pass2 < 3; pass2++) { const U = T.slice(); for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) { const i = y * w + x; if (U[i] < 1e9) continue;
       let b = Infinity; for (const [dx, dy] of DIRS) { const v = U[i + dy * w + dx]; if (v < b) b = v; } if (b < 1e9) T[i] = b + .02; } }
+    // the top layer settles behind the paint: every pixel takes the wet time of the nearest letter face, plus a moment of settling and a little more the further out it is (the clouds grow out from the letters)
+    const TT = new Float64Array(N).fill(Infinity), SETTLE = .4, CLOUD_V = 1.2; hi.length = 0; hk.length = 0;
+    for (let i = 0; i < N; i++) if (lab[i] >= 0 && T[i] < 1e9) { TT[i] = T[i]; push(i, T[i]); }
+    while (hi.length) { const [i, t] = pop(); if (t > TT[i]) continue; const x = i % w, y = i / w | 0;
+      for (const [dx, dy] of DIRS) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const j = ny * w + nx, nt = t + Math.hypot(dx, dy) / PXH / CLOUD_V; if (nt < TT[j]) { TT[j] = nt; push(j, nt); } } }
+    const rv = new Uint8Array(N * 4); let tEnd = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const t = TT[y * w + x] + SETTLE; if (t < 1e9) tEnd = Math.max(tEnd, t); const v = t < 1e9 ? Math.min(254, Math.round(t / TMAX * 255)) : 255, r = ((h - 1 - y) * w + x) * 4; rv[r] = rv[r + 1] = rv[r + 2] = v; rv[r + 3] = 255; }
+    const rvTex = new THREE.DataTexture(rv, w, h); rvTex.minFilter = rvTex.magFilter = THREE.LinearFilter; rvTex.generateMipmaps = false; rvTex.needsUpdate = true;
+    tEnd += .7; handU.uH.value.set(Math.min(tEnd - 1, TMAX - 4), 1.9); plateAt = Math.min(TMAX - 1, handU.uH.value.x + 1.9);
+    topU.uRv.value = rvTex; { const mt = new THREE.Texture(mould); mt.needsUpdate = true; topU.uMk.value = mt; } topMesh.visible = true; handMesh.visible = true;
     const maskTex = new THREE.CanvasTexture(mk); maskTex.anisotropy = maxAniso;
     const data = new Uint8Array(N * 4);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const t = T[y * w + x], v = t < 1e9 ? Math.min(254, Math.round(t / TMAX * 255)) : 255, r = ((h - 1 - y) * w + x) * 4; data[r] = data[r + 1] = data[r + 2] = v; data[r + 3] = 255; }

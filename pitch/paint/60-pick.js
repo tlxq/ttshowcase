@@ -97,7 +97,8 @@
   // by day, so every part ever painted or pasted on this wall stays clear on every device: the mural and the bucket's ledge in both
   // layouts, the flyer with a wider calm zone (the recruiter reads the form first), the visitors' words and their can. tools/pitch/checks/space.js proves it.
   function clearBoxes() { const m = .3, b = [];
-    for (const M of NARROW ? [MURALS.narrow, MURALS.wide] : [MURALS.wide, MURALS.narrow]) { /* this screen's mural first: CLEAR[0] is the title (pickTest) */ const lx = -(M.w / 2 + .2) - .55; b.push([-M.w / 2 - m, M.cy - M.h / 2 - m, M.w / 2 + m, M.cy + M.h / 2 + m], [lx - 1.2, WALL_TOP - 2, lx + 1.6, WALL_TOP]); }
+    for (const M of NARROW ? [MURALS.narrow, MURALS.wide] : [MURALS.wide, MURALS.narrow]) { /* this screen's mural first: CLEAR[0] is the title (pickTest) */ const lx = -(M.w / 2 + .2) - .55; b.push([M.cx - M.w / 2 - m, M.cy - M.h / 2 - m, M.cx + M.w / 2 + m, M.cy + M.h / 2 + m], [lx - 1.2, WALL_TOP - 2, lx + 1.6, WALL_TOP], [M.hand.cx - M.hand.w / 2 - m, M.hand.top - M.hand.h - m, M.hand.cx + M.hand.w / 2 + m, M.hand.top + m]); } // the piece, the bucket's ledge and the hand line under the piece
+    for (const L of Object.values(OLD_WORDS)) for (const [, x, y, w, h] of L) b.push([x - w / 2 - m, y - h / 2 - m, x + w / 2 + m, y + h / 2 + m]); // the old words (Tom 11-28)
     if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); }
     const calm = .6, box = o => { const c = new THREE.Box3().setFromObject(o); return [c.min.x - m, c.min.y - m, c.max.x + m, c.max.y + m]; };
     b.push([eU(E.flyer[0]) - calm, GROUND - .2, eU(E.flyer[2]) + calm, eV(E.flyer[1]) + calm], box(vWords), box(vCan3), ...BOMB_CLEAR); return b; }
@@ -179,4 +180,4 @@
       const out = spots.map(([x, y]) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].every(([a, b]) => { const [px, py, front] = proj(V(x + a * FRAME.w / 2, y + b * FRAME.h / 2, 0)); return front && px >= 0 && px <= innerWidth && py >= 0 && py <= innerHeight; }));
       camera.position.copy(keep[0]); camera.quaternion.copy(keep[1]); camera.updateMatrixWorld(); return out; },
     space: () => { const bx = o => { const b = new THREE.Box3().setFromObject(o); return [b.min.x, b.min.y, b.max.x, b.max.y]; };
-      return { narrow: NARROW, area: AREA, frame: FRAME, clear: clearBoxes(), things: { mural: bx(paint), flyer: [eU(E.flyer[0]), eV(E.flyer[3]), eU(E.flyer[2]), eV(E.flyer[1])], words: bx(vWords), can: bx(vCan3) } }; } };
+      return { narrow: NARROW, area: AREA, frame: FRAME, clear: clearBoxes(), things: { mural: bx(paint), hand: bx(handMesh), ...Object.fromEntries(OLD_WORDS[NARROW ? "narrow" : "wide"].map(([n, x, y, w, h]) => ["old " + n, [x - w / 2, y - h / 2, x + w / 2, y + h / 2]])), flyer: [eU(E.flyer[0]), eV(E.flyer[3]), eU(E.flyer[2]), eV(E.flyer[1])], words: bx(vWords), can: bx(vCan3) } }; } };

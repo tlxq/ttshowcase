@@ -1,4 +1,4 @@
-// Room to tag (Tom 11-23): every spot the tag tool offers keeps clear of the wall's own parts (the mural, the flyer,
+// Room to tag (Tom 11-23): every spot the tag tool offers keeps clear of the wall's own parts (the piece, its hand line, the three old words, the flyer,
 // the visitors' words and their can) in BOTH layouts and at BOTH times of day. A tag is saved in metres and shown to
 // everyone, so a spot that is free on a phone but under the laptop's wider mural, or free at night but where the
 // end's parts stand, is a broken spot. Also: at least 20 frame spots stay free everywhere.
@@ -7,7 +7,7 @@
 // Exact maths on the page's own numbers (pickTest.space, pickTest.onScreen), the same each run; draws a wall map: pitch-space.png.
 async page => { const errs = [], res = { errs };
   page.on('pageerror', e => errs.push(String(e)));
-  const MIN_FREE = 20, STEP = .25, CALM = { flyer: .6, mural: .3, words: .3, can: .3 }, reads = [], views = {};
+  const MIN_FREE = 20, STEP = .25, CALM = { flyer: .6, mural: .3, hand: .3, 'old portfolio': .3, 'old showcase': .3, 'old tlxq': .3, words: .3, can: .3 }, reads = [], views = {};
   let G = null; // the grid of frame centres, made from the first read
   const look = async (name, wide) => { await page.waitForTimeout(1500); views[name] = await page.evaluate(([g, w]) => window.pickTest.onScreen(g, w), [G, !!wide]); };
   for (const [w, h, layout] of [[1440, 900, 'laptop'], [412, 915, 'phone']]) {

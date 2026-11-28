@@ -39,7 +39,7 @@
     head.style.opacity = 1 - pan;
     // the light comes on, then the paint pours
     const ic = intro(now, dt);
-    if (pourReady) { uTnow = ic < 0 ? -1 : Math.min(TMAX * .99, ic); pourU.uT.value = uTnow;
+    if (pourReady) { uTnow = ic < 0 ? -1 : Math.min(TMAX * .99, ic); pourU.uT.value = uTnow; if (ic < 30) handMist(uTnow);
       if (ic < 30) { for (const g of grounds) if (uTnow > g.land && uTnow < g.feed) splashGround(V(g.x, GROUND + .01, 0), uTnow < g.land + .25 ? 4 : 1);
         let lit_ = 0; for (const s of streams) if (uTnow > s.land && uTnow < s.end) { splash(V(s.x, s.y, 0), 2); if (!lit_++) { bounce.position.set(s.x, s.y, .4); bounce.intensity = 1.2; } } } }
     if (creep) { const ct = ic - creep.at; creepU.uFront.value = ct < 0 ? -1 : REDUCED ? creep.L : Math.min(creep.L, .2 + .26 * ct + .045 * Math.sin(ct * 2.3)); }
@@ -102,7 +102,7 @@
     shadow.position.set((sa.x + sb.x) / 2, (sa.y + sb.y) / 2, .006); shadow.rotation.z = Math.atan2(sb.y - sa.y, sb.x - sa.x); shadow.scale.set(sl * 1.25, .7 * (1 + can.position.z * .25), 1);
     shadow.material.opacity = .62 * cl(LL.intensity / 5) * cl(1.6 - can.position.z * .4);
     // labels
-    const showCan = t > -600 && !done && !stencilOn, showHand = !!muralPin && uTnow > pourDone && pan < .3 && lft < .1;
+    const showCan = t > -600 && !done && !stencilOn, showHand = !!muralPin && uTnow > plateAt && pan < .3 && lft < .1;
     tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
     // the label and the links on the painted marks, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
@@ -112,7 +112,7 @@
     const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
     [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);
     pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);
-    if (muralPin) pin(tagHand, l2, c2, muralPin, NARROW ? 30 : 50, NARROW ? -70 : -60);
+    if (muralPin) pin(tagHand, l2, c2, muralPin, NARROW ? 30 : 64, NARROW ? -70 : -62);
     composer.render();
   });
 })();
