@@ -226,7 +226,7 @@
       " diffuseColor.rgb = mix(pow(fl * .9478672986 + .0521327014, vec3(2.4)), fl * .0773993808, vec3(lessThanEqual(fl, vec3(.04045)))); diffuseColor.rgb = max(vec3(0.), mix(vec3(dot(diffuseColor.rgb, vec3(.2126, .7152, .0722))), diffuseColor.rgb, uSat)) * uGain; // the warm light and the film curve take colour out of a blue: put some back\n diffuseColor.a = cov * smoothstep(0., .7, uT - texture2D(uRv, vUv).r * " + TMAX + ".);")
       .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * uLift;"); }; topMat.customProgramCacheKey = () => "pieceTop"; }
   const topMesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), topMat); topMesh.position.set(PCX, PCY, .0035); topMesh.renderOrder = 1; topMesh.visible = false; scene.add(topMesh);
-  let plateAt = 1e9; // on the pour clock: the piece has settled, its plate shows
+  let plateAt = 1e9; // on the pour clock: the name is whole (the paint has reached the last of its letters), its plate shows with it (Tom 11-28: not after the settling)
   new THREE.ImageLoader().load("assets/start/piece/" + MU.set + "-mould.webp", buildPour); // the start set: it goes through the default loading manager, so the bucket waits for it like for the walls' pictures
 
   function buildPour(mould) {
@@ -319,15 +319,16 @@
         own[i] = b; }
       for (let i = 0; i < N; i++) if (own[i] >= 0 && T[i] < 1e9) T[i] += S[own[i]];
       streams.forEach(st => { const d = S[st.c.id]; st.t0 += d; st.land += d; st.end += d; }); }
-    pourDone = 0; for (let i = 0; i < N; i++) if (lab[i] >= 0 && T[i] < 1e9) pourDone = Math.max(pourDone, T[i]); pourDone += .3;
-    // (the piece's own drips are in its top layer; the leftover runs below start clear of the plate)
+    pourDone = 0; for (let i = 0; i < N; i++) if (lab[i] >= 0 && T[i] < 1e9) pourDone = Math.max(pourDone, T[i]);
+    plateAt = Math.min(pourDone, TMAX - 6); pourDone += .3; // the plate comes the moment the name is whole, while the top layer still settles and the leftover runs still fall
+    // (the piece's own drips are in its top layer; the leftover runs below start clear of the plate and of the tlxq)
     const maxB = Math.max(...comps.map(c => c.y1)), lows = comps.filter(c => c.y1 >= maxB - lh / 2 * .35 && c.top.length > 8);
     // a few runs keep going past the letters to the foot of the wall; each makes a puddle where it lands
     for (let n = 0, tries = 0; n < (NARROW ? 4 : 6) && tries < 200 && lows.length && all.length < NS; tries++) {
       const c = lows[Math.random() * lows.length | 0], k = 3 + (Math.random() * (c.top.length - 6) | 0), hx = c.x0 + k, by = c.bot[k];
       if (by < 0 || !(T[by * w + hx] < 1e9) || lit[(by + 2) * w + hx] > 0 || grounds.some(g => Math.abs(g.hx - hx) < 12)) continue;
       { const x = PCX - PW / 2 + (2 * hx + 1) / PX, sg = SIGN_BOX(SIGN[NARROW ? "narrow" : "wide"]); if (x > MU.plate.dry[0] && x < MU.plate.dry[1]) continue; // never blue over words: no leftover run where the plate stands
-        if (tries < 120 && x > sg[0] && x < sg[2]) continue; } // and off the signature while there is room
+        if (x > sg[0] - .08 && x < sg[2] + .08) continue; } /* .08 m: a run's own width past the box's edge */ // nor through the tlxq: no leftover run crosses the signature's box, a hard rule too (Tom 11-28); fewer runs rather than one through it
       const p = toWorld(2 * hx + 1, 2 * by + 2), t0 = T[by * w + hx] + .3 + Math.random() * .7, v = .9 + Math.random() * .6;
       const g = { hx, x: p.x, ys: p.y, y: GROUND, t0, v, w: (NARROW ? .04 : .034) * (.8 + Math.random() * .5), kind: 0, keep: Math.random() < .5 ? 1 : 0 };
       g.land = t0 + (p.y - GROUND) / v; g.feed = g.land + Math.max(.4, 1.4 - (p.y - GROUND) / v); grounds.push(g); all.push(g); n++;
@@ -343,10 +344,9 @@
     for (let i = 0; i < N; i++) if (lab[i] >= 0 && T[i] < 1e9) { TT[i] = T[i]; push(i, T[i]); }
     while (hi.length) { const [i, t] = pop(); if (t > TT[i]) continue; const x = i % w, y = i / w | 0;
       for (const [dx, dy] of DIRS) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue; const j = ny * w + nx, nt = t + Math.hypot(dx, dy) / PXH / CLOUD_V; if (nt < TT[j]) { TT[j] = nt; push(j, nt); } } }
-    const rv = new Uint8Array(N * 4); let tEnd = 0;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const t = TT[y * w + x] + SETTLE; if (t < 1e9) tEnd = Math.max(tEnd, t); const v = t < 1e9 ? Math.min(254, Math.round(t / TMAX * 255)) : 255, r = ((h - 1 - y) * w + x) * 4; rv[r] = rv[r + 1] = rv[r + 2] = v; rv[r + 3] = 255; }
+    const rv = new Uint8Array(N * 4);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const t = TT[y * w + x] + SETTLE; const v = t < 1e9 ? Math.min(254, Math.round(t / TMAX * 255)) : 255, r = ((h - 1 - y) * w + x) * 4; rv[r] = rv[r + 1] = rv[r + 2] = v; rv[r + 3] = 255; }
     const rvTex = new THREE.DataTexture(rv, w, h); rvTex.minFilter = rvTex.magFilter = THREE.LinearFilter; rvTex.generateMipmaps = false; rvTex.needsUpdate = true;
-    plateAt = Math.min(tEnd - .3, TMAX - 6); // the plate comes once the last of the top layer is on
     topU.uRv.value = rvTex; { const mt = new THREE.Texture(mould); mt.needsUpdate = true; topU.uMk.value = mt; } topMesh.visible = true;
     const maskTex = new THREE.CanvasTexture(mk); maskTex.anisotropy = maxAniso;
     const data = new Uint8Array(N * 4);

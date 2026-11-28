@@ -21,7 +21,7 @@ async page => { const errs = [], res = { errs };
     if (!G) { const { area: A, frame: F } = reads[0]; G = [];
       for (let y = A.y0 + F.h / 2; y <= A.y1 - F.h / 2 + 1e-6; y += STEP) for (let x = A.x0 + F.w / 2; x <= A.x1 - F.w / 2 + 1e-6; x += STEP) G.push([x, y]); }
     await look(layout + ' start');
-    { let on = false; for (let i = 0; i < 120 && !(on = await page.evaluate(() => +document.getElementById('tagRole').style.opacity === 1)); i++) await page.waitForTimeout(250); // the start wall's plate against the wall kept calm for it
+    { let on = false; for (let i = 0; i < 120 && !(on = await page.evaluate(() => +document.getElementById('tagRole').style.opacity === 1)); i++) await page.waitForTimeout(250); // the start wall's plate (it shows with the whole name) against the wall kept calm for it
       const calm = reads[reads.length - 1].things.plate, at = await page.evaluate(() => { const r = document.getElementById('tagRole').getBoundingClientRect(), a = window.pickTest.worldAt(r.left, r.bottom), b = window.pickTest.worldAt(r.right, r.top); return [a[0], a[1], b[0], b[1]].map(v => +v.toFixed(2)); });
       (res.plateOnWall ||= {})[layout] = at; if (!on) errs.push(layout + ': the start wall\'s plate never showed'); else if (at[0] < calm[0] || at[1] < calm[1] || at[2] > calm[2] || at[3] > calm[3]) errs.push(layout + ': the start wall\'s plate stands at ' + at.join(', ') + ' m, outside the wall kept calm for it (' + calm.join(', ') + ')'); }
     await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(1000); await look(layout + ' visitors'); // up round the pole, at the visitors' wall

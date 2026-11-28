@@ -102,7 +102,7 @@
     shadow.position.set((sa.x + sb.x) / 2, (sa.y + sb.y) / 2, .006); shadow.rotation.z = Math.atan2(sb.y - sa.y, sb.x - sa.x); shadow.scale.set(sl * 1.25, .7 * (1 + can.position.z * .25), 1);
     shadow.material.opacity = .62 * cl(LL.intensity / 5) * cl(1.6 - can.position.z * .4);
     // labels
-    const showCan = t > -600 && !done && !stencilOn, showRole = uTnow > plateAt && pan < .3 && lft < .1 && !sheetOpen; // the start wall's plate: once the piece has settled, while the wall is in view
+    const showCan = t > -600 && !done && !stencilOn, showRole = uTnow > plateAt && pan < .3 && lft < .1 && !sheetOpen; // the start wall's plate: with the whole name (plateAt, the pour's own moment), while the wall is in view
     tagCan.style.opacity = showCan ? 1 : 0; tagRole.style.opacity = showRole ? 1 : 0;
     // the label and the links on the painted marks, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
