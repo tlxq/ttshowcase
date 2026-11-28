@@ -1,111 +1,115 @@
-  // ---- INTRO PROTOTYPE (pitch/intro-earth, Tom's "through the earth"): the film's pour lands on the soil, the view glides down through generated earth,
-  // the blue seeps down it and drips out above the ledge into the real bucket, which fills with the (faked) load. Judged in motion; nothing merges.
-  // ?load=slow|fast sets how long the fake load takes; ?intro=old shows the start as it is on master. A tap or key skips the journey.
-  // Its pictures (pitch/assets/intro/: the clip, the generated earth) are not in git.
+  // ---- INTRO PROTOTYPE 2 (pitch/intro-earth, Tom's "through the earth"): one calm downward glide. The film plays and the view tilts down the pour to the soil, on through a real photo of
+  // soil that the blue soaks into, to the earth's edge on a lit concrete wall; the blue comes out of a crack there, runs down the wall and falls into the real bucket, which fills as the
+  // (faked) load ends. The 3D camera rides down with the earth's edge, so earth and wall are one move. ?load=slow|fast sets the fake load; ?intro=old shows master's start; ?seek=<s> holds a moment; a tap skips.
+  // Its pictures (pitch/assets/intro/: the clip, soil photos graded to it) are not in git.
   const EARTH = (() => {
-    const E = { on: false, streamOn: false, bucketSeen: false, wall: 0 }, Q = new URLSearchParams(location.search), box = document.getElementById("earth");
-    if (!box || REDUCED || Q.get("intro") === "old") { if (box) box.remove(); return E; } // reduced motion: the start as it is, no journey (the bucket is already tipped)
-    const world = document.getElementById("eWorld"), vid = document.getElementById("eVid"), strip = document.getElementById("eStrip"), pourCv = document.getElementById("ePour"), veinCv = document.getElementById("eCv"),
-      dropEl = document.getElementById("eDrop"), dropEl2 = document.getElementById("eDrop2"), nameEl = document.getElementById("eName"), pc = pourCv.getContext("2d"), vc = veinCv.getContext("2d");
-    const SEEK = Q.get("seek") === null ? null : +Q.get("seek"), FILM = Q.get("film") !== "0", SLOW = Q.get("load") === "slow";
-    // the prototype's own numbers (listed in the report): seconds on the journey's clock, and picture sizes in the 1080-wide film frame's pixels
-    const D0 = FILM ? 2.95 : 2.05, T = { seepA: FILM ? .9 : .1, glideA: FILM ? 1 : .2, glideB: FILM ? 2.9 : 2, seepB: D0 + .05, dropA: D0, frontA: D0 + 1.1, frontB: D0 + 1.45, fillA: D0 + 1.1, fillFast: 2, fillSlow: 11, pourGrow: .5, pourEnd: 2.6, leaveA: D0 + 1.5, leaveD: .9 },
-      FILM_W = 1080, FILM_H = 1920, STRIP_Y = 1560, IMPACT = FILM ? [440, 1546] : [470, STRIP_Y + 90], LIP = [596, 526], TEAR = 95, GAP_UP = .17, GAP_MIN = .22, GAP_MAX = .45;
-    let stripH = 2071, started = false, et = 0, rate = 1, skipping = false, last = 0, veinX = -1, veins = null, lx = 0, ly = 0, ls = 0, outS = null;
-    const boot = performance.now(), clamp = cl, ease = sm, rgb = a => `rgba(${SPRAY},${a})`;
+    const E = { on: false, streamOn: false, bucketSeen: false, wall: 0, dy: 0 }, Q = new URLSearchParams(location.search), box = document.getElementById("earth"), loadEl = document.getElementById("eLoad");
+    if (!box || REDUCED || Q.get("intro") === "old") { if (box) box.remove(); if (loadEl) loadEl.remove(); return E; } // reduced motion: the start as it is, no journey
+    const world = document.getElementById("eWorld"), vid = document.getElementById("eVid"), strip = document.getElementById("eStrip"), veinCv = document.getElementById("eCv"), dropEl = document.getElementById("eDrop"),
+      loadT = document.getElementById("eLoadT"), skipEl = document.getElementById("eSkip"), vc = veinCv.getContext("2d");
+    const SEEK = Q.get("seek") === null ? null : +Q.get("seek"), SLOW = Q.get("load") === "slow";
+    // the prototype's own numbers (listed in the report)
+    const FILM_W = 1080, FILM_H = 1920, STRIP_Y = 1560, IMPACT = [447, 1548], CRACK_DY = 44, // film pixels (the film frame is 1080 x 1920)
+      SPEED = NARROW ? 320 : 700, TR = .9, J0 = .4, // the glide: screen px per second, ramp seconds at both ends, seconds the film plays before it starts
+      FRONT_LEAD = .55, GAP_UP = .27, GAP_MIN = .2, GAP_MAX = .4, // the blue's front rides at .55 of the screen; the earth's edge ends .27 H above the bucket
+      COUNT_JOURNEY = .6, FILL_FAST = 2.2, DROP_PERIOD = 1.05, LEAVE_AT = .4, LEAVE_D = 1;
+    let stripH = 2360, started = false, et = 0, lt = 0, rate = 1, skipping = false, Tj = 0, shapeKey = "", veinX = -1, veins = null, vdraw = -2, outS = null, streamT = -1, lastRip = -9, tx = "", dyV = 0;
+    const boot = performance.now(), clamp = cl, ease = sm, rgb = a => `rgba(${SPRAY},${a})`, hash = (i, j) => { const v = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return v - Math.floor(v); };
+    const trap = (t, T, tr) => { if (t <= 0) return 0; if (t >= T) return 1; const v = 1 / (T - tr); return t < tr ? v * t * t / (2 * tr) : t > T - tr ? 1 - v * (T - t) * (T - t) / (2 * tr) : v * (tr / 2 + t - tr); }; // 0..1 with a ramp at each end
+    const sizeVeins = () => { veinCv.width = FILM_W / 2; veinCv.height = Math.ceil((stripH + 360) / 2); veinCv.style.top = (STRIP_Y - 60) + "px"; veinCv.style.height = (stripH + 360) + "px"; };
     strip.addEventListener("load", () => { if (strip.naturalWidth) { stripH = strip.naturalHeight * FILM_W / strip.naturalWidth; sizeVeins(); veinX = -1; } });
-    const fail = () => { E.on = false; box.remove(); document.documentElement.classList.remove("earth-on"); };
-    if (FILM) vid.addEventListener("error", fail); strip.addEventListener("error", fail);
-    E.on = true; document.documentElement.classList.add("earth-on");
-    const sizeVeins = () => { veinCv.width = FILM_W / 2; veinCv.height = Math.ceil((stripH + 320) / 2); veinCv.style.top = (STRIP_Y - 60) + "px"; veinCv.style.height = (stripH + 320) + "px"; };
-    pourCv.width = FILM_W / 2; pourCv.height = 600; pourCv.style.top = "500px"; pourCv.style.height = "1200px"; sizeVeins();
-    // ---- the film's blue: a stream from the can's lip to where it lands, drawn over the clip (the clip's own water is a thin white thread)
-    if (FILM) { vid.src = "assets/intro/film.mp4"; vid.poster = "assets/intro/film-poster.webp"; } else vid.remove(); // ?film=0 starts underground with no clip (the earth part alone, for its own byte count)
-    const pourPts = [LIP, [548, 690], [505, 900], [470, 1180], [448, 1420], [440, 1546]];
-    const along = (pts, f) => { const n = pts.length - 1, u = clamp(f) * n, i = Math.min(n - 1, Math.floor(u)), k = u - i; return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * k, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * k]; };
-    const poly = (c, pts, f, ox, oy, f0 = 0) => { c.beginPath(); const steps = Math.max(2, Math.ceil((f - f0) * 60)); for (let i = 0; i <= steps; i++) { const q = along(pts, f0 + (f - f0) * i / steps); i ? c.lineTo((q[0] - ox) / 2, (q[1] - oy) / 2) : c.moveTo((q[0] - ox) / 2, (q[1] - oy) / 2); } };
-    function drawPour() { if (!FILM) return; pc.clearRect(0, 0, pourCv.width, pourCv.height);
-      const g = clamp(et / T.pourGrow), fade = 1 - ease(clamp((et - T.pourEnd) / .5)); if (g <= 0 || fade <= 0) return;
-      const wob = 1 + .12 * Math.sin(et * 40);
-      pc.lineCap = "round"; pc.lineJoin = "round";
-      for (const [w, a, col] of [[14, .18 * fade, rgb(1)], [6.5 * wob, .8 * fade, rgb(1)], [2, .75 * fade, "rgba(214,236,255,1)"]]) { pc.globalAlpha = a; pc.strokeStyle = col; pc.lineWidth = w / 2; poly(pc, pourPts, ease(g), 0, 500); pc.stroke(); }
-      pc.globalAlpha = 1;
-      // the wet patch where it lands: grows while the pour runs
-      const r = (20 + 80 * ease(clamp((et - T.pourGrow) / 1.4))) / 2, px = (IMPACT[0]) / 2, py = (IMPACT[1] + 10 - 500) / 2;
-      if (et > T.pourGrow * .8) { const gr = pc.createRadialGradient(px, py, 0, px, py, r * 1.6); gr.addColorStop(0, rgb(.75 * fade + .25)); gr.addColorStop(.6, rgb(.35)); gr.addColorStop(1, rgb(0)); pc.fillStyle = gr; pc.save(); pc.translate(px, py); pc.scale(1.5, .8); pc.translate(-px, -py); pc.beginPath(); pc.arc(px, py, r * 1.6, 0, 6.283); pc.fill(); pc.restore(); } }
-    // ---- the seep: one main vein from the landing to the outlet and a few branches, drawn as they spread; every vein is a walk with a seeded wobble
-    const hash = (i, j) => { const v = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return v - Math.floor(v); };
-    function buildVeins(xOut) { const yEnd = STRIP_Y + stripH - TEAR - 44, N = 70, main = []; const x0 = IMPACT[0], y0 = IMPACT[1] + 14;
-      for (let i = 0; i <= N; i++) { const q = i / N, env = Math.sin(Math.PI * q) ** .7; main.push([x0 + (xOut - x0) * ease(q) + env * (70 * Math.sin(q * 9 + 1) + 34 * Math.sin(q * 23 + 2)), y0 + (yEnd - y0) * q]); }
-      const br = []; for (let b = 0; b < 8; b++) { const at = .08 + .8 * hash(b, 3), [sx, sy] = along(main, at), dir = (b % 2 ? 1 : -1) * (.45 + .75 * hash(b, 5)), len = 160 + 300 * hash(b, 7), pts = [];
-        for (let i = 0; i <= 14; i++) { const q = i / 14; pts.push([sx + Math.sin(dir) * len * q + 22 * Math.sin(q * 11 + b), sy + Math.cos(dir) * len * q * .9]); }
-        br.push({ at, pts }); }
-      return { main, br, x: xOut }; }
-    // THE OUTLET (Tom's choice to change: a weep pipe, the steel drain pipe a retaining wall has): a short pipe set in a dark lump of earth, the paint gathering in its mouth, a stain round it and a runnel below it
-    function drawOutlet(p) { if (!veins) return; const x = veins.x, ev = STRIP_Y + stripH - TEAR, oy = STRIP_Y - 60, full = ease(clamp((p - .88) / .12)), age = Math.max(0, et - T.dropA);
-      vc.save(); vc.scale(.5, .5); vc.translate(0, -oy); vc.lineCap = "round";
-      let g = vc.createRadialGradient(x, ev, 20, x, ev, 230); g.addColorStop(0, "rgba(44,45,48,.95)"); g.addColorStop(.6, "rgba(30,31,33,.8)"); g.addColorStop(1, "rgba(24,25,27,0)"); // the concrete face the pipe is set in, running up into the earth
-      vc.fillStyle = g; vc.save(); vc.translate(x, ev - 20); vc.scale(1, .62); vc.translate(-x, -ev); vc.beginPath(); vc.arc(x, ev, 230, 0, 6.283); vc.fill(); vc.restore();
-      g = vc.createRadialGradient(x, ev - 30, 10, x, ev - 30, 170); g.addColorStop(0, "rgba(6,5,5,.92)"); g.addColorStop(.55, "rgba(10,8,7,.7)"); g.addColorStop(1, "rgba(10,8,7,0)");
-      vc.fillStyle = g; vc.save(); vc.translate(x, ev - 30); vc.scale(1, .55); vc.translate(-x, -(ev - 30)); vc.beginPath(); vc.arc(x, ev - 30, 170, 0, 6.283); vc.fill(); vc.restore();
-      g = vc.createRadialGradient(x, ev - 10, 6, x, ev - 10, 120); g.addColorStop(0, rgb(.3 * ease(p))); g.addColorStop(1, rgb(0)); // the stain the paint leaves round the mouth
-      vc.fillStyle = g; vc.save(); vc.translate(x, ev - 10); vc.scale(1, .7); vc.translate(-x, -(ev - 10)); vc.beginPath(); vc.arc(x, ev - 10, 120, 0, 6.283); vc.fill(); vc.restore();
-      if (age > 0) { const L = 60 + 190 * ease(clamp(age / 2)); g = vc.createLinearGradient(0, ev, 0, ev + L); g.addColorStop(0, rgb(.38)); g.addColorStop(1, rgb(0)); vc.strokeStyle = g; vc.lineWidth = 15; vc.beginPath(); vc.moveTo(x, ev + 8); vc.lineTo(x + 3, ev + L); vc.stroke(); } // the runnel down the wall
-      g = vc.createLinearGradient(x - 31, 0, x + 31, 0); g.addColorStop(0, "#101214"); g.addColorStop(.3, "#5d636a"); g.addColorStop(.55, "#2b2f34"); g.addColorStop(1, "#0b0c0e");
-      vc.fillStyle = g; vc.fillRect(x - 31, ev - 56, 62, 56);
-      vc.fillStyle = "rgba(120,60,30,.25)"; vc.fillRect(x - 31, ev - 56, 62, 12); // a little rust where it meets the earth
-      vc.beginPath(); vc.ellipse(x, ev, 31, 10, 0, 0, 6.283); vc.fillStyle = "#2a2d31"; vc.fill(); vc.lineWidth = 3; vc.strokeStyle = "#7d838a"; vc.stroke();
-      vc.beginPath(); vc.ellipse(x, ev + 1, 22, 6.5, 0, 0, 6.283); vc.fillStyle = "#050607"; vc.fill();
-      if (full > 0) { vc.beginPath(); vc.ellipse(x, ev + 1.5, 22 * full, 6.5 * full, 0, 0, 6.283); vc.fillStyle = rgb(.95); vc.fill(); vc.beginPath(); vc.ellipse(x - 6, ev, 8 * full, 2 * full, 0, 0, 6.283); vc.fillStyle = "rgba(214,236,255,.7)"; vc.fill(); }
-      vc.restore(); }
-    function drawVeins(p) { vc.clearRect(0, 0, veinCv.width, veinCv.height); if (!veins) return; if (p <= 0) { drawOutlet(0); return; } const oy = STRIP_Y - 60;
-      vc.lineCap = "round"; vc.lineJoin = "round";
-      const stroke = (pts, f, wScale, seed, taper) => { if (f <= 0) return; // a wet stain, the paint itself, a thin light edge; then beads where it pools. taper: the last part of the main vein thins to a thread where it leaves the earth
-        for (const [w, a, col, dx] of [[58, .13, rgb(1), 0], [30, .62, rgb(1), 0], [16, .5, rgb(.9), 0], [5, .3, "rgba(190,224,255,1)", -5]]) { vc.globalAlpha = a; vc.strokeStyle = col; vc.lineWidth = w * wScale / 2; const k = taper ? Math.min(f, taper) : f; poly(vc, pts, k, -dx, oy); vc.stroke();
-          if (taper && f > taper) { vc.lineWidth = Math.min(w, 9) * wScale / 2; poly(vc, pts, f, -dx, oy, taper); vc.stroke(); } }
-        vc.fillStyle = rgb(.5); for (let i = 0; i < 26 * f; i++) { const q = (i + hash(seed, i)) / 26 * f, [x, y] = along(pts, q), r = (9 + 17 * hash(i, seed + 1)) * wScale; vc.globalAlpha = .55; vc.beginPath(); vc.arc((x + (hash(i, seed + 2) - .5) * 26 * wScale) / 2, (y - oy) / 2, r / 2, 0, 6.283); vc.fill(); } };
-      stroke(veins.main, p, 1, 1, .8);
-      veins.br.forEach((b, i) => stroke(b.pts, clamp((p - b.at) * 2.4), .5, 5 + i));
-      vc.globalAlpha = 1; drawOutlet(p); }
-    // ---- where the blue leaves the earth, on the screen, and the world height of the real bucket's column that carries on from it
-    const solve = yScreen => { bucket.updateWorldMatrix(true, false); camera.updateMatrixWorld(); const A = bucket.localToWorld(V(.1, 0, .06)), P = y => { const v = V(A.x, y, A.z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; };
+    const fail = () => { E.on = false; box.remove(); if (loadEl) loadEl.remove(); document.documentElement.classList.remove("earth-on"); };
+    vid.addEventListener("error", fail); strip.addEventListener("error", fail);
+    E.on = true; document.documentElement.classList.add("earth-on"); sizeVeins();
+    // ---- the lit wall above the ledge: the concrete face the earth sits on, set back behind the ledge, with its own soft light and a blue spill from the crack
+    const upMat = new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, 14 / TILE, 14 / TILE, .3, .2), normalMap: tex("assets/wall4_nor_gl.jpg", false, 14 / TILE, 14 / TILE, .3, .2), roughnessMap: tex("assets/wall4_rough.jpg", false, 14 / TILE, 14 / TILE, .3, .2), color: 0x6e7278, envMapIntensity: .2, normalScale: new THREE.Vector2(.8, .8) });
+    const upWall = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), upMat); upWall.position.set(LEDGE.x, WALL_TOP + 7, -.52); upWall.visible = false; scene.add(upWall);
+    const wallLight = new THREE.SpotLight(0xdfe8ff, 0, 40, .75, .9, 1.3); wallLight.position.set(LEDGE.x - 2.2, WALL_TOP + 7.5, 5.5); wallLight.target.position.set(LEDGE.x + .3, WALL_TOP + 2.2, -.52); scene.add(wallLight, wallLight.target);
+    const spill = new THREE.PointLight(PAINT, 0, 3.2, 1.6); scene.add(spill);
+    // ---- the 3D thread: paint's own colour, a wobble, thicker at the crack and thinner as it speeds up; beads run down it
+    const TS = 10, TQ = 26, thGeo = new THREE.CylinderGeometry(1, 1, 1, TS, TQ, true), thPos = thGeo.attributes.position;
+    const thMat = new THREE.MeshPhysicalMaterial({ color: PAINT.clone().multiplyScalar(.55), roughness: .32, clearcoat: .35, clearcoatRoughness: .25, envMapIntensity: .12, side: THREE.DoubleSide });
+    const thread = new THREE.Mesh(thGeo, thMat); thread.visible = false; thread.frustumCulled = false; scene.add(thread);
+    const beads = [0, 1, 2].map(() => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), thMat); m.visible = false; m.frustumCulled = false; scene.add(m); return m; });
+    // ---- where the blue leaves the earth, and the real bucket's column from there (pose-corrected: the camera rides up by E.dy while the journey runs)
+    const solve = yScreen => { bucket.updateWorldMatrix(true, false); camera.updateMatrixWorld(); const A = bucket.localToWorld(V(.1, 0, .06)), P = y => { const v = V(A.x, y + E.dy, A.z).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; };
       let y1 = A.y + .5, y2 = A.y + 6; for (let k = 0; k < 3; k++) { const f1 = P(y1)[1] - yScreen, f2 = P(y2)[1] - yScreen; if (Math.abs(f2 - f1) < 1e-6) break; const y3 = y2 - f2 * (y2 - y1) / (f2 - f1); y1 = y2; y2 = y3; }
       return { x: P(y2)[0], O: V(A.x, y2, A.z) }; };
-    E.target = () => { if (et < T.fillA) return 0; const x = clamp((et - T.fillA) / (SLOW ? T.fillSlow : T.fillFast));
-      return SLOW ? .62 * ease(clamp(x / .5)) + .38 * ease(clamp((x - .75) / .25)) : 1 - (1 - x) * (1 - x); };
-    // the real inflow column, from the front of the falling thread (or the paint's surface) up to the outlet
-    E.column = (column, mesh, top, r) => { if (!outS) return; const fp = ease(clamp((et - T.frontA) / (T.frontB - T.frontA))), O = outS.O, y = Math.max(top.y, O.y - (O.y - top.y) * fp);
-      column(mesh, V(top.x, y, top.z), V(O.x, O.y, top.z), Math.max(1e-4, r * (.5 + .5 * clamp((et - T.frontA) / .6)))); };
+    // ---- the seep: blobs of wet paint down a seeded walk, a dark wet rim round them, pools where it slows; it follows the camera down
+    function buildVeins(xOut) { const yEnd = STRIP_Y + stripH + CRACK_DY - 10, N = 150, main = [], x0 = IMPACT[0], y0 = IMPACT[1] + 10;
+      for (let i = 0; i <= N; i++) { const q = i / N, env = Math.sin(Math.PI * q) ** .6; main.push([x0 + (xOut - x0) * ease(q) + env * (62 * Math.sin(q * 8 + 1) + 30 * Math.sin(q * 21 + 2) + 12 * Math.sin(q * 57)), y0 + (yEnd - y0) * q]); }
+      const mk = (pts, wS, seed) => pts.map(([x, y], i) => ({ x: x + (hash(i, seed) - .5) * 9, y: y + (hash(i, seed + 3) - .5) * 9, r: (6 + 7 * hash(i, seed + 1) + (i % 41 === 0 ? 12 : 0)) * wS, g: hash(i, seed + 2) }));
+      const br = []; for (let b = 0; b < 10; b++) { const at = .06 + .86 * hash(b, 3), sx = main[Math.round(at * N)][0], sy = main[Math.round(at * N)][1], dir = (b % 2 ? 1 : -1) * (.35 + .8 * hash(b, 5)), len = 140 + 330 * hash(b, 7), pts = [];
+        for (let i = 0; i <= 34; i++) { const q = i / 34; pts.push([sx + Math.sin(dir) * len * q + 20 * Math.sin(q * 10 + b), sy + Math.cos(dir) * len * q * .85 + 6 * Math.sin(q * 17 + b)]); }
+        br.push({ at, blobs: mk(pts, .5 * (1 - .4 * hash(b, 9)), 40 + b).map((o, i, a) => ({ ...o, r: o.r * (1 - .6 * i / a.length) })) }); }
+      return { main: mk(main, 1, 1), N, br, x: xOut, yEnd }; }
+    function blobs(list, f, a) { const n = Math.floor(list.length * f); if (n < 2) return; const line = (w, col) => { vc.beginPath(); for (let i = 0; i < n; i++) { const b = list[i]; i ? vc.lineTo(b.x / 2, (b.y - OY) / 2) : vc.moveTo(b.x / 2, (b.y - OY) / 2); } vc.strokeStyle = col; vc.lineWidth = w / 2; vc.stroke(); };
+      vc.lineCap = "round"; vc.lineJoin = "round"; line(list[0].r * 3.4, "rgba(8,20,46,.16)"); line(list[0].r * 1.9, rgb(.5 * a));
+      for (let i = 0; i < n; i++) { const b = list[i]; if (b.r > 16 || b.g > .93) { vc.fillStyle = "rgba(8,20,46,.2)"; vc.beginPath(); vc.arc(b.x / 2, (b.y - OY) / 2, b.r * 1.7 / 2, 0, 6.283); vc.fill(); vc.fillStyle = rgb(.4 * a); vc.beginPath(); vc.arc(b.x / 2, (b.y - OY) / 2, b.r / 2, 0, 6.283); vc.fill(); }
+        if (b.g > .86) { vc.fillStyle = "rgba(205,228,255,.28)"; vc.beginPath(); vc.arc((b.x - b.r * .3) / 2, (b.y - OY - b.r * .3) / 2, b.r * .2 / 2, 0, 6.283); vc.fill(); } } }
+    const OY = STRIP_Y - 60;
+    function drawVeins(pv, bloom, fill, runL) { vc.clearRect(0, 0, veinCv.width, veinCv.height); if (!veins) return; const E_ = STRIP_Y + stripH, x = veins.x, ev = E_ + CRACK_DY;
+      // the water's landing: the soil goes dark and blue round the foot of the stream
+      if (bloom > 0) { const r = 26 + 80 * bloom; const g = vc.createRadialGradient(IMPACT[0] / 2, (IMPACT[1] + 6 - OY) / 2, 0, IMPACT[0] / 2, (IMPACT[1] + 6 - OY) / 2, r / 2); g.addColorStop(0, rgb(.55 * Math.min(1, bloom * 2))); g.addColorStop(.55, "rgba(8,20,46,.4)"); g.addColorStop(1, "rgba(8,20,46,0)"); vc.fillStyle = g; vc.save(); vc.translate(IMPACT[0] / 2, (IMPACT[1] + 6 - OY) / 2); vc.scale(1.5, .8); vc.translate(-IMPACT[0] / 2, -(IMPACT[1] + 6 - OY) / 2); vc.beginPath(); vc.arc(IMPACT[0] / 2, (IMPACT[1] + 6 - OY) / 2, r / 2, 0, 6.283); vc.fill(); vc.restore(); }
+      if (pv > 0) { blobs(veins.main, pv, 1); for (const b of veins.br) blobs(b.blobs, clamp((pv - b.at) * 2.6), .85); }
+      vc.save(); vc.scale(.5, .5); vc.translate(0, -OY);
+      // the earth's edge casts a soft dark line on the wall
+      let g = vc.createLinearGradient(0, E_ - 6, 0, E_ + 90); g.addColorStop(0, "rgba(0,0,0,.6)"); g.addColorStop(1, "rgba(0,0,0,0)"); vc.fillStyle = g; vc.fillRect(0, E_ - 6, FILM_W, 96);
+      // the crack in the concrete where the earth meets the wall: jagged, a lighter lip under it, the paint in it, a bead point at its lowest end
+      const pts = []; for (let i = 0; i <= 14; i++) { const q = i / 14; pts.push([x - 78 + 156 * q + 3 * Math.sin(i * 2.7), ev - 10 + 20 * q ** 1.6 + 6 * (hash(i, 77) - .5)]); }
+      const path = (dy) => { vc.beginPath(); pts.forEach(([a, b], i) => i ? vc.lineTo(a, b + dy) : vc.moveTo(a, b + dy)); };
+      vc.lineCap = "round"; vc.lineJoin = "round"; path(3); vc.strokeStyle = "rgba(150,155,160,.35)"; vc.lineWidth = 3; vc.stroke(); path(0); vc.strokeStyle = "#050505"; vc.lineWidth = 9; vc.stroke(); vc.strokeStyle = "rgba(0,0,0,.35)"; vc.lineWidth = 20; vc.stroke();
+      if (fill > 0) { const n = Math.ceil(pts.length * fill); vc.beginPath(); pts.slice(0, n).forEach(([a, b], i) => i ? vc.lineTo(a, b) : vc.moveTo(a, b)); vc.strokeStyle = rgb(.8); vc.lineWidth = 3.6; vc.stroke(); vc.strokeStyle = "rgba(205,228,255,.35)"; vc.lineWidth = 1.2; vc.stroke(); }
+      // wet stain round the crack and above it (the paint came down through the soil), and the runnel below
+      if (fill > 0) { g = vc.createRadialGradient(x, ev - 20, 4, x, ev - 20, 120); g.addColorStop(0, rgb(.3 * fill)); g.addColorStop(1, rgb(0)); vc.fillStyle = g; vc.save(); vc.translate(x, ev - 20); vc.scale(1.4, .8); vc.translate(-x, -(ev - 20)); vc.beginPath(); vc.arc(x, ev - 20, 120, 0, 6.283); vc.fill(); vc.restore(); }
+      if (runL > 0) { const lx = pts[pts.length - 1][0], ly = pts[pts.length - 1][1]; for (let i = 0; i < runL / 6; i++) { const yy = ly + i * 6, wob = 5 * Math.sin(i * .5), r = 5 + 2 * hash(i, 5) - i * .02; vc.fillStyle = "rgba(8,20,46,.2)"; vc.beginPath(); vc.arc(lx + wob, yy, r * 2.2, 0, 6.283); vc.fill(); vc.fillStyle = rgb(.42 * (1 - i * 6 / (runL + 40))); vc.beginPath(); vc.arc(lx + wob, yy, Math.max(2, r), 0, 6.283); vc.fill(); } }
+      vc.restore(); }
     const ripple = (x, y, k) => { const r = document.createElement("i"); r.className = "eRip"; r.style.left = x.toFixed(0) + "px"; r.style.top = y.toFixed(0) + "px"; box.appendChild(r);
       r.animate([{ transform: `translate(-50%, -50%) scale(${.2 * k})`, opacity: .9 }, { transform: `translate(-50%, -50%) scale(${1.5 * k})`, opacity: 0 }], { duration: 700, easing: "ease-out" }).onfinish = () => r.remove(); };
-    E.skip = () => { if (started && et < T.fillA) { skipping = true; rate = 4; if (FILM) vid.playbackRate = 4; } };
+    E.skip = () => { if (started && !E.streamOn && !skipping) { skipping = true; rate = 5; if (!SEEK && SEEK !== 0) vid.playbackRate = 5; } };
     addEventListener("pointerdown", E.skip); addEventListener("keydown", E.skip);
+    // the load counter: 0 at the first frame, 60 % at the end of the glide, the rest as the bucket fills; the slow line holds it back (its own clock, a skip does not speed it)
+    let cNow = 0;
+    const counter = () => { const jp = clamp((et - J0) / Math.max(.1, Tj)), fa = J0 + Tj + 1.1, ideal = et < fa ? COUNT_JOURNEY * trap(et - J0, Tj, TR) + .02 * clamp(et / 1) : COUNT_JOURNEY + (1 - COUNT_JOURNEY) * (1 - (1 - clamp((et - fa) / FILL_FAST)) ** 2);
+      const slow = SLOW ? .62 * ease(clamp(lt / 11)) + .38 * ease(clamp((lt - 14) / 8)) : 1; return Math.min(ideal, slow, jp * 0 + 1); };
+    E.target = () => E.streamOn ? clamp((cNow - COUNT_JOURNEY) / (1 - COUNT_JOURNEY)) : 0;
+    E.column = (column, mesh, top, r) => { if (!outS || !E.streamOn) return; mesh.visible = false; const O = outS.O, t = et, fp = ease(clamp((et - streamT) / .5)), F = V(top.x, Math.max(top.y, O.y - (O.y - top.y) * fp), top.z), R = Math.max(.006, r * .62);
+      for (let i = 0; i <= TQ; i++) { const q = i / TQ, wob = .012 * q * Math.sin(q * 9 + t * 6), wz = .008 * q * Math.sin(q * 7 - t * 5), cx = O.x + (F.x - O.x) * q + wob, cy = O.y + (F.y - O.y) * q, cz = O.z + wz;
+        let rad = R * (1.7 - .95 * q ** .7) * (1 + .08 * Math.sin(q * 20 - t * 10)); if (fp < 1 && q > .88) rad *= Math.max(.15, 1 - ((q - .88) / .12) ** 2);
+        for (let j = 0; j <= TS; j++) { const a = j / TS * 6.2832, k = i * (TS + 1) + j; thPos.setXYZ(k, cx + Math.sin(a) * rad, cy, cz + Math.cos(a) * rad * .8); } }
+      thPos.needsUpdate = true; thGeo.computeVertexNormals(); thread.visible = true;
+      beads.forEach((b, i) => { const ph = (t * 1.15 + i / 3) % 1, on = fp >= 1 && ph > .05; b.visible = on; if (on) { const k = ph ** 1.7; b.position.set(O.x + .03 * (i - 1), O.y + (top.y - O.y) * k, O.z + .01); b.scale.set(.026, .04 * (1 + k), .026); } }); };
     E.tick = (now, dt) => { if (!E.on) return;
-      if (!started && (!FILM || vid.readyState >= 3 || now - boot > 1800)) { started = true; if (FILM) vid.play().catch(() => {}); }
-      if (skipping && et >= T.fillA) { skipping = false; rate = 1; if (FILM) vid.playbackRate = 1; }
-      if (SEEK !== null) { started = true; if (et !== SEEK) { et = SEEK; if (FILM) { vid.pause(); vid.currentTime = clamp(et, 0, 1.85); } } } else if (started) et += dt * rate; // ?seek=2.4 holds the journey at one moment (for pictures)
-      const W = innerWidth, H = innerHeight, s = Math.max(W / FILM_W, H / FILM_H), xOff = (W - FILM_W * s) / 2, y0 = FILM ? Math.max(0, STRIP_Y + 140 - H / s) : STRIP_Y + 40, bucketTop = stBox[1] > 0 ? stBox[1] : H * .55;
-      const gap = clamp(bucketTop - GAP_UP * H, GAP_MIN * H, GAP_MAX * H), Ew = STRIP_Y + stripH, cam1 = Ew - gap / s;
-      const p = ease(clamp((et - T.glideA) / (T.glideB - T.glideA))), lv = ease(clamp((et - T.leaveA) / T.leaveD)), cam = y0 + (cam1 - y0) * p + lv * (gap + 140) / s; // the glide goes on after the drip has started: the earth leaves the top of the screen and the thread is left coming from above, as the start was
-      if (box.classList.contains("pre")) box.classList.remove("pre");
-      if (ls !== s || lx !== xOff || ly !== cam) { world.style.transform = `translate3d(${xOff.toFixed(1)}px, ${(-cam * s).toFixed(1)}px, 0) scale(${s.toFixed(4)})`; ls = s; lx = xOff; ly = cam; }
-      outS = solve(gap - TEAR * s - lv * (gap + 140)); // the outlet: where the earth's torn edge ends up on this screen
-      const wx = (outS.x - xOff) / s; if (lv > 0 && !E.done) { E.done = true; document.documentElement.classList.add("earth-done"); } if (Math.abs(wx - veinX) > 3) { veinX = wx; veins = buildVeins(clamp(wx, 80, 1000)); }
-      drawPour(); drawVeins(ease(clamp((et - T.seepA) / (T.seepB - T.seepA)))); // (the seep is the same drawing every frame; it is cheap)
-      // the bucket is in view once the earth's edge has risen above it; the wall gets a little light then, and the label may show
-      const edgeNow = (Ew - cam) * s; E.bucketSeen = edgeNow < bucketTop; E.wall += ((E.bucketSeen ? .3 : 0) - E.wall) * Math.min(1, dt * 2);
-      E.streamOn = et >= T.frontA;
-      // the drip's rhythm: a bead swells at the lip (slow), necks and lets go, falls with gravity into the mouth of the bucket; a second, smaller and quicker; then the thread
-      const dr = H * .017, lipY = gap - TEAR * s, mouth = proj(bucket.localToWorld(V(.1, BK.h - .02, .06)));
-      const beads = [[T.dropA, .5, .5], [T.dropA + .42, .32, .42]], now_ = et; let landed = false;
-      beads.forEach(([g0, gl, fl], i) => { const el = i ? dropEl2 : dropEl, grow = clamp((now_ - g0) / gl), ft = now_ - (g0 + gl), fall = ft > 0 ? ft / fl : 0, live = now_ >= g0 && fall < 1 && now_ < T.frontA + .1, D = Math.max(40, mouth[1] - lipY);
-        if (live !== !!el._on) { el._on = live; el.style.opacity = live ? 1 : 0; }
-        if (live) { const sc = (.3 + .7 * ease(grow)) * dr / 10 * (i ? .8 : 1), y = lipY + (1 - ease(grow)) * 0 + ease(grow) * dr * .5 + (fall > 0 ? D * fall * fall : 0), st = fall > 0 ? 1 + 1.4 * fall : 1 + .45 * grow;
-          el.style.transform = `translate(${(outS.x - 5).toFixed(1)}px, ${y.toFixed(1)}px) scale(${(sc * (fall > 0 ? .85 : 1)).toFixed(3)}, ${(sc * st).toFixed(3)})`; }
-        if (fall >= 1 && !el._hit) { el._hit = 1; ripple(mouth[0], mouth[1], .7); } });
-      if (E.streamOn && now_ - (E.lastRip || 0) > .42 && !readyAt) { E.lastRip = now_; const A = proj(bucket.localToWorld(V(.1, Math.max(.02, level * FULL), .06))); ripple(A[0], A[1], 1); }
-      nameEl.style.opacity = et > .15 && lv < .05 ? 1 : 0; if (lv >= 1 && box.style.display !== "none") box.style.display = "none";
-      if (goAt) { if (!E.gone) { E.gone = performance.now(); box.classList.add("leave"); } else if (performance.now() - E.gone > 1200) { box.remove(); E.on = false; document.documentElement.classList.remove("earth-on"); } }
+      if (!started && (vid.readyState >= 3 || now - boot > 1800)) { started = true; vid.play().catch(() => {}); }
+      if (SEEK !== null) { started = true; if (et !== SEEK) { et = lt = SEEK; vid.pause(); vid.currentTime = clamp(et - J0, 0, 5.9); } } else if (started) { et += dt * rate; lt += dt; }
+      if (skipping && et >= J0 + Tj + 1.1) { skipping = false; rate = 1; vid.playbackRate = 1; }
+      const W = innerWidth, H = innerHeight, s = Math.max(W / FILM_W, H / FILM_H), xOff = (W - FILM_W * s) / 2, bucketTop = stBox[1] > 0 ? stBox[1] : H * .55;
+      const gap = clamp(bucketTop - GAP_UP * H, GAP_MIN * H, GAP_MAX * H), Ew = STRIP_Y + stripH, cam1 = Ew - gap / s, key = W + "x" + H; if (key !== shapeKey) { shapeKey = key; Tj = cam1 * s / SPEED + TR; }
+      const camJ = cam1 * trap(et - J0, Tj, TR), rt = readyAt ? (now - readyAt) / 1000 - LEAVE_AT : -1, lv = ease(clamp(rt / LEAVE_D)), cam = camJ + lv * (gap + 140) / s;
+      const tf = `translate3d(${xOff.toFixed(1)}px, ${(-cam * s).toFixed(1)}px, 0) scale(${s.toFixed(4)})`; if (tf !== tx) { tx = tf; world.style.transform = tf; }
+      cNow = counter(); const fa = J0 + Tj + 1.1;
+      if (!E.streamOn && et >= fa && cNow >= COUNT_JOURNEY - .001) { E.streamOn = true; streamT = SEEK !== null ? fa : et; }
+      outS = solve(gap + CRACK_DY * s + 8 * s); const wx = (outS.x - xOff) / s; if (Math.abs(wx - veinX) > 3) { veinX = wx; veins = buildVeins(clamp(wx, 90, 990)); vdraw = -2; }
+      const pv = clamp((camJ + FRONT_LEAD * H / s - IMPACT[1]) / (veins.yEnd - IMPACT[1])), bloom = clamp((et - .8) / 3), fill = ease(clamp((pv - .94) / .06)), runL = E.streamOn ? Math.min(230, 40 + 60 * (et - streamT + 1)) : et > fa ? 40 : 0;
+      const sig = [pv.toFixed(3), bloom.toFixed(2), fill.toFixed(2), Math.round(runL / 4), veinX | 0].join(); if (sig !== vdraw) { vdraw = sig; drawVeins(pv, bloom, fill, runL); }
+      // the 3D camera rides down with the earth's edge: the crack's height is kept at the earth's edge on the screen, so wall, ledge and bucket rise into view as the earth leaves the top
+      { const Pc = y => { const v = V(outS.O.x, y, outS.O.z).project(camera); return (1 - v.y) / 2 * H; }, y0 = Pc(outS.O.y), ppm = y0 - Pc(outS.O.y + 1), want = clamp((Ew + CRACK_DY + 8 - camJ) * s, 0, H * 1.7);
+        if (ppm > 1) dyV = clamp(dyV + (want - y0) / ppm, 0, 12); if (goAt) dyV = 0; E.dy = dyV; }
+      if (readyAt || goAt) { thread.visible = false; beads.forEach(b => b.visible = false); }
+      const edgeNow = (Ew - cam) * s; E.bucketSeen = edgeNow < bucketTop - 10; const wk = clamp((H * 1.05 - edgeNow) / (H * .5)); E.wall += (.22 * wk - E.wall) * Math.min(1, dt * 3);
+      upWall.visible = !goAt; wallLight.intensity = 3.2 * wk * (goAt ? 0 : 1); spill.intensity = E.streamOn && !readyAt ? .45 : 0; spill.position.set(outS.O.x, outS.O.y - .25, .5);
+      // the drip before the thread: a bead swells at the crack, necks, lets go and falls into the bucket's mouth; again and again until the thread starts
+      const dr = H * .017, lipY = (Ew + CRACK_DY + 8 - cam) * s, mouth = proj(bucket.localToWorld(V(.1, BK.h - .02, .06))), dt0 = et - fa + DROP_PERIOD * 0, ph = ((et - (J0 + Tj)) % DROP_PERIOD + DROP_PERIOD) % DROP_PERIOD, growT = .5, fallT = .42;
+      const live = et > J0 + Tj && !E.streamOn && lv === 0 && ph < growT + fallT; if (live !== !!dropEl._on) { dropEl._on = live; dropEl.style.opacity = live ? 1 : 0; }
+      if (live) { const grow = clamp(ph / growT), fall = ph > growT ? (ph - growT) / fallT : 0, D = Math.max(40, mouth[1] - lipY), sc = (.3 + .7 * ease(grow)) * dr / 10, y = lipY + ease(grow) * dr * .5 + D * fall * fall, st = fall > 0 ? 1 + 1.4 * fall : 1 + .45 * grow;
+        dropEl.style.transform = `translate(${(outS.x - 5).toFixed(1)}px, ${y.toFixed(1)}px) scale(${(sc * (fall > 0 ? .85 : 1)).toFixed(3)}, ${(sc * st).toFixed(3)})`; if (fall > .96 && !dropEl._hit) { dropEl._hit = 1; ripple(mouth[0], mouth[1], .7); } if (fall === 0) dropEl._hit = 0; }
+      if (E.streamOn && !readyAt && et - lastRip > .42) { lastRip = et; const A = proj(bucket.localToWorld(V(.1, Math.max(.02, level * FULL), .06))); ripple(A[0], A[1], 1); }
+      // the quiet line: the load from the first frame; "Tap to skip" after a second until the thread starts
+      const txt = readyAt ? "Tip the bucket to enter" : `Loading the wall · ${Math.min(99, Math.round(cNow * 100))} %`; if (txt !== loadT.textContent) loadT.textContent = txt;
+      loadEl.style.opacity = goAt ? 0 : 1; skipEl.style.opacity = lt > 1 && !E.streamOn && !skipping ? .7 : 0;
+      if (lv >= 1 && box.style.display !== "none") box.style.display = "none"; E.leaving = lv > 0;
+      if (lv >= .9 && !E.done) { E.done = true; document.documentElement.classList.add("earth-done"); }
+      if (goAt) { if (!E.gone) E.gone = performance.now(); else if (performance.now() - E.gone > 1500) { box.remove(); loadEl.remove(); upWall.visible = false; wallLight.intensity = 0; spill.intensity = 0; thread.visible = false; beads.forEach(b => b.visible = false); E.on = false; E.dy = 0; document.documentElement.classList.remove("earth-on"); } }
     };
     return E;
   })();
