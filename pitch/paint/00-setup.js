@@ -11,7 +11,7 @@
     document.body.insertAdjacentHTML("beforeend", '<div class="nogl" role="main"><p>The walk needs 3D graphics, and this browser has them turned off.</p><a class="go" href="front.html">See the work without 3D</a>'
       + '<p class="ways"><a href="mailto:hello@ttdevs.com">hello@ttdevs.com</a><a href="https://github.com/tlxq" target="_blank" rel="noopener">GitHub ↗</a><a href="https://linkedin.com/in/tlxq" target="_blank" rel="noopener">LinkedIn ↗</a></p></div>'); return; }
   THREE.ColorManagement.legacyMode = false;
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.setPixelRatio(Math.min(devicePixelRatio, innerWidth / innerHeight < .8 ? 3 : 2)); renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .95;
   // loading progress for the bucket: every texture goes through the default manager
   let loadFrac = 0; THREE.DefaultLoadingManager.onProgress = (u, a, b) => { loadFrac = a / b; };

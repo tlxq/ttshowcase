@@ -210,7 +210,7 @@ html.flow .stripe { opacity: 0; visibility: hidden; }
 .earth #eStrip { position: absolute; left: 0; top: 1560px; width: 1080px; filter: drop-shadow(0 22px 14px rgba(0, 0, 0, .7)); }
 .earth #eVid { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; object-fit: cover; -webkit-mask-image: linear-gradient(#000 calc(100% - 220px), transparent); mask-image: linear-gradient(#000 calc(100% - 220px), transparent); }
 .earth #eCv, .earth #eCv2 { position: absolute; left: 0; width: 1080px; }
-.earth #eSoak { position: absolute; left: 0; top: 1560px; width: 1080px; --f: 0px; -webkit-mask-image: linear-gradient(#000 calc(var(--f) - 120px), transparent var(--f)); mask-image: linear-gradient(#000 calc(var(--f) - 120px), transparent var(--f)); }
+.earth #eSoak { position: absolute; left: 0; top: 1560px; width: 1080px; --f: 0px; -webkit-mask-image: linear-gradient(#000 calc(var(--f) - 320px), transparent var(--f)); mask-image: linear-gradient(#000 calc(var(--f) - 320px), transparent var(--f)); }
 .earth #eCv { mix-blend-mode: multiply; }
 .earth #eCv2 { mix-blend-mode: screen; }
 .earth .eDrop { position: absolute; left: 0; top: 0; width: 10px; height: 10px; opacity: 0; transform-origin: 50% 0; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; }
@@ -221,4 +221,4 @@ html:not(.earth-on) .eLoad { display: none; }
 html.earth-on .start .num, html.earth-on .start .go { display: none; }
 html.earth-on .stripe, html.earth-on .stk { opacity: 0 !important; transition: none; }
 html.earth-on .start img, html.earth-on .start h2, html.earth-on .start .word { opacity: var(--kin, 0); transition: none; }
-html.earth-on[data-narrow="1"] .start img { transform-origin: 50% 0; scale: .72; -webkit-mask-image: linear-gradient(#000 95%, transparent); mask-image: linear-gradient(#000 95%, transparent); }
+html.earth-on[data-narrow="1"] .start img { transform-origin: 50% 0; scale: .6; -webkit-mask-image: linear-gradient(#000 95%, transparent); mask-image: linear-gradient(#000 95%, transparent); }
