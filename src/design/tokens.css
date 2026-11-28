@@ -52,6 +52,9 @@
   --front-piece-cloud: 1.2; /* metres a second: the clouds grow out from the letters */
   --front-piece-hand: 1.9s; /* the hand line is sprayed in this long */
   --front-old-paint: 0.9; /* how solid the wall's old words are */
+  /* The bucket falls off the ledge (Tom 11-27): this long after the pour has ended, with this long a hint (it rocks, grit falls) before it goes */
+  --front-fall-wait: 7s;
+  --front-fall-hint: 1s;
   /* the front's first screen, the code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono */
   --front-name: "Archivo", "Arial Black", sans-serif;
   --front-code: "JetBrains Mono", ui-monospace, Menlo, monospace;

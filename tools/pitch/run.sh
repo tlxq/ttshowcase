@@ -18,7 +18,7 @@ grep -q "const SAVED_NUMBERS = {};" .cache/pitch/paint.html || { echo "The pitch
 mkdir -p .cache/shots .cache/walk
 . tools/walk/graphics.sh || exit 1
 
-names="startbytes lateload stripe tour garage site waits epanums nogithub endwaits replay2 reduced contrast plates framed tagsfull scrollup pickspot space tagit tagstore admin nogl startkey startclick startload shape pageinfo front frontstill frontpace inventory" # front*: the front page (front.html)
+names="startbytes lateload stripe tour garage site waits epanums nogithub endwaits replay2 reduced contrast plates framed tagsfull scrollup pickspot space tagit tagstore admin nogl startkey startclick startload fall shape pageinfo front frontstill frontpace inventory" # front*: the front page (front.html)
 FRAME_CHECKS=" startbytes lateload waits endwaits tagsfull frontpace "
 JOBS="${JOBS:-4}"
 out=$(mktemp -d)
