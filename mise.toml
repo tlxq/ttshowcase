@@ -120,6 +120,11 @@ run = "npm outdated || true"
 description = "One real tag round on a deployment: send, held spot, approve, on the wall, remove (Tom gets one test mail); default ttdevs.com, or name a preview address"
 run = "tools/tags/live.sh"
 
+[tasks."pitch:pair"]
+description = "A few moments, side by side: the approved picture beside the build, and master beside this branch (laptop and phone, night and day). Name scroll positions, e.g. mise run pitch:pair 840 872 990 [--approved <folder>]. A page and one picture per screen in .cache/pitch/pair; seconds per moment; not a speed check, so it runs beside the other checks"
+depends = ["install"]
+run = "tools/pitch/pair.sh"
+
 [tasks."pitch:sheet"]
 description = "The whole-walk sheet: every moment on master and on this branch, side by side. Laptop and phone, night and day. Changed pictures are marked. About 2 minutes on the desk's graphics card; run it after pitch:check, not beside it"
 depends = ["install"]
