@@ -1,5 +1,5 @@
 // The tag store (PR7, Tom 11-18): a tag the visitor puts on the wall is also sent to the store, with nothing on screen about it.
-// A send that fails (the store refuses once with 502) stays unsent and goes again on the next load; 429, 409 and 400 are never sent again. A refusal by the robot check (403 robot) stays unsent too, goes again on the next load, and has a line for the visitor. A spot someone else got first (409 spot-taken) is told, and the visitor picks another with the drawing kept.
+// A send that fails (the store refuses once with 502) stays unsent and goes again on the next load; 429, 409 and 400 are never sent again. A refusal by the robot check (403 robot, and 403 origin the same way) stays unsent too, goes again on the next load, and has a line for the visitor. A spot someone else got first (409 spot-taken) is told, and the visitor picks another with the drawing kept.
 // The store keeps every stroke with its own tool and colour. Another visitor (fresh storage) sees the tag on the wall only after it is approved
 // (through its review link), and the visitor who made it never sees it twice. A waiting tag's spot turns the frame yellow, with its own words.
 // Runs against the pitch's local store (tools/tags/local.mjs, through tools/serve.py); each run starts it empty.
@@ -37,12 +37,14 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
     const s = await settle(s => s.sent === 'stop', 30), n = await posts(); await load(); await page.waitForTimeout(800); const n2 = await posts(); res.stop[code] = [s.sent, n2 - n];
     if (s.sent !== 'stop' || n2 !== n) errs.push(code + ' was not final: ' + JSON.stringify([s.sent, n, n2])); }
 
-  // 2b. the robot check refuses (403 robot): not stored, not final, the visitor's line is set, and the next load sends again
-  { await fresh(); await seedTag(spotX += 1.5, 5); const rows0 = (await api('/api/tags-local/rows')).length; await api('/api/tags-local/fail?times=2&status=403&error=robot', 'POST'); await load();
-    const s = await settle(s => s.robot, 30), n = await posts(), text = await page.evaluate(() => document.getElementById('tagNote').textContent); await load(); const s2 = await settle(s => s.robot, 30), n2 = await posts();
-    res.robot = { told: s.robot, sent: s.sent, text, again: n2 - n, rows: (await api('/api/tags-local/rows')).length - rows0 };
-    if (!s.robot || s.sent || !s2.robot || n2 !== n + 1 || res.robot.rows) errs.push('a send the robot check refused must stay unsent, be told and go again on the next load: ' + JSON.stringify(res.robot));
-    if (text !== "Couldn't send your tag. The browser check didn't pass. Reload the page to try again.") errs.push('the robot check\'s line reads: ' + text); }
+  // 2b. the robot check refuses (403 robot), or the send is refused for where it came from (403 origin): not stored, not final, the visitor's line is set in sentence case, and the next load sends again
+  res.refused = {};
+  for (const why of ['robot', 'origin']) { await fresh(); await seedTag(spotX += 1.5, 5); const rows0 = (await api('/api/tags-local/rows')).length; await api('/api/tags-local/fail?times=2&status=403&error=' + why, 'POST'); await load();
+    const s = await settle(s => s.robot, 30), n = await posts(), [text, letters] = await page.evaluate(() => { const e = document.getElementById('tagNote'); return [e.textContent, getComputedStyle(e).textTransform]; }); await load(); const s2 = await settle(s => s.robot, 30), n2 = await posts();
+    const got = res.refused[why] = { told: s.robot, sent: s.sent, text, letters, again: n2 - n, rows: (await api('/api/tags-local/rows')).length - rows0 };
+    if (!s.robot || s.sent || !s2.robot || n2 !== n + 1 || got.rows) errs.push('a send refused with 403 ' + why + ' must stay unsent, be told and go again on the next load: ' + JSON.stringify(got));
+    if (text !== "Couldn't send your tag. The browser check didn't pass. Reload the page to try again.") errs.push('the line for 403 ' + why + ' reads: ' + text);
+    if (letters !== 'none') errs.push('the refused-send line must keep its sentence case, its text-transform is: ' + letters); }
 
   // 3. another visitor (fresh storage): the waiting tag is not on their wall, only after its review link is pressed; the maker never sees it twice
   await fresh(); await load(); await page.waitForTimeout(2500); res.waitingSeen = await page.evaluate(() => window.tagTest.store());

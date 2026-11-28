@@ -127,10 +127,10 @@
   const tagSaved = () => { try { const o = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); return o && o.v === 1 && tagOk(o) ? o : null; } catch (_) { return null; } };
   const tagSave = patch => { try { const o = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); if (o) localStorage.setItem(TAG_KEY, JSON.stringify({ ...o, ...patch })); } catch (_) {} };
   // Sending: the saved tag and a random device id (kept here) go to the store. Nothing on the screen tells. sent: "yes" (and its id), or "stop" when the store will never take it
-  // (400 broken, 409 this device already has one, 429 too many from this address); a refusal by the robot check (403 robot) stays unsent like a failure, with a line under the tag (tagNoteTick), or "taken" when someone else's tag got that spot first (409 spot-taken): then the visitor is told and picks
+  // (400 broken, 409 this device already has one, 429 too many from this address); a refusal by the robot check (403 robot, and 403 origin the same way) stays unsent like a failure, with a line under the tag (tagNoteTick), or "taken" when someone else's tag got that spot first (409 spot-taken): then the visitor is told and picks
   // another spot with the drawing kept (tagLost), at once when it was just put, else from Leave your tag; a network failure or a 5xx (mail service, wall busy, not set up) leaves it unsent, and the next visit tries again.
   let tagSending = false;
-  // the robot check (Vercel BotID) refused the send (403 robot): the tag stays in this browser, unsent, and the next load sends it again. The visitor is told, in a label under their tag while it is in view (signum W6, L1: why, and the next step)
+  // the robot check (Vercel BotID) refused the send (403 robot), or the send was refused for where it came from (403 origin): the tag stays in this browser, unsent, and the next load sends it again. The visitor is told, in a label under their tag while it is in view (signum W6, L1: why, and the next step)
   const tagNote = document.getElementById("tagNote"), TAG_ROBOT = "Couldn't send your tag. The browser check didn't pass. Reload the page to try again.";
   function tagNoteTick() { let on = false; if (tag.robot && !pick.mode && tagMesh.visible) { const [x, y, front] = proj(V(tag.x, tag.y - FRAME.h / 2, 0)); on = front && x > 0 && x < innerWidth && y > 0 && y < innerHeight;
       if (on) { tagNote.style.left = cl(x - tagNote.offsetWidth / 2, 12, innerWidth - tagNote.offsetWidth - 12) + "px"; tagNote.style.top = cl(y + 8, 12, innerHeight - tagNote.offsetHeight - 12) + "px"; } }
@@ -138,7 +138,7 @@
   const tagDevice = () => { try { let d = localStorage.getItem(DEVICE_KEY); if (!/^[\w-]{16,64}$/.test(d || "")) { d = crypto.randomUUID ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join(""); localStorage.setItem(DEVICE_KEY, d); } return d; } catch (_) { return null; } };
   async function tagSendOut(justPut) { const o = tagSaved(), device = o && !o.sent && !tagSending ? tagDevice() : null; if (!device) return; tagSending = true;
     try { const r = await fetch("/api/tags", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: o.name, device, spot: { x: o.x, y: o.y, w: o.w, h: o.h, turn: o.turn }, strokes: o.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr })) }) });
-      const j = await r.json().catch(() => null), why = j && j.error; tag.robot = !r.ok && r.status === 403 && why === "robot";
+      const j = await r.json().catch(() => null), why = j && j.error; tag.robot = !r.ok && r.status === 403 && (why === "robot" || why === "origin");
       if (r.ok) tagSave({ sent: "yes", id: j && typeof j.id === "string" ? j.id : null });
       else if (r.status === 409 && why === "spot-taken") { tagSave({ sent: "taken" }); tagLost(justPut); }
       else if (r.status === 400 || r.status === 409 || r.status === 429) tagSave({ sent: "stop" }); } catch (_) {} // else: unsent, tried again next visit

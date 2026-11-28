@@ -16,6 +16,7 @@ html { overscroll-behavior-y: none; } /* the top of the page is the way round to
 /* the facts label: the label word small and uppercase, the sentences in sentence case (signum K3) */
 .tag.facts { white-space: normal; width: min(330px, 74vw); text-transform: none; letter-spacing: .02em; }
 .tag.facts b { text-transform: uppercase; letter-spacing: .08em; }
+#tagNote { text-transform: none; } /* the refused-send line is a sentence: sentence case like the facts label, whatever .tag says (signum K3; the tagstore check reads it) */
 .tag.facts span { color: var(--look-quiet); }
 .tag b { display: block; font-weight: 500; color: var(--look-text); }
 .hot { position: absolute; pointer-events: auto; display: block; border-radius: 2px; }
