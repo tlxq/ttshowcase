@@ -14,7 +14,7 @@
 # skipped has a second meaning, written by the home repo's ttshowcase-night-sync, not by this script: result "skipped" with
 # a note and red_commit = master's tip was NOT walked, because the fallback commit (red_commit) was already red last night.
 # That is not "fine".
-# The SessionStart hook (.claude/hooks/night.mjs) says so in the next session when it is red, and for that second skip.
+# Not on a timer since 2026-11-28 (Tom: no night runs); the SessionStart hook that read night.json is gone. Run by hand if wanted.
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 2
 
