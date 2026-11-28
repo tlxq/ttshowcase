@@ -20,4 +20,7 @@ async page => { const errs = [], res = { errs }; page.on('pageerror', e => errs.
   if (all.x0 !== all.end) errs.push('with the whole wall full the area starts at ' + all.x0 + ' m, not at the wall\'s end ' + all.end);
   if (all.offered) errs.push('with the whole wall full a spot is still offered, over a tag: ' + all.offered.join(', '));
   res.steps = +((full.base - all.end) / (F.w + .5)).toFixed(2);
+  // the grown part lies past the lamps: the hint must not call it lit (signum L1)
+  await page.evaluate(() => document.getElementById('leave').click()); await page.waitForTimeout(2500); res.hint = await page.evaluate(() => document.getElementById('pickHint').textContent);
+  if (/\blit\b/.test(res.hint) || !/free part of the wall/.test(res.hint)) errs.push('with the area grown the hint still says lit: ' + res.hint);
   return JSON.stringify(res); }

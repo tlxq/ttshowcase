@@ -33,12 +33,14 @@
     admPaint(); }
   function admSelect(id, keep) { const A = id && adm.map.get(id); if (!keep) { adm.undo = null; adm.note = ""; adm.fail = false; } adm.sel = A ? id : null;
     if (A) { [pick.x, pick.y, pick.fw, pick.fh, pick.rot] = [A.t.x, A.t.y, A.t.w, A.t.h, A.t.turn]; } else { [pick.fw, pick.fh, pick.rot] = [FRAME.w, FRAME.h, 0]; } pickShow(); admPaint(); }
+  // Tom may put a tag anywhere, over another too; the bar says so when the picked one overlaps another (the store's own box rule)
+  const admOver = A => [...adm.map.values()].some(B => B !== A && Math.abs(B.t.x - A.t.x) < (B.t.w + A.t.w) / 2 && Math.abs(B.t.y - A.t.y) < (B.t.h + A.t.h) / 2);
   function admPaint() { if (!adm.on) return; const A = adm.sel && adm.map.get(adm.sel), v = adm.view, n = [...adm.map.values()].filter(a => a.t.status === "waiting").length;
     admNote.textContent = n ? `Admin · ${n} waiting` : "Admin"; pickCancel.textContent = v ? "Close" : "Cancel";
     admSelBar.hidden = !(v && pick.mode === 1 && (A || adm.undo)); admApproveB.hidden = !(A && A.t.status === "waiting"); admRemoveB.hidden = !A; admUndoB.hidden = !!A || !adm.undo;
     pickFrame.style.display = v && !A ? "none" : ""; admSizeH.hidden = admTurnH.hidden = !(v && A); pickFrame.setAttribute("aria-label", v ? "The tag you picked. Move it with the arrow keys" : frameLabel);
     if (v) { pickFrame.classList.toggle("taken", !!A && A.t.status === "waiting"); pickFrame.classList.remove("locked");
-      pickHint.textContent = adm.fail ? "Couldn't save the change. Try again." : adm.note || (A ? (A.t.status === "waiting" ? "Waiting for you. " : "On the wall. ") + "Drag to move. The corner sizes it, the dot turns it." : "Tap a tag to change it, or a bare part of the wall to tag."); }
+      pickHint.textContent = adm.fail ? "Couldn't save the change. Try again." : adm.note || (A ? (admOver(A) ? "Over another tag. " : "") + (A.t.status === "waiting" ? "Waiting for you. " : "On the wall. ") + "Drag to move. The corner sizes it, the dot turns it." : "Tap a tag to change it, or a bare part of the wall to tag."); }
     else if (adm.make) { if (adm.fail) pickHint.textContent = "Couldn't put your tag on the wall. Try again."; else if (tag.stage === "draw" && !tag.full && kept(pick.x, pick.y)) pickHint.textContent = "Visitors can't tag here. You can."; } }
   function admOpen() { if (pick.mode || !adm.on) return; CLEAR = clearBoxes(); adm.view = true; adm.make = false; adm.sel = null; adm.undo = null; adm.note = ""; adm.fail = false; [pick.fw, pick.fh, pick.rot] = [FRAME.w, FRAME.h, 0];
     [pick.x, pick.y] = [(AREA.x0 + AREA.x1) / 2, (AREA.y0 + AREA.y1) / 2]; pick.ox = ovX(NARROW ? pick.x : 0); pick.locked = false; pick.nope = false; pickGo(1, 1.4); tagStore(false);
@@ -118,7 +120,7 @@
   window.tagTest = { // for the tagit check
     frameBox: () => { const r = pickFrame.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
     state: () => ({ stage: tag.stage, strokes: tag.strokes.length, points: tagCount(), playing: !!tag.play, shown: tagMesh.visible, wet: +tag.wet.toFixed(2), name: tag.name,
-      saved: (() => { try { return !!localStorage.getItem(TAG_KEY); } catch (_) { return false; } })(), leave: !leaveB.hidden,
+      saved: (() => { try { return !!localStorage.getItem(TAG_KEY); } catch (_) { return false; } })(), leave: !leaveB.hidden, lost: !!tag.lost,
       sent: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).sent || null; } catch (_) { return null; } })(), id: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).id || null; } catch (_) { return null; } })() }),
     held: () => HELD.length, layer: () => storeW && { stretches: storeW.want, up: storeW.done, shown: storeW.meshes.filter(m => m && m.material.map !== wallEmpty).length }, store: () => document.documentElement.dataset.storeTags || null, paintAt: (u, v) => tgc.getImageData(u, v, 1, 1).data[3], size: [TW, TFH, TH], drips: () => tag.strokes.reduce((n, s) => n + s.dr.length, 0), running: () => tag.runs.length };
   // the clock light (Tom 11-23): the start wall and the end are lit by the visitor's own time: day 07-18, night 19-06, a blend in 06-07 and 18-19. ?hour=13.5 forces one
