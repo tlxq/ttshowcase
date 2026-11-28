@@ -178,7 +178,7 @@
     tf(stIm, "i.transform", `translate(${(-stPx * 14).toFixed(0)}px, ${(-stPy * 8).toFixed(0)}px)`); tf(stIm, "i.filter", lampOn < 1 ? `brightness(${(.15 + .85 * lampOn).toFixed(2)})` : "none");
     tf(stNm, "n.transform", `translate(${(-stPx * 6).toFixed(0)}px, ${(-stPy * 4).toFixed(0)}px)`); tf(stWd, "w.transform", stNm.style.transform);
     const sp = (REDUCED ? 112 : -12 + 124 * Math.min(1, level / .9)).toFixed(0) + "%"; const wm = stW.get(stWd) || stW.set(stWd, {}).get(stWd); if (wm.p !== sp) { wm.p = sp; stWd.style.setProperty("--p", sp); } // sprayed on as the bucket fills, whole a little before it is full
-    stShown = Math.max(stShown, Math.round(level * 100)); tf(stNum, "u.textContent", String(stShown)) /* never counts down */; tf(stNum, "u.opacity", readyAt ? "0" : "1"); tf(stGo, "g.opacity", readyAt && !goAt ? "1" : "0"); }
+    stShown = Math.max(stShown, Math.round(level * 100)); tf(stNum, "u.textContent", String(stShown)) /* never counts down */; tf(stNum, "u.opacity", readyAt ? "0" : "1"); tf(stGo, "g.opacity", EARTH.on ? (EARTH.bucketSeen && !goAt ? "1" : "0") : readyAt && !goAt ? "1" : "0"); if (EARTH.on) tf(stGo, "g.textContent", readyAt ? "Tip the bucket to enter" : `Loading the wall · ${Math.min(99, stShown)} %`); }
   const stW = new Map(); let stShown = 0, stBox = [0, 0, 0, 0];
   const onBucket = e => e.clientX >= stBox[0] && e.clientX <= stBox[2] && e.clientY >= stBox[1] && e.clientY <= stBox[3];
   window.bucketAt = () => ({ x: (stBox[0] + stBox[2]) / 2, y: (stBox[1] + stBox[3]) / 2 }); // the checks click the bucket, not the middle
@@ -206,9 +206,9 @@
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
   function intro(now, dt) {
-    const since = (now - t0) / 1000; wallUpload(); if (introOver) LATE.start(); // the bucket has tipped and the pour is over: now the rest is asked for (not during the pour, which keeps the frames to itself)
+    const since = (now - t0) / 1000; if (EARTH.on) EARTH.tick(now, dt); wallUpload(); if (introOver) LATE.start(); // the bucket has tipped and the pour is over: now the rest is asked for (not during the pour, which keeps the frames to itself)
     if (!goAt) {
-      const target = Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 1.0); // a fill that is not held back by loading takes about a second (Tom 11-26: quicker, still poured); loadFrac keeps a slow line waiting for the real loading
+      const target = EARTH.on ? EARTH.target() * (pourReady ? 1 : .92) : Math.min(Math.max(loadFrac, since > 6 ? 1 : 0) * (pourReady ? 1 : .92), since / 1.0); // a fill that is not held back by loading takes about a second (Tom 11-26: quicker, still poured); loadFrac keeps a slow line waiting for the real loading
       level += ((readyAt ? 1 : target) - level) * Math.min(1, dt * 7);
       if (pourReady && level > .975 && !readyAt) { readyAt = now; root.dataset.readyAt = Math.round(now - t0); warmUp(); tagBucket.tabIndex = 0; tagBucket.setAttribute("role", "button"); tagBucket.setAttribute("aria-label", "Tip the bucket to enter"); } /* Tab reaches the start, Enter tips it (B-4) */ else warmStep();
       if (pourReady && (REDUCED || RESUME !== null)) goAt = now - 60000; // a reload for a new window shape skips the bucket: the visitor tipped it already
@@ -222,10 +222,10 @@
     if (goAt && document.body.style.cursor === "pointer") document.body.style.cursor = ""; // the hand is only over the bucket (pointermove), and gone once it tips
     // the bucket fills
     const fillL = goAt ? Math.max(.03, left(ic)) : level; coatMax = Math.max(coatMax, fillL);
-    const inflowOn = !readyAt && !goAt, sy = fillL * FULL;
+    const inflowOn = !readyAt && !goAt && (!EARTH.on || EARTH.streamOn), sy = fillL * FULL;
     inflow.visible = inflowOn;
     if (inflowOn) { const top = bucket.localToWorld(V(.1, sy, .06)), r = .02 * (1 + Math.sin(now / 70) * .08);
-      column(inflow, top, top.clone().add(V(0, 9, 0)), Math.max(1e-4, r)); } // no splash while it fills: on the black start the drops drift off as stray dots
+      if (EARTH.on) EARTH.column(column, inflow, top, r); else column(inflow, top, top.clone().add(V(0, 9, 0)), Math.max(1e-4, r)); } // no splash while it fills: on the black start the drops drift off as stray dots
     // the bucket tips: from where the visitor left it, all the way over on its side
     const k = cl(ic / .45), ang = goAt ? tilt0 + (1.52 - tilt0) * (k < 1 ? sm(k) * (1 + .12 * Math.sin(k * Math.PI)) : 1) : tilt;
     bucketTip.rotation.z = -ang;
@@ -247,13 +247,13 @@
     { const f = ic > .2 ? left(ic) : 0, tail = sm(cl((ic - 2.05) / .45)); outflow.visible = ic > .2 && tail < .98; if (outflow.visible) pourSheet(f, tail, now); lipWet.visible = ic > .15; }
     // the label: shows when the bucket is full, until it tips
     // while it fills: the paint level as a number (nothing in the first second); when full: what to do (signum L1, L2)
-    const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000);
-    const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
+    const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000) && (!EARTH.on || EARTH.bucketSeen);
+    const txt = readyAt ? "Tip the bucket to enter" : EARTH.on ? `Loading the wall · ${Math.min(99, Math.round(level * 100))} %` : `Loading ${Math.min(99, Math.round(level * 100))}%`;
     if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>Tom Larsson &middot; Product engineer</b>${txt}`; } // fixed text: the label's own words and a number, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
-    veilU.uIc.value = ic < 0 ? -9 : ic; veilU.uAll.value = startDay = sm(cl((ic - 1.1) / 1.5)); skyU.uVeil.value = startDay; cityFar.material.opacity = startDay;
+    veilU.uIc.value = ic < 0 ? -9 : ic; veilU.uAll.value = startDay = sm(cl((ic - 1.1) / 1.5)); if (EARTH.on && !goAt) veilU.uAll.value = EARTH.wall; skyU.uVeil.value = startDay; cityFar.material.opacity = startDay;
     const lk = ic < 0 ? 0 : sm(cl((ic - .6) / 1.1)), flick = lk > 0 && lk < .6 && Math.random() < .3 ? .2 : 1;
     lamp.intensity = 5.5 * lk * flick * (1 + Math.sin(now / 90) * .01); pool.intensity = 9 * lk * flick; bulbM.emissiveIntensity = 2.2 * lk * flick; sky.intensity = .1 + .25 * lk; work.intensity = 4.2 * lampOn * (1 - .7 * (ic < 0 ? 0 : sm(cl((ic - 2.4) / 1.2))));
     // after the tip the work light widens and follows the paint's front along the top, so the sheet is seen coming down
