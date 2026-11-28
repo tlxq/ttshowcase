@@ -5,7 +5,7 @@
   // ?load=slow|fast sets the fake load; ?intro=old shows master's start; ?seek=<s> holds a moment; a tap skips the glide. Its pictures (pitch/assets/intro/) are not in git.
   const EARTH = (() => {
     const REST_M = 1.5, RX = -.3, RZ = .85, E = window.__earth = { on: false, streamOn: false, bucketSeen: false, wall: 0, dy: 0, rest: NARROW ? REST_M : 0, rx: NARROW ? RX : 0, rz: NARROW ? RZ : 0 }, Q = new URLSearchParams(location.search), box = document.getElementById("earth"), loadEl = document.getElementById("eLoad");
-    if (!box || REDUCED || Q.get("intro") === "old") { if (box) box.remove(); if (loadEl) loadEl.remove(); { const f = document.getElementById("eFace"); if (f) f.remove(); } return E; } // reduced motion: the start as it is, no journey
+    if (!box || REDUCED || Q.get("intro") === "old") { if (box) box.remove(); if (loadEl) loadEl.remove(); return E; } // reduced motion: the start as it is, no journey
     const world = document.getElementById("eWorld"), vid = document.getElementById("eVid"), strip = document.getElementById("eStrip"), soakEl = document.getElementById("eSoak"), cvM = document.getElementById("eCv"), cvS = document.getElementById("eCv2"),
       loadT = document.getElementById("eLoadT"), skipEl = document.getElementById("eSkip"), cM = cvM.getContext("2d"), cS = cvS.getContext("2d");
     const SEEK = Q.get("seek") === null ? null : +Q.get("seek"), SLOW = Q.get("load") === "slow";
@@ -61,10 +61,10 @@
     // ---- the name on the wall (round 8): TOM / LARSSON painted on the wall face with the outlet ("nameOnWall"), sized FROM the outlet: the O in LARSSON is a ring round the pipe's mouth (its hole is the mouth, the collar is under
     // the letter paint with its edge still reading), the other letters take their cap height and weight from that ring, and the N ends near the frame's right edge at the rest view. A phone's pipe is as big as a letter, so there
     // it is three lines, right-aligned: TOM / LARS / SON. Lit by the scene, the wall's own normal map under the paint. Painted in line by line as the wall arrives, the O last, round the pipe (a sweep); then the blue runs over
-    // the O's lower edge into the thread. "Showcase" is a small blue tag under it (stand-in type). On the tip it simply stays on the wall.
+    // the O's lower edge into the thread. On the tip it simply stays on the wall.
     const planeAt = (sx, sy, z) => { const d = V(sx / innerWidth * 2 - 1, 1 - sy / innerHeight * 2, .5).unproject(camera).sub(camera.position); return camera.position.clone().add(d.multiplyScalar((z - camera.position.z) / d.z)); };
-    const NAME = NARROW ? { above: ["LARS", "TOM"], pre: "S", left: false, margin: 9, over: 1.08, tag: .4, tagDrop: .32 } : { above: ["TOM"], pre: "LARSS", left: true, margin: 22, over: 1.1, tag: .5, tagDrop: .2 }; // above: the lines over the O's line, nearest first; margin: px from the N to the frame's edge; over: the ring's outer radius against half the cap height
-    const FACE = '"Archivo Wall", "Arial Black", sans-serif', TAGFACE = '"Sedgwick Ave Display", cursive', CREAM = tok("--look-cream") || "#efebe1", DARK = tok("--look-dark") || "#111111", NAME_IN = 1.5, LINES_D = 1.1, SWEEP_AT = .95, SWEEP_D = .55; // the painting starts NAME_IN s before the blue runs and ends as it starts
+    const NAME = NARROW ? { above: ["LARS", "TOM"], pre: "S", left: false, margin: 9, over: 1.08 } : { above: ["TOM"], pre: "LARSS", left: true, margin: 22, over: 1.1 }; // above: the lines over the O's line, nearest first; margin: px from the N to the frame's edge; over: the ring's outer radius against half the cap height
+    const FACE = '"Archivo Wall", "Arial Black", sans-serif', CREAM = tok("--look-cream") || "#efebe1", NAME_IN = 1.5, LINES_D = 1.1, SWEEP_AT = .95, SWEEP_D = .55; // the painting starts NAME_IN s before the blue runs and ends as it starts
     const cvs = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
     // paint on the wall: the scene's light on it, the wall's normal map read by its own place (not the picture's), and how much of it is painted yet: "lines" = each line wiped in from the left, "sweep" = round the pipe from the top
     const wallPaint = (kind, glow) => { const u = { uNorT: { value: new THREE.Matrix3() }, uQ: { value: [0, 0, 0] }, uRect: { value: [0, 1, 2].map(() => new THREE.Vector4(0, 2, 0, 2)) }, uSoft: { value: .02 }, uSweep: { value: 0 } };
@@ -79,8 +79,8 @@
     const setMap = (m, c) => { if (m.map) m.map.dispose(); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; m.map = t; m.emissiveMap = t; m.needsUpdate = true; };
     const bare = (g, w, h, n, seed, r0, r1) => { g.save(); g.globalCompositeOperation = "destination-out"; for (let i = 0; i < n; i++) { g.globalAlpha = .35 + .5 * hash(i, seed); g.beginPath(); g.arc(hash(i, seed + 1) * w, hash(i, seed + 2) * h, r0 + (r1 - r0) * hash(i, seed + 3), 0, 6.283); g.fill(); } g.restore(); }; // the paint's unevenness: tiny bare spots
     const mkD = (mat, name, order) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); m.name = name; m.visible = false; m.renderOrder = order; return m; };
-    const nameD = mkD(wallPaint("lines", .06), "nameOnWall", 1), ringW = mkD(wallPaint("sweep", .06), "nameO", 2), ringC = mkD(wallPaint("sweep", .06), "nameOCollar", 6), tagD = mkD(wallPaint("", .3), "showcaseTag", 1); scene.add(nameD, ringW, tagD); outlet.add(ringC);
-    tagD.geometry.translate(.5, -.5, 0); tagD.rotation.z = .05; tagD.material.opacity = 0; shadowD.renderOrder = 4; rustD.renderOrder = 4; // the collar's shadow and the rust run fall ON the paint
+    const nameD = mkD(wallPaint("lines", .06), "nameOnWall", 1), ringW = mkD(wallPaint("sweep", .06), "nameO", 2), ringC = mkD(wallPaint("sweep", .06), "nameOCollar", 6); scene.add(nameD, ringW); outlet.add(ringC);
+    shadowD.renderOrder = 4; rustD.renderOrder = 4; // the collar's shadow and the rust run fall ON the paint
     // the collar's face inside the O: the same paint on the collar, short of its chipped edge so the edge still reads
     { const S = 256, R = .15, c = cvs(S, S), g = c.getContext("2d"), k = S / (2 * R); g.fillStyle = CREAM; g.beginPath(); g.arc(S / 2, S / 2, .139 * k, 0, 6.283); g.arc(S / 2, S / 2, (HOLE + .003) * k, 0, 6.283); g.fill("evenodd"); bare(g, S, S, 60, 411, .6, 2.2); setMap(ringC.material, c);
       ringC.position.z = COLLAR_D + .0015; ringC.visible = true; ringC.scale.set(2 * R, 2 * R, 1); ringC.material.userData.u.uNorT.value.set(2 * R / TILE, 0, .37, 0, 2 * R / TILE, .61, 0, 0, 1); }
@@ -97,80 +97,67 @@
       const fsM = (wx(W - NAME.margin) - cx) / (cap * NAME.over / 2 + sb + aN), RO = cap * NAME.over / 2, base = -cap / 2, pitch = cap * 1.24, xl = -RO - sb, xr = RO + sb, left = xl - aPre, right = xr + aN, pad = .14, n = NAME.above.length; // metres per em; from here on in ems, the O's middle at 0, 0, up is up
       const X0 = Math.min(left, ...aAb.map(w => NAME.left ? left : right - w)) - pad, X1 = Math.max(right, ...aAb.map(w => NAME.left ? left + w : right)) + pad, Y0 = base - cap * .1 - pad, Y1 = base + pitch * n + cap * 1.1 + pad, P = Math.min(240, 2048 / (X1 - X0)), c = cvs(Math.ceil((X1 - X0) * P), Math.ceil((Y1 - Y0) * P)), g = c.getContext("2d"), px = x => (x - X0) * P, py = y => (Y1 - y) * P;
       g.font = `800 ${P}px ${FACE}`; g.textBaseline = "alphabetic"; g.fillStyle = CREAM; g.shadowColor = "rgba(17,17,17,.55)"; g.shadowBlur = P * .06; g.shadowOffsetY = P * .012;
-      const mk = cvs(c.width, c.height), mg = mk.getContext("2d"); mg.font = g.font; mg.textBaseline = "alphabetic"; mg.fillStyle = "#000"; const put = (txt, x, y, al) => { for (const q of [g, mg]) { q.textAlign = al; q.fillText(txt, x, y); } }; // mk: the bare letters, for the code picture's cut-out
+      const put = (txt, x, y, al) => { g.textAlign = al; g.fillText(txt, x, y); };
       put(NAME.pre, px(xl), py(base), "right"); put("N", px(xr), py(base), "left");
       const rects = [[left - .1, base - cap * .1, right + .1, base + cap * 1.1]];
       NAME.above.forEach((txt, k) => { const b = base + pitch * (k + 1), x0 = NAME.left ? left : right - aAb[k]; put(txt, px(x0), py(b), "left"); rects.unshift([x0 - .1, b - cap * .1, x0 + aAb[k] + .1, b + cap * 1.1]); }); // in the order they are painted: the top line first, the O's line last
-      g.shadowColor = "transparent"; bare(g, c.width, c.height, 420, 421, P * .003, P * .011); setMap(nameD.material, c); nameD.userData.mask = mk;
+      g.shadowColor = "transparent"; bare(g, c.width, c.height, 420, 421, P * .003, P * .011); setMap(nameD.material, c);
       const u = nameD.material.userData.u; rects.forEach((r, i) => u.uRect.value[i].set((r[0] - X0) / (X1 - X0), (r[1] - Y0) / (Y1 - Y0), (r[2] - X0) / (X1 - X0), (r[3] - Y0) / (Y1 - Y0))); u.uSoft.value = .25 / (X1 - X0); nameLines = rects.length;
       onWallAt(nameD, cx + X0 * fsM, cy + Y0 * fsM, (X1 - X0) * fsM, (Y1 - Y0) * fsM, zU + .006);
       // the O on the wall: a ring from the pipe's mouth out to the letter's edge, with the letters' soft dark edge
-      { const S = 512, rc = cvs(S, S), q = rc.getContext("2d"), k = S * .44 / (RO * fsM); q.fillStyle = CREAM; q.shadowColor = "rgba(17,17,17,.55)"; q.shadowBlur = S * .44 / RO * .06; q.shadowOffsetY = S * .44 / RO * .012; q.beginPath(); q.arc(S / 2, S / 2, S * .44, 0, 6.283); q.arc(S / 2, S / 2, HOLE * k, 0, 6.283); q.fill("evenodd"); q.shadowColor = "transparent"; bare(q, S, S, 90, 431, .8, 2.6); setMap(ringW.material, rc); { const rm = cvs(64, 64), q2 = rm.getContext("2d"); q2.beginPath(); q2.arc(32, 32, 32 * .88, 0, 6.283); q2.fill(); ringW.userData.mask = rm; }
+      { const S = 512, rc = cvs(S, S), q = rc.getContext("2d"), k = S * .44 / (RO * fsM); q.fillStyle = CREAM; q.shadowColor = "rgba(17,17,17,.55)"; q.shadowBlur = S * .44 / RO * .06; q.shadowOffsetY = S * .44 / RO * .012; q.beginPath(); q.arc(S / 2, S / 2, S * .44, 0, 6.283); q.arc(S / 2, S / 2, HOLE * k, 0, 6.283); q.fill("evenodd"); q.shadowColor = "transparent"; bare(q, S, S, 90, 431, .8, 2.6); setMap(ringW.material, rc);
         const side = 2 * RO * fsM / .88; onWallAt(ringW, cx - side / 2, cy - side / 2, side, side, zU + .007); nameRO = RO * fsM; lipW.scale.set(2 * LIP_W, 1e-4, 1); }
-      // "Showcase", a tag under the name
-      { const ts = 140, tp = cvs(8, 8).getContext("2d"); tp.font = `${ts}px ${TAGFACE}`; const tw = tp.measureText("Showcase").width, pd = ts * .25, tc = cvs(Math.ceil(tw + 2 * pd), Math.ceil(ts * 1.9)), t = tc.getContext("2d"); t.font = tp.font; t.textBaseline = "top"; t.lineJoin = "round";
-        t.strokeStyle = DARK; t.lineWidth = ts * .16; t.strokeText("Showcase", pd, pd); t.fillStyle = `rgb(${SPRAY})`; t.fillText("Showcase", pd, pd); t.fillRect(pd + tw * .78, pd + ts * .82, ts * .04, ts * .55); bare(t, tc.width, tc.height, 80, 441, .8, 2.4); setMap(tagD.material, tc);
-        const m = NAME.tag * fsM / ts, tx = NAME.left ? cx + (left + .15) * fsM : wx(W * .05), ty = cy + (base - cap * NAME.tagDrop) * fsM, w = tc.width * m, h = tc.height * m;
-        tagD.position.set(tx - pd * m, ty + pd * m, zU + .0065); tagD.scale.set(w, h, 1); tagD.material.userData.u.uNorT.value.set(w / TILE, 0, (tx - (LEDGE.x - 7)) / TILE + .3, 0, h / TILE, (ty - h - WALL_TOP) / TILE + .2, 0, 0, 1); tagD.visible = true; }
-      E.name = { fs: fsM, ro: RO * fsM, cap: cap * fsM, left: cx + left * fsM, right: cx + right * fsM, top: cy + (base + pitch * n + cap) * fsM, base: cy + base * fsM }; }
+      placeFace({ cap: cap * fsM, left: cx + left * fsM, base: cy + base * fsM }); }
     // how much is painted at this moment of the journey (et), against the moment the blue starts to run (fa)
     function paintName(fa, done) { const t = et - (fa - NAME_IN), u = nameD.material.userData.u, span = LINES_D / nameLines; for (let k = 0; k < 3; k++) u.uQ.value[k] = done ? 1 : clamp((t - k * span) / span);
-      tagD.material.opacity = done ? 1 : clamp((t - .8) / .4); const sw = done ? 1 : ease(clamp((t - SWEEP_AT) / SWEEP_D)); ringW.material.userData.u.uSweep.value = sw; ringC.material.userData.u.uSweep.value = sw;
+      const sw = done ? 1 : ease(clamp((t - SWEEP_AT) / SWEEP_D)); ringW.material.userData.u.uSweep.value = sw; ringC.material.userData.u.uSweep.value = sw;
       const lip = done ? 1 : E.streamOn ? clamp((et - streamT - .15) / .6) : 0, k1 = clamp(lip * 2.5), k2 = clamp((lip - .3) / .7); lipC.visible = k1 > 0; lipC.scale.y = Math.max(1e-3, k1); lipW.visible = k2 > 0; lipW.scale.y = Math.max(1e-4, (nameRO + .012 - .11) * k2); }
-    Promise.all(['800 100px "Archivo Wall"', '100px "Sedgwick Ave Display"'].map(f => document.fonts.load(f).catch(() => {}))).then(() => { nameIn = true; if (pendingLayout) placeName(); });
-    // ---- Tom as a code picture, in front (round 8): a 2D layer over the scene draws his portrait in characters (22 frames of a head turn, pitch/assets/intro/t00..t21.webp, not in git). A dark cut-out stands behind them so the wall
-    // does not show through, and a light even dark tone lies over the scene while the picture stands. It grows out of the outlet with the paint while the bucket fills, blue first. The head turns with the pointer (or the finger),
-    // and under the pointer a soft window shows the real photo; idle, it sways slowly. The name on the wall is cut out of the layer, so the name stands in front. On the tip the characters fall, each cell in its own moment, while
-    // the view goes down the wall; then the layer is removed and its loop ends: it costs nothing afterwards.
-    const faceCv = document.getElementById("eFace"), RAMP = " .,:;-=+*cotxzLJ#%@".split(""), VEIL = .36, FALL = 2.8, MONO = '"JetBrains Mono", ui-monospace, monospace', CREAM_C = hexRGB(CREAM).join(","), DARK_C = hexRGB(DARK).join(","),
-      LAYF = NARROW ? { cx: .5, top: .02, h: .64, lookX: .66, cell: 9, ref: 390 } : { cx: .2, top: .17, h: .97, lookX: .86, cell: 9.5, ref: 1440 }, // where he stands, as parts of the frame; lookX: where he looks while the paint arrives; cell: a character's width at the reference width
-      RND = Array.from({ length: 4096 }, (_, i) => hash(i, 77)), rnd = (j, c) => RND[(j * 131 + c * 17) & 4095];
-    const F = { T: null, SIL: null, GR: null, key: "", f: 10.5, px: .5, py: .4, tx: .5, ty: .4, pLast: -1e9, done: false, shown: false };
-    const fAt = e => { F.tx = e.clientX / innerWidth; F.ty = e.clientY / innerHeight; F.pLast = performance.now(); }, fOut = () => { F.pLast = -1e9; };
-    const faceEnd = () => { if (F.done) return; F.done = true; if (faceCv) faceCv.remove(); F.T = F.SIL = F.GR = F.win = null; removeEventListener("pointermove", fAt); removeEventListener("pointerdown", fAt); document.documentElement.removeEventListener("pointerleave", fOut); };
-    function faceLayout(W, H) { const dpr = Math.min(devicePixelRatio || 1, 2), T = F.T; faceCv.width = Math.round(W * dpr); faceCv.height = Math.round(H * dpr); F.dpr = dpr; F.x = faceCv.getContext("2d");
-      const cw = LAYF.cell * W / LAYF.ref, ch = cw * 1.55, mh = LAYF.h * H, mw = mh * T[0].width / T[0].height, cols = Math.ceil(mw / cw), rows = Math.ceil(mh / ch), gm = cvs(cols, rows), gx = gm.getContext("2d", { willReadFrequently: true });
-      F.GR = T.map(f => { gx.clearRect(0, 0, cols, rows); gx.drawImage(f, 0, 0, cols, rows); const dd = gx.getImageData(0, 0, cols, rows).data, n = cols * rows, lum = new Float32Array(n), al = new Float32Array(n), v = [];
+    Promise.all(['800 100px "Archivo Wall"', '700 24px "JetBrains Mono"'].map(f => document.fonts.load(f).catch(() => {}))).then(() => { nameIn = true; if (pendingLayout) placeName(); });
+    // ---- Tom as a code picture, painted on the wall (round 9, a laptop only; a phone has the name, the outlet and the bucket): his portrait in characters (22 frames of a head turn, pitch/assets/intro/t00..t21.webp, not in
+    // git) is a picture that is redrawn and lies on the wall as paint ("faceOnWall"): left of the name, in the name's cream and its material, so it takes the scene's light and the wall's grain, a little weaker than the name.
+    // It grows out from the outlet's side while the bucket fills, blue at its arriving edge, cream once it stands. The head turns with the pointer, idle it sways slowly, and under the pointer a soft window shows the real
+    // photo, in the same plane. On the tip the characters run down the wall, each cell in its own moment, to the ledge, in the 1.3 s before the view has left that wall; then the picture is removed and its loop ends: it costs nothing afterwards.
+    const RAMP = " .,:;-=+*cotxzLJ#%@".split(""), FALL = 1.3, MONO = '"JetBrains Mono", ui-monospace, monospace', RND = Array.from({ length: 4096 }, (_, i) => hash(i, 77)), rnd = (j, c) => RND[(j * 131 + c * 17) & 4095],
+      FC = { cols: 46, ar: 1.55, h: 4.56, gap: .47, up: .71, edge: 24, minc: 2, op: .8, glow: .16, lookX: .86, win: 1.15, fallM: 1.5 }; // h, gap, up, win: in the name's cap heights (its height, the air to the L, its middle over the lower baseline, the photo window's radius); edge: px kept to the frame's left edge; ar: a cell's height against its width
+    const F = { T: null, GR: null, nm: null, cv: null, key: "", f: 10.5, tx: .5, sx: 0, sy: 0, pu: .5, pv: .4, pLast: -1e9, done: NARROW };
+    const faceD = NARROW ? null : mkD(wallPaint("", FC.glow), "faceOnWall", 1); if (faceD) { faceD.material.opacity = FC.op; scene.add(faceD); }
+    const fAt = e => { F.tx = e.clientX / innerWidth; F.sx = e.clientX; F.sy = e.clientY; F.pLast = performance.now(); }, fOut = () => { F.pLast = -1e9; };
+    const faceEnd = () => { if (F.done) return; F.done = true; scene.remove(faceD); if (faceD.material.map) faceD.material.map.dispose(); faceD.material.dispose(); faceD.geometry.dispose(); F.T = F.GR = F.cv = F.win = F.holes = null; removeEventListener("pointermove", fAt); removeEventListener("pointerdown", fAt); document.documentElement.removeEventListener("pointerleave", fOut); };
+    // where it lies: sized and placed from the name (its cap height, its L, its lower baseline), smaller if the frame's left edge would cut it. The picture reaches down to the ledge, so the falling characters have wall to run on
+    function placeFace(nm) { if (F.done) return; if (nm) F.nm = nm; if (!F.GR || !F.nm) return; const { cap, left, base } = F.nm, z = -.52 + .006, x1 = left - FC.gap * cap, rows = F.rows, at = (sx, sy) => { const P = planeAt(sx, sy, z); return [P.x, P.y - E.dy]; }; camera.updateMatrixWorld();
+      let h = FC.h * cap, w = h * FC.cols / (rows * FC.ar); const yBot = base + FC.up * cap - h / 2, sT = Math.min(1, (at(proj0(x1 - w / 2, yBot, z)[0], FC.edge)[1] - yBot) / h), xMin = Math.max(at(FC.edge, FC.edge)[0], at(FC.edge, proj0(x1 - w * sT, yBot, z)[1])[0]), s = Math.max(.4, Math.min(sT, (x1 - xMin) / w)); w *= s; h *= s; // its feet and its right side stay; it shrinks until the frame's top and left edges are clear of it
+      const x0 = x1 - w, yT = yBot + h, yB = Math.min(yT - h, WALL_TOP + .01), dpr = Math.min(devicePixelRatio || 1, 2), sp = Math.abs(proj0(x1, yT, z)[0] - proj0(x0, yT, z)[0]), cw = Math.ceil(clamp(sp * dpr / FC.cols, 8, 24)), ch = cw * FC.ar, PW = FC.cols * cw, PH = Math.round(rows * ch);
+      const c = cvs(PW, Math.ceil(PH * (yT - yB) / h)); F.holes = cvs(PW, PH); { const q = F.holes.getContext("2d"); q.fillStyle = "#000"; for (let i = 0; i < 2600; i++) { q.globalAlpha = hash(i, 451) * .5; q.beginPath(); q.arc(hash(i, 452) * PW, hash(i, 453) * PH, (1 + hash(i, 454) * 4) * cw / 20, 0, 6.283); q.fill(); } } // worn paint: small holes
+      setMap(faceD.material, c); faceD.material.map.generateMipmaps = false; faceD.material.map.minFilter = THREE.LinearFilter; onWallAt(faceD, x0, yB, w, yT - yB, z); faceD.visible = false;
+      Object.assign(F, { cv: c, x: c.getContext("2d"), win: cvs(PW, PH), key: "", cw, ch, PW, PH, x0, yT, w, h, z, mpp: PH / h, rr: FC.win * cap * s }); }
+    function faceTick(now) { if (F.done) return; if (!E.on && !goAt) { faceEnd(); return; } requestAnimationFrame(faceTick); if (!F.cv || !O) return;
+      const p = goAt ? clamp((now - goAt) / 1000 / FALL) : 0, kB = readyAt || goAt ? 1 : E.streamOn ? clamp(level / .97) : 0; if (p >= 1) { faceEnd(); return; }
+      faceD.visible = kB > 0; if (kB <= 0) return;
+      const arriving = !readyAt && !goAt, idle = now - F.pLast > 2000; let want = (idle ? .5 + Math.sin(now / 2300) * .35 : F.tx) * 21; if (p > 0 || arriving) want = FC.lookX * 21;
+      F.f += (want - F.f) * .09; const fi = Math.round(clamp(F.f, 0, 21)), G = F.GR[fi], { x, cw, ch, PW, PH, mpp } = F, cols = FC.cols, rows = F.rows, RR = F.rr * mpp;
+      let reveal = !idle && !arriving && p === 0; if (reveal) { const P = planeAt(F.sx, F.sy, F.z), m = RR / PW + .02; F.pu += ((P.x - F.x0) / F.w - F.pu) * .14; F.pv += ((F.yT - P.y) / F.h - F.pv) * .14; reveal = F.pu > -m && F.pu < 1 + m && F.pv > -m && F.pv < 1 + m; }
+      const key = fi + "|" + (arriving ? kB.toFixed(3) : 1) + "|" + p.toFixed(4) + "|" + (reveal ? Math.round(F.pu * PW) + "/" + Math.round(F.pv * PH) : ""); if (key === F.key) return; F.key = key; // only a changed picture is drawn and sent to the graphics card
+      const ox = (outlet.position.x - F.x0) * mpp, oy = (F.yT - outlet.position.y) * mpp, maxD = Math.hypot(Math.max(Math.abs(ox), Math.abs(ox - PW)), Math.max(Math.abs(oy), Math.abs(oy - PH))), minD = Math.max(0, ox - PW), cxp = F.pu * PW, cyp = F.pv * PH;
+      x.globalCompositeOperation = "source-over"; x.clearRect(0, 0, F.cv.width, F.cv.height); x.font = `700 ${Math.round(cw * 1.22)}px ${MONO}`; x.textBaseline = "top";
+      for (let j = 0; j < rows; j++) for (let c = 0; c < cols; c++) { const i = j * cols + c, a = G.al[i]; if (a < .3) continue; const r = rnd(j, c), X = c * cw, Y = j * ch;
+        let edge = false; if (arriving) { const d = kB * 1.05 - (.1 + (Math.hypot(X - ox, Y - oy) - minD) / (maxD - minD) * .65 + r * .2); if (d <= 0) continue; edge = d < .12; } // it grows out from the outlet's side; its arriving edge is blue
+        const k = p > 0 ? clamp((p - r * .5) / .42) : 0; if (k >= 1) continue; const dy = k * k * (.45 + r * .6) * FC.fallM * mpp; // the fall: each cell in its own moment
+        let show = 1; if (reveal) { show = clamp((Math.hypot(X + cw / 2 - cxp, Y + ch / 2 - cyp) / RR - .55) / .5); if (show <= 0) continue; }
+        const lu = G.lum[i]; x.globalAlpha = a * (1 - k * k * k) * show * (edge ? 1 : .35 + .65 * lu); x.fillStyle = edge ? `rgb(${SPRAY})` : CREAM;
+        x.fillText(RAMP[Math.max(FC.minc, Math.min(RAMP.length - 1, Math.floor(Math.pow(lu, .78) * RAMP.length)))], X, Y + dy); } // never below "," : the dark shirt stays as dots
+      x.globalAlpha = 1; x.globalCompositeOperation = "destination-out"; x.drawImage(F.holes, 0, 0); x.globalCompositeOperation = "source-over";
+      if (reveal) { const wx = F.win.getContext("2d"), [bx, by, bw, bh] = F.box; wx.globalCompositeOperation = "source-over"; wx.clearRect(0, 0, PW, PH); wx.drawImage(F.T[fi], bx, by, bw, bh, 0, 0, PW, PH); wx.globalCompositeOperation = "destination-in";
+        const g = wx.createRadialGradient(cxp, cyp, RR * .35, cxp, cyp, RR); g.addColorStop(0, "#000"); g.addColorStop(1, "rgba(0,0,0,0)"); wx.fillStyle = g; wx.fillRect(0, 0, PW, PH); x.drawImage(F.win, 0, 0); } // the real photo under the pointer, in the wall's plane
+      faceD.material.map.needsUpdate = true; }
+    if (faceD) Promise.all([...Array(22)].map((_, i) => new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = `assets/intro/t${String(i).padStart(2, "0")}.webp`; }))).then(T => { if (F.done) return; if (T.some(i => !i)) { faceEnd(); return; } // no portrait (its frames are not in git): no picture
+      // the frames are cropped to the box that holds him in any of them (read on a small copy), then each is read as a grid of cells: how light, how solid
+      const S = 150, sh = Math.round(S * T[0].height / T[0].width), sm0 = cvs(S, sh), sx = sm0.getContext("2d", { willReadFrequently: true }); let bx0 = S, bx1 = 0, by0 = sh, by1 = 0;
+      for (const f of T) { sx.clearRect(0, 0, S, sh); sx.drawImage(f, 0, 0, S, sh); const d = sx.getImageData(0, 0, S, sh).data; for (let y = 0; y < sh; y++) for (let x = 0; x < S; x++) if (d[(y * S + x) * 4 + 3] > 60) { if (x < bx0) bx0 = x; if (x > bx1) bx1 = x; if (y < by0) by0 = y; if (y > by1) by1 = y; } }
+      const q = T[0].width / S, box = F.box = [bx0 * q, by0 * q, (bx1 + 1 - bx0) * q, (by1 + 1 - by0) * q], cols = FC.cols, rows = F.rows = Math.round(cols * box[3] / box[2] / FC.ar), gm = cvs(cols, rows), gx = gm.getContext("2d", { willReadFrequently: true });
+      F.GR = T.map(f => { gx.clearRect(0, 0, cols, rows); gx.drawImage(f, box[0], box[1], box[2], box[3], 0, 0, cols, rows); const dd = gx.getImageData(0, 0, cols, rows).data, n = cols * rows, lum = new Float32Array(n), al = new Float32Array(n), v = [];
         for (let i = 0; i < n; i++) { const a = dd[i * 4 + 3]; lum[i] = a ? (.299 * dd[i * 4] + .587 * dd[i * 4 + 1] + .114 * dd[i * 4 + 2]) / 255 : 0; al[i] = a / 255; if (a > 80) v.push(lum[i]); }
         v.sort((p, q) => p - q); const top = v[Math.floor(v.length * .97)] || 1; for (let i = 0; i < n; i++) lum[i] = Math.min(1, lum[i] / top); return { lum, al }; });
-      F.win = cvs(faceCv.width, faceCv.height); Object.assign(F, { cw, ch, mw, mh, cols, rows, mx: LAYF.cx * W - mw / 2, my: LAYF.top * H }); }
-    // a picture that lies on the wall (the name, the tag, the O), cut out of the layer where it is on the screen right now: in small patches, so the wall's perspective is followed
-    const cutOut = (x, mesh, n, m) => { const im = mesh.userData.mask || (mesh.material.map && mesh.material.map.image); if (!im || !mesh.visible) return; mesh.updateMatrixWorld(); const g = mesh.geometry.attributes.position, d0 = F.dpr, w = im.width / n, h = im.height / m,
-        at = (u, v) => proj(V(g.getX(0) + (g.getX(1) - g.getX(0)) * u, g.getY(0) + (g.getY(2) - g.getY(0)) * v, 0).applyMatrix4(mesh.matrixWorld));
-      for (let j = 0; j < m; j++) for (let i = 0; i < n; i++) { const a = at(i / n, j / m), b = at((i + 1) / n, j / m), d = at(i / n, (j + 1) / m), ow = i < n - 1 ? 1 : 0, oh = j < m - 1 ? 1 : 0;
-        x.setTransform((b[0] - a[0]) / w * d0, (b[1] - a[1]) / w * d0, (d[0] - a[0]) / h * d0, (d[1] - a[1]) / h * d0, a[0] * d0, a[1] * d0); x.drawImage(im, i * w, j * h, w + ow, h + oh, 0, 0, w + ow, h + oh); }
-      x.setTransform(d0, 0, 0, d0, 0, 0); };
-    function faceTick(now) { if (F.done) return; if (!E.on && !goAt) { faceEnd(); return; } requestAnimationFrame(faceTick); if (!F.T || !O) return;
-      const W = innerWidth, H = innerHeight, p = goAt ? clamp((now - goAt) / 1000 / FALL) : 0, kB = readyAt || goAt ? 1 : E.streamOn ? clamp(level / .97) : 0; if (p >= 1) { faceEnd(); return; }
-      if (kB <= 0) { if (F.shown) { F.x.clearRect(0, 0, W, H); F.shown = false; } return; }
-      if (F.key !== W + "x" + H) { F.key = W + "x" + H; faceLayout(W, H); } F.shown = true;
-      const x = F.x, { cw, ch, mw, mh, cols, rows, mx, my } = F, arriving = !readyAt && !goAt, [ox, oy] = proj(outlet.position), maxD = Math.hypot(Math.max(ox, W - ox), Math.max(oy, H - oy));
-      const seen = (X, Y, r) => { if (!arriving) return 1; const q = Math.hypot(X - ox, Y - oy) / maxD * .8 + r * .2; return q < kB * 1.05 ? (kB * 1.05 - q < .16 ? 2 : 1) : 0; }; // it grows out of the outlet; its leading edge is blue
-      const idle = now - F.pLast > 2000; let want = (idle ? .5 + Math.sin(now / 2300) * .35 : F.tx) * 21; if (p > 0 || arriving) want = LAYF.lookX * 21;
-      F.f += (want - F.f) * .09; const fi = Math.round(clamp(F.f, 0, 21)), G = F.GR[fi]; F.px += (F.tx - F.px) * .14; F.py += (F.ty - F.py) * .14;
-      // what the characters keep clear of: the bucket, and on a phone the thread over it
-      const keep = [[(stBox[0] + stBox[2]) / 2, (stBox[1] + stBox[3]) / 2, (stBox[2] - stBox[0]) / 2, (stBox[3] - stBox[1]) / 2]]; if (NARROW) keep.push([ox, (oy + stBox[1]) / 2, .04 * W, Math.max(8, (stBox[1] - oy) / 2)]);
-      x.setTransform(F.dpr, 0, 0, F.dpr, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.clearRect(0, 0, W, H);
-      x.globalAlpha = .82 * ease(kB) * (1 - clamp(p * 1.6)); x.drawImage(F.SIL[fi], mx, my, mw, mh); x.globalAlpha = 1; // the dark cut-out
-      x.globalCompositeOperation = "destination-out"; for (const [kx, ky, rx, ry] of keep) { x.beginPath(); x.ellipse(kx, ky, rx * 1.25, ry * 1.25, 0, 0, 7); x.fill(); }
-      x.globalCompositeOperation = "destination-over"; x.fillStyle = `rgba(${DARK_C},${(VEIL * kB * (1 - clamp(p * 3))).toFixed(3)})`; x.fillRect(0, 0, W, H); x.globalCompositeOperation = "source-over"; // the even dark tone, under the cut-out
-      const reveal = !idle && !arriving && p === 0, cxp = F.px * W, cyp = F.py * H, RR = Math.min(W, H) * .2;
-      x.font = `700 ${Math.round(cw * 1.22)}px ${MONO}`; x.textBaseline = "top";
-      for (let j = 0; j < rows; j++) for (let c = 0; c < cols; c++) { const i = j * cols + c, a = G.al[i]; if (a < .3) continue; const r = rnd(j, c), X = mx + c * cw, Y = my + j * ch; if (X < -cw || X > W) continue;
-        let clear = 1; for (const [kx, ky, rx, ry] of keep) { const q = Math.hypot((X - kx) / rx, (Y - ky) / ry); if (q < 1.25) clear = Math.min(clear, clamp((q - 1) / .25)); } if (clear <= 0) continue;
-        const s = seen(X, Y, r); if (!s) continue; const k = p > 0 ? clamp((p - r * .5) / .42) : 0; if (k >= 1) continue; const dy = k * k * H * (.45 + r * .6); // the fall: each cell in its own moment
-        let show = 1, edge = 0; if (reveal) { const dd = Math.hypot(X - cxp, Y - cyp) / RR; show = clamp((dd - .55) / .5); edge = clamp(1 - Math.abs(dd - .9) / .3); if (show <= 0) continue; }
-        const lu = G.lum[i], al = a * (1 - k * k * k) * show * clear;
-        if (lu < .08) { x.fillStyle = `rgba(${SPRAY},${(al * .3).toFixed(2)})`; x.fillText(":", X, Y + dy); continue; }
-        x.fillStyle = s === 2 || edge > .1 || lu < .42 ? `rgba(${SPRAY},${(al * clamp(.45 + lu * 1.4 + edge)).toFixed(2)})` : `rgba(${CREAM_C},${(al * (.45 + .55 * lu)).toFixed(2)})`; // dark parts in the blue, light parts in the cream
-        x.fillText(RAMP[Math.min(RAMP.length - 1, Math.floor(Math.pow(lu, .78) * RAMP.length))], X, Y + dy); }
-      if (reveal) { const wx = F.win.getContext("2d"); wx.setTransform(F.dpr, 0, 0, F.dpr, 0, 0); wx.globalCompositeOperation = "source-over"; wx.clearRect(0, 0, W, H); wx.drawImage(F.T[fi], mx, my, mw, mh); wx.globalCompositeOperation = "destination-in";
-        const g = wx.createRadialGradient(cxp, cyp, RR * .35, cxp, cyp, RR); g.addColorStop(0, "#000"); g.addColorStop(1, "rgba(0,0,0,0)"); wx.fillStyle = g; wx.fillRect(0, 0, W, H); x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(F.win, 0, 0); x.setTransform(F.dpr, 0, 0, F.dpr, 0, 0); } // the real photo under the pointer
-      // the name stands in front: its letters, the O and the tag are cut out of the layer
-      x.globalCompositeOperation = "destination-out"; cutOut(x, nameD, 16, 6); cutOut(x, tagD, 6, 2); cutOut(x, ringW, 3, 3); x.globalCompositeOperation = "source-over"; }
-    if (faceCv) Promise.all([...Array(22)].map((_, i) => new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = `assets/intro/t${String(i).padStart(2, "0")}.webp`; }))).then(T => { if (F.done) return; if (T.some(i => !i)) { faceEnd(); return; } // no portrait (its frames are not in git): no layer
-      F.SIL = T.map(f => { const c = cvs(300, Math.round(300 * f.height / f.width)), q = c.getContext("2d"); q.drawImage(f, 0, 0, c.width, c.height); q.globalCompositeOperation = "source-in"; q.fillStyle = DARK; q.fillRect(0, 0, c.width, c.height); return c; }); F.T = T;
-      addEventListener("pointermove", fAt, { passive: true }); addEventListener("pointerdown", fAt, { passive: true }); document.documentElement.addEventListener("pointerleave", fOut); requestAnimationFrame(faceTick); });
+      F.T = T; placeFace(); addEventListener("pointermove", fAt, { passive: true }); addEventListener("pointerdown", fAt, { passive: true }); document.documentElement.addEventListener("pointerleave", fOut); requestAnimationFrame(faceTick); });
     // ---- the bucket: rougher metal with dents, paint drips on the rim and side, a contact shadow on the ledge
     { const dent = tex2(256, 128, (g, w, h) => { g.fillStyle = "#808080"; g.fillRect(0, 0, w, h); for (let i = 0; i < 46; i++) { const x = hash(i, 51) * w, y = hash(i, 52) * h, r = 5 + 20 * hash(i, 53), gr = g.createRadialGradient(x, y, 0, x, y, r); const d = hash(i, 54) > .5; gr.addColorStop(0, d ? "rgba(30,30,30,.55)" : "rgba(230,230,230,.4)"); gr.addColorStop(1, "rgba(128,128,128,0)"); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }  }); dent.encoding = THREE.LinearEncoding;
       metal.color.setHex(0x7b8086); metal.roughness = .52; metal.metalness = .82; metal.envMapIntensity = .45; metal.bumpMap = dent; metal.bumpScale = .1; metal.clearcoat = .1; metal.needsUpdate = true;
@@ -257,7 +244,7 @@
         if (fall > .96 && !dropM._hit) { dropM._hit = 1; const m = proj(V(O.x, endY, O.z)); ripple(m[0], m[1], kind ? .6 : .7); } if (fall === 0) dropM._hit = 0; }
       if (E.streamOn && !readyAt && et - lastRip > .42) { lastRip = et; const A = proj(V(O.x, bucket.localToWorld(V(.1, Math.max(.02, level * FULL), .06)).y, O.z)); ripple(A[0], A[1], 1); }
       // the name is painted in as the wall arrives, the O last, before the blue runs
-      startEl.style.setProperty("--kin", 1); paintName(fa, !!(readyAt || goAt)); E.fa = fa;
+      startEl.style.setProperty("--kin", 1); paintName(fa, !!(readyAt || goAt));
       // the quiet line: the load from the first frame; "Tap to skip" after a second until the thread starts (not on the slow line, where a tap cannot skip the load); the plate steps aside while a phone's name comes up
       const ready2 = readyAt && (now - readyAt) > 300, txt = ready2 ? "Tip the bucket to enter" : `Loading the wall · ${Math.min(readyAt ? 100 : 99, Math.round(cNow * 100))} %`; if (txt !== loadT.textContent) { loadT.textContent = txt; loadEl.classList.toggle("go", !!ready2); } { const n = ready2 ? -1 : Math.round(cNow * 16); if (n !== barN) { barN = n; barEl.textContent = n < 0 ? "" : "[" + "#".repeat(n).padEnd(16, ".") + "]"; } }
       loadEl.style.opacity = goAt ? 0 : 1; skipEl.style.opacity = !SLOW && lt > 1 && !E.streamOn && !skipping ? .8 : 0;

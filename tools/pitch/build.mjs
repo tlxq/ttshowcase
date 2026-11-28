@@ -130,13 +130,7 @@ const face = {
 // each page embeds only the fonts it uses (audit N-30: base64 does not compress, so an unused font is bytes before first paint);
 // fontProblems (tools/pitch/fonts-used.mjs) checks both built pages against this, canvas font strings included
 const walkFonts =
-  face.clash +
-  face.saira +
-  face.inter +
-  face.archivo +
-  face.mono +
-  face.archivoWall +
-  face.sedgwick;
+  face.clash + face.saira + face.inter + face.archivo + face.mono + face.archivoWall;
 const frontFontsEmbedded = face.sedgwick + face.inter + face.archivo + face.mono;
 function fontsOk(html, page) {
   const problems = fontProblems(html, page);
