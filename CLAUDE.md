@@ -6,9 +6,9 @@ Read `brief.md` for what it is and `docs/design.md` for how it looks and moves. 
 
 ## Rules
 - One PR per change; small fixes go together in one batch PR a day, a big visual moment gets its own. GitHub runs `mise run check` on every PR (Tom 11-17). Before merge: the check is green and the walks and pitch checks for what changed pass on the desk; the PR names them. Squash merge.
-- The full `mise run pitch:check` and `mise run walk` run once a night on master on the desk. Red at night = the first fix next morning, before new work.
+- The full `mise run pitch:check` and `mise run walk` run once on a PR's final tree before it merges. No night run.
 - Check once per tree: a passing `mise run check`, `mise run walk` or `mise run pitch:check` is saved against the files it ran on (committed or not) and the tool versions (`tools/passes`), shared by the main checkout and every worktree. The same check on the same files is skipped, by the main session, `/ship` and the verifier alike. The verifier proves only the live parts (deploy, URL, one real-browser look). No repeat runs "to be sure"; `--force` is for a check known to be flaky.
-- Fast loop while building: run only the check for what you touched (one pitch check by name, one walk by name). The whole set runs at night, on master.
+- Fast loop while building: run only the check for what you touched (one pitch check by name, one walk by name). The whole set runs once, on the PR.
 - Tom judges on the PR's preview while the checks run: `mise run next preview [PR#]` prints its /next link and a QR for the S23. Previews stay closed to everyone else.
 - `mise run check` is the whole check (GitHub runs it on every PR; pre-push skips it). `mise run format` formats.
 - Colours, sizes, spacing and speeds come from `src/design/tokens.css`. Nothing outside it. A new value goes there first, with Tom's OK.
