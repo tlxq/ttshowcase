@@ -31,7 +31,7 @@
   // shows (a painting's fade-up starts when its picture is in; the stencil fades in), so nothing pops in.
   const LATE = { mgr: new THREE.LoadingManager(), q: [], on: false, left: 0, done: 0, run(f) { this.left++; const g = () => { f(); }; this.on ? g() : this.q.push(g); },
     start() { if (this.on) return; this.on = true; this.q.splice(0).forEach(g => g()); },
-    // a picture goes to the graphics card one at a time, 120 ms apart: thirty at once cost a frame of 200 ms (tagsfull), one costs a few ms. `after` (the stencil's 22 frames, which the walk shows only at its far end) goes behind everything else: ahead of the paintings they held the first stop's label back about 4 s (endwaits, 11-28)
+    // a picture goes to the graphics card one at a time, 120 ms apart: thirty at once cost a frame of 200 ms (tagsfull), one costs a few ms. `after` (the stencil's 22 frames, which the walk shows only at its far end) goes behind everything else: ahead of the paintings they held the first stop's label back to 5.5 to 6.1 s on the phone, 3.3 s without them (endwaits, 11-28)
     ups: [], rest: [], up(f, after) { (after ? this.rest : this.ups).push(f); if (!this.tm) this.tm = setTimeout(() => this.next(), 120); }, next() { const f = this.ups.shift() || this.rest.shift(); this.tm = 0; if (f) f(); if (this.ups.length || this.rest.length) this.tm = setTimeout(() => this.next(), 120); }, got() { if (++this.done === this.left) document.documentElement.dataset.lateDone = Math.round(performance.now()); } };
   const imLate = new THREE.ImageLoader(LATE.mgr);
   // each picture is loaded and sent to the graphics card once; every surface that uses it shares it (own repeat/offset only)

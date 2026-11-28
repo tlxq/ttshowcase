@@ -10,7 +10,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   for (const [name, sv, want] of [['ttoolbox', 700, { plates: 1, hots: 1 }], ['dot', 770, { plates: 1, hots: 1 }], ['tthermal', 840, { plates: 1, hots: 1 }], ['edgeflow', 1045, { plates: 1, hots: 3 }]]) { // no morning stop any more (Tom 11-23: no landing)
     const t0 = await go(sv); let t = -1;
     for (let i = 0; i < 60; i++) { const s = await state(name); if (s.plates >= want.plates && s.hots >= want.hots) { t = await page.evaluate(() => performance.now()); break; } await page.waitForTimeout(100); }
-    res.fromArrival[name] = t < 0 ? null : +((t - t0) / 1000).toFixed(1); if (t < 0) errs.push(name + ': label or links never showed'); else if (res.fromArrival[name] > 4.5) errs.push(name + ': label took ' + res.fromArrival[name] + ' s'); /* the pictures it waits for upload ahead of the stencil's 22 frames (11-28: 5.5 s behind them, about 3.3 s now) */
+    res.fromArrival[name] = t < 0 ? null : +((t - t0) / 1000).toFixed(1); if (t < 0) errs.push(name + ': label or links never showed'); else if (res.fromArrival[name] > 4.5) errs.push(name + ': label took ' + res.fromArrival[name] + ' s'); /* 4.5 s: measured 3.3 s with the pictures ahead of the stencil's 22 frames, 5.5 to 6.1 s behind them (11-28); a limit between the two */
     await page.waitForTimeout(600); }
   await go(770); await page.waitForTimeout(400); await go(700); await page.waitForTimeout(700);
   const again = await state('ttoolbox'); if (again.plates < 1 || again.hots < 1) errs.push('back at ttoolbox the label and links did not show at once: ' + JSON.stringify(again));
