@@ -6,7 +6,7 @@
   "why": {
     "email": "That email address doesn't look complete.",
     "message": "The message is empty or longer than 4 000 characters.",
-    "robot": "The browser check didn't pass. Reload the page, then try again.",
+    "robot": "The browser check didn't pass. Reload the page, then try again. If it still fails, write to hello@ttdevs.com.",
     "too-many": "This address has sent all its messages for today. Try again tomorrow."
   }
 }
