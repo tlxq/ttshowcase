@@ -43,7 +43,9 @@ if "__AXE_SOURCE__" in js:
 PY
   if [ "$3" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
-  result=$(playwright-cli --raw -s="$s" run-code --filename="$root/$script" 2>&1 | grep -v '^$' | tail -1)
+  # the frame-speed walk takes the graphics card's short slot (tools/passes/gpu-slot.sh) and, inside it, waits for a quiet desk (quiet.sh)
+  local lead=(); [ "$1" = speed-look ] && lead=(tools/passes/gpu-slot.sh "walk $1" tools/walk/quiet.sh)
+  result=$("${lead[@]}" playwright-cli --raw -s="$s" run-code --filename="$root/$script" 2>&1 | grep -v '^$' | tail -1)
   playwright-cli -s="$s" close >/dev/null 2>&1
   case "$result" in
     '"{\"errs\":[],'*) echo "$1: $result" ;;
@@ -77,22 +79,7 @@ walk a11y-phone a11y.js phone
 # checks as pitch:check's front, so a page that works in the pitch but not on the site fails here
 walk front-desktop ../pitch/checks/front.js desktop
 walk front-phone ../pitch/checks/front.js phone
-# Speed is only true on a quiet desk (F-R-1, 11-24): another session's browser or build made the paint read 124-148 ms
-# against 76-88 ms alone. Wait up to 90 s for the 1-minute load to drop under half the cores; still busy = say so
-# plainly instead of reporting a slow page.
-if [ -z "$only" ] || [ "$only" = speed-look ]; then
-  cores=$(nproc); busy=""
-  for _ in $(seq 1 45); do
-    busy=$(awk -v c="$cores" '$1 >= c / 2 {print $1}' /proc/loadavg)
-    [ -z "$busy" ] && break
-    sleep 2
-  done
-  if [ -n "$busy" ]; then
-    names="$names speed-look"; ran=1
-    echo "speed-look: FAILED the desk is busy (load $busy on $cores cores), so paint times would be wrong. Stop the other work, then run: mise run walk speed-look"
-    failed=1
-  else walk speed-look speed.js desktop; fi
-else walk speed-look speed.js desktop; fi
+walk speed-look speed.js desktop # takes the graphics card's short slot and waits for a quiet desk inside it (in walk() above)
 [ "$ran" = 1 ] || { echo "Couldn't find a walk named $only. Names: recordings$names" >&2; exit 2; }
 [ -n "$only" ] || [ "$failed" != 0 ] || tools/passes/passes.sh save walk
 exit "$failed"

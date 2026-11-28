@@ -5,14 +5,29 @@
 # Pictures and page: .cache/pitch/sheet/ (served by `mise run pitch` at /sheet/). Runs on the graphics card, 4 browsers at a time.
 # It rebuilds .cache/pitch, so it runs after pitch:check, not beside it.
 # Usage: sheet.sh [base-ref]
+# pitch:pair (tools/pitch/pair.sh) runs it with --at <sv,sv,...> [--approved <folder>]: the same shots for those scroll positions only,
+# written to .cache/pitch/pair, with the branch built in its own folder (.cache/pair-build) so a pitch:check beside it keeps its build.
 set -u
-base="${1:-origin/master}" # origin's: a worktree's own master is often behind
+at="" approved="" args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --at) at="${2:-}"; shift 2 ;;
+    --approved) approved="${2:-}"; shift 2 ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+base="${args[0]:-origin/master}" # origin's: a worktree's own master is often behind
 cd "$(dirname "$0")/../.."
-root="$PWD" sheet="$PWD/.cache/pitch/sheet" src="$PWD/.cache/sheet-base"
+root="$PWD" sheet="$PWD/.cache/pitch/sheet" src="$PWD/.cache/sheet-base" mine="$PWD/.cache/pitch"
+only="[]" pre=sheet
+if [ -n "$at" ]; then
+  case "$at" in *[!0-9,]*|,*|*,) echo "Name scroll positions as numbers, like 840,872,990." >&2; exit 2 ;; esac
+  only="[$at]" pre=pair sheet="$PWD/.cache/pitch/pair" src="$PWD/.cache/pair-base" mine="$PWD/.cache/pair-build"
+fi
 . tools/walk/graphics.sh || exit 1
 git rev-parse --verify -q --end-of-options "$base^{commit}" >/dev/null || { echo "Couldn't find $base. Name a branch or commit." >&2; exit 2; }
 
-SESSIONS=$(for b in base branch; do for w in laptop phone; do for h in 23 12; do echo "sheet-$b-$w-$h"; done; done; done)
+SESSIONS=$(for b in base branch; do for w in laptop phone; do for h in 23 12; do echo "$pre-$b-$w-$h"; done; done; done)
 cleanup() { kill $(jobs -p) 2>/dev/null; for s in $SESSIONS; do playwright-cli -s="$s" close >/dev/null 2>&1; done; rm -rf "$src"; }
 trap cleanup EXIT
 cleanup # a browser left by an interrupted run would point at a dead server
@@ -22,20 +37,20 @@ cleanup # a browser left by an interrupted run would point at a dead server
 rm -rf "$sheet" && mkdir -p "$src/.cache" "$sheet"
 git archive "$base" pitch tools/pitch api src | tar -x -C "$src" || { echo "Couldn't copy $base's files: it may be older than the paint pitch" >&2; exit 1; }
 # this branch first: its build fetches the fonts once into .cache/fonts, which the base build borrows (a fresh worktree has none yet)
-PITCH_NUMBERS=off node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
+PITCH_NUMBERS=off PITCH_OUT="${mine#"$root/"}" node tools/pitch/build.mjs >/dev/null || { echo "This branch's build failed. To see why: mise run pitch:build" >&2; exit 1; }
 ln -s "$root/node_modules" "$src/node_modules"; ln -s "$root/.cache/fonts" "$src/.cache/fonts"
 PITCH_NUMBERS=off node "$src/tools/pitch/build.mjs" >/dev/null || { echo "The build of $base failed. To see why: git switch $base && mise run pitch:build" >&2; exit 1; }
 
 free_port() { python3 -I -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])'; }
 shoot() { # build (base|branch), screen (laptop|phone), hour; a failed shoot leaves <dir>.fail with the reason
-  local dir port tport tags srv result s="sheet-$1-$2-$3" js="$sheet/$1-$2-$3.js" out="$sheet/$1/$2-h$3"
-  [ "$1" = base ] && dir="$src/.cache/pitch" || dir="$root/.cache/pitch"
+  local dir port tport tags srv result s="$pre-$1-$2-$3" js="$sheet/$1-$2-$3.js" out="$sheet/$1/$2-h$3"
+  [ "$1" = base ] && dir="$src/.cache/pitch" || dir="$mine"
   port=$(free_port) tport=$(free_port)
   ADMIN_KEY=local-pitch-admin-key-0123456789abcdef node tools/tags/local.mjs "$tport" >/dev/null 2>&1 & tags=$! # its own tag store, as in run.sh
   TAGS_PORT="$tport" SERVE_DIR="$dir" python3 -I tools/serve.py 127.0.0.1 "$port" >/dev/null 2>&1 & srv=$!
   for _ in $(seq 1 50); do curl -fs "http://127.0.0.1:$port/paint.html" >/dev/null 2>&1 && curl -fs "http://127.0.0.1:$port/api/tags" >/dev/null 2>&1 && break; sleep 0.1; done
   mkdir -p "$out"
-  sed -e "s#__URL__#http://127.0.0.1:$port/paint.html?hour=$3#" -e "s#__OUT__#$out/#" tools/pitch/sheet.js | node tools/pitch/wrap.mjs /dev/stdin > "$js" # three.js from tools/pitch/vendor, no network
+  sed -e "s#__URL__#http://127.0.0.1:$port/paint.html?hour=$3#" -e "s#__OUT__#$out/#" -e "s#__ONLY__#$only#" tools/pitch/sheet.js | node tools/pitch/wrap.mjs /dev/stdin > "$js" # three.js from tools/pitch/vendor, no network
   if [ "$2" = phone ]; then playwright-cli -s="$s" open --mobile >/dev/null 2>&1
   else playwright-cli -s="$s" open >/dev/null 2>&1 && playwright-cli -s="$s" resize 1440 900 >/dev/null; fi
   playwright-cli -s="$s" route "**/api/github" --status=200 --body="$(cat tools/pitch/standin-numbers.json)" >/dev/null 2>&1 # the same fixed stand-in numbers on both builds (the epanums check's), never the live ones: they would differ between the two runs, and a missing answer leaves the lobes empty
@@ -46,12 +61,14 @@ shoot() { # build (base|branch), screen (laptop|phone), hour; a failed shoot lea
 running=0
 for b in base branch; do for w in laptop phone; do for h in 23 12; do
   [ "$running" -ge 4 ] && { wait -n; running=$((running - 1)); }
-  shoot "$b" "$w" "$h" & running=$((running + 1))
+  # one try more when a shot fails: with other browsers on the card a shader sometimes fails to compile ("VALIDATE_STATUS false", no log), and the same shot passes alone
+  { shoot "$b" "$w" "$h" >/dev/null; f="$sheet/$b/$w-h$h.fail"; if [ -f "$f" ]; then rm -f "$f"; shoot "$b" "$w" "$h"; [ -f "$f" ] || echo "$pre: $b $w hour $h needed a second try"; fi; } & running=$((running + 1))
 done; done; done
 while [ "$running" -gt 0 ]; do wait -n; running=$((running - 1)); done
 
-python3 -I tools/pitch/sheet_page.py "$sheet" "$base" "$(git rev-parse --abbrev-ref HEAD)"
+python3 -I tools/pitch/sheet_page.py "$sheet" "$base" "$(git rev-parse --abbrev-ref HEAD)" ${approved:+"$approved"}
 failed=$(find "$sheet" -name '*.fail' | wc -l)
 host=$(tailscale ip -4 2>/dev/null | head -n 1)
-echo "Sheet: .cache/pitch/sheet/index.html${host:+ · with mise run pitch running: http://$host:${PORT:-8124}/sheet/}"
+if [ -n "$at" ]; then echo "Pair: .cache/pitch/pair/index.html, and one picture per screen: pair-laptop-night.png, pair-laptop-day.png, pair-phone-night.png, pair-phone-day.png${host:+ · with mise run pitch running: http://$host:${PORT:-8124}/pair/}"
+else echo "Sheet: .cache/pitch/sheet/index.html${host:+ · with mise run pitch running: http://$host:${PORT:-8124}/sheet/}"; fi
 [ "$failed" -eq 0 ] || { echo "$failed of 8 runs failed; their pictures say missing" >&2; exit 1; }
