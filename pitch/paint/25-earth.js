@@ -4,29 +4,47 @@
   // The 3D camera rides down with the earth's edge, so earth and wall are one move, and the glide ends with the edge above the frame: the earth leaves by the camera's own move, nothing slides away afterwards.
   // ?load=slow|fast sets the fake load; ?intro=old shows master's start; ?seek=<s> holds a moment; a tap skips the glide. Its pictures (pitch/assets/intro/) are not in git.
   const EARTH = (() => {
-    const REST_M = 1.5, RX = -.3, RZ = .85, E = window.__earth = { on: false, streamOn: false, bucketSeen: false, wall: 0, dy: 0, rest: NARROW ? REST_M : 0, rx: NARROW ? RX : 0, rz: NARROW ? RZ : 0 }, Q = new URLSearchParams(location.search), box = document.getElementById("earth"), loadEl = document.getElementById("eLoad");
+    const REST_M = 1.5, RX = -.3, RZ = .85, E = window.__earth = { on: false, streamOn: false, bucketSeen: false, cover: false, part: 0, skip3d: () => false, wall: 0, dy: 0, rest: NARROW ? REST_M : 0, rx: NARROW ? RX : 0, rz: NARROW ? RZ : 0 }, Q = new URLSearchParams(location.search), box = document.getElementById("earth"), loadEl = document.getElementById("eLoad");
     if (!box || REDUCED || Q.get("intro") === "old") { if (box) box.remove(); if (loadEl) loadEl.remove(); return E; } // reduced motion: the start as it is, no journey
-    const world = document.getElementById("eWorld"), vid = document.getElementById("eVid"), strip = document.getElementById("eStrip"), soakEl = document.getElementById("eSoak"), cvM = document.getElementById("eCv"), cvS = document.getElementById("eCv2"),
-      loadT = document.getElementById("eLoadT"), skipEl = document.getElementById("eSkip"), cM = cvM.getContext("2d"), cS = cvS.getContext("2d");
+    const world = document.getElementById("eWorld"), vid = document.getElementById("eVid"), strip = document.getElementById("eStrip"), soakSrc = document.getElementById("eSoakSrc"), world2 = document.getElementById("eWorld2"), win = document.getElementById("eWin"),
+      cvTop = document.getElementById("eTop"), cvT = document.getElementById("eCv"), cvSoak = document.getElementById("eSoak"), cT = cvT.getContext("2d"), loadT = document.getElementById("eLoadT"), skipEl = document.getElementById("eSkip");
     const SEEK = Q.get("seek") === null ? null : +Q.get("seek"), SLOW = Q.get("load") === "slow";
     // the prototype's own numbers (listed in the report)
     const FILM_W = 1080, FILM_H = 1920, STRIP_Y = 1560, SOAK_END = [541, STRIP_Y + 1570], POUR_AT = [440, 1548], EDGE_UP = 95, EDGE_M = NARROW ? 2.8 : 1.15, // film pixels; where the baked soak of the root picture ends; the soil edge's height above the outlet in metres
       SPEED = NARROW ? 320 : 700, TR = .9, J0 = 2.3, J0_OLD = .4, SOIL_FROM = 1500, FRONT_LEAD = .55, GAP_UP = NARROW ? .27 : .33, GAP_MIN = .2, GAP_MAX = .42, OUT_UP = NARROW ? .1 : .12, // the outlet sits OUT_UP H above the bucket's top
       COUNT_JOURNEY = .6, FILL_FAST = 2.2, DROP_PERIOD = 1.05, LATE_FIRST = Q.get("latedrop") ? .5 : 3, LATE_PERIOD = Q.get("latedrop") ? 2.2 : 7.5, LEAVE_AT = .25, LEAVE_D = 1.1, CAN_SHIFT = .8, PIPE_DZ = .09; // the phone's window leans to the film's right so the can is whole; the outlet's mouth stands PIPE_DZ proud of the wall
     let stripH = 2370, started = false, et = 0, lt = 0, rate = 1, skipping = false, Tj = 0, shapeKey = "", glide = null, veinX = -1, veins = null, drawn = null, outS = null, streamT = -1, lastRip = -9, tx = "", dyV = 0, O = null, yEdge3 = 0, cam1 = 0, stainK = 0, mouthK = 0;
+    // a phone draws the 3D scene at 2 device pixels per pixel at most during the intro (the walk starts at up to 3: 00-setup.js); the walk's own size comes back when the bucket is full and stands still
+    const PR_WALK = renderer.getPixelRatio(), PR_INTRO = NARROW ? Math.min(PR_WALK, 2) : PR_WALK, setPR = v => { if (renderer.getPixelRatio() !== v) { renderer.setPixelRatio(v); composer.setPixelRatio(v); fit(); } }; let prBack = false; setPR(PR_INTRO);
     const boot = performance.now(), clamp = cl, ease = sm, hash = (i, j) => { const v = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return v - Math.floor(v); };
     const BLUE = SPRAY.split(",").map(Number), col = (k, a) => `rgba(${BLUE.map(v => Math.round(v * k))},${a})`; // ONE blue (the site's spray colour) for the film's water, the soak, the stains, the thread and the bead
     const smooth = (x, seed) => { const i = Math.floor(x), f = ease(x - i); return hash(i, seed) * (1 - f) + hash(i + 1, seed) * f; };
-    const sizeCv = () => { const h = Math.ceil((stripH + 360) / 2); for (const c of [cvM, cvS]) { c.width = FILM_W / 2; c.height = h; c.style.top = (STRIP_Y - 60) + "px"; c.style.height = (stripH + 360) + "px"; } };
-    strip.addEventListener("load", () => { if (strip.naturalWidth) { stripH = strip.naturalHeight * FILM_W / strip.naturalWidth; sizeCv(); veinX = -1; } });
-    const fail = () => { E.on = false; faceEnd(); box.remove(); if (loadEl) loadEl.remove(); document.documentElement.classList.remove("earth-on"); };
+    // ---- the strip's pictures, drawn ONCE at load (round "earth lag": on Tom's S23 the glide lagged; a mask that changed every frame, two blend modes, a filter and a masked film made the browser repaint a tall layer per frame):
+    // eTop = the soil's upper part, fading in over the film's last FADE px (the film's own mask before); eCv = the soil's lower part with its shadow under the ragged edge (the filter before), and the last stretch of the soak
+    // mixed into it as the screen blend did; eSoak = the blue soak of the root picture, in a window that stands still on the screen (style.css). All at the screen's own sharpness. Nothing here is drawn again while the view
+    // glides, except the small patch of eCv where the last stretch of the soak grows.
+    const FADE = [140, 360], VEIN_UP = 140, SH_PAD = 70, RESUME = .35; // film px under the strip's top where the soil fades in over the film; eCv starts VEIN_UP above the end of the root picture's soak; room under the strip for the shadow; the 3D scene is drawn again when the soil's open edge is RESUME screens under the frame
+    let kb = 0, vr = 0, OYv = 0, baked = false, baseT = null, acc = null, cA = null, opaqueH = 0, dirty = null;
+    function bake() { if (baked || !strip.naturalWidth) return; stripH = strip.naturalHeight * FILM_W / strip.naturalWidth; const s = Math.max(innerWidth / FILM_W, innerHeight / FILM_H), Wc = Math.round(FILM_W * Math.min(s * devicePixelRatio, 4096 / (stripH + SH_PAD))); kb = Wc / FILM_W;
+      const hS = Math.round(stripH * kb), ramp = c => { const g = c.createLinearGradient(0, FADE[0] * kb, 0, FADE[1] * kb); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "#000"); c.globalCompositeOperation = "destination-in"; c.fillStyle = g; c.fillRect(0, 0, Wc, hS); c.globalCompositeOperation = "source-over"; };
+      vr = Math.round((SOAK_END[1] - VEIN_UP - STRIP_Y) * kb); OYv = STRIP_Y + vr / kb;
+      const put = (c, w, h, top) => { c.width = w; c.height = h; c.style.top = top + "px"; c.style.height = h / kb + "px"; const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; return x; };
+      { const x = put(cvTop, Wc, vr + 2, STRIP_Y); x.drawImage(strip, 0, 0, Wc, hS); ramp(x); } // two rows shared with eCv, in solid soil, so no line shows between them
+      { const hT = Math.ceil((stripH + SH_PAD) * kb) - vr; put(cvT, Wc, hT, OYv); cT.imageSmoothingQuality = "high"; cT.shadowColor = "rgba(0,0,0,.7)"; cT.shadowOffsetY = 22 * kb; cT.shadowBlur = 28 * kb; cT.drawImage(strip, 0, -vr, Wc, hS); cT.shadowColor = "transparent";
+        baseT = cvs(Wc, hT); baseT.getContext("2d").drawImage(cvT, 0, 0); acc = cvs(FILM_W / 2, Math.ceil(hT / kb / 2)); cA = acc.getContext("2d"); }
+      if (soakSrc.naturalWidth) { const x = put(cvSoak, Wc, hS, STRIP_Y); x.drawImage(soakSrc, 0, 0, Wc, hS); ramp(x); }
+      { const w = 90, h = Math.round(w * strip.naturalHeight / strip.naturalWidth), x = cvs(w, h).getContext("2d", { willReadFrequently: true }); x.drawImage(strip, 0, 0, w, h); const d = x.getImageData(0, 0, w, h).data; let r = Math.ceil(FADE[1] / stripH * h); // how far down the soil is solid: above this row the strip hides the scene behind it
+        scan: for (; r < h; r++) for (let i = 0; i < w; i++) if (d[(r * w + i) * 4 + 3] < 250) break scan; opaqueH = Math.max(0, (r - 2) / h * stripH); }
+      for (const c of [cvTop, cvT, cvSoak]) if (window.createImageBitmap) createImageBitmap(c, 0, 0, 1, 1).then(b => b.close(), () => {}); // the drawing is carried out now, while the film holds on the can, not when the picture first comes into view
+      baked = true; veinX = -1; if (et < J0) shapeKey = ""; }
+    Promise.all([strip, soakSrc].map(im => im.decode().catch(() => {}))).then(bake); // both pictures are decoded before anything moves
+    const fail = () => { E.on = false; setPR(PR_WALK); faceEnd(); box.remove(); if (loadEl) loadEl.remove(); document.documentElement.classList.remove("earth-on"); };
     vid.addEventListener("error", fail); strip.addEventListener("error", fail);
-    E.on = true; document.documentElement.classList.add("earth-on"); sizeCv();
-    const OY = STRIP_Y - 60;
-    // ---- soft round sprites in the paint's blue (the last stretch of the soak, below the root picture): one darkens the soil (multiplied in), one lifts it (screened in)
+    E.on = true; document.documentElement.classList.add("earth-on");
+    // ---- soft round sprites in the paint's blue (the last stretch of the soak, below the root picture): they lift the soil (screened in)
     const sprite = (r, g, b) => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, `rgba(${r},${g},${b},1)`); gr.addColorStop(.5, `rgba(${r},${g},${b},.5)`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`); x.fillStyle = gr; x.fillRect(0, 0, 64, 64); return c; };
-    const spM = sprite(...BLUE.map(v => Math.round(v * .5))), spS = sprite(...BLUE.map(v => Math.round(v * .8)));
-    const stamp = (c, sp, x, y, D, a) => { c.globalAlpha = a; c.drawImage(sp, (x - D / 2) / 2, (y - D / 2 - OY) / 2, D / 2, D / 2); };
+    const spS = sprite(...BLUE.map(v => Math.round(v * .8))); // (the darkening sprite and its multiplied canvas were never drawn on: gone)
+    const stamp = (c, sp, x, y, D, a) => { c.globalAlpha = a; c.drawImage(sp, (x - D / 2) / 2, (y - D / 2 - OYv) / 2, D / 2, D / 2); if (dirty) { dirty[0] = Math.min(dirty[0], x - D / 2); dirty[1] = Math.min(dirty[1], y - D / 2); dirty[2] = Math.max(dirty[2], x + D / 2); dirty[3] = Math.max(dirty[3], y + D / 2); } };
     // ---- the lit wall face above the ledge, set back behind the ledge, with its own soft light
     const upMat = new THREE.MeshStandardMaterial({ map: tex("assets/wall4_diff.jpg", true, 14 / TILE, 14 / TILE, .3, .2), normalMap: tex("assets/wall4_nor_gl.jpg", false, 14 / TILE, 14 / TILE, .3, .2), roughnessMap: tex("assets/wall4_rough.jpg", false, 14 / TILE, 14 / TILE, .3, .2), color: 0x777b81, envMapIntensity: .2, normalScale: new THREE.Vector2(.9, .9) });
     const upWall = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), upMat); upWall.name = "wallAboveLedge"; upWall.position.set(LEDGE.x, WALL_TOP + 7, -.52); scene.add(upWall);
@@ -89,7 +107,7 @@
     const lipW = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).translate(0, -.5, 0), lipMat); lipW.position.set(0, -.11, .012); lipW.visible = false; outlet.add(lipW);
     let nameIn = false, nameRO = .2;
     // the name's picture: stand-in letters, to be redrawn or licensed before any real build (they are cut from a stock alphabet, for Tom's look only; the files are not in git)
-    { const im = new Image(); im.onload = () => { const t = new THREE.Texture(im); t.anisotropy = maxAniso; t.needsUpdate = true; nameD.material.map = t; nameD.material.needsUpdate = true; nameIn = true; placeName(); }; im.src = NAME.src; } // read as plain numbers (no colour decoding): its grey is a moment, not a colour
+    { const im = new Image(), use = () => { const t = new THREE.Texture(im); t.anisotropy = maxAniso; t.needsUpdate = true; nameD.material.map = t; nameD.material.needsUpdate = true; nameIn = true; placeName(); try { renderer.initTexture(t); } catch (e) {} }; im.onload = () => im.decode().then(use, use); im.src = NAME.src; } // decoded off the page's own thread and sent to the graphics card at once, behind the film: its first drawing, as the wall arrives, was one long frame (the picture was decoded there) // read as plain numbers (no colour decoding): its grey is a moment, not a colour
     // where it lies: the O's centre on the outlet's, a metre of wall is PXM picture px, as large as NAME.max allows with its outermost points inside the frame
     function placeName() { if (!O) return; camera.updateMatrixWorld();
       const W = innerWidth, cx = outlet.position.x, cy = outlet.position.y, zU = -.52, m = NAME.margin, fits = s => NAME.pts.every(([x, y]) => { const [sx, sy] = proj0(cx + (x - NAME.ox) * s / PXM, cy + (NAME.oy - y) * s / PXM, zU); return sx >= m && sx <= W - m && sy >= m; });
@@ -200,14 +218,17 @@
         br.push({ at, pts: mkp(resamp(bc, 4), .5, 40 + b).map((o, i, a) => ({ ...o, r: o.r * (1 - .7 * i / a.length) })) }); }
       const preC = []; for (let i = 0; i <= 24; i++) { const q = i / 24; preC.push([POUR_AT[0] + (524 - POUR_AT[0]) * ease(q) + 8 * Math.sin(q * 9), POUR_AT[1] + (STRIP_Y + 300 - POUR_AT[1]) * q]); }
       return { main, br, pre: mkp(resamp(preC, 4), 1.25, 12), x: xOut, yEnd }; }
-    // where the water soaks in at the stake's foot the soil turns blue: a clearly blue patch grows there, then the soak runs on down (the film itself stays natural)
-    function growBloom(r) { if (!drawn || r < drawn.bloom + 3) return; for (let k = 0; k < 9; k++) { const a = hash(k, drawn.bloom | 0) * 6.283, d = r * .5 * hash(k, 91), x = POUR_AT[0] + Math.cos(a) * d * 1.6, y = POUR_AT[1] + 4 + Math.sin(a) * d * .55; stamp(cS, spS, x, y, r * 1.3, .17); stamp(cM, spM, x, y, r * 1.6, .08); stamp(cS, spS, x + (hash(k, 93) - .5) * r, y + (hash(k, 94) - .5) * r * .5, 6 + 10 * hash(k, 95), .4); } drawn.bloom = r; }
-    function drawSeg(list, i0, i1) { for (let i = i0; i < i1; i++) { const b = list[i], R = b.r * 38 * (1 + .9 * i / list.length), f = i > list.length - 10 ? .6 : 1; stamp(cS, spS, b.x, b.y, R * 2.6, .08 * f); stamp(cS, spS, b.x, b.y, R * 1.5, .11 * f);
-        for (let k = 0; k < 2; k++) { const a = hash(i, k + 70) * 6.283, d = R * (.3 + 1.1 * hash(i, k + 71)); stamp(cS, spS, b.x + Math.cos(a) * d, b.y + Math.sin(a) * d, 6 + 12 * hash(i, k + 72), .3 * f); } } }
-    function growVeins(pv, pre) { if (!veins) return; if (!drawn) { drawn = { main: 0, pre: 0, bloom: 0, br: veins.br.map(() => 0) }; for (const c of [cM, cS]) { c.clearRect(0, 0, cvM.width, cvM.height); c.globalCompositeOperation = "source-over"; } }
+    function drawSeg(list, i0, i1) { for (let i = i0; i < i1; i++) { const b = list[i], R = b.r * 38 * (1 + .9 * i / list.length), f = i > list.length - 10 ? .6 : 1; stamp(cA, spS, b.x, b.y, R * 2.6, .08 * f); stamp(cA, spS, b.x, b.y, R * 1.5, .11 * f);
+        for (let k = 0; k < 2; k++) { const a = hash(i, k + 70) * 6.283, d = R * (.3 + 1.1 * hash(i, k + 71)); stamp(cA, spS, b.x + Math.cos(a) * d, b.y + Math.sin(a) * d, 6 + 12 * hash(i, k + 72), .3 * f); } } }
+    // the sprites gather on a small canvas of their own (as before); the patch of eCv they touch is then made again: the bare soil, and the gathered blue screened onto it (what the CSS blend mode did on every frame, now only where and when the soak grows)
+    function growVeins(pv, pre) { if (!veins || !baked) return; const first = !drawn; if (first) { drawn = { main: 0, pre: 0, br: veins.br.map(() => 0) }; cA.clearRect(0, 0, acc.width, acc.height); }
+      dirty = [1e9, 1e9, -1e9, -1e9];
       const np = Math.floor(veins.pre.length * pre); if (np > drawn.pre) { drawSeg(veins.pre, drawn.pre, np); drawn.pre = np; }
       const n = Math.floor(veins.main.length * pv); if (n > drawn.main) { drawSeg(veins.main, drawn.main, n); drawn.main = n; }
-      veins.br.forEach((b, i) => { const m = Math.floor(b.pts.length * clamp((pv - b.at) * 2.6)); if (m > drawn.br[i]) { drawSeg(b.pts, drawn.br[i], m); drawn.br[i] = m; } }); }
+      veins.br.forEach((b, i) => { const m = Math.floor(b.pts.length * clamp((pv - b.at) * 2.6)); if (m > drawn.br[i]) { drawSeg(b.pts, drawn.br[i], m); drawn.br[i] = m; } });
+      const d = dirty; dirty = null; if (!first && d[2] < d[0]) return;
+      const x0 = first ? 0 : Math.max(0, Math.floor(d[0] * kb) - 2), y0 = first ? 0 : Math.max(0, Math.floor((d[1] - OYv) * kb) - 2), x1 = first ? cvT.width : Math.min(cvT.width, Math.ceil(d[2] * kb) + 2), y1 = first ? cvT.height : Math.min(cvT.height, Math.ceil((d[3] - OYv) * kb) + 2); if (x1 <= x0 || y1 <= y0) return;
+      cT.save(); cT.beginPath(); cT.rect(x0, y0, x1 - x0, y1 - y0); cT.clip(); cT.globalAlpha = 1; cT.clearRect(x0, y0, x1 - x0, y1 - y0); cT.drawImage(baseT, 0, 0); cT.globalCompositeOperation = "screen"; cT.drawImage(acc, 0, 0, acc.width, acc.height, 0, 0, acc.width * 2 * kb, acc.height * 2 * kb); cT.restore(); }
     const ripple = (x, y, k) => { const r = document.createElement("i"); r.className = "eRip"; r.style.left = x.toFixed(0) + "px"; r.style.top = y.toFixed(0) + "px"; box.appendChild(r);
       r.animate([{ transform: `translate(-50%, -50%) scale(${.2 * k})`, opacity: .8 }, { transform: `translate(-50%, -50%) scale(${1.5 * k})`, opacity: 0 }], { duration: 800, easing: "ease-out" }).onfinish = () => r.remove(); };
     E.skip = () => { if (started && !E.streamOn && !skipping && et > .3) { skipping = true; rate = 5; if (SEEK === null) vid.playbackRate = 5; } };
@@ -230,14 +251,17 @@
       if (SEEK !== null) { started = true; if (et !== SEEK) { et = lt = SEEK; vid.pause(); vid.currentTime = clamp(et, 0, 5.9); } } else if (started) { et += dt * rate; lt += dt; }
       const W = innerWidth, H = innerHeight, s = Math.max(W / FILM_W, H / FILM_H), xOff = (W - FILM_W * s) * (NARROW ? CAN_SHIFT : .5), bucketTop = topNow0(), Ew = STRIP_Y + stripH, key = W + "x" + H;
       if (key !== shapeKey) { shapeKey = key; const gapOld = clamp(bucketTop - GAP_UP * H, GAP_MIN * H, GAP_MAX * H); placeOutlet(clamp(bucketTop - OUT_UP * H, .3 * H, (NARROW ? .62 : .5) * H)); placeName();
-        const yRest = Math.min(proj0(O.x, yEdge3, -.52)[1], -.08 * H); cam1 = Ew - EDGE_UP - yRest / s; glide = buildGlide(cam1, s, (Ew - gapOld / s) * s / SPEED + TR - (J0 - J0_OLD)); Tj = glide.T; }
+        const yRest = Math.min(proj0(O.x, yEdge3, -.52)[1], -.08 * H); cam1 = Ew - EDGE_UP - yRest / s; glide = buildGlide(cam1, s, (Ew - gapOld / s) * s / SPEED + TR - (J0 - J0_OLD)); Tj = glide.T; win.style.height = (FRONT_LEAD * 100) + "%"; win.style.setProperty("--e", (320 * s).toFixed(1) + "px"); } // the window's lower edge is the soak's front (FRONT_LEAD of the screen), soft over 320 film px
       if (skipping && et >= J0 + Tj + 1.1) { skipping = false; rate = 1; vid.playbackRate = 1; }
       const camJ = camAt(et - J0), cam = camJ, fa = J0 + Tj + 1.1, dripA = J0 + Tj - .4, rt = readyAt ? (now - readyAt) / 1000 - (NARROW ? .6 : LEAVE_AT) : -1, lv = ease(clamp(rt / LEAVE_D));
-      const tf = `translate3d(${xOff.toFixed(1)}px, ${(-cam * s).toFixed(1)}px, 0) scale(${s.toFixed(4)})`; if (tf !== tx) { tx = tf; world.style.transform = tf; }
+      const tf = `translate3d(${xOff.toFixed(1)}px, ${(-cam * s).toFixed(1)}px, 0) scale(${s.toFixed(4)})`; if (tf !== tx) { tx = tf; world.style.transform = tf; world2.style.transform = tf; } // the only style written per frame while the view glides: the two strips' place
       cNow = counter(); if (!E.streamOn && et >= fa && cNow >= COUNT_JOURNEY - .001) { E.streamOn = true; streamT = SEEK !== null ? fa : et; }
       const wx = (outlet.position.x ? (proj0(O.x, O.y, -.52)[0] - xOff) / s : 540); if (Math.abs(wx - veinX) > 3) { veinX = wx; veins = buildVeins(clamp(wx, 90, 990)); drawn = null; }
       const frontW = camJ + FRONT_LEAD * H / s, pv = clamp((frontW - SOAK_END[1]) / (veins.yEnd - SOAK_END[1]));
-      growVeins(pv, 0); soakEl.style.setProperty("--f", Math.max(0, frontW - STRIP_Y).toFixed(0) + "px");
+      growVeins(pv, 0);
+      // the parts of the journey (for ?fps=1) and whether the film and the soil hide the whole 3D scene (then it is not drawn: skip3d)
+      E.part = E.streamOn ? 4 : (Ew - EDGE_UP - cam) * s < H / 2 ? 3 : (FILM_H - cam) * s < H / 2 ? 2 : cam > 0 ? 1 : 0;
+      E.cover = baked && opaqueH > 0 && (vid.readyState >= 2 || cam >= FILM_H) && (STRIP_Y + opaqueH - cam) * s > H * (1 + RESUME);
       // the 3D camera rides down with the earth's edge: the soil's edge (a height on the wall) is kept at the overlay's edge on the screen, so wall, outlet and bucket come into view as the earth leaves the top
       if (!readyAt) { const Pc = y => { const v = V(O.x, y, -.52).project(camera); return (1 - v.y) / 2 * H; }, y0 = Pc(yEdge3), ppm = y0 - Pc(yEdge3 + 1), want = clamp((Ew - EDGE_UP - camJ) * s, -2 * H, H * 1.7);
         if (ppm > 1) dyV = clamp(dyV + (want - y0) / ppm, 0, 14); } if (goAt) dyV = 0; E.dy = dyV;
@@ -256,9 +280,20 @@
       // the name is painted in as the wall arrives, the O last, before the blue runs
       startEl.style.setProperty("--kin", 1); paintName(fa, !!(readyAt || goAt));
       // the quiet line: the load from the first frame; "Tap to skip" after a second until the thread starts (not on the slow line, where a tap cannot skip the load); the plate steps aside while a phone's name comes up
-      const ready2 = readyAt && (now - readyAt) > 300, txt = ready2 ? "Tip the bucket to enter" : `Loading the wall · ${Math.min(readyAt ? 100 : 99, Math.round(cNow * 100))} %`; if (txt !== loadT.textContent) { loadT.textContent = txt; loadEl.classList.toggle("go", !!ready2); } { const n = ready2 ? -1 : Math.round(cNow * 16); if (n !== barN) { barN = n; barEl.textContent = n < 0 ? "" : "[" + "#".repeat(n).padEnd(16, ".") + "]"; } }
+      const ready2 = readyAt && (now - readyAt) > 300; if (ready2 && !prBack) { prBack = true; if (renderer.getPixelRatio() === PR_INTRO) setPR(PR_WALK); } const txt = ready2 ? "Tip the bucket to enter" : `Loading the wall · ${Math.min(readyAt ? 100 : 99, Math.round(cNow * 100))} %`; if (txt !== loadT.textContent) { loadT.textContent = txt; loadEl.classList.toggle("go", !!ready2); } { const n = ready2 ? -1 : Math.round(cNow * 16); if (n !== barN) { barN = n; barEl.textContent = n < 0 ? "" : "[" + "#".repeat(n).padEnd(16, ".") + "]"; } }
       loadEl.style.opacity = goAt ? 0 : 1; skipEl.style.opacity = !SLOW && lt > 1 && !E.streamOn && !skipping ? .8 : 0;
       if (goAt) { if (!E.gone) E.gone = performance.now(); else if (performance.now() - E.gone > 1500) { box.remove(); loadEl.remove(); thread.visible = false; beads.forEach(b => b.visible = false); dropM.visible = false; startEl.style.clipPath = ""; startEl.style.transform = ""; E.on = false; E.dy = 0; E.rest = 0; E.rx = 0; E.rz = 0; document.documentElement.classList.remove("earth-on"); } }
     };
+    // ---- the 3D scene behind the film and the soil: it is drawn for the first frames (shaders, pictures), then not at all while they hide it; it is drawn again RESUME screens before the soil's open edge reaches the frame.
+    // While it rests the scene's and the camera's places are still worked out (the journey reads them), and a picture that arrives is sent to the graphics card through one tiny drawing, as a full frame did before.
+    let r3 = 0, warmKey = "";
+    E.skip3d = () => { if (!E.on || !E.cover || r3 < 12) { r3++; return false; } const k = loadFrac + "|" + nameIn + "|" + !!scene.environment;
+      if (k !== warmKey) { warmKey = k; try { renderer.setRenderTarget(warmRT); renderer.render(scene, camera); } catch (e) {} renderer.setRenderTarget(null); } else { scene.updateMatrixWorld(); camera.updateMatrixWorld(); } return true; };
+    // ---- ?fps=1: a plain frame meter in the corner, for Tom's phone. Per part of the journey: frames, the worst frame, frames over 25 ms. It writes when a part ends (never per frame) and stays when the bucket is full.
+    if (Q.get("fps") === "1") { const NM = ["can", "film to soil", "soil + soak", "wall arrival", "bucket fill"], R = window.__fps = NM.map(name => ({ name, n: 0, worst: 0, slow: 0 })), el = document.createElement("pre"); el.className = "eFps"; document.body.append(el); let last = 0, cur = -1, end = false;
+      const show = () => { el.textContent = "frames · worst · over 25 ms\n" + NM.map((nm, i) => (nm + ":").padEnd(14) + (end || i < cur ? `${R[i].n} · ${Math.round(R[i].worst)} ms · ${R[i].slow}` : i === cur ? "now" : "")).join("\n") + `\n3D pixel ratio ${+PR_INTRO.toFixed(2)}, screen ${+devicePixelRatio.toFixed(2)}`; };
+      const f = now => { if (end) return; if (readyAt || !E.on) { end = true; R.done = true; show(); return; } requestAnimationFrame(f); const p = E.part || 0; if (p !== cur) { cur = p; last = now; show(); return; }
+        const d = now - last, r = R[p]; last = now; r.n++; if (d > r.worst) r.worst = d; if (d > 25) r.slow++; };
+      requestAnimationFrame(f); }
     return E;
   })();

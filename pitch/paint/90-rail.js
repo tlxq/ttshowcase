@@ -114,6 +114,6 @@
     [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showRole ? 1 : 0);
     pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);
     { const P = MU.plate; pin(tagRole, l2, c2, V(P.dot[0], P.dot[1], 0), P.dx, P.dy); }
-    composer.render();
+    if (!EARTH.skip3d()) composer.render(); // the intro's film and soil hide the whole scene for a while: then it is not drawn (25-earth.js)
   });
 })();
