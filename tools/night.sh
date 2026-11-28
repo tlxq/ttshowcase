@@ -51,6 +51,8 @@ if ! flock -n 9; then
   fi
 fi
 
+export GPU_LOCK_HELD=1 # the checks below take no second turn on the card (tools/passes/gpu-slot.sh)
+
 if [ -z "$note" ]; then
   first=1
   while why=$(busy); do
