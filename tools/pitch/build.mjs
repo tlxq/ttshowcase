@@ -123,14 +123,11 @@ const face = {
   inter: `@font-face{font-family:'Inter';src:url(data:font/woff2;base64,${b64(await google("Inter.woff2", "Inter:wght@400..700", "Inter"))}) format('woff2');font-weight:400 700;font-display:block}`,
   // the front's code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono (both SIL OFL); the walk's start says the name in them too
   archivo: `@font-face{font-family:'Archivo';src:url(data:font/woff2;base64,${b64(await google("ArchivoExpandedBlack.woff2", "Archivo:wdth,wght@125,900", "Archivo"))}) format('woff2');font-weight:900;font-stretch:125%;font-display:block}`,
-  // the intro prototype's name on the wall (pitch/intro-earth, round 8): Archivo 800 at its normal width, as in the approved mock. Under its own family name, so the Expanded Black above stays the only 'Archivo'
-  archivoWall: `@font-face{font-family:'Archivo Wall';src:url(data:font/woff2;base64,${b64(await google("Archivo800.woff2", "Archivo:wght@800", "Archivo 800"))}) format('woff2');font-weight:800;font-display:block}`,
   mono: `@font-face{font-family:'JetBrains Mono';src:url(data:font/woff2;base64,${b64(await google("JetBrainsMono.woff2", "JetBrains+Mono:wght@500..800", "JetBrains Mono"))}) format('woff2');font-weight:500 800;font-display:block}`,
 };
 // each page embeds only the fonts it uses (audit N-30: base64 does not compress, so an unused font is bytes before first paint);
 // fontProblems (tools/pitch/fonts-used.mjs) checks both built pages against this, canvas font strings included
-const walkFonts =
-  face.clash + face.saira + face.inter + face.archivo + face.mono + face.archivoWall;
+const walkFonts = face.clash + face.saira + face.inter + face.archivo + face.mono;
 const frontFontsEmbedded = face.sedgwick + face.inter + face.archivo + face.mono;
 function fontsOk(html, page) {
   const problems = fontProblems(html, page);
