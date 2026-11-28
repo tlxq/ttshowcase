@@ -102,19 +102,18 @@
     shadow.position.set((sa.x + sb.x) / 2, (sa.y + sb.y) / 2, .006); shadow.rotation.z = Math.atan2(sb.y - sa.y, sb.x - sa.x); shadow.scale.set(sl * 1.25, .7 * (1 + can.position.z * .25), 1);
     shadow.material.opacity = .62 * cl(LL.intensity / 5) * cl(1.6 - can.position.z * .4);
     // labels
-    const showCan = t > -600 && !done && !stencilOn, showHand = !!muralPin && uTnow > plateAt && pan < .3 && lft < .1;
-    tagCan.style.opacity = showCan ? 1 : 0; tagHand.style.opacity = showHand ? 1 : 0;
+    const showCan = t > -600 && !done && !stencilOn;
+    tagCan.style.opacity = showCan ? 1 : 0; // the role has no label: it is sprayed on the wall (Tom 11-28)
     // the label and the links on the painted marks, a beat after the wall is reached
     const sec = stencilAt ? (now - stencilAt) / 1000 : -1;
     const factsOn = sec > .8 && pan > .5 && end < .5 ? 1 : 0; [tagFacts, l6, c6].forEach(e => e.style.opacity = factsOn);
     pin(tagFacts, l6, c6, NARROW ? V(camera.position.x - .6, G3 + .1, 0) : V(EX - EW * .3, EY - EH / 2 + .1, 0), NARROW ? 18 : 24, 60); // phone: under the wall on the floor, the plate and its line follow the camera along it
     placeHots(hots, EPA_MARKS, EPAB, ST[0].k >= 1 && sec >= .3 && pan > .5 && endK < .5); // at this wall, each mark that is in view
-    const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
-    [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);
+    const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1");
+    [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0);
     pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);
-    if (muralPin) pin(tagHand, l2, c2, muralPin, NARROW ? 1 : 64, NARROW ? -92 : -62); // phone: the line ends on the top edge of the "m", not in the cloud
     composer.render();
   });
-  // the checks measure the hand line on the picture (contrast.js): its box on the screen, once it is fully sprayed
-  window.handAt = () => { if (!(uTnow > plateAt)) return null; const hd = MU.hand, a = proj(V(hd.cx - hd.w / 2, hd.top, 0)), b = proj(V(hd.cx + hd.w / 2, hd.top - hd.h, 0)); return { x: a[0], y: a[1], w: b[0] - a[0], h: b[1] - a[1] }; };
+  // the checks measure the two sprayed lines on the picture (contrast.js): each one's box on the screen, once both are fully sprayed
+  const lineAt = hd => { if (!(uTnow > linesAt)) return null; const a = proj(V(hd.cx - hd.w / 2, hd.top, 0)), b = proj(V(hd.cx + hd.w / 2, hd.top - hd.h, 0)); return { x: a[0], y: a[1], w: b[0] - a[0], h: b[1] - a[1] }; }; window.handAt = () => lineAt(MU.hand); window.roleAt = () => lineAt(MU.role);
 })();

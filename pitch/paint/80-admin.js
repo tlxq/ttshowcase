@@ -120,7 +120,7 @@
   window.tagTest = { // for the tagit check
     frameBox: () => { const r = pickFrame.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; },
     state: () => ({ stage: tag.stage, strokes: tag.strokes.length, points: tagCount(), playing: !!tag.play, shown: tagMesh.visible, wet: +tag.wet.toFixed(2), name: tag.name,
-      saved: (() => { try { return !!localStorage.getItem(TAG_KEY); } catch (_) { return false; } })(), leave: !leaveB.hidden, lost: !!tag.lost,
+      saved: (() => { try { return !!localStorage.getItem(TAG_KEY); } catch (_) { return false; } })(), leave: !leaveB.hidden, lost: !!tag.lost, robot: !!tag.robot, note: +tagNote.style.opacity === 1 ? tagNote.textContent : null,
       sent: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).sent || null; } catch (_) { return null; } })(), id: (() => { try { return JSON.parse(localStorage.getItem(TAG_KEY)).id || null; } catch (_) { return null; } })() }),
     held: () => HELD.length, layer: () => storeW && { stretches: storeW.want, up: storeW.done, shown: storeW.meshes.filter(m => m && m.material.map !== wallEmpty).length }, store: () => document.documentElement.dataset.storeTags || null, paintAt: (u, v) => tgc.getImageData(u, v, 1, 1).data[3], size: [TW, TFH, TH], drips: () => tag.strokes.reduce((n, s) => n + s.dr.length, 0), running: () => tag.runs.length };
   // the clock light (Tom 11-23): the start wall and the end are lit by the visitor's own time: day 07-18, night 19-06, a blend in 06-07 and 18-19. ?hour=13.5 forces one

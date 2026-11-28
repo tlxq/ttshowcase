@@ -5,7 +5,7 @@
 // Extra doors for the checks, under /api/tags-local/ (serve.py lets only this PC through):
 //   GET  mails | rows | stats       what was "mailed", what is stored, how many sends came
 //   POST reset                      empty store, no failures set
-//   POST fail?times=1&status=502    the next sends answer with that status (not stored), to test the retry
+//   POST fail?times=1&status=502    the next sends answer with that status (not stored), to test the retry; &error=robot names the reason (403 robot: the robot check's refusal)
 //   POST seed?n=40                  n approved tags from random strokes, to measure the wall
 //   POST approve                    approve every waiting tag
 import { createServer } from "node:http";
@@ -178,6 +178,7 @@ createServer(async (req, res) => {
         failing = {
           times: Number(url.searchParams.get("times") || 1),
           status: Number(url.searchParams.get("status") || 502),
+          error: url.searchParams.get("error") || "local-failure",
         };
         return reply(res, failing);
       }
@@ -204,7 +205,7 @@ createServer(async (req, res) => {
     if (visitor) posts++;
     if (visitor && failing.times > 0) {
       failing.times--;
-      return reply(res, { error: "local-failure" }, failing.status);
+      return reply(res, { error: failing.error || "local-failure" }, failing.status);
     }
     const init = { method: req.method, headers: req.headers };
     if (req.method === "POST") init.body = Buffer.concat(chunks);

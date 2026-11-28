@@ -71,11 +71,11 @@
 
   // the paint layer: a canvas painted at the pen's own pace, wet and glossy, following the concrete's bumps
   // the painted piece "Tom Larsson" (Tom 11-28): the pour's mould, its top layer (3D side, outline, shine, cloud, drips) and the hand line under it come as pictures, laid on the wall in metres. On a laptop one line, on a phone "Tom" over "Larsson".
-  // Sizes are the painter's pictures at their build size (mould and top 1536 x 388 / 1024 x 656, hand line 1344 x 131 / 900 x 312); cx, cy: the piece's middle, hand.top: where the hand line's top edge stands. A tag is saved in metres and shown on every screen,
+  // Sizes are the painter's pictures at their build size (mould and top 1536 x 388 / 1024 x 656); cx, cy: the piece's middle. The two sprayed lines, the role "Product engineer" and the hand line: w, ar: the ink's own box (metres wide, height / width), top: where its top edge stands, pad: the soft edge round the ink that the picture carries more, as a share of w. On a laptop the role stands right under the piece, half again as big as the hand line under it; on a phone it stands above the piece's right end, in two rows (under the piece there is no room). A tag is saved in metres and shown on every screen,
   // so tags are kept clear of both layouts' boxes (60-pick.js).
-  const MURALS = { wide: { w: 9.3, h: 9.3 * 388 / 1536, cx: 0, cy: 2.3 - 9.3 * 388 / 1536 / 2, mould: [1536, 388], hand: { w: 5.61, ar: 113 / 1120, cx: .005, top: -.08 }, set: "laptop", pin: [.927, .19], row1: 1, ledge: 4.9 },
-    narrow: { w: 6.78, h: 6.78 * 656 / 1024, cx: 0, cy: 4.43 - 6.78 * 656 / 1024 / 2, mould: [1024, 656], hand: { w: 4.76, ar: 300 / 729, cx: -1.01, top: .05 }, set: "phone", pin: [.625, .165], row1: .45, ledge: 2.5 } };
-  for (const M of Object.values(MURALS)) M.hand.h = M.hand.w * M.hand.ar;
+  const MURALS = { wide: { w: 9.3, h: 9.3 * 388 / 1536, cx: 0, cy: 2.3 - 9.3 * 388 / 1536 / 2, mould: [1536, 388], role: { w: 5.04, ar: 174 / 1006, pad: 27 / 1006, cx: .005, top: -.08 }, hand: { w: 5.61, ar: 113 / 1120, pad: 19 / 1120, cx: .005, top: -1 }, set: "laptop", row1: 1, ledge: 4.9 },
+    narrow: { w: 6.78, h: 6.78 * 656 / 1024, cx: 0, cy: 4.43 - 6.78 * 656 / 1024 / 2, mould: [1024, 656], role: { w: 2.94, ar: 306 / 450, pad: 22 / 450, cx: 1.83, top: 6.55 }, hand: { w: 4.76, ar: 300 / 729, pad: 22 / 729, cx: -1.01, top: .05 }, set: "phone", row1: .45, ledge: 2.5 } };
+  for (const M of Object.values(MURALS)) for (const L of [M.role, M.hand]) L.h = L.w * L.ar;
   const MU = NARROW ? MURALS.narrow : MURALS.wide, PW = MU.w, PH = MU.h, PCX = MU.cx, PCY = MU.cy, PX = MU.mould[0] / PW; // PX: the mould's pixels to a metre
   const pc = document.createElement("canvas"); pc.width = MU.mould[0]; pc.height = MU.mould[1]; const g = pc.getContext("2d", { willReadFrequently: true });
   const paintTex = new THREE.CanvasTexture(pc); paintTex.encoding = THREE.sRGBEncoding; paintTex.anisotropy = maxAniso;
@@ -96,7 +96,7 @@
   // the sheet that comes over the top edge: depth per column, and how fast it slides down (it slows as it thins)
   const VSH = 3; let SB = .3;
   const sheetD = x => SB * (1 + .22 * Math.sin(x * 7.3 + 1) + .14 * Math.sin(x * 17.9 + 2) + .07 * Math.sin(x * 41.3));
-  let grounds = [], muralPin = null, pourReady = false, pourDone = 1e9, uTnow = -1, streams = [];
+  let grounds = [], pourReady = false, pourDone = 1e9, uTnow = -1, streams = [];
   const SPAN = PW / 2 + .2, BK = { r0: .24, r1: .3, h: .58 };
   // the bucket stands at the left end of the wall's top; the visitor tips it over on its side, the paint floods right along the top and spills down
   const TS = .8, left = ic => ic < .2 ? 1 : Math.exp(-(ic - .2) / .6); // left(): how much is still in the bucket; the flow follows it
@@ -112,8 +112,7 @@
   const mistCol = [1, 3, 5].map(i => parseInt(PAINT_HEX.slice(i, i + 2), 16) / 255); // the mist and the splashes are the paint's own blue (its sRGB: their shader writes it straight out)
   const tokNum = n => { const v = parseFloat(tok(n)); if (!(v >= 0)) throw new Error("Couldn't read " + n + " from tokens.css"); return v; };
   const PIECE_TOK = { gain: [tokNum("--front-piece-gain"), tokNum("--front-piece-gain-day")], lift: [tokNum("--front-piece-lift"), tokNum("--front-piece-lift-day")], glow: [tokNum("--front-piece-glow"), tokNum("--front-piece-glow-day")], sat: tokNum("--front-piece-colour"), settle: tokNum("--front-piece-settle"), cloud: tokNum("--front-piece-cloud"), hand: tokNum("--front-piece-hand"), old: tokNum("--front-old-paint") }; // the piece's lift (night, day) and speeds: tokens.css
-  const PIECE = new THREE.Color(PAINT_HEX); // the piece keeps its night blue by day (Tom 11-27): its own colour, not the PAINT that follows the clock
-  const pourU = { uPiece: { value: PIECE }, uPieceE: { value: PIECE_TOK.glow[0] }, uOx: { value: PCX }, uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
+  const pourU = { uPiece: { value: PAINT } /* the wet paint in the letters is the bucket's own paint, the day's blue by day: bare and lifted, the night blue went pale under the sky and the half-filled letters looked half-loaded (11-28). The settled faces are the top layer's own, night blue by day too */, uPieceE: { value: PIECE_TOK.glow[0] }, uOx: { value: PCX }, uT: { value: -1 }, uMask: { value: null }, uWet: { value: null }, uN: { value: 0 },
     uA: { value: Array.from({ length: NS }, () => new THREE.Vector4(0, -99, -99, 99)) }, uB: { value: Array.from({ length: NS }, () => new THREE.Vector4()) },
     uC: { value: PAINT }, uRep: { value: pourNor.repeat }, uOff: { value: pourNor.offset }, uDims: { value: new THREE.Vector4(PW, PH, HT, GROUND) }, uYB: { value: YB },
     uSh: { value: new THREE.Vector4(.3, VSH, WALL_TOP, 0) }, uL: { value: new THREE.Vector4(LEDGE.tip + .05, LEDGE.x0, LEDGE.spread, 0) } };
@@ -210,7 +209,7 @@
   const pourMesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, HT), pourMat); pourMesh.position.set(PCX, GROUND + HT / 2, .003); pourMesh.visible = false; scene.add(pourMesh);
   // the old paint on the first wall (Tom 11-28): "portfolio" and "showcase" in stencil, "tlxq" as his big hand tag (the signature), there from the first frame, in the dark like the wall, a little faded once the light is on. They stand apart; the
   // pour runs over whatever of them is in its way (they are drawn under the paint, like the visitors' tags). [word, middle x, middle y, width, height] in wall metres, a laptop and a phone; tags are kept clear of them (60-pick.js).
-  const OLD_WORDS = { wide: [["portfolio", -3.795, 3.3, 2.63, .84], ["showcase", 5.825, .55, 1.65, .415], ["tlxq", 3.87, -.81, 1.88, 1.24]], narrow: [["portfolio", -2.11, 5.545, 2.78, .89], ["showcase", 2.8, 3.2, 1.2, .3], ["tlxq", 2.475, -1.5, 1.83, 1.2]] }; // from the painter's layout.json (top left corner, width, height in metres) as middle points. Changed from it for air (11-28): each word keeps at least one of its own letter heights clear of the piece, the hand line, the plate, the other words and the ground. On a phone "showcase" and "tlxq" stood partly under the ground line (-2.2) and against the hand line: "showcase" now stands right of "Tom", below the plate as on a laptop, and "tlxq" on the wall right of the hand line, both smaller; on a laptop "showcase" is smaller and lower, clear of the piece's right end, the plate and the screen's edge at 1440 x 900
+  const OLD_WORDS = { wide: [["portfolio", -3.795, 3.3, 2.63, .84], ["showcase", 5.825, .55, 1.65, .415], ["tlxq", 3.87, -.81, 1.88, 1.24]], narrow: [["portfolio", -2.11, 5.545, 2.78, .89], ["tlxq", 2.475, -1.5, 1.83, 1.2]] }; // from the painter's layout.json (top left corner, width, height in metres) as middle points. Changed from it for air (11-28): each word keeps at least one of its own letter heights clear of the piece, the sprayed lines, the other words and the ground. A phone has no "showcase" (Tom 11-28: too small to read there); its "tlxq" stood partly under the ground line (-2.2) and against the hand line: it stands on the wall right of the hand line, smaller; on a laptop "showcase" is smaller and lower, clear of the piece's right end and the screen's edge at 1440 x 900
   const OLD_MATS = OLD_WORDS[NARROW ? "narrow" : "wide"].map(([n, x, y, w, h]) => { const mat = new THREE.MeshStandardMaterial({ map: tex("assets/start/old/" + n + "-" + MU.set + ".webp", true, 1, 1), transparent: true, depthWrite: false, roughness: .92, metalness: 0, opacity: PIECE_TOK.old, polygonOffset: true, polygonOffsetFactor: -1 });
     const me = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); me.position.set(x, y, .0025); me.renderOrder = -1; scene.add(me); return mat; });
   // the top layer (Tom 11-28): outline, 3D side, shine, clouds and drips of the piece, one picture over the paint. Each pixel of it comes on a moment after the paint reached the nearest letter face (buildPour works the times out), so it
@@ -226,28 +225,31 @@
       " diffuseColor.rgb = mix(pow(fl * .9478672986 + .0521327014, vec3(2.4)), fl * .0773993808, vec3(lessThanEqual(fl, vec3(.04045)))); diffuseColor.rgb = max(vec3(0.), mix(vec3(dot(diffuseColor.rgb, vec3(.2126, .7152, .0722))), diffuseColor.rgb, uSat)) * uGain; // the warm light and the film curve take colour out of a blue: put some back\n diffuseColor.a = cov * smoothstep(0., .7, uT - texture2D(uRv, vUv).r * " + TMAX + ".);")
       .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * uLift;"); }; topMat.customProgramCacheKey = () => "pieceTop"; }
   const topMesh = new THREE.Mesh(new THREE.PlaneGeometry(PW, PH), topMat); topMesh.position.set(PCX, PCY, .0035); topMesh.renderOrder = 1; topMesh.visible = false; scene.add(topMesh);
-  // the hand line under the piece, in the street wall's hand: sprayed in from the left once the piece has settled, with a little mist at the front; cream, day and night
-  const handU = { uT: pourU.uT, uH: { value: new THREE.Vector2(1e9, PIECE_TOK.hand) }, uLift: { value: 1 } };
-  const handMat = new THREE.MeshStandardMaterial({ map: tex(PIECE_DIR + MU.set + "-hand.webp", true, 1, 1), transparent: true, depthWrite: false, envMapIntensity: .1, roughness: .75, metalness: 0, polygonOffset: true, polygonOffsetFactor: -3 });
-  handMat.onBeforeCompile = sh => { Object.assign(sh.uniforms, handU);
-    sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform float uT, uLift; uniform vec2 uH;")
-      .replace("#include <map_fragment>", "#include <map_fragment>\n float hf = (uT - uH.x) / uH.y * 1.16 - .08, hn = fract(sin(dot(floor(vUv * vec2(170., 26.)), vec2(12.9898, 78.233))) * 43758.5453) * .05; diffuseColor.a *= 1. - smoothstep(hf - .07, hf + .02, vUv.x + hn);")
-      .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * uLift;"); }; handMat.customProgramCacheKey = () => "pieceHand";
-  const handMesh = new THREE.Mesh(new THREE.PlaneGeometry(MU.hand.w, MU.hand.h), handMat); handMesh.position.set(MU.hand.cx, MU.hand.top - MU.hand.h / 2, .0036); handMesh.renderOrder = 1; handMesh.visible = false; scene.add(handMesh);
-  let plateAt = 1e9; // when the piece and its hand line are done: the plate and its line come then
-  const HAND_CREAM = hexRGB(tokHex("--look-cream")).map(v => v / 255); // the hand line's mist: the cream of the line itself, from tokens.css
-  function handMist(t) { const hf = (t - handU.uH.value.x) / handU.uH.value.y * 1.16 - .08; if (hf < 0 || hf > 1.1) return; const hd = MU.hand, x = hd.cx - hd.w / 2 + cl(hf) * hd.w, y = hd.top - hd.h * .5; // cream grains at the front, drifting off the wall a little
+  // the two sprayed lines (Tom 11-28): the role "Product engineer", then the hand line, in the street wall's hand. Each is sprayed in from the left once the piece has settled, with a little mist at the front; cream, day and night, over a dark
+  // sprayed edge, so the cream reads on the day's pale wall too. A picture is two coats as masks (red: the ink, green: the edge behind it); the colours are tokens (--look-cream, --look-dark, and --front-hand-edge: how solid the edge is).
+  const LINE_INK = new THREE.Color(tokHex("--look-cream")), LINE_EDGE = new THREE.Color(tokHex("--look-dark")), LINE_EDGE_K = tokNum("--front-hand-edge");
+  function sprayLine(name, L) { const u = { uT: pourU.uT, uH: { value: new THREE.Vector2(1e9, 1) }, uLift: { value: 1 }, uInk: { value: LINE_INK }, uDark: { value: LINE_EDGE }, uEdge: { value: LINE_EDGE_K } }, pad = L.pad * L.w;
+    const mat = new THREE.MeshStandardMaterial({ map: tex(PIECE_DIR + MU.set + "-" + name + ".webp", false, 1, 1), transparent: true, depthWrite: false, envMapIntensity: .1, roughness: .75, metalness: 0, polygonOffset: true, polygonOffsetFactor: -3 });
+    mat.onBeforeCompile = sh => { Object.assign(sh.uniforms, u);
+      sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nuniform float uT, uLift, uEdge; uniform vec2 uH; uniform vec3 uInk, uDark;")
+        .replace("#include <map_fragment>", "#include <map_fragment>\n float ink = diffuseColor.r, ed = diffuseColor.g * uEdge, cov = ink + (1. - ink) * ed; diffuseColor.rgb = (uInk * ink + uDark * (1. - ink) * ed) / max(cov, 1e-4);\n float hf = (uT - uH.x) / uH.y * 1.16 - .08, hn = fract(sin(dot(floor(vUv * vec2(170., 26.)), vec2(12.9898, 78.233))) * 43758.5453) * .05; diffuseColor.a = cov * (1. - smoothstep(hf - .07, hf + .02, vUv.x + hn));")
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n totalEmissiveRadiance += diffuseColor.rgb * uLift;"); }; mat.customProgramCacheKey = () => "pieceLine";
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(L.w + 2 * pad, L.h + 2 * pad), mat); mesh.position.set(L.cx, L.top - L.h / 2, .0036); mesh.renderOrder = 1; mesh.visible = false; scene.add(mesh); return { u, mesh, L }; }
+  const roleLine = sprayLine("role", MU.role), handLine = sprayLine("hand", MU.hand), handMesh = handLine.mesh;
+  let linesAt = 1e9; // when the piece's two sprayed lines are done
+  const HAND_CREAM = hexRGB(tokHex("--look-cream")).map(v => v / 255); // the lines' mist: the cream of the line itself, from tokens.css
+  function lineMist(S, t) { const hf = (t - S.u.uH.value.x) / S.u.uH.value.y * 1.16 - .08; if (hf < 0 || hf > 1.1) return; const hd = S.L, x = hd.cx - hd.w / 2 + cl(hf) * hd.w, y = hd.top - hd.h * .5; // cream grains at the front, drifting off the wall a little
     for (let k = 0; k < 2; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = HAND_CREAM[0]; mc[i * 3 + 1] = HAND_CREAM[1]; mc[i * 3 + 2] = HAND_CREAM[2]; mp[i * 3] = x + gauss() * .06; mp[i * 3 + 1] = y + gauss() * .14; mp[i * 3 + 2] = .04;
       mv[i * 3] = gauss() * .12; mv[i * 3 + 1] = gauss() * .1 - .03; mv[i * 3 + 2] = .08 + Math.random() * .15; ml[i] = .5 + Math.random() * .25; } }
+  const handMist = t => { lineMist(roleLine, t); lineMist(handLine, t); };
   new THREE.ImageLoader().load("assets/start/piece/" + MU.set + "-mould.webp", buildPour); // the start set: it goes through the default loading manager, so the bucket waits for it like for the walls' pictures
 
   function buildPour(mould) {
     const W = pc.width, H = pc.height, mk = document.createElement("canvas"); mk.width = W; mk.height = H; const m = mk.getContext("2d", { willReadFrequently: true });
     m.fillStyle = "#000"; m.fillRect(0, 0, W, H); m.drawImage(mould, 0, 0, W, H); // the letter faces, white on black: the mask the paint fills
-    muralPin = V(PCX - PW / 2 + MU.pin[0] * PW, PCY + PH / 2 - MU.pin[1] * PH, 0);
     { const x0 = PCX - PW / 2, x1 = PCX + PW / 2, y0 = PCY - PH / 2, y1 = PCY + PH / 2, hd = MU.hand;
       PROT.push(["the mural", V(x0, y0, 0), V(x1, y1, 0), ".tag"], ["the mural's first line", V(x0, y1 - PH * MU.row1, 0), V(x1, y1, 0), ".mail"],
-        ["the mural's hand line", V(hd.cx - hd.w / 2, hd.top - hd.h, 0), V(hd.cx + hd.w / 2, hd.top, 0), ".tag"]); } // the form on a phone covers the lower lines, never the first; the plates keep off all of it
+        ["the mural's hand line", V(hd.cx - hd.w / 2, hd.top - hd.h, 0), V(hd.cx + hd.w / 2, hd.top, 0), ".tag"], ["the mural's role", V(MU.role.cx - MU.role.w / 2, MU.role.top - MU.role.h, 0), V(MU.role.cx + MU.role.w / 2, MU.role.top, 0), ".tag"]); } // the form on a phone covers the lower lines, never the first; the plates keep off all of it
     // a half-size grid for the flow
     const full = m.getImageData(0, 0, W, H).data, w = W >> 1, h = H >> 1, N = w * h, PXH = PX / 2;
     const lit = new Uint8Array(N);
@@ -358,8 +360,8 @@
     const rv = new Uint8Array(N * 4); let tEnd = 0;
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const t = TT[y * w + x] + SETTLE; if (t < 1e9) tEnd = Math.max(tEnd, t); const v = t < 1e9 ? Math.min(254, Math.round(t / TMAX * 255)) : 255, r = ((h - 1 - y) * w + x) * 4; rv[r] = rv[r + 1] = rv[r + 2] = v; rv[r + 3] = 255; }
     const rvTex = new THREE.DataTexture(rv, w, h); rvTex.minFilter = rvTex.magFilter = THREE.LinearFilter; rvTex.generateMipmaps = false; rvTex.needsUpdate = true;
-    tEnd += .7; handU.uH.value.set(Math.min(tEnd - 1, TMAX - 4), PIECE_TOK.hand); plateAt = Math.min(TMAX - 1, handU.uH.value.x + PIECE_TOK.hand);
-    topU.uRv.value = rvTex; { const mt = new THREE.Texture(mould); mt.needsUpdate = true; topU.uMk.value = mt; } topMesh.visible = true; handMesh.visible = true;
+    tEnd += .7; { const r0 = Math.min(tEnd - 1, TMAX - 6), rd = PIECE_TOK.hand * MU.role.w / MU.hand.w; /* the role first (it is read second, after the name), at the hand line's own pace along the wall; then the hand line */ roleLine.u.uH.value.set(r0, rd); handLine.u.uH.value.set(r0 + rd, PIECE_TOK.hand); linesAt = Math.min(TMAX - 1, r0 + rd + PIECE_TOK.hand); }
+    topU.uRv.value = rvTex; { const mt = new THREE.Texture(mould); mt.needsUpdate = true; topU.uMk.value = mt; } topMesh.visible = true; roleLine.mesh.visible = true; handMesh.visible = true;
     const maskTex = new THREE.CanvasTexture(mk); maskTex.anisotropy = maxAniso;
     const data = new Uint8Array(N * 4);
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const t = T[y * w + x], v = t < 1e9 ? Math.min(254, Math.round(t / TMAX * 255)) : 255, r = ((h - 1 - y) * w + x) * 4; data[r] = data[r + 1] = data[r + 2] = v; data[r + 3] = 255; }

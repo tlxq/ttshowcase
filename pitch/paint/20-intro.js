@@ -207,6 +207,7 @@
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
   // ---- the bucket falls (Tom 11-27, "feels right" as the pitch/bucket-fall prototype had it): later, as a surprise, once a visit; then it lies on the ground with its splash. Phases with real constants, no physics engine:
   // 0 on the ledge · 1 hint (rocks, creaks) · 2 slides to the front edge · 3 rolls over it · 4 free fall (g 9.8, turning) · 5 settles on the ground (bounce, roll, handle flops) · 6 at rest
+  // It falls only while the visitor is at the start wall: someone who scrolled on before it fell sees it fall when they come back, once (Tom 11-28), with its hint, however long they were away.
   // knobs in the link (for the checks and the pictures; they cost nothing at the start): fall=after|back|both|now  n=seconds [--front-fall-wait]  hint=0|1 [1]
   // Reduced motion: the still page shows the end state, the bucket already lying on the ground with its puddle.
   const FQ = new URLSearchParams(location.search), FMODE = ["after", "back", "both", "now"].includes(FQ.get("fall")) ? FQ.get("fall") : "after",
@@ -235,7 +236,7 @@
       if (introOver && scrollY > upPx() + innerHeight * .9) fs.away = true;
       if (fs.ph === 0 && introOver) {
         const due = fs.base + FN * 1000 - (FHINT ? FHINT_S * 1000 : 0), back = fs.away && atStart;
-        if ((FMODE === "back" && back) || (FMODE === "both" && back) || (FMODE !== "back" && now >= due && atStart && !fs.away)) { fs.ph = 1; fs.at = now; fs.go = now + (FHINT ? FHINT_S * 1000 : 0); } }
+        if ((FMODE === "back" && back) || (FMODE === "both" && back) || (FMODE !== "back" && now >= due && atStart)) { fs.ph = 1; fs.at = now; fs.go = now + (FHINT ? FHINT_S * 1000 : 0); } }
       if (fs.ph === 1) { const t = (now - fs.at) / 1000, ramp = Math.min(1, t / .4); fs.rock = FHINT ? .045 * ramp * Math.abs(Math.sin(t * 13)) * (1 - .3 * Math.sin(t * 5)) : 0; bucketTip.rotation.z += fs.rock; if (FHINT && Math.random() < .5) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = LEDGE.x + gauss() * .5; mp[i * 3 + 1] = CAPTOP - .4; mp[i * 3 + 2] = .3; mv[i * 3] = gauss() * .2; mv[i * 3 + 1] = -1.2 - Math.random(); mv[i * 3 + 2] = 0; ml[i] = 1; } // grit shaken loose, falling into view
         if (now >= fs.go) { // from here on the pail is one body: its centre, its angle, its speed
           fs.p.copy(bucket.localToWorld(V(0, BK.h / 2, 0))); fs.th = -1.52; fs.psi = 0; fs.R = fs.p.y - CAPTOP; fs.v.set(0, 0, 0);
@@ -407,10 +408,9 @@
   fit(); addEventListener("resize", fit);
 
   // labels pinned to the can and to the writing, with real facts from the hand file
-  const tagCan = document.getElementById("tagCan"), tagHand = document.getElementById("tagHand"), svg = document.getElementById("lines");
+  const tagCan = document.getElementById("tagCan"), svg = document.getElementById("lines");
   tagCan.innerHTML = `<b>${HAND.pen}</b>written ${HAND.written}`; // fixed text: HAND is built at build time from the repo's own words, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
-  tagHand.innerHTML = "<b>Product engineer</b>"; // the plate says the role only: the name is the piece (Tom 11-27)
-  svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/><line id="l2"/><circle id="c2" r="4"/>');
+  svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/>');
   const proj = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight, p.z < 1]; };
   function pin(el, line, dot, world, dx, dy) {
     const [x, y] = proj(world); const tx = x + dx, ty = y + dy;
