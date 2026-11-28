@@ -99,7 +99,7 @@
   // the start's dark (Tom 11-25): until the tap only the work light's pool on the cap shows; then the wall appears where the paint has run,
   // a soft curtain that follows the pour's own clock (ledgeArrive), and all of it once the camera follows the paint down
   const veilU = { uIc: { value: -9 }, uAll: { value: 0 } };
-  for (const m of [wall.material, cap2.material, bareL.material]) { const prev = m.onBeforeCompile; m.onBeforeCompile = (sh, rr) => { if (prev) prev(sh, rr); Object.assign(sh.uniforms, veilU);
+  for (const m of [wall.material, cap2.material, bareL.material, signMat]) { const prev = m.onBeforeCompile; m.onBeforeCompile = (sh, rr) => { if (prev) prev(sh, rr); Object.assign(sh.uniforms, veilU);
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW;").replace("#include <project_vertex>", "#include <project_vertex>\nvVW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW; uniform float uIc, uAll;").replace("#include <dithering_fragment>", `
       if (uAll < .999) { // the rest of the walk skips the veil
@@ -205,6 +205,65 @@
     if (!START_T) { START_T = performance.now(); startEl.classList.add("placed"); } } // the lamp warms up from the moment the start shows
   const lines = document.getElementById("lines"); lines.insertAdjacentHTML("beforeend", '<line id="l5"/><circle id="c5" r="4"/>');
   const l5 = lines.querySelector("#l5"), c5 = lines.querySelector("#c5");
+  // ---- the bucket falls (Tom 11-27, "feels right" as the pitch/bucket-fall prototype had it): later, as a surprise, once a visit; then it lies on the ground with its splash. Phases with real constants, no physics engine:
+  // 0 on the ledge · 1 hint (rocks, creaks) · 2 slides to the front edge · 3 rolls over it · 4 free fall (g 9.8, turning) · 5 settles on the ground (bounce, roll, handle flops) · 6 at rest
+  // It falls only while the visitor is at the start wall: someone who scrolled on before it fell sees it fall when they come back, once (Tom 11-28), with its hint, however long they were away.
+  // knobs in the link (for the checks and the pictures; they cost nothing at the start): fall=after|back|both|now  n=seconds [--front-fall-wait]  hint=0|1 [1]
+  // Reduced motion: the still page shows the end state, the bucket already lying on the ground with its puddle.
+  const FQ = new URLSearchParams(location.search), FMODE = ["after", "back", "both", "now"].includes(FQ.get("fall")) ? FQ.get("fall") : "after",
+    FN = FMODE === "now" ? 0 : Math.max(0, +(FQ.get("n") ?? tokNum("--front-fall-wait")) || 0), FHINT = FQ.get("hint") !== "0";
+  const FG = 9.8, FREST = .25 /* restitution: a pail on concrete keeps a quarter of its speed */, FROLL = 1.6 /* m/s^2 rolling/sliding friction */, FHINT_S = tokNum("--front-fall-hint"), CAPTOP = WALL_TOP + .05, CAPFRONT = .06, FSLIDE = .9 /* m/s^2: the push off the cap */;
+  const FDELTA = Math.asin((BK.r1 - BK.r0) / Math.hypot(BK.h, BK.r1 - BK.r0)); // a cone lies with its narrow end a little up
+  const fs = { ph: 0, base: 0, away: false, at: 0, go: 0, t0: 0, p: V(), v: V(), th: 0, w: 0, psi: 0, R: .28, phi: 0, phiV: 0, hOff: 0, hV: 0, rock: 0, bounces: 0 };
+  window.__bucketFall = fs; fs.obj = bucket; fs.spot = { x0: LEDGE.x - 1.9, x1: LEDGE.x + 1.9, ground: GROUND }; // its state, for the checks (tools/pitch/checks/fall.js)
+  try { if (sessionStorage.getItem("bkfell") && RESUME !== null) fs.ph = 7; } catch (e) {}
+  if (REDUCED) fs.ph = 7;
+  const fPud = new THREE.Group(); fPud.visible = false; fPud.userData.at = 0; scene.add(fPud);
+  const fPudMat = new THREE.MeshPhysicalMaterial({ roughness: .06, clearcoat: 1, clearcoatRoughness: .03, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
+  for (const [dx, dz, s] of [[0, 0, 1], [.28, .1, .45], [-.3, -.05, .5], [.12, -.3, .3], [-.1, .3, .28], [.5, -.12, .16], [-.52, .14, .18]]) { const m = new THREE.Mesh(new THREE.CircleGeometry(s * .42, 28), fPudMat); m.rotation.x = -Math.PI / 2; m.position.set(dx, 0, dz); m.scale.set(1, .8 + Math.abs(dx) * .3, 1); fPud.add(m); }
+  const fAx = th => V(-Math.sin(th), Math.cos(th), 0);
+  const fLow = () => { const a = fAx(fs.th), s = Math.sqrt(Math.max(0, 1 - a.y * a.y)); return Math.min(fs.p.y - a.y * BK.h / 2 - BK.r0 * s, fs.p.y + a.y * BK.h / 2 - (BK.r1 + .012) * s); };
+  const fPlace = () => { bucketTip.rotation.set(0, 0, 0); bucketHome.position.copy(fs.p); bucketHome.quaternion.setFromEuler(new THREE.Euler(0, 0, fs.th)).multiply(new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), fs.psi)); };
+  function fSplash(x, y, z, n, up) { for (let k = 0; k < n; k++) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = x + gauss() * .12; mp[i * 3 + 1] = y; mp[i * 3 + 2] = z + gauss() * .12;
+    mv[i * 3] = gauss() * 1.8; mv[i * 3 + 1] = up * (.3 + Math.random()); mv[i * 3 + 2] = gauss() * 1.8; ml[i] = .7 + Math.random() * .3; } }
+  function fallStep(now, dt) {
+    if (fs.ph === 0 && !fs.base && introOver) fs.base = Math.max(now, goAt + Math.min(pourDone, 30) / TS * 1000); // N counts from the end of the pour, not from the moment the scroll opens
+    if (fs.ph === 7) { // a reload for a new window shape, or reduced motion: it already fell
+      fs.p.set(LEDGE.x + 1.78, GROUND + .34, 2.1); /* where the fall leaves it (measured), so a reload and the still page show the same spot */ fs.th = -(Math.PI / 2 + FDELTA); fs.psi = 0; bucket.position.set(0, -BK.h / 2, 0); bucketTip.position.set(0, 0, 0); bucketTip.rotation.set(0, 0, 0); fPlace(); coat.visible = false; fPud.position.set(fs.p.x, GROUND + .006, fs.p.z); fPud.visible = true; fPud.scale.setScalar(1); fs.ph = 6; }
+    if (fs.ph === 6) { bucketTip.rotation.set(0, 0, 0); fPudMat.color.copy(PAINT).multiplyScalar(.7); coat.visible = false; return; }
+    if (fs.ph < 2) {
+      const atStart = introOver && Math.abs(scrollY - upPx()) < innerHeight * .5;
+      if (introOver && scrollY > upPx() + innerHeight * .9) fs.away = true;
+      if (fs.ph === 0 && introOver) {
+        const due = fs.base + FN * 1000 - (FHINT ? FHINT_S * 1000 : 0), back = fs.away && atStart;
+        if ((FMODE === "back" && back) || (FMODE === "both" && back) || (FMODE !== "back" && now >= due && atStart)) { fs.ph = 1; fs.at = now; fs.go = now + (FHINT ? FHINT_S * 1000 : 0); } }
+      if (fs.ph === 1) { const t = (now - fs.at) / 1000, ramp = Math.min(1, t / .4); fs.rock = FHINT ? .045 * ramp * Math.abs(Math.sin(t * 13)) * (1 - .3 * Math.sin(t * 5)) : 0; bucketTip.rotation.z += fs.rock; if (FHINT && Math.random() < .5) { const i = mi = (mi + 1) % MN; mc[i * 3] = mistCol[0]; mc[i * 3 + 1] = mistCol[1]; mc[i * 3 + 2] = mistCol[2]; mp[i * 3] = LEDGE.x + gauss() * .5; mp[i * 3 + 1] = CAPTOP - .4; mp[i * 3 + 2] = .3; mv[i * 3] = gauss() * .2; mv[i * 3 + 1] = -1.2 - Math.random(); mv[i * 3 + 2] = 0; ml[i] = 1; } // grit shaken loose, falling into view
+        if (now >= fs.go) { // from here on the pail is one body: its centre, its angle, its speed
+          fs.p.copy(bucket.localToWorld(V(0, BK.h / 2, 0))); fs.th = -1.52; fs.psi = 0; fs.R = fs.p.y - CAPTOP; fs.v.set(0, 0, 0);
+          bucketHome.position.set(0, 0, 0); bucketTip.position.set(0, 0, 0); bucketTip.rotation.set(0, 0, 0); bucket.position.set(0, -BK.h / 2, 0); fs.ph = 2; fs.t0 = now; fPlace(); } }
+      if (fs.ph < 2) return; }
+    dt = Math.min(dt, .033); const p = fs.p, v = fs.v;
+    if (fs.ph === 2) { v.z += FSLIDE * dt; p.z += v.z * dt; if (p.z >= CAPFRONT) { fs.ph = 3; fs.phi = 0; fs.phiV = v.z / fs.R; } } // pushed along the cap until its weight passes the edge
+    else if (fs.ph === 3) { fs.phiV += FG * Math.sin(fs.phi) / fs.R * dt + .6 * dt; fs.phi += fs.phiV * dt; fs.th -= .6 * dt; // rolls over the edge: weight on the corner, then it lets go
+      p.set(p.x, CAPTOP + fs.R * Math.cos(fs.phi), CAPFRONT + fs.R * Math.sin(fs.phi)); fs.psi += fs.phiV * dt * .7;
+      if (fs.R * fs.phiV * fs.phiV > FG * Math.cos(fs.phi) * .8 || fs.phi > 1.1) { v.set(0, -fs.R * fs.phiV * Math.sin(fs.phi), fs.R * fs.phiV * Math.cos(fs.phi)); fs.w = 2.4; v.x = .5; fs.ph = 4; fs.hV = -4; } }
+    else if (fs.ph === 4) { v.y -= FG * dt; p.addScaledVector(v, dt); fs.th += fs.w * dt; fs.psi += .8 * dt;
+      if (fLow() <= GROUND && v.y < 0) { // the first hit: it bounces once, low
+        const sp = -v.y; p.y += GROUND - fLow(); v.y = sp * FREST; v.z *= .55; v.x = fs.w * .22; fs.w *= -.3; fs.hV += 9; fs.ph = 5; fs.bounces = 1; fs.t0 = now;
+        fSplash(p.x, GROUND + .02, p.z, 70, 2.2); fPud.position.set(p.x, GROUND + .006, p.z); fPud.visible = true; fPud.userData.at = now; fPudMat.color.copy(PAINT).multiplyScalar(.7); fPud.scale.setScalar(.01); coat.visible = false; film.visible = true;
+        try { sessionStorage.setItem("bkfell", "1"); } catch (e) {} } }
+    else if (fs.ph === 5) { const wrap = fs.th - Math.round(fs.th / (2 * Math.PI)) * 2 * Math.PI, tgt = (wrap > 0 ? 1 : -1) * (Math.PI / 2 + FDELTA);
+      fs.w += (-45 * (wrap - tgt) - 6.5 * fs.w) * dt; fs.th += fs.w * dt;
+      if (fLow() > GROUND + .002 || v.y > 0) v.y -= FG * dt;
+      p.addScaledVector(v, dt);
+      if (fLow() < GROUND) { const sp = -v.y; p.y += GROUND - fLow(); if (v.y < 0) { if (sp > .7) { v.y = sp * FREST; fs.hV += 3; fs.bounces++; } else v.y = 0; } }
+      const g = Math.hypot(v.x, v.z), onG = fLow() < GROUND + .004 && v.y <= 0; if (onG && g > 0) { const d = Math.min(g, FROLL * dt); v.x -= v.x / g * d; v.z -= v.z / g * d; }
+      fs.psi += (Math.sign(fAx(fs.th).x) || 1) * v.z / ((BK.r0 + BK.r1) / 2) * dt; // rolling on its side turns the handle and rings round
+      if (now - fs.t0 > 900 && Math.abs(wrap - tgt) < .004 && Math.abs(fs.w) < .02 && Math.hypot(v.x, v.z) < .01 && onG) { fs.ph = 6; fs.th = tgt; fs.hV = 0; } }
+    // the handle flops loose on its pivot, knocks the pail wall at its stops
+    fs.hV += (-26 * fs.hOff - 2.2 * fs.hV) * dt; fs.hOff += fs.hV * dt; if (fs.hOff > 1.05) { fs.hOff = 1.05; fs.hV *= -.35; } if (fs.hOff < -1.05) { fs.hOff = -1.05; fs.hV *= -.35; } handle.rotation.x = -1.25 + fs.hOff;
+    if (fs.ph >= 5) fPud.scale.setScalar(Math.max(.01, 1 - Math.exp(-(now - fPud.userData.at) / 1000 / .45)));
+    fPlace(); }
   function intro(now, dt) {
     const since = (now - t0) / 1000; wallUpload(); if (introOver) LATE.start(); // the bucket has tipped and the pour is over: now the rest is asked for (not during the pour, which keeps the frames to itself)
     if (!goAt) {
@@ -228,7 +287,7 @@
       column(inflow, top, top.clone().add(V(0, 9, 0)), Math.max(1e-4, r)); } // no splash while it fills: on the black start the drops drift off as stray dots
     // the bucket tips: from where the visitor left it, all the way over on its side
     const k = cl(ic / .45), ang = goAt ? tilt0 + (1.52 - tilt0) * (k < 1 ? sm(k) * (1 + .12 * Math.sin(k * Math.PI)) : 1) : tilt;
-    bucketTip.rotation.z = -ang;
+    bucketTip.rotation.z = -ang; if (goAt && introOver) fallStep(now, dt);
     // the paint surface stays level and sloshes a little behind the bucket
     sloshV += (-(slosh - ang) * 70 - sloshV * 6) * dt; slosh += sloshV * dt;
     surface.visible = false;
@@ -249,7 +308,7 @@
     // while it fills: the paint level as a number (nothing in the first second); when full: what to do (signum L1, L2)
     const showB = !goAt && (readyAt ? now - readyAt > 400 : now - t0 > 1000);
     const txt = readyAt ? "Tip the bucket to enter" : `Loading ${Math.min(99, Math.round(level * 100))}%`;
-    if (showB && txt !== tagText) { tagText = txt; tagBucket.innerHTML = `<b>Tom Larsson &middot; Product engineer</b>${txt}`; } // fixed text: the label's own words and a number, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
+    if (showB && txt !== tagText) { tagText = txt; tagBucket.textContent = txt; } // the bucket's hint, for the keyboard's focus only: the label's own words and a number, never a visitor's input. The name is no longer typed here (the piece says it)
     tagBucket.style.opacity = showB ? 1 : 0; [l5, c5].forEach(e => e.style.opacity = showB ? 1 : 0);
     if (showB) pin(tagBucket, l5, c5, bucket.localToWorld(V(-.25, BK.h * .8, .2)), NARROW ? -6 : -70, NARROW ? -150 : -60); // phone: no room at the side, so above, clear of the rim
     // light: dark wall, work light on the bucket; the street light comes on as the paint goes
@@ -263,7 +322,7 @@
       work.target.position.set(workAt.x, workAt.y, -.17 + .17 * k); work.position.set(workAt.x + .8, WALL_TOP + 4.2, 1.6 + 1.2 * k); work.angle = .2 + .22 * k; }
     return ic;
   }
-  const toWorld = (x, y) => V(-PW / 2 + x / PX, PCY + PH / 2 - y / PX, 0);
+  const toWorld = (x, y) => V(PCX - PW / 2 + x / PX, PCY + PH / 2 - y / PX, 0);
   let SPRAY = PAINT_N.join(","); // from the hex: PAINT holds linear values // Tom's tag in the paint's colour
   // the paint's colour by the clock (Tom 11-26): the night's blue by night, --front-spray-day at noon, the start line, its drips, pour, mist, pool and glow all follow. One PAINT object is
   // every shader's uniform, so it is changed in place; the mist's colours and the drips' text are the same colour in the other forms.
@@ -271,6 +330,7 @@
     PAINT.set("#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("")); bounce.color.copy(PAINT); SPRAY = rgb.join(","); rgb.forEach((v, i) => mistCol[i] = v / 255);
     // by day the wet gloss goes: the dark paint's mirror coat reflected the bright sky and washed it out to a pale blue (a clear coat and the sky's reflection on a colour this dark was most of what showed)
     pourMat.clearcoat = .9 - .8 * k; pourMat.envMapIntensity = .9 - .75 * k;
+    { const mixT = a => a[0] + (a[1] - a[0]) * k; topU.uGain.value = mixT(PIECE_TOK.gain); topU.uLift.value = mixT(PIECE_TOK.lift); pourU.uPieceE.value = mixT(PIECE_TOK.glow); } // the piece is lifted for the lamp's dark; under the day's sky the same lift burned its faces and clouds out to white
     band.material.color.copy(PAINT); capMat.color.copy(PAINT); // (Tom 11-27) the can's band and cap are the paint's colour too: they were copied once, at night's blue
     paintIn.color.copy(PAINT); paintCoat.color.copy(PAINT).multiplyScalar(.4); filmMat.color.copy(PAINT).multiplyScalar(.45); }
 
@@ -348,9 +408,8 @@
   fit(); addEventListener("resize", fit);
 
   // labels pinned to the can and to the writing, with real facts from the hand file
-  const tagCan = document.getElementById("tagCan"), tagHand = document.getElementById("tagHand"), svg = document.getElementById("lines");
+  const tagCan = document.getElementById("tagCan"), tagRole = document.getElementById("tagRole"), svg = document.getElementById("lines");
   tagCan.innerHTML = `<b>${HAND.pen}</b>written ${HAND.written}`; // fixed text: HAND is built at build time from the repo's own words, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
-  tagHand.innerHTML = "<b>Tom Larsson</b>Product engineer";
   svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/><line id="l2"/><circle id="c2" r="4"/>');
   const proj = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight, p.z < 1]; };
   function pin(el, line, dot, world, dx, dy) {

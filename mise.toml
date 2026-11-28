@@ -49,6 +49,11 @@ run = "tools/write/write.sh"
 description = "Run tools/tags/schema.sql (or a .sql file you name) against the live tag store; safe to run again"
 run = "tools/tags/sql.sh"
 
+[tasks."tags:db"]
+description = "Prove the tag save on a real Postgres: a throwaway database in a container on this PC, the table from tools/tags/schema.sql, sends racing for one spot (src/tags/tags.db.test.ts); about 10 s, nothing live is touched"
+depends = ["install"]
+run = "tools/tags/db.sh"
+
 [tasks.tags]
 description = "Make the site's words as graffiti tags (tools/write/tag.mjs) into src/content/hand; name words to make only those, e.g. mise run tags Lab"
 run = "node tools/write/tag.mjs"
@@ -90,14 +95,14 @@ env = { PITCH_NUMBERS = "off" } # the page carries no saved numbers, so every ch
 run = "tools/passes/build-first.sh pitch pitch:build tools/pitch/run.sh"
 
 [tasks.check]
-description = "The whole check (GitHub runs it on every PR): typecheck, lint, unit tests, build, /next closed without its key, no high/critical holes in shipped packages, no serious finding in the code (opengrep). Skipped when it already passed on this commit; --force runs it anyway"
+description = "The whole check (GitHub runs it on every PR): typecheck, lint, unit tests, the tag save on a real Postgres (needs Docker; without it on this PC the step says so and GitHub runs it), build, /next closed without its key, no high/critical holes in shipped packages, no serious finding in the code (opengrep). Skipped when it already passed on this commit; --force runs it anyway"
 run = "tools/check.sh"
 
 [tasks."check:steps"]
 description = "The steps of the check, without the saved-pass skip"
 hide = true
 depends = ["install"]
-run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts' 'tools/showcase/*.test.mjs' 'tools/pitch/*.test.mjs' 'tools/csp/*.test.mjs' 'tools/passes/*.test.mjs' 'tools/night.test.mjs'", "npm run lint", "npm run build", "tools/next-check.sh", "tools/header-check.sh", "tools/fn-check.sh", "tools/osv-gate", "tools/opengrep-gate"]
+run = ["npm run typecheck", "node --test '.claude/hooks/*.test.mjs' 'src/**/*.test.ts' 'tools/showcase/*.test.mjs' 'tools/pitch/*.test.mjs' 'tools/csp/*.test.mjs' 'tools/passes/*.test.mjs' 'tools/tags/*.test.mjs' 'tools/night.test.mjs'", "tools/tags/db.sh --if-docker", "npm run lint", "npm run build", "tools/next-check.sh", "tools/header-check.sh", "tools/fn-check.sh", "tools/osv-gate", "tools/opengrep-gate"]
 
 [tasks.next]
 description = "Open the new site behind its secret link: live (default) or dev (this PC's Tailscale dev server); --print (or NEXT_PRINT=1) prints it without opening a browser: for the phone and for scripts; preview [PR#] prints a PR's preview link with a QR"

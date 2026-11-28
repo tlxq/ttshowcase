@@ -39,6 +39,21 @@
   /* The same spray by day (Tom 11-26, the start line on the beige wall): the line, drips, pour, mist and pool take this at noon and the night value at night;
      the progress stripe and the focus rings keep --front-spray. The day wall renders a mid grey, not the beige, so this blue reaches only about 2:1 against it. */
   --front-spray-day: #004c8f;
+  /* The start wall's painted piece (Tom 11-28): how much the piece is lifted over the scene's own light, in the lamp's dark and under the day's sky
+     (the night lift burned its faces and clouds out to white by day), and how fast its parts arrive behind the pour. Plain numbers, read by the walk. */
+  --front-piece-gain: 3;
+  --front-piece-gain-day: 1.5;
+  --front-piece-lift: 0.1;
+  --front-piece-lift-day: 0.03;
+  --front-piece-glow: 0.55;
+  --front-piece-glow-day: 0.15;
+  --front-piece-colour: 1.7;
+  --front-piece-settle: 0.4s;
+  --front-piece-cloud: 1.2; /* metres a second: the clouds grow out from the letters */
+  --front-old-paint: 0.9; /* how solid the tlxq hand tag on the start wall is */
+  /* The bucket falls off the ledge (Tom 11-27): this long after the pour has ended, with this long a hint (it rocks, grit falls) before it goes */
+  --front-fall-wait: 7s;
+  --front-fall-hint: 1s;
   /* the front's first screen, the code poster (Tom 11-24): the name in Archivo Expanded, he is drawn in JetBrains Mono */
   --front-name: "Archivo", "Arial Black", sans-serif;
   --front-code: "JetBrains Mono", ui-monospace, Menlo, monospace;

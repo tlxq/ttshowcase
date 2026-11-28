@@ -1,7 +1,7 @@
 // WCAG 1.4.3 text contrast at every stop: each piece of HTML text that shows, against the plate behind it.
 // 4.5:1, or 3:1 for large text (24 px, or 18.66 px bold). Text with no plate (straight on the 3D picture) fails:
 // its contrast changes with the scene, so it can't be promised. Words painted into the 3D scene are not HTML and
-// are judged by eye. Lists the smallest text size too. The start's painted line is measured on the picture (paint against wall) by day and by night.
+// are judged by eye. Lists the smallest text size too. The start wall's plate (the role and his line) is judged with the other plates, by day and by night; the start's blue on the wall is measured on the picture and reported.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs, checked: 0, smallest: null };
   page.on('pageerror', e => errs.push(String(e)));
   const look = where => page.evaluate(where => {
@@ -42,7 +42,15 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
         for (let i = 0; i < d.length; i += 16) { const [r, g, b] = [d[i], d[i + 1], d[i + 2]]; if (b - r > 45 && b > g) paint.push(L(r, g, b)); else if (b - r <= 25) wall.push(L(r, g, b)); }
         const med = a => a.sort((x, y) => x - y)[a.length >> 1]; return { paint: paint.length, wall: wall.length, p: paint.length ? med(paint) : null, w: wall.length ? med(wall) : null }; }, png);
       await shot.close(); const ratio = r.p === null || r.w === null ? 0 : +((Math.max(r.p, r.w) + .05) / (Math.min(r.p, r.w) + .05)).toFixed(2); (res.startLine ||= {})[hour === '12' ? 'noon' : 'night'] = { ratio, paintPixels: r.paint, wallPixels: r.wall, paintLum: r.p === null ? null : +r.p.toFixed(3), wallLum: r.w === null ? null : +r.w.toFixed(3) };
-      if (r.paint < 400) errs.push('the start line is not on the wall to measure (' + r.paint + ' paint pixels' + at + ')'); else if (hour === '12' && !(r.p < r.w && ratio >= (W < 600 ? 1.75 : 1.9))) errs.push('the start line\'s paint on the wall is ' + ratio + ':1' + at + (r.p >= r.w ? ' and LIGHTER than the wall (pale blue on beige)' : '') + ', by day it must be the darker one, at least 1.9:1 on a laptop and 1.75:1 on a phone (the sun is stronger on the start wall, 11-27: 1.75 on master, 2.04 now, on a laptop; a phone 1.65, now 1.91) (the target is 4.5:1: the day wall renders mid-grey, lum ' + r.w.toFixed(2) + ', so the dark blue reaches no more than about 2:1 until the wall is lit brighter)'); }
+      }
+    // the start wall's plate (Tom 11-28: one painting, one plate): "Product engineer" and his line are the text a visitor reads on the start wall. It is HTML on the walk's own plate, so it is judged like every other plate's text
+    // (4.5:1 against its plate), once the name is whole and it shows, at night and at noon. The pour's runs are counted here too, because this check sees the wall at night and by day: none behind the plate, none across the tlxq. The blue number above (every blue pixel against the wall) is information only: with the piece it is a mix of faces, outline and runs.
+    { let on = false; for (let i = 0; i < 120 && !(on = await page.evaluate(() => +document.getElementById('tagRole').style.opacity === 1)); i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(900); const seen = on ? await look('the start wall' + at) : []; all.push(...seen); // the plate fades in over .6 s
+      const mine = seen.filter(t => /Product engineer|I build and run things myself\./.test(t.name)); (res.startPlate ||= {})[hour === '12' ? 'noon' : 'night'] = mine.map(t => t.ratio);
+      if (mine.length !== 2) errs.push('the start wall\'s plate did not show its title and its line' + at + ' (' + mine.length + ' of 2 texts)');
+      const runs = await page.evaluate(() => ({ plate: window.plateTest.runsBehind(document.getElementById('tagRole').getBoundingClientRect()), tlxq: window.plateTest.runsOverSign() })); (res.startRuns ||= {})[hour === '12' ? 'noon' : 'night'] = runs;
+      if (runs.plate.length) errs.push('a blue run comes down behind the start wall\'s plate' + at + ' at x ' + runs.plate.join(', ') + ' m'); if (runs.tlxq.length) errs.push('a blue run crosses the tlxq' + at + ' at x ' + runs.tlxq.join(', ') + ' m'); }
     const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
     for (const sv of [128, 432, 540, 700, 770, 840, 910, 1045, 1180]) { await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(sv === 128 || sv === 432 ? 9000 : 4000); if (sv === 1180) {
         await page.click('#corner'); await page.waitForTimeout(1300); all.push(...await look('the flyer (Write to me)' + at)); await page.keyboard.press('Escape'); await page.waitForTimeout(1000); }
