@@ -117,7 +117,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   await page.click('#pickCancel'); await settle(s => !s.view && s.mode === 0, 40); await page.waitForTimeout(1600);
   res.closed = await state(); if (res.closed.view || res.closed.cancel !== 'Cancel') errs.push('Close did not leave the wide shot: ' + JSON.stringify(res.closed));
   const out = await api('/api/admin', 'POST', { signout: true }, ours); const after = await api('/api/tags?admin=1');
-  if (out.status !== 200 || after.j.admin || JSON.stringify(Object.keys(after.j)) !== '["tags","held"]') errs.push('after Sign out the store still answers Tom\'s way: ' + after.text.slice(0, 100));
+  if (out.status !== 200 || after.j.admin || JSON.stringify(Object.keys(after.j)) !== '["tags","held","taken"]') errs.push('after Sign out the store still answers Tom\'s way: ' + after.text.slice(0, 100));
   await page.evaluate(() => localStorage.setItem('ttshowcase.admin', '1')); await start(); res.out = await state();
   if (res.out.on || res.out.chip) errs.push('after Sign out the wall still shows the admin bar: ' + JSON.stringify(res.out));
   if (await page.evaluate(() => localStorage.getItem('ttshowcase.admin'))) errs.push('a stale note was not put right');
