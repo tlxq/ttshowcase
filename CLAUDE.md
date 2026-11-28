@@ -19,7 +19,9 @@ Read `brief.md` for what it is and `docs/design.md` for how it looks and moves. 
 ## Working on feel
 - One moment at a time: name the cause, change one thing, Tom judges. No rounds of options.
 - Every visual step shows the whole walk: `mise run pitch:sheet` puts each moment on master and on the branch side by side (laptop and phone, night and day). The design reviewer and Tom see it before Tom judges, so a change in one moment can't quietly hurt another.
-- Before anything is made, the idea passes the Direction page's recruiter gate. The design reviewer judges every build against that page before Tom sees it.
+- Before anything is made, the idea passes the Direction page's recruiter gate. Tom gets the look link as soon as a build runs, with one line on what is known to be rough. The design reviewer reads at the same time; its findings and Tom's go into the next round together.
+- A visual step is built in slices, one look each: first the main thing and how the camera meets it, then the light, then the surroundings. A slice is about 30 minutes of building.
+- Every build round ends with `mise run pitch:pair`: the approved picture beside the build, and master beside the branch for the moments before and after the change. The builder looks at it before reporting.
 - A visual step ends when Tom says it feels right on laptop and phone.
 - Browser checks run on the desk's graphics card: they prove look and frame speed on a laptop. Touch and phone speed are proven on the S23.
 
