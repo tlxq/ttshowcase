@@ -178,7 +178,7 @@
     STEN.mat = mat; STEN.meshes = [V(), SEAM_D].map(d => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, STEN.h), mat); m.position.set(STEN.x + d.x, STEN.y + d.y, .002); scene.add(m); return m; });
     const tl2 = new THREE.TextureLoader(LATE.mgr); let got = 0, lost = 0;
     for (let i = 0; i < STEN.n; i++) LATE.run(() => tl2.load(`assets/stencil/s${String(i).padStart(2, "0")}.webp`, t => { t.encoding = THREE.sRGBEncoding; t.anisotropy = maxAniso; STEN.frames[i] = t; LATE.up(() => { renderer.initTexture(t); LATE.got(); // each frame goes to the graphics card on its own turn, not all 22 in one frame (145 ms)
-      if (++got === STEN.n) { mat.map = STEN.frames[STEN.f]; mat.opacity = 0; STEN.t0 = performance.now(); mat.visible = true; mat.needsUpdate = true; } }); }, undefined, () => { LATE.got(); if (!lost++) console.info("The stencil is off: a frame in media/stencil didn't load."); })); }
+      if (++got === STEN.n) { mat.map = STEN.frames[STEN.f]; mat.opacity = 0; STEN.t0 = performance.now(); mat.visible = true; mat.needsUpdate = true; } }, true); }, undefined, () => { LATE.got(); if (!lost++) console.info("The stencil is off: a frame in media/stencil didn't load."); })); }
   addEventListener("pointermove", () => STEN.at = performance.now());
   function stencilTick(now, cp) { if (!STEN.mat.visible) return; const near = cp.x < -8 || cp.x > 80; STEN.meshes.forEach(m => m.visible = near); if (!near) return; STEN.mat.opacity = REDUCED ? 1 : cl((now - STEN.t0) / 700); // it comes up on its wall when its frames are in, never pops
     const step = Math.floor(now / 125); if (step === STEN.step) return; STEN.step = step;
