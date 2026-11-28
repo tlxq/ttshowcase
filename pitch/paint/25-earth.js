@@ -4,7 +4,7 @@
   // The 3D camera rides down with the earth's edge, so earth and wall are one move, and the glide ends with the edge above the frame: the earth leaves by the camera's own move, nothing slides away afterwards.
   // ?load=slow|fast sets the fake load; ?intro=old shows master's start; ?seek=<s> holds a moment; a tap skips the glide. Its pictures (pitch/assets/intro/) are not in git.
   const EARTH = (() => {
-    const REST_M = .16, E = { on: false, streamOn: false, bucketSeen: false, wall: 0, dy: 0, rest: NARROW ? .16 : 0 }, Q = new URLSearchParams(location.search), box = document.getElementById("earth"), loadEl = document.getElementById("eLoad");
+    const REST_M = .16, RX = -.3, RZ = .85, E = { on: false, streamOn: false, bucketSeen: false, wall: 0, dy: 0, rest: NARROW ? .16 : 0, rx: NARROW ? RX : 0, rz: NARROW ? RZ : 0 }, Q = new URLSearchParams(location.search), box = document.getElementById("earth"), loadEl = document.getElementById("eLoad");
     if (!box || REDUCED || Q.get("intro") === "old") { if (box) box.remove(); if (loadEl) loadEl.remove(); return E; } // reduced motion: the start as it is, no journey
     const world = document.getElementById("eWorld"), vid = document.getElementById("eVid"), strip = document.getElementById("eStrip"), soakEl = document.getElementById("eSoak"), cvM = document.getElementById("eCv"), cvS = document.getElementById("eCv2"),
       loadT = document.getElementById("eLoadT"), skipEl = document.getElementById("eSkip"), cM = cvM.getContext("2d"), cS = cvS.getContext("2d");
@@ -43,19 +43,68 @@
     const shadowTex = tex2(64, 64, (g, w, h) => { const gr = g.createRadialGradient(32, 26, 4, 32, 32, 32); gr.addColorStop(0, "rgba(0,0,0,.95)"); gr.addColorStop(.55, "rgba(0,0,0,.5)"); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
     const outlet = new THREE.Group(); outlet.name = "drainOutlet"; scene.add(outlet);
     const COLLAR_D = .085, HOLE = .108; // the collar's depth (the mouth stands this far off the wall) and the hole's radius, metres
-    const shadowD = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), decalMat(shadowTex)); shadowD.position.set(0, -.2, .002); shadowD.scale.set(.55, .38, 1); outlet.add(shadowD); // the collar's cast shadow on the wall below it
+    const shadowD = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), decalMat(shadowTex)); shadowD.position.set(0, -.19, .002); shadowD.scale.set(.6, .42, 1); outlet.add(shadowD); // the collar's cast shadow on the wall below it
     const stainD = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), decalMat(stainTex)); stainD.position.z = .003; outlet.add(stainD); stainD.material.opacity = 0;
-    const rustD = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), decalMat(rustTex)); rustD.scale.set(.022, .6, 1); rustD.position.set(.092, -.11 - .3, .0035); rustD.rotation.z = .04; outlet.add(rustD);
+    const rustD = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), decalMat(rustTex)); rustD.scale.set(.032, .6, 1); rustD.position.set(.092, -.11 - .3, .0035); rustD.rotation.z = .04; outlet.add(rustD);
     { const sh = new THREE.Shape(), N = 64; for (let i = 0; i <= N; i++) { const a = i / N * Math.PI * 2, r = .15 + .006 * Math.sin(a * 3 + 1) + .005 * (hash(i, 31) - .5) * 2 - (i % 23 < 2 ? .009 : 0); i ? sh.lineTo(Math.cos(a) * r, Math.sin(a) * r) : sh.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
       const hole = new THREE.Path(); hole.absarc(0, 0, HOLE, 0, Math.PI * 2, true); sh.holes.push(hole);
       const geo = new THREE.ExtrudeGeometry(sh, { depth: COLLAR_D, bevelEnabled: false, curveSegments: 24 });
       const face = new THREE.MeshStandardMaterial({ map: upMat.map, normalMap: upMat.normalMap, color: 0x9a9da2, roughness: .96, metalness: 0 }), bore = new THREE.MeshStandardMaterial({ color: 0x1b1c1e, roughness: .9, metalness: .1 });
       const collar = new THREE.Mesh(geo, [face, bore]); outlet.add(collar); } // ONE ring in the wall's own material, chipped; its sides (the bore) are dark: the lower inner wall catches the light, the upper half is in the collar's own shadow
     const backD = new THREE.Mesh(new THREE.CircleGeometry(HOLE + .004, 32), new THREE.MeshBasicMaterial({ color: 0x010102 })); backD.position.z = .004; outlet.add(backD); // the dark behind
+    { const ct = tex2(128, 128, (g, w, h) => { const lg = g.createLinearGradient(0, h, 0, h * .38); lg.addColorStop(0, "rgba(168,170,176,.95)"); lg.addColorStop(.35, "rgba(70,72,78,.6)"); lg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = lg; g.beginPath(); g.arc(w / 2, h / 2, w / 2, 0, 6.283); g.fill(); g.globalCompositeOperation = "destination-out"; g.beginPath(); g.arc(w / 2, h / 2 - h * .1, w * .46, 0, 6.283); g.fill(); });
+      const crescent = new THREE.Mesh(new THREE.CircleGeometry(HOLE - .002, 40), new THREE.MeshBasicMaterial({ map: ct, transparent: true, depthWrite: false })); crescent.position.z = .012; outlet.add(crescent); } // the inner wall at the bottom, lit at the lip and falling to black
     const film = new THREE.Mesh(new THREE.CylinderGeometry(HOLE - .003, HOLE - .003, COLLAR_D - .01, 28, 1, true, -1.0, 2.0), paintMat()); film.rotation.x = Math.PI / 2; film.position.z = COLLAR_D / 2 + .003; film.scale.set(1, 1, 1); film.visible = false; outlet.add(film); // a thin wet film lying in the bore, along the bottom
     outlet.visible = false;
     const tear = []; for (let i = 0; i <= 14; i++) { const y = -1 + i * .2; tear.push(new THREE.Vector2(y <= 0 ? Math.sqrt(Math.max(0, 1 - y * y)) : Math.pow(Math.max(0, 1 - y / 2), 1.7), y)); }
     const dropM = new THREE.Mesh(new THREE.LatheGeometry(tear, 14), paintMat()); dropM.visible = false; dropM.frustumCulled = false; scene.add(dropM);
+    // ---- Tom's poster and his painted name: real parts of the scene ("posterOnWall", "paintedName"), on the wall face with the outlet; lit by the scene, the wall's own normal map aligned under them; they are simply there when the view arrives
+    const planeAt = (sx, sy, z) => { const d = V(sx / innerWidth * 2 - 1, 1 - sy / innerHeight * 2, .5).unproject(camera).sub(camera.position); return camera.position.clone().add(d.multiplyScalar((z - camera.position.z) / d.z)); };
+    const posterMat = new THREE.MeshStandardMaterial({ roughness: .96, metalness: 0, transparent: true, alphaTest: .3, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, normalScale: new THREE.Vector2(.3, .3), bumpScale: .9 });
+    const poster = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), posterMat); poster.name = "posterOnWall"; poster.visible = false; scene.add(poster);
+    const posterShadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), decalMat(shadowTex)); posterShadow.visible = false; scene.add(posterShadow);
+    const nameMat = new THREE.MeshStandardMaterial({ roughness: .9, metalness: 0, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3, emissive: new THREE.Color(0xefebe1), emissiveIntensity: .16, normalScale: new THREE.Vector2(.9, .9) });
+    const paintedName = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), nameMat); paintedName.name = "paintedName"; paintedName.visible = false; scene.add(paintedName);
+    let posterAR = .73, nameAR = .36, posterTex = null, nameTex = null, pendingLayout = false;
+    const cvs = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+    const blotches = (g, w, h, n, seed, rmax, a) => { for (let i = 0; i < n; i++) { const x = hash(i, seed) * w, y = hash(i, seed + 1) * h, r = rmax * (.3 + .7 * hash(i, seed + 2)), gr = g.createRadialGradient(x, y, 0, x, y, r), light = hash(i, seed + 3) > .5; gr.addColorStop(0, `rgba(${light ? 255 : 0},${light ? 255 : 0},${light ? 255 : 0},${a})`); gr.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); } };
+    function makePoster(photo) { const m = 26, pw = 730, ph = 1000, cw = pw + 2 * m, ch = ph + 2 * m, c = cvs(cw, ch), g = c.getContext("2d");
+      g.fillStyle = "#d6d1c4"; g.fillRect(0, 0, cw, ch); blotches(g, cw, ch, 30, 301, 140, .07); // the paper
+      const bg = g.createLinearGradient(0, m, 0, m + ph); bg.addColorStop(0, "#232427"); bg.addColorStop(1, "#38393d"); g.fillStyle = bg; g.fillRect(m, m, pw, ph);
+      if (photo) { g.filter = "contrast(.94) brightness(.92)"; g.drawImage(photo, m, m, pw, ph); g.filter = "none"; }
+      blotches(g, cw, ch, 36, 311, 170, .06); // uneven paste: patches where it lies tight and where it floats
+      g.strokeStyle = "rgba(0,0,0,.2)"; g.lineWidth = 10; g.strokeRect(5, 5, cw - 10, ch - 10); // the edge darkened where it lifts
+      g.strokeStyle = "rgba(255,255,255,.2)"; g.lineWidth = 2; g.beginPath(); g.moveTo(0, ch * .61); g.lineTo(cw, ch * .605); g.stroke(); g.strokeStyle = "rgba(0,0,0,.25)"; g.beginPath(); g.moveTo(0, ch * .61 + 3); g.lineTo(cw, ch * .605 + 3); g.stroke(); // a fold
+      for (let i = 0; i < 70; i++) { g.strokeStyle = `rgba(${hash(i, 321) > .5 ? 255 : 0},${hash(i, 321) > .5 ? 255 : 0},${hash(i, 321) > .5 ? 255 : 0},.09)`; g.lineWidth = 1 + 2 * hash(i, 322); const x = hash(i, 323) * cw, y = hash(i, 324) * ch; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (hash(i, 325) - .5) * 60, y + (hash(i, 326) - .5) * 60); g.stroke(); } // wear
+      const mk = cvs(cw, ch), q = mk.getContext("2d"); q.fillStyle = "#fff"; q.beginPath(); const N = 120, inset = k => 4 + 7 * hash(k, 331) + 9 * Math.max(0, Math.sin(k * .21)) * hash(k, 332); // a torn, worn outline with a corner missing
+      for (let i = 0; i <= N; i++) { const t = i / N * 4, side = Math.floor(t) % 4, u = t - Math.floor(t), d = inset(i); let x, y; if (side === 0) { x = u * cw; y = d; } else if (side === 1) { x = cw - d; y = u * ch; } else if (side === 2) { x = (1 - u) * cw; y = ch - d; } else { x = d; y = (1 - u) * ch; }
+        if (side === 3 && u > .84) { x += (u - .84) * 520 * .6; y -= 0; } if (side === 2 && u > .8) y -= (u - .8) * 150; i ? q.lineTo(x, y) : q.moveTo(x, y); } q.closePath(); q.fill();
+      g.globalCompositeOperation = "destination-in"; g.drawImage(mk, 0, 0); g.globalCompositeOperation = "source-over";
+      posterTex = new THREE.CanvasTexture(c); posterTex.encoding = THREE.sRGBEncoding; posterAR = cw / ch; posterMat.map = posterTex;
+      const b = cvs(256, 256), bg2 = b.getContext("2d"); bg2.fillStyle = "#808080"; bg2.fillRect(0, 0, 256, 256); blotches(bg2, 256, 256, 18, 341, 90, .35); const bump = new THREE.CanvasTexture(b); bump.wrapS = bump.wrapT = THREE.RepeatWrapping; posterMat.bumpMap = bump; }
+    function makeName(word) { const fs = 300, lh = .84 * fs, pad = 24, narrowL = NARROW, probe = cvs(8, 8).getContext("2d"); probe.font = `900 ${fs}px Archivo, "Arial Black", sans-serif`; if ("fontStretch" in probe) probe.fontStretch = "expanded";
+      const lw = probe.measureText("LARSSON").width, tw = probe.measureText("TOM").width, cw = Math.ceil(lw + 2 * pad), ch = Math.ceil(2 * lh + 2 * pad), c = cvs(cw, ch), g = c.getContext("2d");
+      g.font = probe.font; if ("fontStretch" in g) g.fontStretch = "expanded"; g.fillStyle = "#efebe1"; g.textBaseline = "alphabetic"; const base1 = pad + lh * .86, base2 = base1 + lh;
+      if (narrowL) { g.textAlign = "left"; g.fillText("TOM", pad, base1); g.fillText("LARSSON", pad, base2); } else { g.textAlign = "right"; g.fillText("TOM", cw - pad, base1); g.fillText("LARSSON", cw - pad, base2); }
+      if (word) { const ww = lw * .46, wh = ww * 369 / 900, t = cvs(Math.ceil(ww), Math.ceil(wh)), tg = t.getContext("2d"); tg.drawImage(word, 0, 0, ww, wh); tg.globalCompositeOperation = "source-in"; tg.fillStyle = "rgb(36,118,214)"; tg.fillRect(0, 0, ww, wh);
+        const wx = narrowL ? pad + tw + lw * .06 : cw - pad - tw - ww - lw * .025, wy = base1 - lh * .66 - wh * .3; g.drawImage(t, wx, wy); }
+      g.globalCompositeOperation = "destination-out"; for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(0,0,0,${.25 + .5 * hash(i, 351)})`; g.beginPath(); g.arc(hash(i, 352) * cw, hash(i, 353) * ch, .8 + 2.6 * hash(i, 354), 0, 6.283); g.fill(); } blotches(g, cw, ch, 26, 361, 120, .0); // the paint's unevenness: tiny bare spots
+      g.globalCompositeOperation = "source-atop"; blotches(g, cw, ch, 40, 371, 160, .1); g.globalCompositeOperation = "source-over";
+      nameTex = new THREE.CanvasTexture(c); nameTex.encoding = THREE.sRGBEncoding; nameAR = ch / cw; nameMat.map = nameTex; nameMat.emissiveMap = nameTex; }
+    function placeWall() { camera.updateMatrixWorld(); if (!posterTex || !nameTex) { pendingLayout = true; return; } pendingLayout = false;
+      const W = innerWidth, H = innerHeight, gu = Math.max(16, W * .03), zU = -.52, zL = .004, yB = WALL_TOP + .07, bucketLeft = stBox[0] + (stBox[2] - stBox[0]) * .2, x0 = planeAt(gu, 0, zU).x; let w, h;
+      if (NARROW) { w = planeAt(Math.min(bucketLeft - 46, W * .46), 0, zU).x - x0; h = w / posterAR; } else { h = planeAt(0, .04 * H, zU).y - yB; w = h * posterAR; const xr = planeAt(.5 * W, 0, zU).x; if (x0 + w > xr) { w = xr - x0; h = w / posterAR; } }
+      poster.position.set(x0 + w / 2, yB + h / 2, zU + .004); poster.scale.set(w, h, 1); poster.rotation.z = .006; poster.visible = true;
+      posterShadow.position.set(x0 + w / 2 + .012, yB + h / 2 - .02, zU + .002); posterShadow.scale.set(w * 1.07, h * 1.05, 1); posterShadow.visible = true;
+      const nUp = (tx, wx0, wy0, ww, hh) => { const t = tex("assets/wall4_nor_gl.jpg", false, ww / TILE, hh / TILE, (wx0 - (LEDGE.x - 7)) / TILE + .3, (wy0 - WALL_TOP) / TILE + .2); return t; };
+      posterMat.normalMap = nUp(0, x0, yB, w, h); posterMat.needsUpdate = true;
+      let nx, ny, nz, nw, nh;
+      if (!NARROW) { const xr = planeAt(W - gu, 0, zU).x; nw = xr - planeAt(W - gu - .4 * W, 0, zU).x; nh = nw * nameAR; const yt = planeAt(0, .06 * H, zU).y; nx = xr - nw / 2; ny = yt - nh / 2; nz = zU + .006; nameMat.normalMap = nUp(0, nx - nw / 2, ny - nh / 2, nw, nh); }
+      else { const xl = planeAt(gu, 0, zL).x; nw = planeAt(W - gu, 0, zL).x - xl; nh = nw * nameAR; const yb = planeAt(0, H - 104, zL).y; nx = xl + nw / 2; ny = yb + nh / 2; nz = zL;
+        nameMat.normalMap = tex("assets/wall4_nor_gl.jpg", false, nw / TILE, nh / TILE, (xl - (WX - WW / 2)) / TILE, (yb - (GROUND - 2 * TILE)) / TILE); }
+      paintedName.position.set(nx, ny, nz); paintedName.scale.set(nw, nh, 1); paintedName.visible = true; nameMat.needsUpdate = true; E.art = { w, h, nw, nh }; }
+    Promise.all([new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = "assets/start/studio.webp"; }), new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = "assets/start/portfolio.webp"; }), document.fonts.load('900 100px "Archivo"').catch(() => {})])
+      .then(([photo, word]) => { makePoster(photo); makeName(word); if (pendingLayout || glide) placeWall(); });
     // ---- the bucket: rougher metal with dents, paint drips on the rim and side, a contact shadow on the ledge
     { const dent = tex2(256, 128, (g, w, h) => { g.fillStyle = "#808080"; g.fillRect(0, 0, w, h); for (let i = 0; i < 46; i++) { const x = hash(i, 51) * w, y = hash(i, 52) * h, r = 5 + 20 * hash(i, 53), gr = g.createRadialGradient(x, y, 0, x, y, r); const d = hash(i, 54) > .5; gr.addColorStop(0, d ? "rgba(30,30,30,.55)" : "rgba(230,230,230,.4)"); gr.addColorStop(1, "rgba(128,128,128,0)"); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }  }); dent.encoding = THREE.LinearEncoding;
       metal.color.setHex(0x7b8086); metal.roughness = .52; metal.metalness = .82; metal.envMapIntensity = .45; metal.bumpMap = dent; metal.bumpScale = .1; metal.clearcoat = .1; metal.needsUpdate = true;
@@ -117,7 +166,7 @@
       if (!started && (vid.readyState >= 3 || now - boot > 1800)) { started = true; vid.play().catch(() => {}); }
       if (SEEK !== null) { started = true; if (et !== SEEK) { et = lt = SEEK; vid.pause(); vid.currentTime = clamp(et, 0, 5.9); } } else if (started) { et += dt * rate; lt += dt; }
       const W = innerWidth, H = innerHeight, s = Math.max(W / FILM_W, H / FILM_H), xOff = (W - FILM_W * s) * (NARROW ? CAN_SHIFT : .5), bucketTop = topNow0(), Ew = STRIP_Y + stripH, key = W + "x" + H;
-      if (key !== shapeKey) { shapeKey = key; const gapOld = clamp(bucketTop - GAP_UP * H, GAP_MIN * H, GAP_MAX * H); placeOutlet(clamp(bucketTop - OUT_UP * H, .3 * H, .5 * H));
+      if (key !== shapeKey) { shapeKey = key; const gapOld = clamp(bucketTop - GAP_UP * H, GAP_MIN * H, GAP_MAX * H); placeOutlet(clamp(bucketTop - OUT_UP * H, .3 * H, .5 * H)); placeWall();
         const yRest = Math.min(proj0(O.x, yEdge3, -.52)[1], -.08 * H); cam1 = Ew - EDGE_UP - yRest / s; glide = buildGlide(cam1, s, (Ew - gapOld / s) * s / SPEED + TR - (J0 - J0_OLD)); Tj = glide.T; }
       if (skipping && et >= J0 + Tj + 1.1) { skipping = false; rate = 1; vid.playbackRate = 1; }
       const camJ = camAt(et - J0), cam = camJ, fa = J0 + Tj + 1.1, dripA = J0 + Tj - .4, rt = readyAt ? (now - readyAt) / 1000 - (NARROW ? .6 : LEAVE_AT) : -1, lv = ease(clamp(rt / LEAVE_D));
@@ -134,7 +183,7 @@
       wallLight.intensity = (goAt ? 1.8 : 3.4 * wk); if (edgeNow < -200 && box.style.display !== "none") box.style.display = "none";
       // the outlet's life: paint wells in the mouth, a stain grows under it and stays; the bead swells at the lip, necks, lets go and falls into the bucket's mouth; again and again until the thread starts, and a rare late drop after the fill
       mouthK = Math.max(mouthK, clamp((et - dripA + .5) / 1.4)); film.visible = mouthK > .05; film.material.opacity = 1; film.scale.set(1, 1, .6 + .4 * (readyAt ? .7 : mouthK));
-      paintCoat.color.copy(SOILBLUE).multiplyScalar(.15); paintCoat.emissive.copy(SOILBLUE).multiplyScalar(.8); { const dv = readyAt || level > .8; for (const m of E.drips) m.visible = dv; } if (NARROW) { E.rest = goAt ? Math.max(0, E.rest - dt * .3) : REST_M; } paintCoat.envMapIntensity = 0; paintCoat.clearcoat = 0; paintIn.color.copy(SOILBLUE).multiplyScalar(.15); paintIn.emissive.copy(SOILBLUE).multiplyScalar(.95); paintIn.envMapIntensity = 0; filmMat.color.copy(SOILBLUE).multiplyScalar(.15); filmMat.emissive.copy(SOILBLUE).multiplyScalar(.9); if (E.shadow) E.shadow.visible = !goAt; if (readyAt) mouthK = Math.min(mouthK, .65);
+      paintCoat.color.copy(SOILBLUE).multiplyScalar(.15); paintCoat.emissive.copy(SOILBLUE).multiplyScalar(.8); { const dv = readyAt || level > .8; for (const m of E.drips) m.visible = dv; } if (NARROW) { E.rest = goAt ? Math.max(0, E.rest - dt * .3) : REST_M; E.rx = goAt ? Math.min(0, E.rx + dt * .3) : RX; E.rz = goAt ? Math.max(0, E.rz - dt * .6) : RZ; } paintCoat.envMapIntensity = 0; paintCoat.clearcoat = 0; paintIn.color.copy(SOILBLUE).multiplyScalar(.15); paintIn.emissive.copy(SOILBLUE).multiplyScalar(.95); paintIn.envMapIntensity = 0; filmMat.color.copy(SOILBLUE).multiplyScalar(.15); filmMat.emissive.copy(SOILBLUE).multiplyScalar(.9); if (E.shadow) E.shadow.visible = !goAt; if (readyAt) mouthK = Math.min(mouthK, .65);
       stainK = Math.max(stainK, clamp((et - dripA) / 6) * .95); stainD.material.opacity = Math.min(1, stainK);
       const growT = .55, fallT = .42; let ph = -1, kind = 0; if (!E.streamOn && et > dripA && !readyAt) ph = ((et - dripA) % DROP_PERIOD + DROP_PERIOD) % DROP_PERIOD; else if (readyAt && !goAt) { const q = (now - readyAt) / 1000 - LATE_FIRST; if (q > 0) { ph = q % LATE_PERIOD; kind = 1; } }
       const live = ph >= 0 && ph < growT + fallT; dropM.visible = live;
@@ -146,7 +195,7 @@
       // the quiet line: the load from the first frame; "Tap to skip" after a second until the thread starts (not on the slow line, where a tap cannot skip the load); the plate steps aside while a phone's name comes up
       const ready2 = readyAt && (now - readyAt) > 300, txt = ready2 ? "Tip the bucket to enter" : `Loading the wall · ${Math.min(readyAt ? 100 : 99, Math.round(cNow * 100))} %`; if (txt !== loadT.textContent) loadT.textContent = txt;
       loadEl.style.opacity = goAt ? 0 : 1; skipEl.style.opacity = !SLOW && lt > 1 && !E.streamOn && !skipping ? .8 : 0;
-      if (goAt) { if (!E.gone) E.gone = performance.now(); else if (performance.now() - E.gone > 1500) { box.remove(); loadEl.remove(); thread.visible = false; beads.forEach(b => b.visible = false); dropM.visible = false; startEl.style.clipPath = ""; startEl.style.transform = ""; E.on = false; E.dy = 0; E.rest = 0; document.documentElement.classList.remove("earth-on"); } }
+      if (goAt) { if (!E.gone) E.gone = performance.now(); else if (performance.now() - E.gone > 1500) { box.remove(); loadEl.remove(); thread.visible = false; beads.forEach(b => b.visible = false); dropM.visible = false; startEl.style.clipPath = ""; startEl.style.transform = ""; E.on = false; E.dy = 0; E.rest = 0; E.rx = 0; E.rz = 0; document.documentElement.classList.remove("earth-on"); } }
     };
     return E;
   })();

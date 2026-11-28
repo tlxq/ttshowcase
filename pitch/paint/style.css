@@ -220,5 +220,4 @@ html.flow .stripe { opacity: 0; visibility: hidden; }
 html:not(.earth-on) .eLoad { display: none; }
 html.earth-on .start .num, html.earth-on .start .go { display: none; }
 html.earth-on .stripe, html.earth-on .stk { opacity: 0 !important; transition: none; }
-html.earth-on .start img, html.earth-on .start h2, html.earth-on .start .word { opacity: var(--kin, 0); transition: none; }
-html.earth-on[data-narrow="1"] .start img { transform-origin: 50% 0; scale: .6; -webkit-mask-image: linear-gradient(#000 95%, transparent); mask-image: linear-gradient(#000 95%, transparent); }
+html.earth-on .start img, html.earth-on .start h2, html.earth-on .start .word { display: none; } /* the poster and the painted name are in the scene now; the page keeps its real heading */
