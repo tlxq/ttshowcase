@@ -23,7 +23,7 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
   const mailsBefore = (await api('/api/tags-local/mails')).j.length;
   const pub = await api('/api/tags'), asked = await api('/api/tags?admin=1');
   res.public = { keys: Object.keys(pub.j), cc: pub.cc };
-  if (JSON.stringify(Object.keys(pub.j)) !== '["tags","held"]' || pub.j.tags.length !== 1 || pub.j.held.length !== 1 || asked.text !== pub.text) errs.push('without the cookie the store did not answer as before: ' + pub.text.slice(0, 200) + ' | ' + asked.text.slice(0, 200));
+  if (JSON.stringify(Object.keys(pub.j)) !== '["tags","held","taken"]' || pub.j.tags.length !== 1 || pub.j.held.length !== 1 || pub.j.taken.length !== 2 /* every tag's spot, numbers only (11-28) */ || pub.j.taken.some(s => s.length !== 4) || asked.text !== pub.text) errs.push('without the cookie the store did not answer as before: ' + pub.text.slice(0, 200) + ' | ' + asked.text.slice(0, 200));
   if (!/public/.test(pub.cc || '')) errs.push('the public answer lost its cache header: ' + pub.cc);
   const wrong = await api('/api/admin', 'POST', { key: 'not-the-key' }, ours), plain = await api('/api/admin', 'POST', { key: KEY }), cold = await api('/api/tags?admin=1', 'POST', { do: 'approve', id: seeded.id }, ours);
   res.refused = [wrong.status, plain.status, cold.status];

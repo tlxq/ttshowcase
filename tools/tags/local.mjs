@@ -100,7 +100,8 @@ async function seed(n) {
   for (let i = 0; i < n; i++) {
     const w = 2.4,
       h = 1.35;
-    const id = await world.deps.db.insert({
+    // put up as Tom's own tags are (insertUp): the seed is a speed test's full wall, its random spots may overlap, which a visitor's send no longer may
+    await world.deps.db.insertUp({
       name: i % 3 ? "" : "Seed " + i,
       strokes: strokes(),
       x: -16 + w / 2 + rnd() * (9 - w),
@@ -109,9 +110,8 @@ async function seed(n) {
       h,
       turn: 0,
       device: "seed-" + i + "-" + randomBytes(8).toString("hex"),
-      ip_hash: "seed",
+      status: "up",
     });
-    await world.deps.db.approve(id);
   }
 }
 
