@@ -25,7 +25,7 @@
       for (const x of [88, 168, 344, 424]) { g.fillStyle = "rgba(70,64,52,.5)"; g.fillRect(x - 5, 80, 10, 860); g.fillStyle = "rgba(60,56,46,.7)"; g.fillRect(x - 14, 480, 28, 40); } return c; })(), false);
     const bodyM = new THREE.MeshStandardMaterial({ map: bodyT, roughness: .66, metalness: .08, envMapIntensity: .25 }), endM = new THREE.MeshStandardMaterial({ map: endT, roughness: .66, metalness: .08, envMapIntensity: .25 });
     const steel = new THREE.MeshStandardMaterial({ color: 0xb3ae9e, roughness: .55, metalness: .15, envMapIntensity: .25 }), grey = new THREE.MeshStandardMaterial({ color: 0x3b3e43, roughness: .6, metalness: .5 }), cast = new THREE.MeshStandardMaterial({ color: 0x9d9889, roughness: .6, metalness: .25, envMapIntensity: .25 });
-    const group = new THREE.Group(); scene.add(group);
+    const group = new THREE.Group(); group.name = "building-site"; scene.add(group);
     const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); group.add(m); return m; };
     // the ribbed front: a strip of flat quads, each with the normal of its slope (non-indexed: every quad its own)
     { const pos = [], nor = [], uv = [], zAt = s => ZF + RIB_D * rib(s);

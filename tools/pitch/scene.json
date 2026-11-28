@@ -1,0 +1,52 @@
+{
+  "laptop": {
+    "lights": [
+      "DirectionalLight",
+      "HemisphereLight",
+      "PointLight",
+      "PointLight",
+      "PointLight",
+      "PointLight",
+      "PointLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "back-door-lamp"
+    ],
+    "named": ["building-site"]
+  },
+  "phone": {
+    "lights": [
+      "DirectionalLight",
+      "HemisphereLight",
+      "PointLight",
+      "PointLight",
+      "PointLight",
+      "PointLight",
+      "PointLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "SpotLight",
+      "back-door-lamp"
+    ],
+    "named": ["building-site"]
+  }
+}

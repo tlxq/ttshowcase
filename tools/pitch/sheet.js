@@ -67,6 +67,16 @@ async (page) => {
   // pointer move it shows the frame the pointer's side picks. So the pointer rests in the middle (frame 11) before the wait,
   // and moves there again 300 ms before the picture: the same pose every time, on both builds (audit S-pose).
   const pose = async () => { await page.mouse.move(W / 2, H / 2); await page.waitForTimeout(300); await page.mouse.move(W / 2 + 1, H / 2); await page.mouse.move(W / 2, H / 2); await page.waitForTimeout(300); };
+  // pitch:pair (tools/pitch/pair.sh): only the scroll positions it names, as sv<n>, straight from the settled start; empty = the whole sheet
+  const ONLY = __ONLY__;
+  if (ONLY.length) {
+    for (const sv of ONLY) {
+      await page.evaluate((sv) => scrollTo(0, svY(sv)), sv);
+      await page.waitForTimeout(sv >= 700 ? 3200 : 1800);
+      await shot("sv" + sv);
+    }
+    return JSON.stringify({ errs });
+  }
   await shot("01-start");
   await page.evaluate(() => scrollTo(0, (window.visitY ? visitY() : 0) + (svY(0) - (window.visitY ? visitY() : 0)) * 0.55)); // master's page before #80 has no visitY: its top is the visitors' wall
   await page.waitForTimeout(2200);

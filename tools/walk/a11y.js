@@ -5,7 +5,7 @@ async page=>{ const errs=[], res={errs};
  // The 404 page (a static host serves it at /404.html) has a tab title of its own, not the bare address.
  await page.goto('__WALK_URL__/404.html'); await page.waitForTimeout(800);
  res.notFoundTitle=await page.title();
- if(res.notFoundTitle!=='Page not found, Tom Larsson') errs.push('the 404 page title is "'+res.notFoundTitle+'"');
+ if(res.notFoundTitle!=='Page not found · Tom Larsson') errs.push('the 404 page title is "'+res.notFoundTitle+'"');
  if(!(await page.evaluate(()=>/Nothing painted here/.test(document.body.innerText)))) errs.push('/404.html is not the 404 page');
  res.notFound=await page.evaluate(()=>{ const ways=[...document.querySelectorAll('main a')], a=ways[0], r=a&&a.getBoundingClientRect(), p=document.querySelector('.lk-missing-path span'), s=p&&getComputedStyle(p);
   return {ways:ways.map(w=>w.textContent.trim()), tapH:r&&Math.round(r.height), labelPx:a&&parseFloat(getComputedStyle(a).fontSize), struck:!!s&&s.textDecorationLine==='line-through', addressPx:s&&parseFloat(s.fontSize), sayPx:parseFloat(getComputedStyle(document.querySelector('.lk-missing-say')).fontSize), noBar:!p||getComputedStyle(p,'::after').content==='none', hasTag:!!document.querySelector('.lk-missing-tag svg, .lk-missing-tag canvas, .lk-missing-tag img, .lk-missing-tag [data-hand]')}; });
