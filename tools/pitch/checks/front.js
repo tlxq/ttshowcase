@@ -33,7 +33,7 @@ async page => { const W = page.viewportSize().width, errs = [], res = { errs, st
   await page.route('**/api/contact', r => r.fulfill({ status: 403, contentType: 'application/json', body: '{"error":"robot"}' }));
   await page.click('#mail button'); await page.waitForTimeout(800);
   res.robot = await page.evaluate(() => document.getElementById('mailErr').textContent);
-  if (!/browser check didn't pass/.test(res.robot) || /mail service/.test(res.robot)) errs.push('a send BotID refuses does not say so: ' + res.robot);
+  if (!/browser check didn't pass/.test(res.robot) || !/hello@ttdevs\.com/.test(res.robot) || /mail service/.test(res.robot)) errs.push('a send BotID refuses does not say so: ' + res.robot);
   await page.unroute('**/api/contact');
   // every link, button and field is a 48 px tap (signum K4), and no two links read the same to a screen reader (Tom 11-24, audit 4b)
   res.taps = await page.evaluate(() => [...document.querySelectorAll('a, button, input:not([tabindex="-1"]), textarea')].filter(e => e.getClientRects().length).map(e => ({ n: (e.getAttribute('aria-label') || e.textContent || e.name).trim().slice(0, 30), h: Math.round(e.getBoundingClientRect().height), href: e.getAttribute('href') })));

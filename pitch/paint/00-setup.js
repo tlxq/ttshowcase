@@ -31,8 +31,8 @@
   // shows (a painting's fade-up starts when its picture is in; the stencil fades in), so nothing pops in.
   const LATE = { mgr: new THREE.LoadingManager(), q: [], on: false, left: 0, done: 0, run(f) { this.left++; const g = () => { f(); }; this.on ? g() : this.q.push(g); },
     start() { if (this.on) return; this.on = true; this.q.splice(0).forEach(g => g()); },
-    // a picture goes to the graphics card one at a time, 120 ms apart: thirty at once cost a frame of 200 ms (tagsfull), one costs a few ms
-    ups: [], up(f) { this.ups.push(f); if (!this.tm) this.tm = setTimeout(() => this.next(), 120); }, next() { const f = this.ups.shift(); this.tm = 0; if (f) f(); if (this.ups.length) this.tm = setTimeout(() => this.next(), 120); }, got() { if (++this.done === this.left) document.documentElement.dataset.lateDone = Math.round(performance.now()); } };
+    // a picture goes to the graphics card one at a time, 120 ms apart: thirty at once cost a frame of 200 ms (tagsfull), one costs a few ms. `after` (the stencil's 22 frames, which the walk shows only at its far end) goes behind everything else: ahead of the paintings they held the first stop's label back to 5.5 to 6.1 s on the phone, 3.3 s without them (endwaits, 11-28)
+    ups: [], rest: [], up(f, after) { (after ? this.rest : this.ups).push(f); if (!this.tm) this.tm = setTimeout(() => this.next(), 120); }, next() { const f = this.ups.shift() || this.rest.shift(); this.tm = 0; if (f) f(); if (this.ups.length || this.rest.length) this.tm = setTimeout(() => this.next(), 120); }, got() { if (++this.done === this.left) document.documentElement.dataset.lateDone = Math.round(performance.now()); } };
   const imLate = new THREE.ImageLoader(LATE.mgr);
   // each picture is loaded and sent to the graphics card once; every surface that uses it shares it (own repeat/offset only)
   const texCache = {};
@@ -63,7 +63,7 @@
   // but the page is shorter: a wall holds ~20-25 vh of scroll, a move between walls about half what it took. PACE: [sv, vh down the page below the park];
   // straight between pairs, so a move keeps its own easing. The checks scroll with svY(sv), which reads it.
   const PACE = [[0, 0], [60, 61], [240, 86], [304, 106], [340, 111], [416, 136], [486, 161], [529, 181], [548, 186], [612, 208], [656, 221], [700, 239], /* 612-656: through the garage door, a little quicker */ [725, 253], [770, 281], [795, 301],
-    [840, 331], [865, 351], [910, 381], [935, 401], [1045, 451], [1058, 476], /* the street past EDGE (Tom 11-27, audit N-2): the camera walks 16 m along a dark street to the end wall; it had 50 vh, 23 of them in the black middle, now 14 at one even rate (the move itself is eased in 80-admin.js) */ [SV_MAX - 10, 490], [SV_MAX, 498]], WALK = PACE[PACE.length - 1][1];
+    [840, 331], [865, 351], [910, 381], [935, 401], [965, 415], /* EDGE (audit N-1, 11-28): the camera stands still from 965 to 1058; it had 61 vh for that, a quarter of it a leftover pair before the street's move, now 27: about the long end of the other stops */ [1045, 437], [1058, 442], /* the street past EDGE (Tom 11-27, audit N-2): the camera walks 16 m along a dark street to the end wall; it had 50 vh, 23 of them in the black middle, now 14 at one even rate (the same 14 after the cut above) (the move itself is eased in 80-admin.js) */ [SV_MAX - 10, 456], [SV_MAX, 464]], WALK = PACE[PACE.length - 1][1];
   const paceOf = (v, a, b) => { if (v <= PACE[0][a]) return PACE[0][b]; for (let i = 1; i < PACE.length; i++) if (v <= PACE[i][a]) { const [p, q] = [PACE[i - 1], PACE[i]]; return p[b] + (q[b] - p[b]) * (v - p[a]) / (q[a] - p[a]); } return PACE[PACE.length - 1][b]; };
   const UP = 90, TOP = 50, PAGE = TOP + UP + WALK + 100, track = document.querySelector(".track"), upPx = () => track.offsetHeight * (TOP + UP) / PAGE, topPx = () => track.offsetHeight * TOP / PAGE;
   track.style.height = PAGE + "vh"; // the stylesheet says the same, for the first paint
