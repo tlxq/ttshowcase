@@ -77,7 +77,7 @@
       x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0)); x1 = Math.min(L.sw, Math.ceil(x1)); y1 = Math.min(L.sh, Math.ceil(y1));
       if (!(x1 > x0 && y1 > y0)) { x0 = y0 = 0; x1 = y1 = 1; } yield emit(i, c, [x0, y0, x1 - x0, y1 - y0], boxes); } } // every stretch reports, even one whose paint fell off it
   // One layer is a set of tags painted into the wall's stretches. The hand words (and ?tags=full) are one layer; visitors' approved tags are another, made once the store has answered.
-  const WLS = [], wallLayer = (tags, z) => { const px = NARROW ? 96 : 128, n = 12, sw = Math.round(WW / n * px); // 12 stretches of 7.5 m, the wall's full height
+  const WLS = [], wallLayer = (tags, z, order = -1) => { const px = NARROW ? 96 : 128, n = 12, sw = Math.round(WW / n * px); // 12 stretches of 7.5 m, the wall's full height
     const L = { px, sw, sh: Math.round(WH * px), x0: WX - WW / 2, y1: WALL_TOP, st: [...Array(n)].map(() => ({ tags: [] })) };
     tags.forEach((T, ti) => { const r = T.w / 2 + .8, a = Math.floor(((T.x - r) - L.x0) * px / sw), b = Math.floor(((T.x + r) - L.x0) * px / sw);
       for (let i = Math.max(0, a); i <= Math.min(n - 1, b); i++) { L.st[i].tags.push(ti); T.st.push(i); } });
@@ -87,7 +87,7 @@
       const mat = wallBump(new THREE.MeshPhysicalMaterial({ map: wallEmpty, transparent: true, depthWrite: false, alphaTest: .004, roughness: .25, clearcoat: .8, clearcoatRoughness: .15, // alphaTest: bare wall stops before the light is worked out
         normalMap: tex("assets/wall4_nor_gl.jpg", false, 1, 1), normalScale: new THREE.Vector2(.6, .6), polygonOffset: true, polygonOffsetFactor: -3 }));
       const me = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat); me.position.set(L.x0 + (i + .5) * sw / px, (WALL_TOP + GROUND) / 2, z); me.scale.set(.01, .01, 1);
-      me.renderOrder = -1; scene.add(me); return me; }); // under everything else on the wall: the poured line, the runs (sorted by distance they swapped places as the camera moved: flicker, Tom 11-17)
+      me.renderOrder = order; scene.add(me); return me; }); // its own place in the drawing order, never the same as the pour's (sorted by distance they swapped places as the camera moved: flicker, Tom 11-17): Tom's own old tags under everything (-1), the visitors' tags over the bucket's leftover paint (Tom 11-27)
     const W = { L, tags, meshes, up: [], done: 0, want: L.st.filter(S => S.tags.length).length }; WLS.push(W); return W; };
   const wallEmpty = new THREE.DataTexture(new Uint8Array(4), 1, 1); wallEmpty.encoding = THREE.sRGBEncoding; wallEmpty.needsUpdate = true;
   const WL = wallLayer(WALL_TAGS.tags.map(([word, x, y, w, turn, k, col]) => ({ word, x, y, w, turn, k, col, st: [] })), .002);

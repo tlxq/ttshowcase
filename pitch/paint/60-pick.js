@@ -89,9 +89,10 @@
   // Lit = may be tagged; dark = kept clear (the title, the line's run to the drain, the bucket's ledge). Tap a lit part: that is the spot (Tom 11-18:
   // tap = your spot, draw at once); the camera flies in close, the wall dims round a work light on it (one dark sheet with a hole, no extra light:
   // every light costs a frame on the T14s) and the drawing starts. Move it goes back to the wide shot, the paint kept. One frame size for everyone,
-  // a real tag's size (Tom 11-18: 2.4 x 1.35 m, filling most of the screen close in). Tags are never removed: a new tag may go over an approved one, which stays
-  // visible under it (Tom 11-17), so only kept-clear areas and the spots waiting tags hold (from the store) turn the frame yellow.
+  // a real tag's size (Tom 11-18: 2.4 x 1.35 m, filling most of the screen close in). Tags are never removed and never covered (Tom 11-27): kept-clear areas, the spots waiting tags hold
+  // and the spots approved tags have (both from the store) turn the frame yellow. When no spot is left the area grows along the wall to the left (areaGrow), a step at a time, to the wall's end.
   const FRAME = { w: 2.4, h: 1.35 }, AREA = { x0: VISITOR_WALL.x0, x1: 8.5, y0: GROUND + .4, y1: WALL_TOP - 1 }; // x1: short of the step down to the epaRadar wall
+  const AREA_BASE = AREA.x0, AREA_END = WX - WW / 2 + .5 /* the wall's own left end, with a little air */, AREA_STEP = FRAME.w + .5; // one more column of tags a step
   let CLEAR = []; // kept-clear boxes [x0, y0, x1, y1], made when the tool opens
   // Kept clear is the wall's, not the moment's or the screen's (Tom 11-23): a tag is saved in metres and shown on every screen, by night and
   // by day, so every part ever painted or pasted on this wall stays clear on every device: the mural and the bucket's ledge in both
@@ -99,12 +100,15 @@
   function clearBoxes() { const m = .3, b = [];
     for (const M of NARROW ? [MURALS.narrow, MURALS.wide] : [MURALS.wide, MURALS.narrow]) { /* this screen's mural first: CLEAR[0] is the title (pickTest) */ const lx = -M.ledge - .55; b.push([M.cx - M.w / 2 - m, M.cy - M.h / 2 - m, M.cx + M.w / 2 + m, M.cy + M.h / 2 + m], [lx - 1.2, WALL_TOP - 2, lx + 1.6, WALL_TOP], [lx - 1.9, GROUND - .3, lx + 1.9, GROUND + 1.5] /* where the bucket lands and lies after its fall */, [M.hand.cx - M.hand.w / 2 - m, M.hand.top - M.hand.h - m, M.hand.cx + M.hand.w / 2 + m, M.hand.top + m]); } // the piece, the bucket's ledge and the hand line under the piece
     for (const L of Object.values(OLD_WORDS)) for (const [, x, y, w, h] of L) b.push([x - w / 2 - m, y - h / 2 - m, x + w / 2 + m, y + h / 2 + m]); // the old words (Tom 11-28)
-    if (creep) { const c = new THREE.Box3().setFromObject(creep.mesh); b.push([c.min.x - .2, c.min.y - .2, c.max.x + .2, c.max.y + .2]); }
+    // the bucket's leftover paint (runs, drips, splash, puddle, the run to the drain) is not kept clear: a tag may sit on it (Tom 11-27)
     const calm = .6, box = o => { const c = new THREE.Box3().setFromObject(o); return [c.min.x - m, c.min.y - m, c.max.x + m, c.max.y + m]; };
     b.push([eU(E.flyer[0]) - calm, GROUND - .2, eU(E.flyer[2]) + calm, eV(E.flyer[1]) + calm], box(vWords), box(vCan3), ...BOMB_CLEAR); return b; }
   const inArea = (x, y) => [cl(x, AREA.x0 + FRAME.w / 2, AREA.x1 - FRAME.w / 2), cl(y, AREA.y0 + FRAME.h / 2, AREA.y1 - FRAME.h / 2)];
   const hits = (x, y) => c => x + FRAME.w / 2 > c[0] && x - FRAME.w / 2 < c[2] && y + FRAME.h / 2 > c[1] && y - FRAME.h / 2 < c[3];
-  const keptBy = (x, y) => CLEAR.some(hits(x, y)) ? "clear" : HELD.some(hits(x, y)) ? "held" : null, kept = (x, y) => !!keptBy(x, y); // HELD: where a waiting tag of someone else is (the store); it stays lit, only the frame turns yellow
+  const keptBy = (x, y) => CLEAR.some(hits(x, y)) ? "clear" : HELD.some(hits(x, y)) ? "held" : TAKEN.some(hits(x, y)) ? "taken" : null, kept = (x, y) => !!keptBy(x, y); // HELD: where a waiting tag of someone else is, TAKEN: where an approved tag is (the store); they stay lit, only the frame turns yellow
+  const freeSpot = near => { let best = null, bd = 1e9; for (let x = AREA.x0 + FRAME.w / 2; x <= AREA.x1 - FRAME.w / 2; x += .25) for (let y = AREA.y0 + FRAME.h / 2; y <= AREA.y1 - FRAME.h / 2; y += .25) { const d = Math.hypot(x - near[0], y - near[1]); if (d < bd && !kept(x, y)) { bd = d; best = [x, y]; } } return best; };
+  // the wall is full (no spot left for a frame): the area grows along the wall, so no tag is ever covered or removed (Tom 11-27). It never shrinks during a visit.
+  function areaGrow() { if (!CLEAR.length) return; while (AREA.x0 > AREA_END && !freeSpot([AREA.x0, 3])) AREA.x0 = Math.max(AREA_END, AREA.x0 - AREA_STEP); }
   const pickEl = document.getElementById("pick"), pickDim = pickEl.querySelector(".dim"), pickOv = pickEl.querySelector(".ov"), pickFrame = document.getElementById("pickFrame"), pickHint = document.getElementById("pickHint"),
     pickCancel = document.getElementById("pickCancel"), tagMoveB = document.getElementById("tagMoveB");
   const pick = { mode: 0, from: null, t0: 0, dur: 1, k: 0, fog: 0, x: 0, y: 0, cx: 0, cy: 0, ox: 0, drag: null, pan: null, locked: false, ui: false, r: 0, fw: FRAME.w, fh: FRAME.h, rot: 0, last: [V(), V()] }; // fw, fh, rot: the frame's own size and turn (Tom's wall picks a tag up in it)
@@ -116,16 +120,16 @@
   const ovX = x => { const h = ovHalf(), a = AREA.x0 + h - .75, b = AREA.x1 - h + .75; return a > b ? (AREA.x0 + AREA.x1) / 2 : cl(x, a, b); };
   const closeD = () => Math.max(FRAME.w / ((NARROW ? .92 : .8) * 2 * th() * camera.aspect), FRAME.h / (.7 * 2 * th())); // the frame fills ~a third of a laptop screen, most of a phone's width
   function pickShow() { const why = keptBy(pick.x, pick.y), t = !!why, m = pick.mode; if (m < 0) return; /* on the way back the last words stay while they fade */ pickFrame.classList.toggle("taken", t); pickFrame.classList.toggle("locked", pick.locked); pickFrame.classList.toggle("small", m === 1);
-    pickFrame.setAttribute("aria-valuetext", why === "held" ? "someone is tagging here" : t ? "kept clear" : "free"); tagMoveB.hidden = m !== 2 || tag.stage !== "draw";
+    pickFrame.setAttribute("aria-valuetext", why === "held" ? "someone is tagging here" : why === "taken" ? "a tag is here" : t ? "kept clear" : "free"); tagMoveB.hidden = m !== 2 || tag.stage !== "draw";
     tagBar.hidden = m !== 2 || tag.stage !== "draw"; tagSend.hidden = m !== 2 || tag.stage !== "send" || !!tag.play; if (tagBar.hidden) tagMenus(); // wide: tapping the wall is the step, no buttons
-    pickHint.textContent = tag.stage === "draw" ? (tag.full ? "That's all the paint one tag holds. Undo a stroke or press Done." : "Draw your tag inside the frame.") : tag.stage === "send" ? (tag.play ? "Your tag, once more." : tag.err ? "Couldn't keep your tag: this browser doesn't let the page save it. Try again, or Cancel." : "Add a name if you like, then put it on the wall.") : m === 1 && pick.nope && t ? (why === "held" ? "Someone's tagging here. Pick another spot." : "This part stays clear. Tap a lit part of the wall.")
+    pickHint.textContent = tag.stage === "draw" ? (tag.full ? "That's all the paint one tag holds. Undo a stroke or press Done." : "Draw your tag inside the frame.") : tag.stage === "send" ? (tag.play ? "Your tag, once more." : tag.err ? "Couldn't keep your tag: this browser doesn't let the page save it. Try again, or Cancel." : "Add a name if you like, then put it on the wall.") : m === 1 && pick.nope && t ? (why === "held" ? "Someone's tagging here. Pick another spot." : why === "taken" ? "A tag is here already. Pick another spot." : "This part stays clear. Tap a lit part of the wall.")
       : "Tap a lit part of the wall where your tag goes." + (ovHalf() * 2 < AREA.x1 - AREA.x0 ? " Swipe to see more of it." : ""); admPaint(); }
   function pickGo(m, dur) { pick.from = [pick.last[0].clone(), pick.last[1].clone()]; pick.t0 = performance.now(); pick.mode = m; pick.dur = dur; pick.pan = null;
     pick.ui = false; if (m <= 0) document.documentElement.classList.remove("flow"); /* only when the flow ends: between its steps the stripe stays away */ pickEl.classList.remove("on"); pickEl.setAttribute("aria-hidden", true); pickEl.inert = true; pickFrame.tabIndex = -1; pickShow(); }
   function pickAt(x, y) { [pick.x, pick.y] = inArea(x, y); pickShow(); }
   const PICK_NEAR = [-6.5, 3.5]; let pickNear = PICK_NEAR;
-  document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); const near = pickNear; pickNear = PICK_NEAR; if (pick.mode) return; if (adm.on) { admOpen(); return; } CLEAR = clearBoxes(); tagStore(false);
-    let best = null, bd = 1e9; for (let x = AREA.x0 + FRAME.w / 2; x <= AREA.x1 - FRAME.w / 2; x += .25) for (let y = AREA.y0 + FRAME.h / 2; y <= AREA.y1 - FRAME.h / 2; y += .25) { const d = Math.hypot(x - near[0], y - near[1]); if (d < bd && !kept(x, y)) { bd = d; best = [x, y]; } }
+  document.getElementById("leave").addEventListener("click", e => { e.preventDefault(); const near = pickNear; pickNear = PICK_NEAR; if (pick.mode) return; if (adm.on) { admOpen(); return; } CLEAR = clearBoxes(); areaGrow(); tagStore(false);
+    const best = freeSpot(near);
     [pick.x, pick.y] = best || [-12, 3]; pick.ox = ovX(NARROW ? pick.x : 0); pick.locked = false; pickGo(1, 1.4); // the first spot offered: free, beside the opening, where the first screen looks (from the visitors' wall: on it)
     root.style.overflow = "hidden"; root.style.touchAction = "none"; document.activeElement?.blur?.(); });
   const pickIn = () => { [pick.cx, pick.cy] = [pick.x, pick.y]; pickGo(2, .9); };
@@ -179,5 +183,7 @@
     onScreen: (spots, wide) => { const keep = [camera.position.clone(), camera.quaternion.clone()]; if (wide && !narrowNow()) { const w = endWide(); camera.position.copy(w[1]); camera.lookAt(w[2]); } camera.updateMatrixWorld();
       const out = spots.map(([x, y]) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].every(([a, b]) => { const [px, py, front] = proj(V(x + a * FRAME.w / 2, y + b * FRAME.h / 2, 0)); return front && px >= 0 && px <= innerWidth && py >= 0 && py <= innerHeight; }));
       camera.position.copy(keep[0]); camera.quaternion.copy(keep[1]); camera.updateMatrixWorld(); return out; },
+    // for the grow check: with these spots taken (boxes in metres), how far the area reaches and which spot is offered first
+    grow: boxes => { TAKEN = boxes; CLEAR = clearBoxes(); areaGrow(); const s = freeSpot(PICK_NEAR); return { base: AREA_BASE, end: AREA_END, x0: AREA.x0, y0: AREA.y0, y1: AREA.y1, x1: AREA.x1, offered: s, why: s ? keptBy(s[0], s[1]) : null }; },
     space: () => { const bx = o => { const b = new THREE.Box3().setFromObject(o); return [b.min.x, b.min.y, b.max.x, b.max.y]; };
-      return { narrow: NARROW, area: AREA, frame: FRAME, clear: clearBoxes(), things: { mural: bx(paint), hand: bx(handMesh), ...Object.fromEntries(OLD_WORDS[NARROW ? "narrow" : "wide"].map(([n, x, y, w, h]) => ["old " + n, [x - w / 2, y - h / 2, x + w / 2, y + h / 2]])), flyer: [eU(E.flyer[0]), eV(E.flyer[3]), eU(E.flyer[2]), eV(E.flyer[1])], words: bx(vWords), can: bx(vCan3) } }; } };
+      return { narrow: NARROW, area: { ...AREA, x0: AREA_END } /* the area as far as it can grow: what the wall has room for */, now: AREA.x0, base: AREA_BASE, frame: FRAME, clear: clearBoxes(), things: { mural: bx(paint), hand: bx(handMesh), ...Object.fromEntries(OLD_WORDS[NARROW ? "narrow" : "wide"].map(([n, x, y, w, h]) => ["old " + n, [x - w / 2, y - h / 2, x + w / 2, y + h / 2]])), flyer: [eU(E.flyer[0]), eV(E.flyer[3]), eU(E.flyer[2]), eV(E.flyer[1])], words: bx(vWords), can: bx(vCan3) } }; } };

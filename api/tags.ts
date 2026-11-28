@@ -2,11 +2,11 @@
  * The visitor wall's tags. A visitor picks a spot, draws one tag and sends it. Their own browser keeps the tag
  * and shows it on their wall at once, as if it were up; everyone else sees it only after Tom approves it from
  * the mail he gets. While it waits, it holds its spot: nobody else can tag over it. Tom's Remove deletes it,
- * which frees the spot and lets that visitor tag again. An approved tag holds nothing: a new tag may go over it
- * (the old one stays under it). No accounts: one tag per device id, and a scrambled
+ * which frees the spot and lets that visitor tag again. An approved tag holds its spot too (Tom 11-27): no visitor
+ * tags over another's tag; when the wall's tag area is full, the page lets it grow along the wall. No accounts: one tag per device id, and a scrambled
  * address stops robots (a few a day per address).
  *
- *   GET  /api/tags                      approved tags (oldest first, the newest paint over them) + held spots
+ *   GET  /api/tags                      approved tags (oldest first) + the spots waiting tags hold
  *   GET  /api/tags?ids=a                whether the visitor's own tag is still there: waiting or up
  *   POST /api/tags                      send { name, device, spot, strokes } → { id }; Tom gets a mail with a review link
  *   GET  /api/tags?review=<id>&sig=…    Tom's review page: the tag drawn, Approve and Remove
@@ -79,11 +79,10 @@ export type Deps = {
     /** Tags sent from this address in the last day, removed ones included. */
     byAddress(ipHash: string): Promise<number>;
     waiting(): Promise<number>;
-    /**
-     * Spots held by waiting tags: nobody may tag over them until Tom decides. Approved tags hold nothing, so a
-     * new tag may go over one (the old one stays under it).
-     */
+    /** Spots held by waiting tags: nobody may tag over them until Tom decides. The public list shows where they are, never the tags. */
     held(): Promise<Spot[]>;
+    /** Every spot a tag has, waiting or approved: a visitor's new tag may overlap none of them (Tom 11-27). */
+    taken(): Promise<Spot[]>;
     /** The new tag's id, or null when this device already has one (two sends at the same moment). */
     insert(tag: NewTag & { device: string; ip_hash: string }): Promise<string | null>;
     /** Takes back the address's latest send: the tag never reached Tom (the mail failed), so it must not use up the day's quota. */
@@ -321,7 +320,7 @@ export function handlers(deps: () => Deps | null) {
     const ipHash = sha(d.secret + address(request));
     if ((await d.db.byAddress(ipHash)) >= PER_ADDRESS) return json({ error: "too-many" }, 429);
     if ((await d.db.waiting()) >= MOST_WAITING) return json({ error: "wall-busy" }, 503);
-    if ((await d.db.held()).some((s) => overlaps(s, tag)))
+    if ((await d.db.taken()).some((s) => overlaps(s, tag)))
       return json({ error: "spot-taken" }, 409);
     const id = await d.db.insert({ ...tag, device, ip_hash: ipHash });
     if (!id) return json({ error: "one-tag" }, 409);
@@ -537,6 +536,10 @@ function liveDeps(): Deps | null {
       },
       async held() {
         const r = await sql`select x, y, w, h, turn from tags where status = 'waiting'`;
+        return r as Spot[];
+      },
+      async taken() {
+        const r = await sql`select x, y, w, h, turn from tags`;
         return r as Spot[];
       },
       async insert(t) {

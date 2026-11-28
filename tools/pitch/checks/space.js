@@ -1,7 +1,7 @@
 // Room to tag (Tom 11-23): every spot the tag tool offers keeps clear of the wall's own parts (the piece, its hand line, the three old words, the flyer,
 // the visitors' words and their can) in BOTH layouts and at BOTH times of day. A tag is saved in metres and shown to
 // everyone, so a spot that is free on a phone but under the laptop's wider mural, or free at night but where the
-// end's parts stand, is a broken spot. Also: at least 20 frame spots stay free everywhere.
+// end's parts stand, is a broken spot. Also: at least 20 frame spots stay free everywhere, counted over the wall as far as the tag area can grow (it grows when it is full, Tom 11-27; the grow check proves that).
 // In view (Tom 11-23, the loop): how many free spots the start view and the visitors' wall (scrolled up past the pole) show whole,
 // per layout (measured, reported). The end walks in to the start's own view, so it has none of its own.
 // Exact maths on the page's own numbers (pickTest.space, pickTest.onScreen), the same each run; draws a wall map: pitch-space.png.
@@ -36,7 +36,7 @@ async page => { const errs = [], res = { errs };
     if (free && !parts.some(p => hit(x, y, p.b))) freeAt.push(i); });
   for (const [k, v] of Object.entries(res.bad)) errs.push(k + ': ' + v.n + ' spots, e.g. centre ' + v.at.join(', ') + ' m');
   const tags = n => Math.round(n * STEP * STEP / (F.w * F.h)); // grid positions (0.25 m apart) -> about how many tags fit side by side
-  res.freeSpots = freeAt.length; res.room = tags(freeAt.length);
+  res.freeSpots = freeAt.length; res.room = tags(freeAt.length); res.roomToday = tags(freeAt.filter(i => G[i][0] - F.w / 2 >= reads[0].base - 1e-6).length); // room: the wall as far as the tag area can grow (pickTest.space's area); roomToday: the area before it has grown
   if (res.room < MIN_FREE) errs.push('room for only ' + res.room + ' tags side by side, fewer than ' + MIN_FREE);
   res.inView = {}; for (const [name, v] of Object.entries(views)) res.inView[name] = tags(freeAt.filter(i => v[i]).length);
   const seen = i => Object.values(views).some(v => v[i]); res.inView['any view'] = tags(freeAt.filter(seen).length);

@@ -30,6 +30,9 @@ export function memoryDeps(secret: string, mail: Deps["mail"], adminKey: string 
       async held() {
         return rows.filter((r) => r.status === "waiting");
       },
+      async taken() {
+        return [...rows];
+      },
       async insert(t) {
         if (rows.some((r) => r.device === t.device)) return null;
         const id = randomUUID();

@@ -211,7 +211,7 @@ test("Remove deletes the tag: the spot is free and the device may tag again", as
   assert.equal((await api.POST(send(tag({ device }), "5.6.7.8"))).status, 200);
 });
 
-test("only a waiting tag holds its spot: an approved one never blocks a new tag", async () => {
+test("a tag holds its spot, waiting or approved: no visitor tags over another's tag", async () => {
   const { api, mails } = world();
   await api.POST(send(tag()));
   const over = await api.POST(send(tag({ spot: spotAt(-11.5, 2.2, 1.4, 0.6) })));
@@ -219,14 +219,31 @@ test("only a waiting tag holds its spot: an approved one never blocks a new tag"
   assert.deepEqual(await over.json(), { error: "spot-taken" });
   assert.equal((await wall(api)).held.length, 1);
   await decide(api, mails[0]!, "approve");
-  assert.deepEqual((await wall(api)).held, [], "approved: nothing is held any more");
+  assert.deepEqual(
+    (await wall(api)).held,
+    [],
+    "approved: it is on the wall, no longer in the held list",
+  );
   const on = await api.POST(send(tag({ spot: spotAt(-12) })));
-  assert.equal(on.status, 200, "a new tag may go right over the approved one");
+  assert.equal(on.status, 409, "an approved tag keeps its spot");
+  assert.deepEqual(await on.json(), { error: "spot-taken" });
+  const edge = await api.POST(send(tag({ spot: spotAt(-11.5, 2.2, 1.4, 0.6) })));
+  assert.equal(edge.status, 409, "a tag that only overlaps a part of it is refused too");
   const next = await api.POST(send(tag({ spot: spotAt(-9, 2, 1.4, 0.6) })));
   assert.equal(next.status, 200, "right next to it is fine");
-  assert.equal((await wall(api)).held.length, 2, "the new waiting tags hold theirs");
-  const again = await api.POST(send(tag({ spot: spotAt(-12) })));
-  assert.equal(again.status, 409, "but not over a waiting one");
+  assert.equal((await wall(api)).held.length, 1, "the new waiting tag holds its own");
+  const again = await api.POST(send(tag({ spot: spotAt(-9, 2, 1.4, 0.6) })));
+  assert.equal(again.status, 409, "and nobody tags over a waiting one");
+  assert.equal((await wall(api)).tags.length, 1, "nothing was covered or removed");
+});
+
+test("a removed tag frees its spot", async () => {
+  const { api, mails } = world();
+  await api.POST(send(tag()));
+  await decide(api, mails[0]!, "approve");
+  assert.equal((await api.POST(send(tag({ spot: spotAt(-12) })))).status, 409);
+  assert.equal((await decide(api, mails[0]!, "remove")).status, 200);
+  assert.equal((await api.POST(send(tag({ spot: spotAt(-12) })))).status, 200);
 });
 
 test("boxes overlap only when they really do", () => {

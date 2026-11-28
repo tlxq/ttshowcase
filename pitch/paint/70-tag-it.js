@@ -62,7 +62,7 @@
       renderer.state.bindTexture(tglx.TEXTURE_2D, pr.__webglTexture); tglx.pixelStorei(tglx.UNPACK_FLIP_Y_WEBGL, true); tglx.pixelStorei(tglx.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false); tglx.pixelStorei(tglx.UNPACK_ALIGNMENT, 4);
       tglx.texSubImage2D(tglx.TEXTURE_2D, 0, x, TH - y - h, tglx.RGBA, tglx.UNSIGNED_BYTE, tgc.getImageData(x, y, w, h)); }
     b.x0 = b.y0 = 1e9; b.x1 = b.y1 = -1e9; b.all = false; }
-  function tagPlace(x, y) { tag.x = x; tag.y = y; tagMesh.position.set(x, y - DRIP / 2, .003); } // the frame's top edge stays at the spot's; the drip room hangs below
+  function tagPlace(x, y) { tag.x = x; tag.y = y; tagMesh.position.set(x, y - DRIP / 2, .0033); tagMesh.renderOrder = .5; } // the frame's top edge stays at the spot's; the drip room hangs below
   function tagMenus(open) { const was = !tagToolsM.hidden || !tagColsM.hidden, back = !tagToolsM.hidden ? tagToolB : tagColB, inMenu = tagToolsM.contains(document.activeElement) || tagColsM.contains(document.activeElement); tagToolsM.hidden = open !== tagToolsM; tagColsM.hidden = open !== tagColsM;
     tagToolB.setAttribute("aria-expanded", open === tagToolsM); tagColB.setAttribute("aria-expanded", open === tagColsM); if (was && !open && inMenu) back.focus({ preventScroll: true }); return was && !open; }
   [tagToolsM, tagColsM].forEach(m => m.addEventListener("focusout", e => { if (!m.hidden && !m.contains(e.relatedTarget) && e.relatedTarget !== tagToolB && e.relatedTarget !== tagColB) { m.hidden = true; tagToolB.setAttribute("aria-expanded", false); tagColB.setAttribute("aria-expanded", false); } }));
@@ -141,17 +141,19 @@
       tagRedraw(); if (tag.name) document.fonts.load(TAG_FONT).then(tagRedraw, () => {}); tagSendOut(); } }
   // The wall's other tags: the store's approved ones (oldest first, so the newest paint over the older), each at its spot, drawn by the same renderer as the tag tool but on the wall's stretch pictures
   // (one picture per stretch, painted in a worker): not a mesh a tag. Yours is not in it: it shows from this browser. The store also says which spots waiting tags hold: those join the kept-clear boxes.
-  let HELD = [], storeSeen = false, storeW = null;
-  const tagsHeld = list => { HELD = list.filter(h => [h.x, h.y, h.w, h.h].every(Number.isFinite)).map(h => [h.x - h.w / 2, h.y - h.h / 2, h.x + h.w / 2, h.y + h.h / 2]); pickShow(); };
+  let HELD = [], TAKEN = [], storeSeen = false, storeW = null;
+  const tagsHeld = list => { HELD = list.filter(h => [h.x, h.y, h.w, h.h].every(Number.isFinite)).map(h => [h.x - h.w / 2, h.y - h.h / 2, h.x + h.w / 2, h.y + h.h / 2]); areaGrow(); pickShow(); };
+  // an approved tag holds its spot (Tom 11-27): no visitor tags over another's tag. The visitor's own tag is not in the way of moving it.
+  const tagsTaken = list => { const own = tagSaved(); TAKEN = list.filter(t => [t.x, t.y, t.w, t.h].every(Number.isFinite) && (!own || !own.id || t.id !== own.id)).map(t => [t.x - t.w / 2, t.y - t.h / 2, t.x + t.w / 2, t.y + t.h / 2]); areaGrow(); pickShow(); };
   async function tagStore(first) { let d = null; const asked = adm.on || admHinted(); // asked: this browser has been signed in at /admin, so the server is asked for Tom's view; every other browser asks the public question
     try { const r = await fetch(asked ? "/api/tags?admin=1" : "/api/tags", asked ? { cache: "no-store" } : undefined); if (r.ok) d = await r.json(); } catch (_) {}
     if (!d) return; if (asked) { if (d.admin === true) { if (!adm.g) admSet(d.tags); if (!adm.on) admEnter(); return; } if (adm.on) return; admUnhint(); }
-    if (Array.isArray(d.held)) tagsHeld(d.held); if (!first || storeSeen) return; storeSeen = true;
+    if (Array.isArray(d.held)) tagsHeld(d.held); if (Array.isArray(d.tags)) tagsTaken(d.tags); if (!first || storeSeen) return; storeSeen = true;
     const own = tagSaved(), list = (Array.isArray(d.tags) ? d.tags : []).filter(t => tagOk(t) && Number.isFinite(t.w) && Number.isFinite(t.turn) && t.w > .2 && t.w < 6 && (!own || !own.id || t.id !== own.id)).slice(-60);
     if (!list.length) return;
     // painted while the page loads, like the hand words: done long before the bucket is ready, so no frame after the tap pays for it
     const tags = list.map(t => ({ strokes: t.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr: dr || [] })), x: t.x, y: t.y, w: t.w, turn: t.turn, k: 1, st: [], label: typeof t.name === "string" ? t.name.slice(0, 24) : "" }));
-    storeW = wallLayer(tags, .0025); storeW.meshes.forEach(m => m && (m.frustumCulled = false)); document.documentElement.dataset.storeTags = tags.length; storeStart(); }
+    storeW = wallLayer(tags, .0032, .5); /* over the pour's runs and drips (z .003, order 0), under the piece's top layer and hand line (order 1): a tag sits on the leftover paint (Tom 11-27) */ storeW.meshes.forEach(m => m && (m.frustumCulled = false)); document.documentElement.dataset.storeTags = tags.length; storeStart(); }
   async function storeStart() { const W = storeW, names = []; // names become small pictures on this thread (it has the font); the rest is the worker's
     if (W.tags.some(T => T.label)) await document.fonts.load(TAG_FONT).catch(() => {});
     for (const T of W.tags) if (T.label) { const c = document.createElement("canvas"), g = c.getContext("2d"), f = `${Math.round(.07 * TPM)}px "Saira Stencil One", sans-serif`; g.font = f; c.width = Math.ceil(g.measureText(T.label).width) + 4; c.height = Math.round(.07 * TPM * 1.5);
