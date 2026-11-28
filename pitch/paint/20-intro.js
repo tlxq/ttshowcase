@@ -271,7 +271,7 @@
     PAINT.set("#" + rgb.map(v => v.toString(16).padStart(2, "0")).join("")); bounce.color.copy(PAINT); SPRAY = rgb.join(","); rgb.forEach((v, i) => mistCol[i] = v / 255);
     // by day the wet gloss goes: the dark paint's mirror coat reflected the bright sky and washed it out to a pale blue (a clear coat and the sky's reflection on a colour this dark was most of what showed)
     pourMat.clearcoat = .9 - .8 * k; pourMat.envMapIntensity = .9 - .75 * k;
-    topU.uGain.value = 3 - 1.5 * k; topU.uLift.value = .1 - .07 * k; pourU.uPieceE.value = .55 - .4 * k; // the piece is lifted for the lamp's dark; under the day's sky the same lift burned its faces and clouds out to white
+    { const mixT = a => a[0] + (a[1] - a[0]) * k; topU.uGain.value = mixT(PIECE_TOK.gain); topU.uLift.value = mixT(PIECE_TOK.lift); pourU.uPieceE.value = mixT(PIECE_TOK.glow); } // the piece is lifted for the lamp's dark; under the day's sky the same lift burned its faces and clouds out to white
     band.material.color.copy(PAINT); capMat.color.copy(PAINT); // (Tom 11-27) the can's band and cap are the paint's colour too: they were copied once, at night's blue
     paintIn.color.copy(PAINT); paintCoat.color.copy(PAINT).multiplyScalar(.4); filmMat.color.copy(PAINT).multiplyScalar(.45); }
 

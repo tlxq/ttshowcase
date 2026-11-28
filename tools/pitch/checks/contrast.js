@@ -1,7 +1,7 @@
 // WCAG 1.4.3 text contrast at every stop: each piece of HTML text that shows, against the plate behind it.
 // 4.5:1, or 3:1 for large text (24 px, or 18.66 px bold). Text with no plate (straight on the 3D picture) fails:
 // its contrast changes with the scene, so it can't be promised. Words painted into the 3D scene are not HTML and
-// are judged by eye. Lists the smallest text size too. The start's painted line is measured on the picture (paint against wall) by day and by night.
+// are judged by eye. Lists the smallest text size too. The start's hand line (cream, sprayed under the piece) is measured on the picture, ink against wall, by day and by night.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs, checked: 0, smallest: null };
   page.on('pageerror', e => errs.push(String(e)));
   const look = where => page.evaluate(where => {
@@ -42,7 +42,23 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
         for (let i = 0; i < d.length; i += 16) { const [r, g, b] = [d[i], d[i + 1], d[i + 2]]; if (b - r > 45 && b > g) paint.push(L(r, g, b)); else if (b - r <= 25) wall.push(L(r, g, b)); }
         const med = a => a.sort((x, y) => x - y)[a.length >> 1]; return { paint: paint.length, wall: wall.length, p: paint.length ? med(paint) : null, w: wall.length ? med(wall) : null }; }, png);
       await shot.close(); const ratio = r.p === null || r.w === null ? 0 : +((Math.max(r.p, r.w) + .05) / (Math.min(r.p, r.w) + .05)).toFixed(2); (res.startLine ||= {})[hour === '12' ? 'noon' : 'night'] = { ratio, paintPixels: r.paint, wallPixels: r.wall, paintLum: r.p === null ? null : +r.p.toFixed(3), wallLum: r.w === null ? null : +r.w.toFixed(3) };
-      if (r.paint < 400) errs.push('the start line is not on the wall to measure (' + r.paint + ' paint pixels' + at + ')'); else if (hour === '12' && !(r.p < r.w && ratio >= (W < 600 ? 1.75 : 1.9))) errs.push('the start line\'s paint on the wall is ' + ratio + ':1' + at + (r.p >= r.w ? ' and LIGHTER than the wall (pale blue on beige)' : '') + ', by day it must be the darker one, at least 1.9:1 on a laptop and 1.75:1 on a phone (the sun is stronger on the start wall, 11-27: 1.75 on master, 2.04 now, on a laptop; a phone 1.65, now 1.91) (the target is 4.5:1: the day wall renders mid-grey, lum ' + r.w.toFixed(2) + ', so the dark blue reaches no more than about 2:1 until the wall is lit brighter)'); }
+      }
+    // the start's hand line (Tom 11-28): the cream line under the piece is the text a visitor reads on the start wall, so it is what is judged: its ink (the brightest tenth of its box) against the wall behind it (the box's
+    // median), on the picture, at night and at noon. The gates are floors a little under what was measured when the piece was built (HAND_GATE); 4.5:1 is the target, which cream on the day's wall (lum about 0.33) cannot reach.
+    // The blue number above (every blue pixel against the wall) is kept as information: with the piece it is a mix of faces, outline and runs and is no longer judged.
+    { const HAND_GATE = { night: { laptop: 4.5, phone: 4.5 }, noon: { laptop: 1.7, phone: 1.65 } /* measured 11-28: night 5.7 and 5.45, noon 1.82 and 1.75 */ }, when = hour === '12' ? 'noon' : 'night', scr = W < 600 ? 'phone' : 'laptop';
+      let box = null; for (let i = 0; i < 120 && !(box = await page.evaluate(() => window.handAt ? window.handAt() : null)); i++) await page.waitForTimeout(250);
+      if (!box) errs.push('the hand line never finished, nothing to measure' + at); else { await page.waitForTimeout(600);
+        const png = (await page.screenshot({ clip: { x: Math.max(0, Math.round(box.x)), y: Math.max(0, Math.round(box.y)), width: Math.round(Math.min(box.w, W - box.x)), height: Math.round(box.h) } })).toString('base64');
+        const shot = await page.context().newPage(); await shot.setContent('<canvas id=c></canvas>');
+        const h = await shot.evaluate(async b64 => { const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode(); const c = document.getElementById('c'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
+          const d = g.getImageData(0, 0, c.width, c.height).data, f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }, all = [];
+          for (let i = 0; i < d.length; i += 4) all.push(.2126 * f(d[i]) + .7152 * f(d[i + 1]) + .0722 * f(d[i + 2]));
+          all.sort((x, y) => x - y); const wall = all[all.length >> 1], ink = all[Math.floor(all.length * .95)]; return { wall, ink, inkShare: all.filter(v => (v + .05) / (wall + .05) >= 1.5).length / all.length }; }, png);
+        await shot.close(); const hr = +((h.ink + .05) / (h.wall + .05)).toFixed(2), gate = HAND_GATE[when][scr];
+        (res.handLine ||= {})[when] = { ratio: hr, gate, inkLum: +h.ink.toFixed(3), wallLum: +h.wall.toFixed(3), inkShare: +h.inkShare.toFixed(3) };
+        if (h.inkShare < .03) errs.push('the hand line is not on the wall to measure (' + (h.inkShare * 100).toFixed(1) + ' % of its box is ink' + at + ')');
+        else if (hr < gate) errs.push('the hand line on the wall is ' + hr + ':1' + at + ' on a ' + scr + ', under its floor of ' + gate + ':1'); } }
     const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
     for (const sv of [128, 432, 540, 700, 770, 840, 910, 1045, 1180]) { await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(sv === 128 || sv === 432 ? 9000 : 4000); if (sv === 1180) {
         await page.click('#corner'); await page.waitForTimeout(1300); all.push(...await look('the flyer (Write to me)' + at)); await page.keyboard.press('Escape'); await page.waitForTimeout(1000); }

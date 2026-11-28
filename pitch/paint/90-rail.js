@@ -112,7 +112,9 @@
     const c1 = svg.querySelector("#c1"), l1 = svg.querySelector("#l1"), c2 = svg.querySelector("#c2"), l2 = svg.querySelector("#l2");
     [c1, l1].forEach(e => e.style.opacity = showCan ? 1 : 0); [c2, l2].forEach(e => e.style.opacity = showHand ? 1 : 0);
     pin(tagCan, l1, c1, can.localToWorld(V(NARROW ? -.3 : .3, .9, 0)), NARROW ? -30 : 70, NARROW ? 90 : -40);
-    if (muralPin) pin(tagHand, l2, c2, muralPin, NARROW ? 30 : 64, NARROW ? -70 : -62);
+    if (muralPin) pin(tagHand, l2, c2, muralPin, NARROW ? 1 : 64, NARROW ? -92 : -62); // phone: the line ends on the top edge of the "m", not in the cloud
     composer.render();
   });
+  // the checks measure the hand line on the picture (contrast.js): its box on the screen, once it is fully sprayed
+  window.handAt = () => { if (!(uTnow > plateAt)) return null; const hd = MU.hand, a = proj(V(hd.cx - hd.w / 2, hd.top, 0)), b = proj(V(hd.cx + hd.w / 2, hd.top - hd.h, 0)); return { x: a[0], y: a[1], w: b[0] - a[0], h: b[1] - a[1] }; };
 })();
