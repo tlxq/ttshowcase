@@ -17,10 +17,11 @@
  *
  * The review link is signed (TAG_SECRET), so only the mail opens it. Approving needs a button press: mail
  * scanners open links but never press buttons. Settings in Vercel: DATABASE_URL (Neon), TAG_SECRET,
- * RESEND_API_KEY, CONTACT_TO, CONTACT_FROM, and ADMIN_KEY for Tom's own wall. Table: tools/tags/schema.sql. Tests: src/tags/tags.test.ts.
+ * RESEND_API_KEY, CONTACT_TO, CONTACT_FROM, and ADMIN_KEY for Tom's own wall. Table: tools/tags/schema.sql. Tests: src/tags/tags.test.ts,
+ * and src/tags/tags.db.test.ts on a real Postgres (`mise run tags:db`).
  */
 import { checkBotId } from "botid/server";
-import { neon } from "@neondatabase/serverless";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -523,112 +524,119 @@ async function reviewDo(
   return page("Removed", "<p>Removed. The spot is free again.</p>");
 }
 
+/**
+ * The tag store on Postgres, through Neon's query function. On its own so the real statements can run against a
+ * Postgres on this PC (src/tags/tags.db.test.ts, `mise run tags:db`), with the same driver and the same text.
+ */
+export function store(sql: NeonQueryFunction<false, false>): Deps["db"] {
+  const COLS = "id, created_at, name, strokes, x, y, w, h, turn";
+  return {
+    async byDevice(device) {
+      const r = await sql`select count(*)::int as n from tags where device = ${device}`;
+      return r[0]!.n as number;
+    },
+    async byAddress(ipHash) {
+      const r =
+        await sql`select count(*)::int as n from sends where ip_hash = ${ipHash} and at > now() - interval '1 day'`;
+      return r[0]!.n as number;
+    },
+    async waiting() {
+      const r = await sql`select count(*)::int as n from tags where status = 'waiting'`;
+      return r[0]!.n as number;
+    },
+    async held() {
+      const r = await sql`select x, y, w, h, turn from tags where status = 'waiting'`;
+      return r as Spot[];
+    },
+    async taken() {
+      const r = await sql`select x, y, w, h, turn from tags`;
+      return r as Spot[];
+    },
+    async insert(t) {
+      // The address count lives in its own table, so a removed tag still counts for the day; rows older than
+      // a day are cleared on every send.
+      let r;
+      try {
+        // One transaction: the lock makes the sends take turns, so the "no tag overlaps this spot" test and the insert are one step
+        // (without it two sends at once would each not see the other's row). The address is counted only for a tag that got in.
+        // The box test is api overlaps() with a millimetre of slack: the columns are real, so two tags exactly side by side must not read as overlapping.
+        [, , r] = await sql.transaction([
+          sql`select pg_advisory_xact_lock(${TAGS_LOCK}::bigint)`,
+          sql`delete from sends where at < now() - interval '1 day'`,
+          sql`with t as (
+              insert into tags (name, strokes, x, y, w, h, turn, device)
+              select ${t.name}::text, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}::real, ${t.y}::real, ${t.w}::real, ${t.h}::real, ${t.turn}::real, ${t.device}::text
+              where not exists (
+                select 1 from tags o
+                where abs(o.x - ${t.x}::real) < (o.w + ${t.w}::real) / 2 - 0.001 and abs(o.y - ${t.y}::real) < (o.h + ${t.h}::real) / 2 - 0.001)
+              returning id),
+            s as (insert into sends (ip_hash) select ${t.ip_hash}::text from t)
+            select id from t`,
+        ]);
+      } catch (e) {
+        if ((e as { code?: string }).code === "23505") return "one-tag"; // tags_one_per_device
+        throw e;
+      }
+      return r && r[0] ? (r[0].id as string) : "spot-taken";
+    },
+    async refund(ipHash) {
+      await sql`delete from sends where ctid = (select ctid from sends where ip_hash = ${ipHash} order by at desc limit 1)`;
+    },
+    async drop(id) {
+      await sql`delete from tags where id = ${id}`;
+    },
+    async get(id) {
+      const r = await sql.query(`select ${COLS}, status from tags where id = $1`, [id]);
+      return (r[0] as (Tag & { status: Status }) | undefined) ?? null;
+    },
+    async approve(id) {
+      await sql`update tags set status = 'up' where id = ${id}`;
+    },
+    async everything(most) {
+      const r = await sql.query(
+        `select ${COLS}, status from tags where status = 'waiting' or id in (select id from tags where status = 'up' order by created_at desc limit $1) order by created_at`,
+        [most],
+      );
+      return r as (Tag & { status: Status })[];
+    },
+    async update(id, s) {
+      await sql`update tags set x = ${s.x}, y = ${s.y}, w = ${s.w}, h = ${s.h}, turn = ${s.turn} where id = ${id}`;
+    },
+    async insertUp(t) {
+      const r =
+        await sql`insert into tags (id, created_at, name, strokes, x, y, w, h, turn, device, status)
+        values (coalesce(${t.id ?? null}::uuid, gen_random_uuid()), coalesce(${t.created_at ?? null}::timestamptz, now()), ${t.name}, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}, ${t.y}, ${t.w}, ${t.h}, ${t.turn}, ${t.device}, ${t.status})
+        returning id`;
+      return r[0]!.id as string;
+    },
+    async full(id) {
+      const r = await sql.query(`select ${COLS}, status, device from tags where id = $1`, [id]);
+      return (r[0] as (Tag & { status: Status; device: string }) | undefined) ?? null;
+    },
+    async up(most) {
+      const r = await sql.query(
+        `select * from (select ${COLS} from tags where status = 'up' order by created_at desc limit $1) t order by created_at`,
+        [most],
+      );
+      return r as Tag[];
+    },
+    async statuses(ids) {
+      const r = await sql`select id, status from tags where id = any(${ids}::uuid[])`;
+      return r as { id: string; status: Status }[];
+    },
+  };
+}
+
 function liveDeps(): Deps | null {
   const url = process.env.DATABASE_URL,
     secret = process.env.TAG_SECRET;
   const key = process.env.RESEND_API_KEY,
     to = process.env.CONTACT_TO;
   if (!url || !secret || secret.length < 32 || !key || !to) return null;
-  const sql = neon(url);
-  const COLS = "id, created_at, name, strokes, x, y, w, h, turn";
   return {
     secret,
     adminKey: process.env.ADMIN_KEY ?? null,
-    db: {
-      async byDevice(device) {
-        const r = await sql`select count(*)::int as n from tags where device = ${device}`;
-        return r[0]!.n as number;
-      },
-      async byAddress(ipHash) {
-        const r =
-          await sql`select count(*)::int as n from sends where ip_hash = ${ipHash} and at > now() - interval '1 day'`;
-        return r[0]!.n as number;
-      },
-      async waiting() {
-        const r = await sql`select count(*)::int as n from tags where status = 'waiting'`;
-        return r[0]!.n as number;
-      },
-      async held() {
-        const r = await sql`select x, y, w, h, turn from tags where status = 'waiting'`;
-        return r as Spot[];
-      },
-      async taken() {
-        const r = await sql`select x, y, w, h, turn from tags`;
-        return r as Spot[];
-      },
-      async insert(t) {
-        // The address count lives in its own table, so a removed tag still counts for the day; rows older than
-        // a day are cleared on every send.
-        let r;
-        try {
-          // One transaction: the lock makes the sends take turns, so the "no tag overlaps this spot" test and the insert are one step
-          // (without it two sends at once would each not see the other's row). The address is counted only for a tag that got in.
-          // The box test is api overlaps() with a millimetre of slack: the columns are real, so two tags exactly side by side must not read as overlapping.
-          [, , r] = await sql.transaction([
-            sql`select pg_advisory_xact_lock(${TAGS_LOCK}::bigint)`,
-            sql`delete from sends where at < now() - interval '1 day'`,
-            sql`with t as (
-                insert into tags (name, strokes, x, y, w, h, turn, device)
-                select ${t.name}::text, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}::real, ${t.y}::real, ${t.w}::real, ${t.h}::real, ${t.turn}::real, ${t.device}::text
-                where not exists (
-                  select 1 from tags o
-                  where abs(o.x - ${t.x}::real) < (o.w + ${t.w}::real) / 2 - 0.001 and abs(o.y - ${t.y}::real) < (o.h + ${t.h}::real) / 2 - 0.001)
-                returning id),
-              s as (insert into sends (ip_hash) select ${t.ip_hash}::text from t)
-              select id from t`,
-          ]);
-        } catch (e) {
-          if ((e as { code?: string }).code === "23505") return "one-tag"; // tags_one_per_device
-          throw e;
-        }
-        return r && r[0] ? (r[0].id as string) : "spot-taken";
-      },
-      async refund(ipHash) {
-        await sql`delete from sends where ctid = (select ctid from sends where ip_hash = ${ipHash} order by at desc limit 1)`;
-      },
-      async drop(id) {
-        await sql`delete from tags where id = ${id}`;
-      },
-      async get(id) {
-        const r = await sql.query(`select ${COLS}, status from tags where id = $1`, [id]);
-        return (r[0] as (Tag & { status: Status }) | undefined) ?? null;
-      },
-      async approve(id) {
-        await sql`update tags set status = 'up' where id = ${id}`;
-      },
-      async everything(most) {
-        const r = await sql.query(
-          `select ${COLS}, status from tags where status = 'waiting' or id in (select id from tags where status = 'up' order by created_at desc limit $1) order by created_at`,
-          [most],
-        );
-        return r as (Tag & { status: Status })[];
-      },
-      async update(id, s) {
-        await sql`update tags set x = ${s.x}, y = ${s.y}, w = ${s.w}, h = ${s.h}, turn = ${s.turn} where id = ${id}`;
-      },
-      async insertUp(t) {
-        const r =
-          await sql`insert into tags (id, created_at, name, strokes, x, y, w, h, turn, device, status)
-          values (coalesce(${t.id ?? null}::uuid, gen_random_uuid()), coalesce(${t.created_at ?? null}::timestamptz, now()), ${t.name}, ${JSON.stringify(t.strokes)}::jsonb, ${t.x}, ${t.y}, ${t.w}, ${t.h}, ${t.turn}, ${t.device}, ${t.status})
-          returning id`;
-        return r[0]!.id as string;
-      },
-      async full(id) {
-        const r = await sql.query(`select ${COLS}, status, device from tags where id = $1`, [id]);
-        return (r[0] as (Tag & { status: Status; device: string }) | undefined) ?? null;
-      },
-      async up(most) {
-        const r = await sql.query(
-          `select * from (select ${COLS} from tags where status = 'up' order by created_at desc limit $1) t order by created_at`,
-          [most],
-        );
-        return r as Tag[];
-      },
-      async statuses(ids) {
-        const r = await sql`select id, status from tags where id = any(${ids}::uuid[])`;
-        return r as { id: string; status: Status }[];
-      },
-    },
+    db: store(neon(url)),
     async mail(subject, text) {
       try {
         const sent = await fetch("https://api.resend.com/emails", {
