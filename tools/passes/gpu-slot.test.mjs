@@ -3,7 +3,7 @@
 // plainly when the desk stays busy.
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -43,8 +43,11 @@ test("it holds the card's lock while the command runs, and says so to what it st
 test("a second user waits for the first, then runs", async () => {
   const { dir, env } = tmp();
   try {
-    const first = spawn("bash", [slot, "first", "sleep", "1.5"], { env });
-    await new Promise((r) => setTimeout(r, 400));
+    const ready = join(dir, "ready");
+    const first = spawn("bash", [slot, "first", "bash", "-c", `touch "${ready}"; sleep 1.5`], {
+      env,
+    });
+    while (!existsSync(ready)) await new Promise((r) => setTimeout(r, 20));
     const t0 = Date.now();
     const second = spawnSync("bash", [slot, "second", "echo", "ran"], { env, encoding: "utf8" });
     assert.equal(second.stdout, "ran\n");
@@ -88,6 +91,42 @@ test("the frame-speed checks, speed-look and the pair take the slot; the other c
   assert.match(pair, /exec tools\/passes\/gpu-slot\.sh "pair \$at" tools\/pitch\/sheet\.sh/);
   const night = readFileSync(join(root, "tools", "night.sh"), "utf8");
   assert.match(night, /export GPU_LOCK_HELD=1/);
+});
+
+test("a command's children do not keep the lock after it ends", () => {
+  const { dir, env } = tmp();
+  try {
+    spawnSync("bash", [slot, "x", "bash", "-c", "sleep 3 &"], { env });
+    assert.equal(spawnSync("flock", ["-n", env.SD_GEN_LOCK, "true"]).status, 0);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("past its limit it runs anyway and says so; with no lock file it runs and says so", () => {
+  const { dir, env } = tmp();
+  try {
+    const ready = join(dir, "ready");
+    const holder = spawn("bash", [slot, "holder", "bash", "-c", `touch "${ready}"; sleep 3`], {
+      env,
+    });
+    spawnSync("bash", ["-c", `until [ -e "${ready}" ]; do sleep 0.05; done`]);
+    const late = spawnSync("bash", [slot, "late", "echo", "ran"], {
+      env: { ...env, GPU_SLOT_WAIT_SEC: "1" },
+      encoding: "utf8",
+    });
+    assert.equal(late.stdout, "ran\n");
+    assert.match(late.stderr, /stayed busy for 1 min, so late runs now/);
+    holder.kill();
+    const bad = spawnSync("bash", [slot, "nolock", "echo", "ran"], {
+      env: { ...env, SD_GEN_LOCK: "/proc/nope/x.lock" },
+      encoding: "utf8",
+    });
+    assert.equal(bad.stdout, "ran\n");
+    assert.match(bad.stderr, /Couldn't take the graphics card's turn \(nolock\)/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("quiet.sh: a desk that stays busy says so and exits 1 without running the command", () => {
