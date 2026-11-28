@@ -5,7 +5,7 @@
   // ?load=slow|fast sets the fake load; ?intro=old shows master's start; ?seek=<s> holds a moment; a tap skips the glide. Its pictures (pitch/assets/intro/) are not in git.
   const EARTH = (() => {
     const REST_M = 1.5, RX = -.3, RZ = .85, E = window.__earth = { on: false, streamOn: false, bucketSeen: false, wall: 0, dy: 0, rest: NARROW ? REST_M : 0, rx: NARROW ? RX : 0, rz: NARROW ? RZ : 0 }, Q = new URLSearchParams(location.search), box = document.getElementById("earth"), loadEl = document.getElementById("eLoad");
-    if (!box || REDUCED || Q.get("intro") === "old") { if (box) box.remove(); if (loadEl) loadEl.remove(); return E; } // reduced motion: the start as it is, no journey
+    if (!box || REDUCED || Q.get("intro") === "old") { if (box) box.remove(); if (loadEl) loadEl.remove(); { const f = document.getElementById("eFace"); if (f) f.remove(); } return E; } // reduced motion: the start as it is, no journey
     const world = document.getElementById("eWorld"), vid = document.getElementById("eVid"), strip = document.getElementById("eStrip"), soakEl = document.getElementById("eSoak"), cvM = document.getElementById("eCv"), cvS = document.getElementById("eCv2"),
       loadT = document.getElementById("eLoadT"), skipEl = document.getElementById("eSkip"), cM = cvM.getContext("2d"), cS = cvS.getContext("2d");
     const SEEK = Q.get("seek") === null ? null : +Q.get("seek"), SLOW = Q.get("load") === "slow";
@@ -19,7 +19,7 @@
     const smooth = (x, seed) => { const i = Math.floor(x), f = ease(x - i); return hash(i, seed) * (1 - f) + hash(i + 1, seed) * f; };
     const sizeCv = () => { const h = Math.ceil((stripH + 360) / 2); for (const c of [cvM, cvS]) { c.width = FILM_W / 2; c.height = h; c.style.top = (STRIP_Y - 60) + "px"; c.style.height = (stripH + 360) + "px"; } };
     strip.addEventListener("load", () => { if (strip.naturalWidth) { stripH = strip.naturalHeight * FILM_W / strip.naturalWidth; sizeCv(); veinX = -1; } });
-    const fail = () => { E.on = false; box.remove(); if (loadEl) loadEl.remove(); document.documentElement.classList.remove("earth-on"); };
+    const fail = () => { E.on = false; faceEnd(); box.remove(); if (loadEl) loadEl.remove(); document.documentElement.classList.remove("earth-on"); };
     vid.addEventListener("error", fail); strip.addEventListener("error", fail);
     E.on = true; document.documentElement.classList.add("earth-on"); sizeCv();
     const OY = STRIP_Y - 60;
@@ -83,7 +83,7 @@
     tagD.geometry.translate(.5, -.5, 0); tagD.rotation.z = .05; tagD.material.opacity = 0; shadowD.renderOrder = 4; rustD.renderOrder = 4; // the collar's shadow and the rust run fall ON the paint
     // the collar's face inside the O: the same paint on the collar, short of its chipped edge so the edge still reads
     { const S = 256, R = .15, c = cvs(S, S), g = c.getContext("2d"), k = S / (2 * R); g.fillStyle = CREAM; g.beginPath(); g.arc(S / 2, S / 2, .139 * k, 0, 6.283); g.arc(S / 2, S / 2, (HOLE + .003) * k, 0, 6.283); g.fill("evenodd"); bare(g, S, S, 60, 411, .6, 2.2); setMap(ringC.material, c);
-      ringC.position.z = COLLAR_D + .0015; ringC.visible = true; E.parts = { nameD, ringW, ringC, tagD }; ringC.scale.set(2 * R, 2 * R, 1); ringC.material.userData.u.uNorT.value.set(2 * R / TILE, 0, .37, 0, 2 * R / TILE, .61, 0, 0, 1); }
+      ringC.position.z = COLLAR_D + .0015; ringC.visible = true; ringC.scale.set(2 * R, 2 * R, 1); ringC.material.userData.u.uNorT.value.set(2 * R / TILE, 0, .37, 0, 2 * R / TILE, .61, 0, 0, 1); }
     // the blue over the O's lower edge: out of the mouth, down the collar's face, on down the letter to its lower edge, where the thread hangs and the stain goes on
     const lipMat = paintMat(); lipMat.polygonOffset = true; lipMat.polygonOffsetFactor = -8; lipMat.polygonOffsetUnits = -8;
     const LIP_W = .026, lipC = (() => { const sh = new THREE.Shape(), lw = HOLE * .55, a0 = Math.asin(lw / HOLE), y0 = -HOLE * Math.cos(a0), yb = -.158, ym = (y0 + yb) / 2; sh.moveTo(-lw, y0); sh.absarc(0, 0, HOLE, -Math.PI / 2 - a0, -Math.PI / 2 + a0, false); sh.quadraticCurveTo(lw * .8, ym, LIP_W, yb); sh.lineTo(-LIP_W, yb); sh.quadraticCurveTo(-lw * .8, ym, -lw, y0);
@@ -97,14 +97,15 @@
       const fsM = (wx(W - NAME.margin) - cx) / (cap * NAME.over / 2 + sb + aN), RO = cap * NAME.over / 2, base = -cap / 2, pitch = cap * 1.24, xl = -RO - sb, xr = RO + sb, left = xl - aPre, right = xr + aN, pad = .14, n = NAME.above.length; // metres per em; from here on in ems, the O's middle at 0, 0, up is up
       const X0 = Math.min(left, ...aAb.map(w => NAME.left ? left : right - w)) - pad, X1 = Math.max(right, ...aAb.map(w => NAME.left ? left + w : right)) + pad, Y0 = base - cap * .1 - pad, Y1 = base + pitch * n + cap * 1.1 + pad, P = Math.min(240, 2048 / (X1 - X0)), c = cvs(Math.ceil((X1 - X0) * P), Math.ceil((Y1 - Y0) * P)), g = c.getContext("2d"), px = x => (x - X0) * P, py = y => (Y1 - y) * P;
       g.font = `800 ${P}px ${FACE}`; g.textBaseline = "alphabetic"; g.fillStyle = CREAM; g.shadowColor = "rgba(17,17,17,.55)"; g.shadowBlur = P * .06; g.shadowOffsetY = P * .012;
-      g.textAlign = "right"; g.fillText(NAME.pre, px(xl), py(base)); g.textAlign = "left"; g.fillText("N", px(xr), py(base));
+      const mk = cvs(c.width, c.height), mg = mk.getContext("2d"); mg.font = g.font; mg.textBaseline = "alphabetic"; mg.fillStyle = "#000"; const put = (txt, x, y, al) => { for (const q of [g, mg]) { q.textAlign = al; q.fillText(txt, x, y); } }; // mk: the bare letters, for the code picture's cut-out
+      put(NAME.pre, px(xl), py(base), "right"); put("N", px(xr), py(base), "left");
       const rects = [[left - .1, base - cap * .1, right + .1, base + cap * 1.1]];
-      NAME.above.forEach((txt, k) => { const b = base + pitch * (k + 1), x0 = NAME.left ? left : right - aAb[k]; g.fillText(txt, px(x0), py(b)); rects.unshift([x0 - .1, b - cap * .1, x0 + aAb[k] + .1, b + cap * 1.1]); }); // in the order they are painted: the top line first, the O's line last
-      g.shadowColor = "transparent"; bare(g, c.width, c.height, 420, 421, P * .003, P * .011); setMap(nameD.material, c);
+      NAME.above.forEach((txt, k) => { const b = base + pitch * (k + 1), x0 = NAME.left ? left : right - aAb[k]; put(txt, px(x0), py(b), "left"); rects.unshift([x0 - .1, b - cap * .1, x0 + aAb[k] + .1, b + cap * 1.1]); }); // in the order they are painted: the top line first, the O's line last
+      g.shadowColor = "transparent"; bare(g, c.width, c.height, 420, 421, P * .003, P * .011); setMap(nameD.material, c); nameD.userData.mask = mk;
       const u = nameD.material.userData.u; rects.forEach((r, i) => u.uRect.value[i].set((r[0] - X0) / (X1 - X0), (r[1] - Y0) / (Y1 - Y0), (r[2] - X0) / (X1 - X0), (r[3] - Y0) / (Y1 - Y0))); u.uSoft.value = .25 / (X1 - X0); nameLines = rects.length;
       onWallAt(nameD, cx + X0 * fsM, cy + Y0 * fsM, (X1 - X0) * fsM, (Y1 - Y0) * fsM, zU + .006);
       // the O on the wall: a ring from the pipe's mouth out to the letter's edge, with the letters' soft dark edge
-      { const S = 512, rc = cvs(S, S), q = rc.getContext("2d"), k = S * .44 / (RO * fsM); q.fillStyle = CREAM; q.shadowColor = "rgba(17,17,17,.55)"; q.shadowBlur = S * .44 / RO * .06; q.shadowOffsetY = S * .44 / RO * .012; q.beginPath(); q.arc(S / 2, S / 2, S * .44, 0, 6.283); q.arc(S / 2, S / 2, HOLE * k, 0, 6.283); q.fill("evenodd"); q.shadowColor = "transparent"; bare(q, S, S, 90, 431, .8, 2.6); setMap(ringW.material, rc);
+      { const S = 512, rc = cvs(S, S), q = rc.getContext("2d"), k = S * .44 / (RO * fsM); q.fillStyle = CREAM; q.shadowColor = "rgba(17,17,17,.55)"; q.shadowBlur = S * .44 / RO * .06; q.shadowOffsetY = S * .44 / RO * .012; q.beginPath(); q.arc(S / 2, S / 2, S * .44, 0, 6.283); q.arc(S / 2, S / 2, HOLE * k, 0, 6.283); q.fill("evenodd"); q.shadowColor = "transparent"; bare(q, S, S, 90, 431, .8, 2.6); setMap(ringW.material, rc); { const rm = cvs(64, 64), q2 = rm.getContext("2d"); q2.beginPath(); q2.arc(32, 32, 32 * .88, 0, 6.283); q2.fill(); ringW.userData.mask = rm; }
         const side = 2 * RO * fsM / .88; onWallAt(ringW, cx - side / 2, cy - side / 2, side, side, zU + .007); nameRO = RO * fsM; lipW.scale.set(2 * LIP_W, 1e-4, 1); }
       // "Showcase", a tag under the name
       { const ts = 140, tp = cvs(8, 8).getContext("2d"); tp.font = `${ts}px ${TAGFACE}`; const tw = tp.measureText("Showcase").width, pd = ts * .25, tc = cvs(Math.ceil(tw + 2 * pd), Math.ceil(ts * 1.9)), t = tc.getContext("2d"); t.font = tp.font; t.textBaseline = "top"; t.lineJoin = "round";
@@ -117,6 +118,59 @@
       tagD.material.opacity = done ? 1 : clamp((t - .8) / .4); const sw = done ? 1 : ease(clamp((t - SWEEP_AT) / SWEEP_D)); ringW.material.userData.u.uSweep.value = sw; ringC.material.userData.u.uSweep.value = sw;
       const lip = done ? 1 : E.streamOn ? clamp((et - streamT - .15) / .6) : 0, k1 = clamp(lip * 2.5), k2 = clamp((lip - .3) / .7); lipC.visible = k1 > 0; lipC.scale.y = Math.max(1e-3, k1); lipW.visible = k2 > 0; lipW.scale.y = Math.max(1e-4, (nameRO + .012 - .11) * k2); }
     Promise.all(['800 100px "Archivo Wall"', '100px "Sedgwick Ave Display"'].map(f => document.fonts.load(f).catch(() => {}))).then(() => { nameIn = true; if (pendingLayout) placeName(); });
+    // ---- Tom as a code picture, in front (round 8): a 2D layer over the scene draws his portrait in characters (22 frames of a head turn, pitch/assets/intro/t00..t21.webp, not in git). A dark cut-out stands behind them so the wall
+    // does not show through, and a light even dark tone lies over the scene while the picture stands. It grows out of the outlet with the paint while the bucket fills, blue first. The head turns with the pointer (or the finger),
+    // and under the pointer a soft window shows the real photo; idle, it sways slowly. The name on the wall is cut out of the layer, so the name stands in front. On the tip the characters fall, each cell in its own moment, while
+    // the view goes down the wall; then the layer is removed and its loop ends: it costs nothing afterwards.
+    const faceCv = document.getElementById("eFace"), RAMP = " .,:;-=+*cotxzLJ#%@".split(""), VEIL = .36, FALL = 2.8, MONO = '"JetBrains Mono", ui-monospace, monospace', CREAM_C = hexRGB(CREAM).join(","), DARK_C = hexRGB(DARK).join(","),
+      LAYF = NARROW ? { cx: .5, top: .02, h: .64, lookX: .66, cell: 9, ref: 390 } : { cx: .2, top: .17, h: .97, lookX: .86, cell: 9.5, ref: 1440 }, // where he stands, as parts of the frame; lookX: where he looks while the paint arrives; cell: a character's width at the reference width
+      RND = Array.from({ length: 4096 }, (_, i) => hash(i, 77)), rnd = (j, c) => RND[(j * 131 + c * 17) & 4095];
+    const F = { T: null, SIL: null, GR: null, key: "", f: 10.5, px: .5, py: .4, tx: .5, ty: .4, pLast: -1e9, done: false, shown: false };
+    const fAt = e => { F.tx = e.clientX / innerWidth; F.ty = e.clientY / innerHeight; F.pLast = performance.now(); }, fOut = () => { F.pLast = -1e9; };
+    const faceEnd = () => { if (F.done) return; F.done = true; if (faceCv) faceCv.remove(); F.T = F.SIL = F.GR = F.win = null; removeEventListener("pointermove", fAt); removeEventListener("pointerdown", fAt); document.documentElement.removeEventListener("pointerleave", fOut); };
+    function faceLayout(W, H) { const dpr = Math.min(devicePixelRatio || 1, 2), T = F.T; faceCv.width = Math.round(W * dpr); faceCv.height = Math.round(H * dpr); F.dpr = dpr; F.x = faceCv.getContext("2d");
+      const cw = LAYF.cell * W / LAYF.ref, ch = cw * 1.55, mh = LAYF.h * H, mw = mh * T[0].width / T[0].height, cols = Math.ceil(mw / cw), rows = Math.ceil(mh / ch), gm = cvs(cols, rows), gx = gm.getContext("2d", { willReadFrequently: true });
+      F.GR = T.map(f => { gx.clearRect(0, 0, cols, rows); gx.drawImage(f, 0, 0, cols, rows); const dd = gx.getImageData(0, 0, cols, rows).data, n = cols * rows, lum = new Float32Array(n), al = new Float32Array(n), v = [];
+        for (let i = 0; i < n; i++) { const a = dd[i * 4 + 3]; lum[i] = a ? (.299 * dd[i * 4] + .587 * dd[i * 4 + 1] + .114 * dd[i * 4 + 2]) / 255 : 0; al[i] = a / 255; if (a > 80) v.push(lum[i]); }
+        v.sort((p, q) => p - q); const top = v[Math.floor(v.length * .97)] || 1; for (let i = 0; i < n; i++) lum[i] = Math.min(1, lum[i] / top); return { lum, al }; });
+      F.win = cvs(faceCv.width, faceCv.height); Object.assign(F, { cw, ch, mw, mh, cols, rows, mx: LAYF.cx * W - mw / 2, my: LAYF.top * H }); }
+    // a picture that lies on the wall (the name, the tag, the O), cut out of the layer where it is on the screen right now: in small patches, so the wall's perspective is followed
+    const cutOut = (x, mesh, n, m) => { const im = mesh.userData.mask || (mesh.material.map && mesh.material.map.image); if (!im || !mesh.visible) return; mesh.updateMatrixWorld(); const g = mesh.geometry.attributes.position, d0 = F.dpr, w = im.width / n, h = im.height / m,
+        at = (u, v) => proj(V(g.getX(0) + (g.getX(1) - g.getX(0)) * u, g.getY(0) + (g.getY(2) - g.getY(0)) * v, 0).applyMatrix4(mesh.matrixWorld));
+      for (let j = 0; j < m; j++) for (let i = 0; i < n; i++) { const a = at(i / n, j / m), b = at((i + 1) / n, j / m), d = at(i / n, (j + 1) / m), ow = i < n - 1 ? 1 : 0, oh = j < m - 1 ? 1 : 0;
+        x.setTransform((b[0] - a[0]) / w * d0, (b[1] - a[1]) / w * d0, (d[0] - a[0]) / h * d0, (d[1] - a[1]) / h * d0, a[0] * d0, a[1] * d0); x.drawImage(im, i * w, j * h, w + ow, h + oh, 0, 0, w + ow, h + oh); }
+      x.setTransform(d0, 0, 0, d0, 0, 0); };
+    function faceTick(now) { if (F.done) return; if (!E.on && !goAt) { faceEnd(); return; } requestAnimationFrame(faceTick); if (!F.T || !O) return;
+      const W = innerWidth, H = innerHeight, p = goAt ? clamp((now - goAt) / 1000 / FALL) : 0, kB = readyAt || goAt ? 1 : E.streamOn ? clamp(level / .97) : 0; if (p >= 1) { faceEnd(); return; }
+      if (kB <= 0) { if (F.shown) { F.x.clearRect(0, 0, W, H); F.shown = false; } return; }
+      if (F.key !== W + "x" + H) { F.key = W + "x" + H; faceLayout(W, H); } F.shown = true;
+      const x = F.x, { cw, ch, mw, mh, cols, rows, mx, my } = F, arriving = !readyAt && !goAt, [ox, oy] = proj(outlet.position), maxD = Math.hypot(Math.max(ox, W - ox), Math.max(oy, H - oy));
+      const seen = (X, Y, r) => { if (!arriving) return 1; const q = Math.hypot(X - ox, Y - oy) / maxD * .8 + r * .2; return q < kB * 1.05 ? (kB * 1.05 - q < .16 ? 2 : 1) : 0; }; // it grows out of the outlet; its leading edge is blue
+      const idle = now - F.pLast > 2000; let want = (idle ? .5 + Math.sin(now / 2300) * .35 : F.tx) * 21; if (p > 0 || arriving) want = LAYF.lookX * 21;
+      F.f += (want - F.f) * .09; const fi = Math.round(clamp(F.f, 0, 21)), G = F.GR[fi]; F.px += (F.tx - F.px) * .14; F.py += (F.ty - F.py) * .14;
+      // what the characters keep clear of: the bucket, and on a phone the thread over it
+      const keep = [[(stBox[0] + stBox[2]) / 2, (stBox[1] + stBox[3]) / 2, (stBox[2] - stBox[0]) / 2, (stBox[3] - stBox[1]) / 2]]; if (NARROW) keep.push([ox, (oy + stBox[1]) / 2, .04 * W, Math.max(8, (stBox[1] - oy) / 2)]);
+      x.setTransform(F.dpr, 0, 0, F.dpr, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.clearRect(0, 0, W, H);
+      x.globalAlpha = .82 * ease(kB) * (1 - clamp(p * 1.6)); x.drawImage(F.SIL[fi], mx, my, mw, mh); x.globalAlpha = 1; // the dark cut-out
+      x.globalCompositeOperation = "destination-out"; for (const [kx, ky, rx, ry] of keep) { x.beginPath(); x.ellipse(kx, ky, rx * 1.25, ry * 1.25, 0, 0, 7); x.fill(); }
+      x.globalCompositeOperation = "destination-over"; x.fillStyle = `rgba(${DARK_C},${(VEIL * kB * (1 - clamp(p * 3))).toFixed(3)})`; x.fillRect(0, 0, W, H); x.globalCompositeOperation = "source-over"; // the even dark tone, under the cut-out
+      const reveal = !idle && !arriving && p === 0, cxp = F.px * W, cyp = F.py * H, RR = Math.min(W, H) * .2;
+      x.font = `700 ${Math.round(cw * 1.22)}px ${MONO}`; x.textBaseline = "top";
+      for (let j = 0; j < rows; j++) for (let c = 0; c < cols; c++) { const i = j * cols + c, a = G.al[i]; if (a < .3) continue; const r = rnd(j, c), X = mx + c * cw, Y = my + j * ch; if (X < -cw || X > W) continue;
+        let clear = 1; for (const [kx, ky, rx, ry] of keep) { const q = Math.hypot((X - kx) / rx, (Y - ky) / ry); if (q < 1.25) clear = Math.min(clear, clamp((q - 1) / .25)); } if (clear <= 0) continue;
+        const s = seen(X, Y, r); if (!s) continue; const k = p > 0 ? clamp((p - r * .5) / .42) : 0; if (k >= 1) continue; const dy = k * k * H * (.45 + r * .6); // the fall: each cell in its own moment
+        let show = 1, edge = 0; if (reveal) { const dd = Math.hypot(X - cxp, Y - cyp) / RR; show = clamp((dd - .55) / .5); edge = clamp(1 - Math.abs(dd - .9) / .3); if (show <= 0) continue; }
+        const lu = G.lum[i], al = a * (1 - k * k * k) * show * clear;
+        if (lu < .08) { x.fillStyle = `rgba(${SPRAY},${(al * .3).toFixed(2)})`; x.fillText(":", X, Y + dy); continue; }
+        x.fillStyle = s === 2 || edge > .1 || lu < .42 ? `rgba(${SPRAY},${(al * clamp(.45 + lu * 1.4 + edge)).toFixed(2)})` : `rgba(${CREAM_C},${(al * (.45 + .55 * lu)).toFixed(2)})`; // dark parts in the blue, light parts in the cream
+        x.fillText(RAMP[Math.min(RAMP.length - 1, Math.floor(Math.pow(lu, .78) * RAMP.length))], X, Y + dy); }
+      if (reveal) { const wx = F.win.getContext("2d"); wx.setTransform(F.dpr, 0, 0, F.dpr, 0, 0); wx.globalCompositeOperation = "source-over"; wx.clearRect(0, 0, W, H); wx.drawImage(F.T[fi], mx, my, mw, mh); wx.globalCompositeOperation = "destination-in";
+        const g = wx.createRadialGradient(cxp, cyp, RR * .35, cxp, cyp, RR); g.addColorStop(0, "#000"); g.addColorStop(1, "rgba(0,0,0,0)"); wx.fillStyle = g; wx.fillRect(0, 0, W, H); x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(F.win, 0, 0); x.setTransform(F.dpr, 0, 0, F.dpr, 0, 0); } // the real photo under the pointer
+      // the name stands in front: its letters, the O and the tag are cut out of the layer
+      x.globalCompositeOperation = "destination-out"; cutOut(x, nameD, 16, 6); cutOut(x, tagD, 6, 2); cutOut(x, ringW, 3, 3); x.globalCompositeOperation = "source-over"; }
+    if (faceCv) Promise.all([...Array(22)].map((_, i) => new Promise(ok => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ok(null); im.src = `assets/intro/t${String(i).padStart(2, "0")}.webp`; }))).then(T => { if (F.done) return; if (T.some(i => !i)) { faceEnd(); return; } // no portrait (its frames are not in git): no layer
+      F.SIL = T.map(f => { const c = cvs(300, Math.round(300 * f.height / f.width)), q = c.getContext("2d"); q.drawImage(f, 0, 0, c.width, c.height); q.globalCompositeOperation = "source-in"; q.fillStyle = DARK; q.fillRect(0, 0, c.width, c.height); return c; }); F.T = T;
+      addEventListener("pointermove", fAt, { passive: true }); addEventListener("pointerdown", fAt, { passive: true }); document.documentElement.addEventListener("pointerleave", fOut); requestAnimationFrame(faceTick); });
     // ---- the bucket: rougher metal with dents, paint drips on the rim and side, a contact shadow on the ledge
     { const dent = tex2(256, 128, (g, w, h) => { g.fillStyle = "#808080"; g.fillRect(0, 0, w, h); for (let i = 0; i < 46; i++) { const x = hash(i, 51) * w, y = hash(i, 52) * h, r = 5 + 20 * hash(i, 53), gr = g.createRadialGradient(x, y, 0, x, y, r); const d = hash(i, 54) > .5; gr.addColorStop(0, d ? "rgba(30,30,30,.55)" : "rgba(230,230,230,.4)"); gr.addColorStop(1, "rgba(128,128,128,0)"); g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2); }  }); dent.encoding = THREE.LinearEncoding;
       metal.color.setHex(0x7b8086); metal.roughness = .52; metal.metalness = .82; metal.envMapIntensity = .45; metal.bumpMap = dent; metal.bumpScale = .1; metal.clearcoat = .1; metal.needsUpdate = true;
@@ -162,7 +216,7 @@
     E.skip = () => { if (started && !E.streamOn && !skipping && et > .3) { skipping = true; rate = 5; if (SEEK === null) vid.playbackRate = 5; } };
     addEventListener("pointerdown", E.skip); addEventListener("keydown", E.skip);
     // the load counter: 0 at the first frame, 60 % at the end of the glide and still creeping while the bead waits, the rest as the bucket fills; the slow line holds it back (its own clock)
-    let cNow = 0;
+    let cNow = 0, barN = -2; const barEl = document.getElementById("eBar");
     const counter = () => { const fa = J0 + Tj + 1.1, jp = glide ? camAt(et - J0) / glide.cam1 : 0, ideal = et < fa ? COUNT_JOURNEY * jp + .03 * clamp((et - J0 - Tj) / 1.1) + .02 * clamp(et) : COUNT_JOURNEY + .03 + (1 - COUNT_JOURNEY - .03) * (1 - (1 - clamp((et - fa) / FILL_FAST)) ** 2);
       const slow = SLOW ? .6 * ease(clamp(lt / 11)) + .06 * clamp((lt - 11) / 4) + .34 * ease(clamp((lt - 15) / 7)) : 1; return Math.min(ideal, slow); };
     E.target = () => E.streamOn ? clamp((cNow - COUNT_JOURNEY) / (1 - COUNT_JOURNEY)) : 0;
@@ -205,7 +259,7 @@
       // the name is painted in as the wall arrives, the O last, before the blue runs
       startEl.style.setProperty("--kin", 1); paintName(fa, !!(readyAt || goAt)); E.fa = fa;
       // the quiet line: the load from the first frame; "Tap to skip" after a second until the thread starts (not on the slow line, where a tap cannot skip the load); the plate steps aside while a phone's name comes up
-      const ready2 = readyAt && (now - readyAt) > 300, txt = ready2 ? "Tip the bucket to enter" : `Loading the wall · ${Math.min(readyAt ? 100 : 99, Math.round(cNow * 100))} %`; if (txt !== loadT.textContent) loadT.textContent = txt;
+      const ready2 = readyAt && (now - readyAt) > 300, txt = ready2 ? "Tip the bucket to enter" : `Loading the wall · ${Math.min(readyAt ? 100 : 99, Math.round(cNow * 100))} %`; if (txt !== loadT.textContent) { loadT.textContent = txt; loadEl.classList.toggle("go", !!ready2); } { const n = ready2 ? -1 : Math.round(cNow * 16); if (n !== barN) { barN = n; barEl.textContent = n < 0 ? "" : "[" + "#".repeat(n).padEnd(16, ".") + "]"; } }
       loadEl.style.opacity = goAt ? 0 : 1; skipEl.style.opacity = !SLOW && lt > 1 && !E.streamOn && !skipping ? .8 : 0;
       if (goAt) { if (!E.gone) E.gone = performance.now(); else if (performance.now() - E.gone > 1500) { box.remove(); loadEl.remove(); thread.visible = false; beads.forEach(b => b.visible = false); dropM.visible = false; startEl.style.clipPath = ""; startEl.style.transform = ""; E.on = false; E.dy = 0; E.rest = 0; E.rx = 0; E.rz = 0; document.documentElement.classList.remove("earth-on"); } }
     };

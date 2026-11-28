@@ -217,8 +217,19 @@ html.flow .stripe { opacity: 0; visibility: hidden; }
 .earth #eCv2 { mix-blend-mode: screen; }
 .earth .eDrop { position: absolute; left: 0; top: 0; width: 10px; height: 10px; opacity: 0; transform-origin: 50% 0; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; }
 .earth .eRip { position: absolute; width: 74px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(214, 232, 255, .6); opacity: 0; }
-.eLoad { position: fixed; left: var(--gutter); bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px)); z-index: 6; pointer-events: none; display: grid; gap: 4px; padding: 9px 13px 10px; background: var(--look-plate); border: 1px solid var(--look-plate-edge); border-radius: 3px; font: 700 13px/1.2 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .02em; color: var(--look-cream); transition: opacity .5s; }
-.eLoad #eSkip { font-weight: 500; font-size: 12px; color: var(--look-soft); opacity: 0; transition: opacity .6s; }
+/* the quiet line (round 8): typed in the picture's letters, bottom right under the bucket on a laptop, bottom centre on a phone; ready, it gets a blue ">" and a blinking cursor. The keyboard's focus (on #tagBucket) shows its ring here */
+.eLoad { position: fixed; right: var(--gutter); bottom: calc(var(--s5) + env(safe-area-inset-bottom, 0px)); z-index: 6; pointer-events: none; display: grid; gap: 4px; padding: var(--s2) var(--s2); background: var(--look-plate); border: 1px solid var(--look-plate-edge); font: 500 var(--look-label-phone)/1 "JetBrains Mono", ui-monospace, monospace; color: var(--look-cream); white-space: nowrap; transition: opacity .5s; }
+.eLoad .l { display: flex; align-items: center; }
+.eLoad #eBar { white-space: pre; }
+.eLoad #eBar:not(:empty)::before { content: "  "; }
+.eLoad.go .l::before { content: ">"; color: var(--front-spray); margin-right: 1ch; }
+.eLoad.go .l::after { content: ""; width: .55em; height: 1.35em; margin: -.2em 0 -.2em .25em; background: var(--front-spray); animation: eCur 1.04s steps(1) infinite; }
+@keyframes eCur { 50% { opacity: 0; } }
+@media (max-aspect-ratio: 4/5) { .eLoad { right: auto; left: 50%; transform: translateX(-50%); font-size: min(var(--look-label-phone), 3.55vw); bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px)); } }
+html.earth-on #tagBucket { opacity: 0 !important; }
+html.earth-on:has(#tagBucket:focus-visible) .eLoad { outline: 2px solid var(--look-text); outline-offset: 3px; }
+.eFace { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+.eLoad #eSkip { font-size: 12px; color: var(--look-soft); opacity: 0; transition: opacity .6s; }
 html:not(.earth-on) .eLoad { display: none; }
 html.earth-on .start .num, html.earth-on .start .go { display: none; }
 html.earth-on .stripe, html.earth-on .stk { opacity: 0 !important; transition: none; }
