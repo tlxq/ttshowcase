@@ -121,7 +121,7 @@ description = "One real tag round on a deployment: send, held spot, approve, on 
 run = "tools/tags/live.sh"
 
 [tasks."pitch:pair"]
-description = "A few moments, side by side: the approved picture beside the build, and master beside this branch (laptop and phone, night and day). Name scroll positions, e.g. mise run pitch:pair 840 872 990 [--approved <folder>]. A page and one picture per screen in .cache/pitch/pair; seconds per moment; not a speed check, so it runs beside the other checks"
+description = "A few moments, side by side: the approved picture beside the build, and master beside this branch (laptop and phone, night and day). Name scroll positions, e.g. mise run pitch:pair 840 872 990 [--approved <folder>]. A page and one picture per screen in .cache/pitch/pair; about a minute for a few moments; its browsers take the graphics card's short slot, the other checks run beside it"
 depends = ["install"]
 run = "tools/pitch/pair.sh"
 

@@ -40,6 +40,60 @@ test("the inventory check is in the pitch's list of checks, and its file is ther
   assert.match(page, /exitL\.name = "back-door-lamp"; scene\.add\(exitL\)/);
 });
 
+// the check's own compare, run on a stand-in page: the check file is a page function with two placeholders
+async function runCheck(list, now, width = 1440) {
+  const src = readFileSync(join(root, "tools", "pitch", "checks", "inventory.js"), "utf8")
+    .replace("__SCENE__", JSON.stringify({ laptop: list, phone: list }))
+    .replace("__URL__", "http://x/");
+  const page = {
+    viewportSize: () => ({ width }),
+    on() {},
+    goto: async () => {},
+    waitForTimeout: async () => {},
+    evaluate: async () => now,
+  };
+  return JSON.parse(await eval(src)(page));
+}
+const list = {
+  lights: ["PointLight", "PointLight", "SpotLight", "back-door-lamp"],
+  named: ["building-site"],
+};
+
+test("inventory: the same scene passes, in any order", async () => {
+  const r = await runCheck(list, {
+    lights: ["SpotLight", "back-door-lamp", "PointLight", "PointLight"],
+    named: ["building-site"],
+  });
+  assert.deepEqual(r.errs, []);
+});
+
+test("inventory: a vanished light or object fails, named", async () => {
+  const r = await runCheck(list, { lights: ["PointLight", "PointLight", "SpotLight"], named: [] });
+  assert.equal(r.errs.length, 2);
+  assert.match(r.errs[0], /gone from the scene \(lights\): back-door-lamp/);
+  assert.match(r.errs[1], /gone from the scene \(named\): building-site/);
+});
+
+test("inventory: a new light fails, and so does a duplicate of one that is listed", async () => {
+  const fresh = await runCheck(list, { ...list, lights: [...list.lights, "SpotLight"] });
+  assert.match(fresh.errs[0], /new in the scene \(lights\): SpotLight/);
+  const twice = await runCheck(list, {
+    ...list,
+    lights: list.lights.map((l) => (l === "SpotLight" ? "PointLight" : l)),
+  });
+  assert.equal(twice.errs.length, 2); // one PointLight too many, the SpotLight gone
+  const lost = await runCheck(list, {
+    ...list,
+    lights: ["PointLight", "SpotLight", "back-door-lamp"],
+  });
+  assert.match(lost.errs[0], /gone from the scene \(lights\): PointLight/);
+});
+
+test("inventory: a phone reads the phone's list", async () => {
+  const r = await runCheck(list, list, 412);
+  assert.equal(r.screen, "phone");
+});
+
 test("pitch:pair says what is wrong before it starts a browser", () => {
   const pair = join(root, "tools", "pitch", "pair.sh");
   for (const args of [
@@ -47,6 +101,8 @@ test("pitch:pair says what is wrong before it starts a browser", () => {
     ["840", "x"],
     ["840", "--nope"],
     ["840", "--approved", "/no/such/folder"],
+    ["840", "--approved"],
+    ["840", "--base"],
   ]) {
     const r = spawnSync("bash", [pair, ...args], { encoding: "utf8" });
     assert.equal(r.status, 2, `${args.join(" ")}: ${r.stderr}`);

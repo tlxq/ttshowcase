@@ -1,12 +1,22 @@
 #!/usr/bin/env bash
-# gpu-slot.sh <what> <command> [args]: the graphics card's short slot (batch 9). Only what needs the card alone takes one: the frame-speed
-# checks (FRAME_CHECKS in tools/pitch/run.sh), the walk's speed-look and picture generation. Everything else (named behaviour checks,
-# pitch:pair) runs at once beside them.
-# The slot is the desk's test lane (testlane, ~/.1dot, both PCs) limited to its first slot, so every user of this script takes turns:
-# a speed check started beside a picture run waits for it, then runs. Inside a whole run that already holds a lane slot (TESTLANE_HELD),
-# or without testlane, the command just runs.
+# gpu-slot.sh <what> <command> [args]: the graphics card's short slot (batch 9). What needs the card alone takes it: the frame-speed checks
+# (FRAME_CHECKS in tools/pitch/run.sh), the walk's speed-look, pitch:pair's browsers and picture generation. Everything else (the other named
+# checks) runs at once beside them.
+# The slot is the desk's graphics-card lock, the one the night run (tools/night.sh) and picture generation (sd-gen) already take
+# (flock ~/.cache/ttshowcase-gpu.lock), so every user of the card takes turns, whole runs included: a whole run's own speed checks take it
+# one at a time. A holder that starts a check which asks again (the night run, a slot inside a slot) must not wait on itself: whoever holds
+# the lock exports GPU_LOCK_HELD=1, and then the command just runs.
+# The command's children keep the lock until they end: close browser sessions before the command ends.
 set -u
 what="$1"
 shift
-[ -n "${TESTLANE_HELD:-}" ] || ! command -v testlane >/dev/null || exec env TESTLANE_SLOTS=1 testlane run --name "ttshowcase $what" -- "$@"
-exec "$@"
+[ -z "${GPU_LOCK_HELD:-}" ] || exec "$@"
+lock="${SD_GEN_LOCK:-$HOME/.cache/ttshowcase-gpu.lock}"
+mkdir -p "${lock%/*}"
+exec 9>>"$lock"
+if ! flock -n 9; then
+  echo "Waiting for the graphics card ($what)" >&2
+  flock 9
+fi
+export GPU_LOCK_HELD=1
+"$@"

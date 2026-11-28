@@ -62,7 +62,7 @@ running=0
 for b in base branch; do for w in laptop phone; do for h in 23 12; do
   [ "$running" -ge 4 ] && { wait -n; running=$((running - 1)); }
   # one try more when a shot fails: with other browsers on the card a shader sometimes fails to compile ("VALIDATE_STATUS false", no log), and the same shot passes alone
-  { shoot "$b" "$w" "$h" >/dev/null; f="$sheet/$b/$w-h$h.fail"; if [ -f "$f" ]; then rm -f "$f"; shoot "$b" "$w" "$h"; fi; } & running=$((running + 1))
+  { shoot "$b" "$w" "$h" >/dev/null; f="$sheet/$b/$w-h$h.fail"; if [ -f "$f" ]; then rm -f "$f"; shoot "$b" "$w" "$h"; [ -f "$f" ] || echo "$pre: $b $w hour $h needed a second try"; fi; } & running=$((running + 1))
 done; done; done
 while [ "$running" -gt 0 ]; do wait -n; running=$((running - 1)); done
 
