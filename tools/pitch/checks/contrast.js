@@ -1,7 +1,7 @@
 // WCAG 1.4.3 text contrast at every stop: each piece of HTML text that shows, against the plate behind it.
 // 4.5:1, or 3:1 for large text (24 px, or 18.66 px bold). Text with no plate (straight on the 3D picture) fails:
 // its contrast changes with the scene, so it can't be promised. Words painted into the 3D scene are not HTML and
-// are judged by eye. Lists the smallest text size too. The start's two sprayed lines (the role and the hand line, cream over a dark sprayed edge) are measured on the picture, ink against what stands round it, by day and by night.
+// are judged by eye. Lists the smallest text size too. The start wall's plate (the role and his line) is judged with the other plates, by day and by night; the start's blue on the wall is measured on the picture and reported.
 async page => { const W = page.viewportSize().width, H = page.viewportSize().height, errs = [], res = { errs, checked: 0, smallest: null };
   page.on('pageerror', e => errs.push(String(e)));
   const look = where => page.evaluate(where => {
@@ -43,28 +43,12 @@ async page => { const W = page.viewportSize().width, H = page.viewportSize().hei
         const med = a => a.sort((x, y) => x - y)[a.length >> 1]; return { paint: paint.length, wall: wall.length, p: paint.length ? med(paint) : null, w: wall.length ? med(wall) : null }; }, png);
       await shot.close(); const ratio = r.p === null || r.w === null ? 0 : +((Math.max(r.p, r.w) + .05) / (Math.min(r.p, r.w) + .05)).toFixed(2); (res.startLine ||= {})[hour === '12' ? 'noon' : 'night'] = { ratio, paintPixels: r.paint, wallPixels: r.wall, paintLum: r.p === null ? null : +r.p.toFixed(3), wallLum: r.w === null ? null : +r.w.toFixed(3) };
       }
-    // the start's two sprayed lines (Tom 11-28): the role "Product engineer" and the hand line are the text a visitor reads on the start wall, so they are what is judged: the cream ink (the brightest twentieth of the line's
-    // box) against what stands right round the letters (the dark sprayed edge: the median of the pixels 2 to 4 from the ink), on the picture, at night and at noon. onWall is the same ink against the bare wall (the box's median), for information. Since the dark edge (11-28) the cream reads by day too; the gates are floors
-    // a little under what was measured with the edge (LINE_GATE). The wall alone by day (lum about 0.36) gave cream 1.75 to 1.82:1 before the edge.
-    // The blue number above (every blue pixel against the wall) is kept as information: with the piece it is a mix of faces, outline and runs and is no longer judged.
-    { const LINE_GATE = { night: { laptop: 4.5, phone: 4.5 }, noon: { laptop: 3, phone: 2.2 } } /* measured 11-28 with the edge, hand line and role: night 9.1 and 9.7 on a laptop, 5.3 and 5.5 on a phone; noon 3.24 and 4.12 on a laptop, 2.5 and 2.32 on a phone (on the bare wall, as before the edge: 1.99 and 1.93, 1.85 and 1.87) */, when = hour === '12' ? 'noon' : 'night', scr = W < 600 ? 'phone' : 'laptop';
-      for (const [what, fn, key] of [['the hand line', 'handAt', 'handLine'], ['the role', 'roleAt', 'role']]) {
-        let box = null; for (let i = 0; i < 120 && !(box = await page.evaluate(fn => window[fn] ? window[fn]() : null, fn)); i++) await page.waitForTimeout(250);
-        if (!box) { errs.push(what + ' never finished, nothing to measure' + at); continue; } await page.waitForTimeout(600);
-        const png = (await page.screenshot({ clip: { x: Math.max(0, Math.round(box.x)), y: Math.max(0, Math.round(box.y)), width: Math.round(Math.min(box.w, W - box.x)), height: Math.round(box.h) } })).toString('base64');
-        const shot = await page.context().newPage(); await shot.setContent('<canvas id=c></canvas>');
-        const h = await shot.evaluate(async b64 => { const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode(); const c = document.getElementById('c'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0);
-          const d = g.getImageData(0, 0, c.width, c.height).data, f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }, all = [];
-          for (let i = 0; i < d.length; i += 4) all.push(.2126 * f(d[i]) + .7152 * f(d[i + 1]) + .0722 * f(d[i + 2]));
-          const sorted = all.slice().sort((x, y) => x - y), wall = sorted[sorted.length >> 1], ink = sorted[Math.floor(sorted.length * .95)], w = c.width, hh = c.height, mid = (ink + wall) / 2;
-          // round the ink: the pixels 2 to 4 from an ink pixel that are not ink themselves (1 away is the letter's own soft rim): the sprayed edge where there is one, else the wall
-          const near = r => { const o = new Uint8Array(w * hh); for (let y = 0; y < hh; y++) for (let x = 0; x < w; x++) { if (all[y * w + x] < mid) continue; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < w && Y < hh) o[Y * w + X] = 1; } } return o; };
-          const n1 = near(1), n4 = near(4), ring = []; for (let i = 0; i < all.length; i++) if (n4[i] && !n1[i]) ring.push(all[i]); ring.sort((x, y) => x - y);
-          return { wall, ink, round: ring.length ? ring[ring.length >> 1] : wall, inkShare: all.filter(v => (v + .05) / (wall + .05) >= 1.5).length / all.length }; }, png);
-        await shot.close(); const hr = +((h.ink + .05) / (h.round + .05)).toFixed(2), gate = LINE_GATE[when][scr];
-        (res[key] ||= {})[when] = { ratio: hr, gate, onWall: +((h.ink + .05) / (h.wall + .05)).toFixed(2), inkLum: +h.ink.toFixed(3), roundLum: +h.round.toFixed(3), wallLum: +h.wall.toFixed(3), inkShare: +h.inkShare.toFixed(3) };
-        if (h.inkShare < .03) errs.push(what + ' is not on the wall to measure (' + (h.inkShare * 100).toFixed(1) + ' % of its box is ink' + at + ')');
-        else if (hr < gate) errs.push(what + ' on the wall is ' + hr + ':1' + at + ' on a ' + scr + ', under its floor of ' + gate + ':1'); } }
+    // the start wall's plate (Tom 11-28: one painting, one plate): "Product engineer" and his line are the text a visitor reads on the start wall. It is HTML on the walk's own plate, so it is judged like every other plate's text
+    // (4.5:1 against its plate), once the pour has settled and it shows, at night and at noon. The blue number above (every blue pixel against the wall) is information only: with the piece it is a mix of faces, outline and runs.
+    { let on = false; for (let i = 0; i < 120 && !(on = await page.evaluate(() => +document.getElementById('tagRole').style.opacity === 1)); i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(900); const seen = on ? await look('the start wall' + at) : []; all.push(...seen); // the plate fades in over .6 s
+      const mine = seen.filter(t => /Product engineer|I build and run things myself\./.test(t.name)); (res.startPlate ||= {})[hour === '12' ? 'noon' : 'night'] = mine.map(t => t.ratio);
+      if (mine.length !== 2) errs.push('the start wall\'s plate did not show its title and its line' + at + ' (' + mine.length + ' of 2 texts)'); }
     const H2 = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), END = await page.evaluate(() => +document.documentElement.dataset.svEnd);
     for (const sv of [128, 432, 540, 700, 770, 840, 910, 1045, 1180]) { await page.evaluate(y => scrollTo(0, y), await page.evaluate(sv => Math.round(svY(sv)), sv)); await page.waitForTimeout(sv === 128 || sv === 432 ? 9000 : 4000); if (sv === 1180) {
         await page.click('#corner'); await page.waitForTimeout(1300); all.push(...await look('the flyer (Write to me)' + at)); await page.keyboard.press('Escape'); await page.waitForTimeout(1000); }

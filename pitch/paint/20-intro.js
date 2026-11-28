@@ -99,7 +99,7 @@
   // the start's dark (Tom 11-25): until the tap only the work light's pool on the cap shows; then the wall appears where the paint has run,
   // a soft curtain that follows the pour's own clock (ledgeArrive), and all of it once the camera follows the paint down
   const veilU = { uIc: { value: -9 }, uAll: { value: 0 } };
-  for (const m of [wall.material, cap2.material, bareL.material, ...OLD_MATS]) { const prev = m.onBeforeCompile; m.onBeforeCompile = (sh, rr) => { if (prev) prev(sh, rr); Object.assign(sh.uniforms, veilU);
+  for (const m of [wall.material, cap2.material, bareL.material, signMat]) { const prev = m.onBeforeCompile; m.onBeforeCompile = (sh, rr) => { if (prev) prev(sh, rr); Object.assign(sh.uniforms, veilU);
     sh.vertexShader = sh.vertexShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW;").replace("#include <project_vertex>", "#include <project_vertex>\nvVW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
     sh.fragmentShader = sh.fragmentShader.replace("#include <common>", "#include <common>\nvarying vec3 vVW; uniform float uIc, uAll;").replace("#include <dithering_fragment>", `
       if (uAll < .999) { // the rest of the walk skips the veil
@@ -408,9 +408,9 @@
   fit(); addEventListener("resize", fit);
 
   // labels pinned to the can and to the writing, with real facts from the hand file
-  const tagCan = document.getElementById("tagCan"), svg = document.getElementById("lines");
+  const tagCan = document.getElementById("tagCan"), tagRole = document.getElementById("tagRole"), svg = document.getElementById("lines");
   tagCan.innerHTML = `<b>${HAND.pen}</b>written ${HAND.written}`; // fixed text: HAND is built at build time from the repo's own words, never a visitor's input. nosemgrep: insecure-innerhtml, insecure-document-method
-  svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/>');
+  svg.insertAdjacentHTML("beforeend", '<line id="l1"/><circle id="c1" r="4"/><line id="l2"/><circle id="c2" r="4"/>');
   const proj = v => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * innerWidth, (1 - p.y) / 2 * innerHeight, p.z < 1]; };
   function pin(el, line, dot, world, dx, dy) {
     const [x, y] = proj(world); const tx = x + dx, ty = y + dy;

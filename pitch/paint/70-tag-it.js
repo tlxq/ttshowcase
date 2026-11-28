@@ -167,7 +167,7 @@
     if (!list.length) return;
     // painted while the page loads, like the hand words: done long before the bucket is ready, so no frame after the tap pays for it
     const tags = list.map(t => ({ strokes: t.strokes.map(({ tool, col, seed, pts, dr }) => ({ tool, col, seed, pts, dr: dr || [] })), x: t.x, y: t.y, w: t.w, turn: t.turn, k: 1, st: [], label: typeof t.name === "string" ? t.name.slice(0, 24) : "" }));
-    storeW = wallLayer(tags, .0032, .5); /* over the pour's runs and drips (z .003, order 0), under the piece's top layer and hand line (order 1): a tag sits on the leftover paint (Tom 11-27) */ storeW.meshes.forEach(m => m && (m.frustumCulled = false)); document.documentElement.dataset.storeTags = tags.length; storeStart(); }
+    storeW = wallLayer(tags, .0032, .5); /* over the pour's runs and drips (z .003, order 0), under the piece's top layer (order 1): a tag sits on the leftover paint (Tom 11-27) */ storeW.meshes.forEach(m => m && (m.frustumCulled = false)); document.documentElement.dataset.storeTags = tags.length; storeStart(); }
   async function storeStart() { const W = storeW, names = []; // names become small pictures on this thread (it has the font); the rest is the worker's
     if (W.tags.some(T => T.label)) await document.fonts.load(TAG_FONT).catch(() => {});
     for (const T of W.tags) if (T.label) { const c = document.createElement("canvas"), g = c.getContext("2d"), f = `${Math.round(.07 * TPM)}px "Saira Stencil One", sans-serif`; g.font = f; c.width = Math.ceil(g.measureText(T.label).width) + 4; c.height = Math.round(.07 * TPM * 1.5);

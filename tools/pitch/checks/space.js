@@ -1,15 +1,16 @@
-// Room to tag (Tom 11-23): every spot the tag tool offers keeps clear of the wall's own parts (the piece, its role and hand line, the old words, the flyer,
+// Room to tag (Tom 11-23): every spot the tag tool offers keeps clear of the wall's own parts (the piece, the wall its plate stands on, the tlxq signature, the flyer,
 // the visitors' words and their can) in BOTH layouts and at BOTH times of day. A tag is saved in metres and shown to
 // everyone, so a spot that is free on a phone but under the laptop's wider mural, or free at night but where the
 // end's parts stand, is a broken spot. Also: room for at least 20 tags side by side, counted over the wall as far as the tag area can grow (it grows when it is full, Tom 11-27; the grow check proves that),
-// AND at least 14 in today's area before it grows (roomToday). The old gate was 20 on today's area alone (master had 21): the painted piece, its hand line, the three old words and the bucket's landing
-// spot, each in both layouts, now keep that room clear, and today's area held 15; the role sprayed above the phone's piece (Tom 11-28) takes one more: 14. That floor stops it sliding further; more room is Tom's call (a longer wall, or fewer kept-clear parts).
+// AND at least MIN_TODAY in today's area before it grows (roomToday). The old gate was 20 on today's area alone (master had 21): the painted piece, the wall under its plate, the signature and the bucket's landing
+// spot, each in both layouts, now keep that room clear. MIN_TODAY is what today's area holds since the wall is one painting and one plate (Tom 11-28: 16 today, 24 grown; with the sprayed lines and the old words it was 14 and 22); the floor stops it sliding. More room is Tom's call (a longer wall, or fewer kept-clear parts).
+// The plate is HTML at a fixed size in pixels: at each layout's start view its box on the wall must lie inside the wall kept calm for it (things.plate).
 // In view (Tom 11-23, the loop): how many free spots the start view and the visitors' wall (scrolled up past the pole) show whole,
 // per layout (measured, reported). The end walks in to the start's own view, so it has none of its own.
 // Exact maths on the page's own numbers (pickTest.space, pickTest.onScreen), the same each run; draws a wall map: pitch-space.png.
 async page => { const errs = [], res = { errs };
   page.on('pageerror', e => errs.push(String(e)));
-  const MIN_FREE = 20, MIN_TODAY = 14, STEP = .25, CALM = { flyer: .6, mural: .3, role: .3, hand: .3, 'old portfolio': .3, 'old showcase': .3, 'old tlxq': .3, words: .3, can: .3 }, reads = [], views = {};
+  const MIN_FREE = 20, MIN_TODAY = 16, STEP = .25, CALM = { flyer: .6, mural: .3, plate: .3, tlxq: .3, words: .3, can: .3 }, reads = [], views = {};
   let G = null; // the grid of frame centres, made from the first read
   const look = async (name, wide) => { await page.waitForTimeout(1500); views[name] = await page.evaluate(([g, w]) => window.pickTest.onScreen(g, w), [G, !!wide]); };
   for (const [w, h, layout] of [[1440, 900, 'laptop'], [412, 915, 'phone']]) {
@@ -20,6 +21,9 @@ async page => { const errs = [], res = { errs };
     if (!G) { const { area: A, frame: F } = reads[0]; G = [];
       for (let y = A.y0 + F.h / 2; y <= A.y1 - F.h / 2 + 1e-6; y += STEP) for (let x = A.x0 + F.w / 2; x <= A.x1 - F.w / 2 + 1e-6; x += STEP) G.push([x, y]); }
     await look(layout + ' start');
+    { let on = false; for (let i = 0; i < 120 && !(on = await page.evaluate(() => +document.getElementById('tagRole').style.opacity === 1)); i++) await page.waitForTimeout(250); // the start wall's plate against the wall kept calm for it
+      const calm = reads[reads.length - 1].things.plate, at = await page.evaluate(() => { const r = document.getElementById('tagRole').getBoundingClientRect(), a = window.pickTest.worldAt(r.left, r.bottom), b = window.pickTest.worldAt(r.right, r.top); return [a[0], a[1], b[0], b[1]].map(v => +v.toFixed(2)); });
+      (res.plateOnWall ||= {})[layout] = at; if (!on) errs.push(layout + ': the start wall\'s plate never showed'); else if (at[0] < calm[0] || at[1] < calm[1] || at[2] > calm[2] || at[3] > calm[3]) errs.push(layout + ': the start wall\'s plate stands at ' + at.join(', ') + ' m, outside the wall kept calm for it (' + calm.join(', ') + ')'); }
     await page.evaluate(() => scrollTo(0, visitY())); await page.waitForTimeout(1000); await look(layout + ' visitors'); // up round the pole, at the visitors' wall
     await page.evaluate(() => scrollTo(0, svY(0))); await page.waitForTimeout(1500);
     for (const sv of [432, 700, 1045, 1180]) { await page.evaluate(sv => scrollTo(0, svY(sv)), sv); await page.waitForTimeout(2500); }
